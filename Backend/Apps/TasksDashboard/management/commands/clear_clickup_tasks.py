@@ -1,0 +1,1 @@
+from Backend.Apps.TasksDashboard.management.commands.clear_processed_tasks import Command
