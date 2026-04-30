@@ -1,0 +1,10 @@
+.git
+Backend/__pycache__
+Backend/**/__pycache__
+Backend/backend.sqlite3
+Backend/media
+Backend/staticfiles
+Frontend/node_modules
+Frontend/dist
+Frontend/.vite
+.env
