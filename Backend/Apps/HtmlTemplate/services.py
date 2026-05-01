@@ -10,7 +10,7 @@ from Backend.EnterpriseCore.services import OutboxService, ServiceResult
 class TemplateRenderService:
     @staticmethod
     def render_text_template(template, variables):
-        body = template.body_text or template.body_html or getattr(template, "offer_html_template", "")
+        body = getattr(template, "body_text", "") or getattr(template, "body_html", "") or getattr(template, "offer_html_template", "")
         for key, value in (variables or {}).items():
             body = body.replace("{{" + key + "}}", str(value))
             body = body.replace("{{ " + key + " }}", str(value))

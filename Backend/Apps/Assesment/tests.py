@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 from io import StringIO
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
@@ -8,8 +9,11 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from Backend.Apps.Assesment.models import AssessmentActivity, AssessmentAssignment, AssessmentSubmission, AssessmentTemplate
+from Backend.Apps.Assesment.provider import ExternalAssessmentProviderClient
+from Backend.Apps.Assesment.services import AssessmentAssignmentService
 from Backend.Apps.Users.models import Department, EmployeeProfile
 from Backend.EnterpriseCore.models import BusinessUnit, Organization, OutboxEvent, Tenant, Workspace
+from Backend.EnterpriseCore.services import TenantContext
 
 
 class AssessmentModuleTests(TestCase):
@@ -139,6 +143,158 @@ class AssessmentModuleTests(TestCase):
         self.assertEqual(response.data["external_user_id"], "external-1")
         self.assertEqual(response.data["status"], AssessmentAssignment.STATUS_LINK_GENERATED)
 
+    def test_provider_client_matches_legacy_assessment_contract(self):
+        captured = {}
+
+        class FakeResponse:
+            def __init__(self, payload):
+                self.payload = payload
+
+            def raise_for_status(self):
+                return None
+
+            def json(self):
+                return self.payload
+
+        class FakeSession:
+            def post(self, url, json=None, timeout=None):
+                captured["post"] = {"url": url, "json": json, "timeout": timeout}
+                return FakeResponse(
+                    {
+                        "result": {
+                            "assessment_template_id": "provider-week-one",
+                            "links": [{"userId": "external-user-1", "link": "https://assessments.example.test/take/external-user-1"}],
+                        }
+                    }
+                )
+
+            def get(self, url, params=None, timeout=None):
+                captured["get"] = {"url": url, "params": params, "timeout": timeout}
+                return FakeResponse({"assessments": []})
+
+        client = ExternalAssessmentProviderClient(base_url="https://assessmntbackend.atg.world", session=FakeSession())
+
+        generated = client.generate_link("intern@example.com", "provider-week-one")
+        self.assertEqual(
+            captured["post"]["json"],
+            {"assessment_template_id": "provider-week-one", "emails": ["intern@example.com"]},
+        )
+        self.assertEqual(generated["external_user_id"], "external-user-1")
+        self.assertEqual(generated["assessment_url"], "https://assessments.example.test/take/external-user-1")
+        self.assertEqual(generated["send_payload"]["assessment_template_id"], "provider-week-one")
+
+        client.fetch_status("external-user-1", "provider-week-one")
+        self.assertEqual(captured["get"]["params"], {"id": "external-user-1", "assessment_id": "provider-week-one"})
+
+    @patch("Backend.Apps.Assesment.provider.ExternalAssessmentProviderClient.send_link")
+    @patch("Backend.Apps.Assesment.provider.ExternalAssessmentProviderClient.generate_link")
+    def test_legacy_sendassessmentapi_assigns_by_email(self, mock_generate_link, mock_send_link):
+        template = self.create_template("Legacy Week One")
+        mock_generate_link.return_value = {
+            "raw": {
+                "result": {
+                    "assessment_template_id": template.provider_template_id,
+                    "links": [{"userId": "legacy-user-1", "link": "https://assessments.example.test/take/legacy-user-1"}],
+                }
+            },
+            "send_payload": {
+                "assessment_template_id": template.provider_template_id,
+                "links": [{"userId": "legacy-user-1", "link": "https://assessments.example.test/take/legacy-user-1"}],
+            },
+            "external_user_id": "legacy-user-1",
+            "assessment_url": "https://assessments.example.test/take/legacy-user-1",
+        }
+        mock_send_link.return_value = {"status": "sent"}
+
+        response = self.client.post(
+            "/Assesment/api/sendassessmentapi/",
+            {"email": "intern@example.com", "assesment": [template.provider_template_id]},
+            format="json",
+            **self.headers,
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["count"], 1)
+        assignment = AssessmentAssignment.objects.get(tenant=self.tenant, employee=self.employee, assessment=template)
+        self.assertEqual(assignment.status, AssessmentAssignment.STATUS_SENT)
+        self.assertEqual(assignment.external_user_id, "legacy-user-1")
+
+    def test_legacy_checkassign_alias_creates_reminders(self):
+        template = self.create_template("Reminder Week")
+        assignment = AssessmentAssignment.objects.create(tenant=self.tenant, workspace=self.workspace, assessment=template, employee=self.employee)
+        assignment.assigned_at = timezone.now() - timedelta(days=8)
+        assignment.save(update_fields=["assigned_at"])
+
+        response = self.client.get("/Assesment/checkassign/", **self.headers)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 1)
+        self.assertTrue(AssessmentActivity.objects.filter(activity_type="ReminderCreated", assignment=assignment).exists())
+
+    def test_legacy_dashboard_alias_preserves_old_query_shape(self):
+        template = self.create_template("Dashboard Week")
+        assignment = AssessmentAssignment.objects.create(tenant=self.tenant, workspace=self.workspace, assessment=template, employee=self.employee)
+        assignment.status = AssessmentAssignment.STATUS_FAILED
+        assignment.note = "Failed"
+        assignment.save(update_fields=["status", "note"])
+
+        response = self.client.get(
+            "/Assesment/assessment/?department_id={department}&search=intern&sort_by=1&page=1&page_size=5".format(department=self.department.id),
+            **self.headers,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["department_id"], self.department.id)
+        self.assertEqual(response.data["page"], 1)
+        self.assertEqual(response.data["total_count"], 1)
+        self.assertEqual(response.data["data"][0]["employee_name"], "Intern One")
+        self.assertEqual(response.data["data"][0]["assessments"][0]["assessment_title"], "Dashboard Week")
+        self.assertTrue(any(item["id"] == self.department.id for item in response.data["departments"]))
+
+    def test_generate_provider_link_persists_legacy_provider_response(self):
+        template = self.create_template()
+        assignment = AssessmentAssignment.objects.create(tenant=self.tenant, workspace=self.workspace, assessment=template, employee=self.employee)
+
+        class FakeProviderClient:
+            def __init__(self):
+                self.sent_payload = None
+
+            def generate_link(self, email, assessment_id):
+                self.generated_for = {"email": email, "assessment_id": assessment_id}
+                return {
+                    "raw": {
+                        "result": {
+                            "assessment_template_id": assessment_id,
+                            "links": [{"userId": "generated-user", "link": "https://assessments.example.test/take/generated-user"}],
+                        }
+                    },
+                    "send_payload": {
+                        "assessment_template_id": assessment_id,
+                        "links": [{"userId": "generated-user", "link": "https://assessments.example.test/take/generated-user"}],
+                    },
+                    "external_user_id": "generated-user",
+                    "assessment_url": "https://assessments.example.test/take/generated-user",
+                }
+
+            def send_link(self, payload):
+                self.sent_payload = payload
+                return {"status": "sent"}
+
+        provider = FakeProviderClient()
+        context = TenantContext(tenant=self.tenant, workspace=self.workspace, actor=self.user, source="Test")
+
+        result = AssessmentAssignmentService.generate_provider_link(context, assignment.id, client=provider)
+        self.assertTrue(result.ok)
+
+        assignment.refresh_from_db()
+        self.assertEqual(provider.generated_for["email"], "intern@example.com")
+        self.assertEqual(provider.generated_for["assessment_id"], template.provider_template_id)
+        self.assertEqual(provider.sent_payload["send_payload"]["assessment_template_id"], template.provider_template_id)
+        self.assertEqual(assignment.external_user_id, "generated-user")
+        self.assertEqual(assignment.assessment_url, "https://assessments.example.test/take/generated-user")
+        self.assertEqual(assignment.status, AssessmentAssignment.STATUS_SENT)
+        self.assertEqual(assignment.provider_payload["sendPayload"]["assessment_template_id"], template.provider_template_id)
+
     def test_overdue_listing_and_reminder_creation(self):
         template = self.create_template()
         assignment = AssessmentAssignment.objects.create(tenant=self.tenant, workspace=self.workspace, assessment=template, employee=self.employee)
@@ -200,3 +356,19 @@ class AssessmentModuleTests(TestCase):
 
         self.assertIn("Assessment check completed successfully", output.getvalue())
         self.assertTrue(AssessmentAssignment.objects.filter(tenant=self.tenant, employee=self.employee, assessment=second_template).exists())
+
+    def test_run_assessment_check_command_assigns_first_assessment_to_new_employee(self):
+        first_template = self.create_template("Week One")
+
+        output = StringIO()
+        call_command(
+            "run_assessment_check",
+            "--tenant-id",
+            str(self.tenant.id),
+            "--workspace-id",
+            str(self.workspace.id),
+            stdout=output,
+        )
+
+        self.assertIn("Assessment check completed successfully", output.getvalue())
+        self.assertTrue(AssessmentAssignment.objects.filter(tenant=self.tenant, employee=self.employee, assessment=first_template).exists())

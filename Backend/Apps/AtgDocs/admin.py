@@ -5,9 +5,9 @@ from Backend.Apps.AtgDocs.models import DocumentVersion, DriveFile, DriveFolder,
 
 @admin.register(KnowledgeDocument)
 class KnowledgeDocumentAdmin(admin.ModelAdmin):
-    list_display = ("title", "document_type", "status", "tenant", "owner", "updated_at")
-    list_filter = ("status", "document_type", "tenant")
-    search_fields = ("title", "slug", "body")
+    list_display = ("title", "document_type", "status", "visibility", "department", "tenant", "owner", "updated_at")
+    list_filter = ("status", "visibility", "document_type", "department", "tenant")
+    search_fields = ("title", "slug", "body", "department__name")
 
 
 @admin.register(KnowledgePermission)

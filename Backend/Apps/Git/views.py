@@ -7,9 +7,11 @@ from Backend.Apps.Git.serializers import (
     RepositoryUtilityRequestSerializer,
 )
 from Backend.Apps.Git.services import GitRepositoryService, GitUtilityService
+from Backend.Apps.Users.models import EmployeeProfile
 from Backend.EnterpriseCore.models import Tenant, Workspace
 from Backend.EnterpriseCore.services import TenantContext
 from Backend.EnterpriseCore.viewsets import TenantScopedModelViewSet
+from rest_framework import permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -76,17 +78,37 @@ class RepositoryUtilityRequestViewSet(TenantScopedModelViewSet):
 
 
 class LegacyGitDownloadAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     def get_context(self, request):
-        tenant = Tenant.objects.filter(id=request.headers.get("X-Tenant-Id") or request.query_params.get("tenant") or request.data.get("tenant")).first()
-        workspace = Workspace.objects.filter(id=request.headers.get("X-Workspace-Id") or request.query_params.get("workspace") or request.data.get("workspace")).first()
+        actor = request.user if request.user.is_authenticated else None
+        actor_profile = EmployeeProfile.objects.filter(user=actor).select_related("tenant", "workspace").order_by("id").first() if actor else None
+        if actor_profile:
+            return TenantContext(tenant=actor_profile.tenant, workspace=actor_profile.workspace, actor=actor, source="LegacyGitDownload")
+        tenant_hint = request.headers.get("X-Tenant-Id") or request.query_params.get("tenant")
+        workspace_hint = request.headers.get("X-Workspace-Id") or request.query_params.get("workspace")
+        tenant = Tenant.objects.filter(id=tenant_hint).first() if str(tenant_hint or "").isdigit() else Tenant.objects.filter(slug__iexact=str(tenant_hint or "")).first()
+        workspace = Workspace.objects.filter(id=workspace_hint).first() if str(workspace_hint or "").isdigit() else Workspace.objects.filter(code__iexact=str(workspace_hint or "")).first()
+        if not tenant:
+            active_tenants = list(Tenant.objects.filter(status=Tenant.STATUS_ACTIVE).order_by("id")[:2])
+            tenant = active_tenants[0] if len(active_tenants) == 1 else None
         if tenant and workspace and workspace.tenant_id != tenant.id:
             workspace = None
-        return TenantContext(tenant=tenant, workspace=workspace, actor=request.user if request.user.is_authenticated else None, source="LegacyGitDownload")
+        if tenant and not workspace:
+            workspace = Workspace.objects.filter(tenant=tenant).order_by("id").first()
+        return TenantContext(tenant=tenant, workspace=workspace, actor=actor, source="LegacyGitDownload")
+
+    def _forbidden_response(self):
+        return Response({"detail": "Request Failed. User Is Not An Admin."}, status=403)
 
     def get(self, request):
+        if not request.user.is_superuser:
+            return self._forbidden_response()
         result = GitRepositoryService.sync_github_repositories(self.get_context(request), live=False)
         return Response(result.data if result.ok else result.errors, status=result.status_code)
 
     def post(self, request):
+        if not request.user.is_superuser:
+            return self._forbidden_response()
         result = GitRepositoryService.sync_github_repositories(self.get_context(request), live=bool(request.data.get("live", False)))
         return Response(result.data if result.ok else result.errors, status=result.status_code)

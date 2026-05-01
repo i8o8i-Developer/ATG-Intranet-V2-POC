@@ -70,3 +70,30 @@ class AssessmentDashboardQuerySerializer(serializers.Serializer):
     search = serializers.CharField(required=False, allow_blank=True)
     status = serializers.CharField(required=False, allow_blank=True)
     ordering = serializers.ChoiceField(choices=["status", "weeks_since_join", "assigned_at"], required=False)
+
+
+class AssessmentEmailDispatchSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=False)
+    emails = serializers.ListField(child=serializers.EmailField(), required=False, allow_empty=False)
+    assessment_ids = serializers.ListField(child=serializers.CharField(), required=False, allow_empty=False)
+    assesment = serializers.ListField(child=serializers.CharField(), required=False, allow_empty=False)
+    due_at = serializers.DateTimeField(required=False, allow_null=True)
+    generate_provider_link = serializers.BooleanField(default=True)
+
+    def validate(self, attrs):
+        emails = attrs.get("emails") or ([attrs["email"]] if attrs.get("email") else [])
+        assessment_ids = attrs.get("assessment_ids") or attrs.get("assesment") or []
+        if not emails:
+            raise serializers.ValidationError({"email": "At least one email is required."})
+        if not assessment_ids:
+            raise serializers.ValidationError({"assessment_ids": "At least one assessment reference is required."})
+        attrs["emails"] = emails
+        attrs["assessment_ids"] = assessment_ids
+        return attrs
+
+
+class AssessmentAutomationRunSerializer(serializers.Serializer):
+    sync_provider = serializers.BooleanField(default=False)
+    auto_assign_next = serializers.BooleanField(default=True)
+    create_reminders = serializers.BooleanField(default=True)
+    grace_days = serializers.IntegerField(default=5, min_value=0)

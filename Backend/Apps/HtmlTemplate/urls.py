@@ -1,3 +1,4 @@
+from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from Backend.Apps.HtmlTemplate import views
@@ -9,4 +10,9 @@ router.register("ContentTemplates", views.ContentTemplateViewSet, basename="html
 router.register("OfferTemplates", views.OfferTemplateViewSet, basename="html-offer-templates")
 router.register("GenericHtmlTemplates", views.GenericHtmlTemplateViewSet, basename="html-generic-templates")
 
-urlpatterns = router.urls
+urlpatterns = [
+	path("api/content-templates/create-template/", views.ContentTemplateCreateLegacyAPIView.as_view(), name="html-create-template"),
+	path("api/content-templates/<int:pk>/render/", views.ContentTemplateRenderLegacyAPIView.as_view(), name="html-render-content-template"),
+	path("api/generic-html-templates/sync-gtm-template/", views.GenericHtmlTemplateSyncLegacyAPIView.as_view(), name="html-sync-gtm-template"),
+	path("api/generic-html-templates/<int:pk>/render/", views.GenericHtmlTemplateRenderLegacyAPIView.as_view(), name="html-render-generic-template"),
+] + router.urls

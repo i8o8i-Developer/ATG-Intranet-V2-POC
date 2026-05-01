@@ -5,7 +5,9 @@ from Backend.Apps.Assesment.models import AssessmentActivity, AssessmentAssignme
 from Backend.Apps.Assesment.serializers import (
     AssessmentActivitySerializer,
     AssessmentAssignmentSerializer,
+    AssessmentAutomationRunSerializer,
     AssessmentDashboardQuerySerializer,
+    AssessmentEmailDispatchSerializer,
     AssessmentSubmissionSerializer,
     AssessmentTemplateSerializer,
     AssignAssessmentSerializer,
@@ -13,7 +15,8 @@ from Backend.Apps.Assesment.serializers import (
     ProviderStatusSerializer,
     SubmitAssessmentSerializer,
 )
-from Backend.Apps.Assesment.services import AssessmentAssignmentService, AssessmentQueryService, AssessmentTemplateService
+from Backend.Apps.Assesment.services import AssessmentAssignmentService, AssessmentAutomationService, AssessmentQueryService, AssessmentTemplateService
+from Backend.Apps.Users.models import Department
 from Backend.EnterpriseCore.viewsets import TenantScopedModelViewSet
 
 
@@ -132,6 +135,94 @@ class AssessmentAssignmentViewSet(TenantScopedModelViewSet):
     def create_overdue_reminders(self, request):
         result = AssessmentQueryService.create_overdue_reminders(self.get_tenant_context(), grace_days=int(request.data.get("grace_days", 5)))
         return Response(result.data, status=result.status_code)
+
+    @action(detail=False, methods=["post"], url_path="assign-by-email")
+    def assign_by_email(self, request):
+        serializer = AssessmentEmailDispatchSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        context = self.get_tenant_context()
+        created = []
+        errors = []
+        for email in serializer.validated_data["emails"]:
+            result = AssessmentAssignmentService.assign_by_email(
+                context,
+                email,
+                serializer.validated_data["assessment_ids"],
+                due_at=serializer.validated_data.get("due_at"),
+                generate_provider_link=serializer.validated_data.get("generate_provider_link", True),
+            )
+            if result.ok:
+                created.append(result.data)
+            else:
+                errors.append({"email": email, "errors": result.errors})
+        status_code = 201 if created else 400
+        return Response({"created": created, "errors": errors, "count": sum(item["count"] for item in created)}, status=status_code)
+
+    @action(detail=False, methods=["post"], url_path="run-automation")
+    def run_automation(self, request):
+        serializer = AssessmentAutomationRunSerializer(data=request.data or {})
+        serializer.is_valid(raise_exception=True)
+        result = AssessmentAutomationService.run_assessment_check(
+            self.get_tenant_context(),
+            sync_provider=serializer.validated_data["sync_provider"],
+            auto_assign_next=serializer.validated_data["auto_assign_next"],
+            create_reminders=serializer.validated_data["create_reminders"],
+            grace_days=serializer.validated_data["grace_days"],
+        )
+        return Response(result.data, status=result.status_code)
+
+    @action(detail=False, methods=["get", "post"], url_path="legacy-checkassign")
+    def legacy_checkassign(self, request):
+        raw_grace_days = request.query_params.get("grace_days") if request.method == "GET" else request.data.get("grace_days", 5)
+        result = AssessmentQueryService.create_overdue_reminders(self.get_tenant_context(), grace_days=int(raw_grace_days or 5))
+        return Response({"status": "success", "count": result.data["count"], "activityIds": result.data["activityIds"]}, status=result.status_code)
+
+    @action(detail=False, methods=["get"], url_path="legacy-dashboard")
+    def legacy_dashboard(self, request):
+        context = self.get_tenant_context()
+        raw_department_id = request.query_params.get("department_id") or request.query_params.get("department")
+        department_id = int(raw_department_id) if raw_department_id and raw_department_id != "0" else None
+        search = request.query_params.get("search", "")
+        sort_by = request.query_params.get("sort_by", "")
+        ordering = {"1": "status", "2": "weeks_since_join"}.get(sort_by, request.query_params.get("ordering", ""))
+        result = AssessmentQueryService.dashboard(
+            context,
+            department_id=department_id,
+            search=search,
+            status=request.query_params.get("status", ""),
+            ordering=ordering,
+        )
+        rows = result.data
+        page = max(int(request.query_params.get("page", 1)), 1)
+        page_size = max(int(request.query_params.get("page_size", 10)), 1)
+        total_count = len(rows)
+        num_pages = max((total_count + page_size - 1) // page_size, 1)
+        start_index = (page - 1) * page_size
+        end_index = start_index + page_size
+        page_rows = rows[start_index:end_index]
+        departments = list(
+            Department.objects.filter(tenant=context.tenant, is_active=True, is_archived=False)
+            .values("id", "name")
+            .order_by("name")
+        )
+        templates = list(
+            AssessmentTemplate.objects.filter(tenant=context.tenant, is_active=True)
+            .values("id", "title", "sequence_number", "provider_template_id", "department_id", "status")
+            .order_by("department_id", "sequence_number", "title")
+        )
+        return Response(
+            {
+                "department_id": department_id or 0,
+                "departments": departments,
+                "data": page_rows,
+                "all_assessment": templates,
+                "page": page,
+                "page_size": page_size,
+                "total_count": total_count,
+                "num_pages": num_pages,
+            },
+            status=result.status_code,
+        )
 
 
 class AssessmentSubmissionViewSet(TenantScopedModelViewSet):

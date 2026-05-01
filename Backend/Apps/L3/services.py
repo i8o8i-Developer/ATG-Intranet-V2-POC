@@ -7,6 +7,18 @@ from Backend.EnterpriseCore.services import OutboxService, ServiceResult
 
 class TalentPipelineService:
     @staticmethod
+    def _resolve_employee(context, employee_id=None, username=""):
+        from Backend.Apps.Users.models import EmployeeProfile
+
+        employees = EmployeeProfile.objects.filter(tenant=context.tenant).select_related("user")
+        if employee_id:
+            return employees.filter(id=employee_id).first()
+        if username:
+            return employees.filter(user__username=username).first()
+        actor = getattr(context, "actor", None)
+        return employees.filter(user=actor).first() if actor else None
+
+    @staticmethod
     def import_colleges(context, rows):
         created = []
         for row in rows:
@@ -85,6 +97,13 @@ class TalentPipelineService:
         return ServiceResult.success({"count": len(rows), "assignmentIds": rows}, status_code=201)
 
     @staticmethod
+    def assign_batch_by_username(context, username, limit=10):
+        employee = TalentPipelineService._resolve_employee(context, username=username)
+        if not employee:
+            return ServiceResult.failure({"employee": "Employee profile not found."}, status_code=404)
+        return TalentPipelineService.assign_colleges(context, employee.id, limit=limit, workflow_status="Assigned")
+
+    @staticmethod
     def update_workflow_status(context, assignment_id=None, college_id=None, workflow_status="Follow up", notes="", follow_up_at=None):
         assignment = None
         if assignment_id:
@@ -141,3 +160,161 @@ class TalentPipelineService:
         by_status = list(assignments.values("assigned_to_id", "workflow_status").annotate(count=Count("id")).order_by("assigned_to_id", "workflow_status"))
         email_count = TalentEmail.objects.filter(tenant=context.tenant, college__isnull=False).count()
         return ServiceResult.success({"assignments": by_status, "emailCount": email_count})
+
+    @staticmethod
+    def list_assignments(context, username="", bucket="new"):
+        employee = TalentPipelineService._resolve_employee(context, username=username)
+        if not employee:
+            return ServiceResult.failure({"employee": "Employee profile not found."}, status_code=404)
+        assignments = CollegeAssignment.objects.filter(tenant=context.tenant, assigned_to=employee, is_archived=False).select_related("college", "assigned_to", "assigned_to__user")
+        if bucket == "pending":
+            assignments = assignments.exclude(workflow_status__in=["Assigned", "New", ""]).filter(completed_at__isnull=True)
+        elif bucket == "manager":
+            assignments = assignments.filter(workflow_status__in=["Wrong email", "Manager Action", "Data received", "Not interested"])
+        elif bucket == "wrong":
+            assignments = assignments.filter(workflow_status="Wrong call")
+        else:
+            assignments = assignments.filter(workflow_status__in=["Assigned", "New", ""])
+        rows = [
+            {
+                "assignment_id": assignment.id,
+                "college_id": assignment.college_id,
+                "college_name": assignment.college.college_name,
+                "workflow_status": assignment.workflow_status,
+                "contact_email": assignment.college.contact_email,
+                "contact_phone": assignment.college.contact_phone,
+                "notes": assignment.notes,
+                "is_archived": assignment.is_archived,
+            }
+            for assignment in assignments.order_by("created_at")
+        ]
+        return ServiceResult.success({"employee": employee.user.username, "count": len(rows), "rows": rows})
+
+    @staticmethod
+    def set_hold_status(context, username, is_paused):
+        employee = TalentPipelineService._resolve_employee(context, username=username)
+        if not employee:
+            return ServiceResult.failure({"employee": "Employee profile not found."}, status_code=404)
+        employee.profile_payload = {**employee.profile_payload, "l3_is_paused": bool(is_paused)}
+        employee.updated_by = context.actor
+        employee.save(update_fields=["profile_payload", "updated_by", "updated_at"])
+        return ServiceResult.success({"username": employee.user.username, "is_paused": bool(is_paused)})
+
+    @staticmethod
+    def update_college_contact(context, college_id, contact_email="", contact_phone=""):
+        college = CollegePipelineRecord.objects.filter(tenant=context.tenant, id=college_id).first()
+        if not college:
+            return ServiceResult.failure({"college": "College record not found."}, status_code=404)
+        update_fields = ["updated_by", "updated_at"]
+        if contact_email:
+            college.contact_email = contact_email
+            update_fields.append("contact_email")
+        if contact_phone:
+            college.contact_phone = contact_phone
+            update_fields.append("contact_phone")
+        college.updated_by = context.actor
+        if len(update_fields) > 2:
+            college.save(update_fields=update_fields)
+        return ServiceResult.success(college)
+
+    @staticmethod
+    def archive_assignment(context, assignment_id):
+        assignment = CollegeAssignment.objects.filter(tenant=context.tenant, id=assignment_id).select_related("college").first()
+        if not assignment:
+            return ServiceResult.failure({"assignment": "College assignment not found."}, status_code=404)
+        assignment.is_archived = True
+        assignment.updated_by = context.actor
+        assignment.save(update_fields=["is_archived", "updated_by", "updated_at"])
+        return ServiceResult.success({"assignment_id": assignment.id, "archived": True, "college_name": assignment.college.college_name})
+
+    @staticmethod
+    def performance_list(context, days=7):
+        assignments = CollegeAssignment.objects.filter(tenant=context.tenant, is_archived=False, created_at__gte=timezone.now() - timezone.timedelta(days=int(days))).select_related("assigned_to", "assigned_to__user")
+        grouped = {}
+        for assignment in assignments:
+            username = assignment.assigned_to.user.username
+            row = grouped.setdefault(username, {"pending_colleges": 0, "completed_colleges": 0})
+            if assignment.completed_at:
+                row["completed_colleges"] += 1
+            else:
+                row["pending_colleges"] += 1
+        return ServiceResult.success({"day": int(days), "data": grouped})
+
+    @staticmethod
+    def performance_detail(context, username):
+        employee = TalentPipelineService._resolve_employee(context, username=username)
+        if not employee:
+            return ServiceResult.failure({"employee": "Employee profile not found."}, status_code=404)
+        pending = TalentPipelineService.list_assignments(context, username=username, bucket="pending").data
+        manager = TalentPipelineService.list_assignments(context, username=username, bucket="manager").data
+        return ServiceResult.success(
+            {
+                "intern": username,
+                "pending_colleges": pending["rows"],
+                "pending_colleges_count": pending["count"],
+                "manager_colleges": manager["rows"],
+                "manager_college_count": manager["count"],
+                "intern_obj": {
+                    "username": employee.user.username,
+                    "display_name": employee.display_name,
+                    "is_pause": bool(employee.profile_payload.get("l3_is_paused", False)),
+                },
+            }
+        )
+
+    @staticmethod
+    def performance_analytics(context, part_1_day=30, part_2_day=30, part_3_day=30):
+        assignments = CollegeAssignment.objects.filter(tenant=context.tenant, is_archived=False, created_at__gte=timezone.now() - timezone.timedelta(days=int(part_3_day))).select_related("assigned_to", "assigned_to__user")
+        college_contact = assignments.filter(workflow_status="Follow up").count()
+        college_left = assignments.filter(workflow_status="Not interested").count()
+        college_new = assignments.filter(workflow_status__in=["Assigned", "New", ""]).count()
+        top_users = list(
+            assignments.filter(created_at__gte=timezone.now() - timezone.timedelta(days=int(part_2_day)))
+            .values("assigned_to__user__username")
+            .annotate(total=Count("id"))
+            .order_by("-total")[:5]
+        )
+        user_arr = [item["assigned_to__user__username"] for item in top_users]
+        follow_arr = [assignments.filter(assigned_to__user__username=username, workflow_status="Follow up").count() for username in user_arr]
+        email_sent_arr = [assignments.filter(assigned_to__user__username=username, workflow_status="Email sent").count() for username in user_arr]
+        data_list_arr = [assignments.filter(assigned_to__user__username=username, workflow_status="Data received").count() for username in user_arr]
+        work_flow_arr = [
+            assignments.filter(workflow_status__in=["Wrong call", "Wrong email"]).count(),
+            assignments.filter(workflow_status="Data received").count(),
+            assignments.filter(workflow_status="Follow up").count(),
+            assignments.filter(workflow_status="Not interested").count(),
+        ]
+        return ServiceResult.success(
+            {
+                "college_contact": college_contact,
+                "college_left": college_left,
+                "college_new": college_new,
+                "total_college": assignments.count(),
+                "user_arr": user_arr,
+                "follow_arr": follow_arr,
+                "email_sent_arr": email_sent_arr,
+                "data_list_arr": data_list_arr,
+                "work_flow_arr": work_flow_arr,
+            }
+        )
+
+    @staticmethod
+    def dataentry_dashboard(context, rows=None):
+        created = None
+        if rows:
+            created = TalentPipelineService.import_colleges(context, rows)
+        wrong_colleges = CollegeAssignment.objects.filter(tenant=context.tenant, workflow_status="Wrong call", is_archived=False).select_related("college").order_by("college__college_name")
+        return ServiceResult.success(
+            {
+                "wrong_colleges": [
+                    {
+                        "assignment_id": item.id,
+                        "college_id": item.college_id,
+                        "college_name": item.college.college_name,
+                    }
+                    for item in wrong_colleges
+                ],
+                "colleges_count": wrong_colleges.count(),
+                "imported": created.data if created else None,
+            }
+        )

@@ -45,6 +45,7 @@ class BackendEndToEndTests(TestCase):
             display_name="Operator",
         )
         self.client = APIClient()
+        self.client.force_authenticate(self.user)
         self.headers = {
             "HTTP_X_TENANT_ID": str(self.tenant.id),
             "HTTP_X_WORKSPACE_ID": str(self.workspace.id),

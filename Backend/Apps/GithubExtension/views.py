@@ -6,12 +6,16 @@ from Backend.Apps.GithubExtension.serializers import (
     BranchReviewerAssignmentSerializer,
     BranchTestingAssignmentSerializer,
     GitHubRepositorySerializer,
+    LegacyGitHubTokenObtainPairSerializer,
+    LegacyGitHubTokenRefreshSerializer,
     RepositoryBranchStatusSerializer,
 )
 from Backend.Apps.GithubExtension.services import GitHubBranchService
+from Backend.Apps.Users.models import EmployeeProfile
 from Backend.EnterpriseCore.models import Tenant, Workspace
 from Backend.EnterpriseCore.services import TenantContext
 from Backend.EnterpriseCore.viewsets import TenantScopedModelViewSet
+from rest_framework import permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -67,11 +71,22 @@ class RepositoryBranchStatusViewSet(TenantScopedModelViewSet):
 
 class GithubExtensionLegacyMixin:
     def get_context(self, request):
-        tenant = Tenant.objects.filter(id=request.headers.get("X-Tenant-Id") or request.query_params.get("tenant") or request.data.get("tenant")).first()
-        workspace = Workspace.objects.filter(id=request.headers.get("X-Workspace-Id") or request.query_params.get("workspace") or request.data.get("workspace")).first()
+        actor = request.user if request.user.is_authenticated else None
+        actor_profile = EmployeeProfile.objects.filter(user=actor).select_related("tenant", "workspace").order_by("id").first() if actor else None
+        if actor_profile:
+            return TenantContext(tenant=actor_profile.tenant, workspace=actor_profile.workspace, actor=actor, source="GithubExtensionLegacyAPI")
+        tenant_hint = request.headers.get("X-Tenant-Id") or request.query_params.get("tenant") or request.data.get("tenant")
+        workspace_hint = request.headers.get("X-Workspace-Id") or request.query_params.get("workspace") or request.data.get("workspace")
+        tenant = Tenant.objects.filter(id=tenant_hint).first() if str(tenant_hint or "").isdigit() else Tenant.objects.filter(slug__iexact=str(tenant_hint or "")).first()
+        workspace = Workspace.objects.filter(id=workspace_hint).first() if str(workspace_hint or "").isdigit() else Workspace.objects.filter(code__iexact=str(workspace_hint or "")).first()
+        if not tenant:
+            active_tenants = list(Tenant.objects.filter(status=Tenant.STATUS_ACTIVE).order_by("id")[:2])
+            tenant = active_tenants[0] if len(active_tenants) == 1 else None
         if tenant and workspace and workspace.tenant_id != tenant.id:
             workspace = None
-        return TenantContext(tenant=tenant, workspace=workspace, actor=request.user if request.user.is_authenticated else None, source="GithubExtensionLegacyAPI")
+        if tenant and not workspace:
+            workspace = Workspace.objects.filter(tenant=tenant).order_by("id").first()
+        return TenantContext(tenant=tenant, workspace=workspace, actor=actor, source="GithubExtensionLegacyAPI")
 
 
 class RepoBranchStatusAPIView(GithubExtensionLegacyMixin, APIView):
@@ -115,3 +130,23 @@ class CheckRepositoryAPIView(GithubExtensionLegacyMixin, APIView):
         result = GitHubBranchService.check_repository(self.get_context(request), repo_name)
         message = "The repo name is valid" if result.data["exists"] else "The repo name does not found"
         return Response({"Message": message, **result.data}, status=result.status_code)
+
+
+class LegacyGitHubTokenObtainPairView(APIView):
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        serializer = LegacyGitHubTokenObtainPairSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        return Response(serializer.validated_data)
+
+
+class LegacyGitHubTokenRefreshView(APIView):
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        serializer = LegacyGitHubTokenRefreshSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(serializer.validated_data)

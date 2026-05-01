@@ -1,3 +1,6 @@
+from django.http import JsonResponse
+from django.utils import timezone
+
 from Backend.Apps.FinanceAndPayroll.models import (
     ApprovalDecision,
     BankAccount,
@@ -15,6 +18,9 @@ from Backend.Apps.FinanceAndPayroll.serializers import (
     BankAccountSerializer,
     CompensationPlanSerializer,
     EmployeePayoutRequestSerializer,
+    LegacyBankDetailsSerializer,
+    LegacyPaymentApprovalSerializer,
+    LegacyProjectFinanceQuerySerializer,
     PaymentOrderCreateSerializer,
     PaymentOrderSerializer,
     PaymentWebhookEventSerializer,
@@ -25,10 +31,235 @@ from Backend.Apps.FinanceAndPayroll.serializers import (
     PayoutExecutionSerializer,
     PayslipDocumentSerializer,
 )
-from Backend.Apps.FinanceAndPayroll.services import PaymentOrderService, PaymentWebhookService, PayrollCalculationService, PayrollRunService, PayoutService
+from Backend.Apps.FinanceAndPayroll.services import FinanceLegacyService, PaymentOrderService, PaymentWebhookService, PayrollCalculationService, PayrollRunService, PayoutService
+from Backend.Apps.Users.models import EmployeeProfile
+from Backend.EnterpriseCore.models import Tenant, Workspace
+from Backend.EnterpriseCore.services import ServiceResult, TenantContext
 from Backend.EnterpriseCore.viewsets import TenantScopedModelViewSet
+from rest_framework import permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.views import APIView
+
+
+class FinanceLegacyMixin:
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_context(self, request):
+        actor = request.user if request.user.is_authenticated else None
+        actor_profile = EmployeeProfile.objects.filter(user=actor).select_related("tenant", "workspace").order_by("id").first() if actor else None
+        if actor_profile:
+            return ServiceResult.success(TenantContext(tenant=actor_profile.tenant, workspace=actor_profile.workspace, actor=actor, source="FinanceLegacy"))
+        tenant_hint = request.headers.get("X-Tenant-Id") or request.query_params.get("tenant") or request.data.get("tenant")
+        workspace_hint = request.headers.get("X-Workspace-Id") or request.query_params.get("workspace") or request.data.get("workspace")
+        tenant = Tenant.objects.filter(id=tenant_hint).first() if str(tenant_hint or "").isdigit() else Tenant.objects.filter(slug__iexact=str(tenant_hint or "")).first()
+        workspace = Workspace.objects.filter(id=workspace_hint).first() if str(workspace_hint or "").isdigit() else Workspace.objects.filter(code__iexact=str(workspace_hint or "")).first()
+        if not tenant:
+            tenants = list(Tenant.objects.filter(status=Tenant.STATUS_ACTIVE).order_by("id")[:2])
+            tenant = tenants[0] if len(tenants) == 1 else None
+        if tenant and workspace and workspace.tenant_id != tenant.id:
+            workspace = None
+        if tenant and not workspace:
+            workspace = Workspace.objects.filter(tenant=tenant).order_by("id").first()
+        if not tenant:
+            return ServiceResult.failure({"tenant": "Tenant context is required for finance request."}, status_code=400)
+        return ServiceResult.success(TenantContext(tenant=tenant, workspace=workspace, actor=actor, source="FinanceLegacy"))
+
+    def with_context(self, request):
+        result = self.get_context(request)
+        if not result.ok:
+            return None, Response(result.errors, status=result.status_code)
+        return result.data, None
+
+
+class LegacyFinanceDashboardAPIView(FinanceLegacyMixin, APIView):
+    flag_name = ""
+    manager_scope = False
+    domain_name = ""
+
+    def get(self, request):
+        context, error_response = self.with_context(request)
+        if error_response:
+            return error_response
+        selected_departments = request.query_params.getlist("departments")
+        result = FinanceLegacyService.legacy_dashboard(
+            context,
+            month=request.query_params.get("month") or request.query_params.get("show_month"),
+            year=request.query_params.get("year") or request.query_params.get("show_year"),
+            month_name=request.query_params.get("month_name", ""),
+            search=request.query_params.get("search", ""),
+            selected_departments=selected_departments,
+            show_approved=request.query_params.get("show_approved", "false").lower() == "true",
+            manager_scope=self.manager_scope,
+            domain_name=self.domain_name,
+            flag_name=self.flag_name,
+        )
+        return Response(result.data if result.ok else result.errors, status=result.status_code)
+
+
+class ManagePayrollLegacyAPIView(LegacyFinanceDashboardAPIView):
+    flag_name = "Manage_Payrolls"
+    manager_scope = True
+
+
+class FinanceDepartmentLegacyAPIView(LegacyFinanceDashboardAPIView):
+    flag_name = "Finance_Department"
+
+
+class NewFinanceDepartmentLegacyAPIView(LegacyFinanceDashboardAPIView):
+    flag_name = "New_Finance_Department"
+
+
+class PaymentsLegacyAPIView(LegacyFinanceDashboardAPIView):
+    flag_name = "New_Finance_Department"
+
+    def get(self, request):
+        response = super().get(request)
+        if response.status_code == 200:
+            current_year = timezone.localdate().year
+            years = {current_year, current_year - 1}
+            from Backend.Apps.Users.models import EmployeePaymentSnapshot
+
+            years.update(EmployeePaymentSnapshot.objects.filter(tenant=self.get_context(request).data.tenant).values_list("year", flat=True))
+            response.data["years"] = sorted(years, reverse=True)
+        return response
+
+
+class BanaoFinanceDepartmentLegacyAPIView(LegacyFinanceDashboardAPIView):
+    flag_name = "Banao_Finance_Department"
+    domain_name = "Banao"
+
+
+class LegacyPaymentApprovalAPIView(FinanceLegacyMixin, APIView):
+    def get(self, request):
+        context, error_response = self.with_context(request)
+        if error_response:
+            return error_response
+        result = FinanceLegacyService.legacy_payment_records(
+            context,
+            month=request.query_params.get("show_month") or request.query_params.get("month"),
+            year=request.query_params.get("show_year") or request.query_params.get("year"),
+        )
+        return Response(result.data if result.ok else result.errors, status=result.status_code)
+
+    def post(self, request):
+        context, error_response = self.with_context(request)
+        if error_response:
+            return error_response
+        serializer = LegacyPaymentApprovalSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        result = FinanceLegacyService.approve_payment(
+            context,
+            role=data.get("role", "Finance"),
+            employee_id=data.get("employee"),
+            user_id=data.get("userid"),
+            month=data.get("show_month"),
+            year=data.get("show_year"),
+            bonus=data.get("bonus", 0),
+            normal_pay=data.get("normalPay", 0),
+            bounty=data.get("bounty", 0),
+            task_count=data.get("taskCount", 0),
+            bug_ids=data.get("bugIds", ""),
+            pay_note=data.get("payNote", ""),
+            pay_for=data.get("payFor", "ATG"),
+            custom_pay=data.get("customPay", False),
+            live=data.get("live", False),
+        )
+        return Response(result.data if result.ok else result.errors, status=result.status_code)
+
+
+class LegacyNewPaymentApprovalAPIView(FinanceLegacyMixin, APIView):
+    def post(self, request):
+        context, error_response = self.with_context(request)
+        if error_response:
+            return error_response
+        serializer = LegacyPaymentApprovalSerializer(data={**request.data, "role": "Finance"})
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        result = FinanceLegacyService.approve_payment(
+            context,
+            role="Finance",
+            employee_id=data.get("employee"),
+            user_id=data.get("userid"),
+            month=data.get("show_month"),
+            year=data.get("show_year"),
+            bonus=data.get("bonus", 0),
+            normal_pay=data.get("normalPay", 0),
+            bounty=data.get("bounty", 0),
+            task_count=data.get("taskCount", 0),
+            bug_ids=data.get("bugIds", ""),
+            pay_note=data.get("payNote", "Payment"),
+            pay_for=data.get("payFor", "ATG"),
+            custom_pay=data.get("customPay", False),
+            live=data.get("live", False),
+        )
+        return Response(result.data if result.ok else result.errors, status=result.status_code)
+
+
+class LegacyBankDetailsAPIView(FinanceLegacyMixin, APIView):
+    def get(self, request):
+        context, error_response = self.with_context(request)
+        if error_response:
+            return error_response
+        result = FinanceLegacyService.bank_details_summary(context)
+        return Response(result.data if result.ok else result.errors, status=result.status_code)
+
+    def post(self, request):
+        context, error_response = self.with_context(request)
+        if error_response:
+            return error_response
+        serializer = LegacyBankDetailsSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        result = FinanceLegacyService.upsert_bank_details(
+            context,
+            employee_id=data.get("employee"),
+            user_id=data.get("userid"),
+            account_number=data.get("Ac_No", ""),
+            ifsc_code=data.get("Ac_IFSC", ""),
+            upi_id=data.get("upi", ""),
+        )
+        return Response(result.data if result.ok else result.errors, status=result.status_code)
+
+
+class LegacyProjectFinancesAPIView(FinanceLegacyMixin, APIView):
+    def get(self, request):
+        context, error_response = self.with_context(request)
+        if error_response:
+            return error_response
+        serializer = LegacyProjectFinanceQuerySerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        result = FinanceLegacyService.project_finances(context, serializer.validated_data["project_id"])
+        return Response(result.data if result.ok else result.errors, status=result.status_code)
+
+
+class LegacyCalculatePayrollAPIView(FinanceLegacyMixin, APIView):
+    def get(self, request):
+        context, error_response = self.with_context(request)
+        if error_response:
+            return error_response
+        serializer = PayrollCalculationQuerySerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        result = PayrollCalculationService.calculate_for_employee(context, data.get("employee") or data.get("user"), month=data.get("month"), year=data.get("year"))
+        return Response({"data": result.data} if result.ok else result.errors, status=result.status_code)
+
+
+class LegacyCalculatePaymentsAPIView(LegacyCalculatePayrollAPIView):
+    pass
+
+
+class LegacyPreviousPaymentDataAPIView(FinanceLegacyMixin, APIView):
+    def get(self, request):
+        context, error_response = self.with_context(request)
+        if error_response:
+            return error_response
+        serializer = PayrollCalculationQuerySerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        result = PayrollCalculationService.previous_payment_data(context, data.get("employee") or data.get("user"), month=data.get("month"), year=data.get("year"))
+        return Response({"data": result.data} if result.ok else result.errors, status=result.status_code)
 
 
 class CompensationPlanViewSet(TenantScopedModelViewSet):

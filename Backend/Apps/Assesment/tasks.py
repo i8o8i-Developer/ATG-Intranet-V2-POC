@@ -1,7 +1,7 @@
 from celery import shared_task
 
 from Backend.Apps.Assesment.models import AssessmentAssignment
-from Backend.Apps.Assesment.services import AssessmentAssignmentService, AssessmentQueryService
+from Backend.Apps.Assesment.services import AssessmentAssignmentService, AssessmentAutomationService, AssessmentQueryService
 from Backend.EnterpriseCore.models import Tenant, Workspace
 from Backend.EnterpriseCore.services import TenantContext
 
@@ -12,6 +12,21 @@ def create_overdue_assessment_reminders(tenant_id, workspace_id=None, grace_days
     workspace = Workspace.objects.filter(id=workspace_id, tenant=tenant).first() if workspace_id else None
     context = TenantContext(tenant=tenant, workspace=workspace, source="Celery")
     result = AssessmentQueryService.create_overdue_reminders(context, grace_days=grace_days)
+    return result.data
+
+
+@shared_task
+def run_assessment_check_task(tenant_id, workspace_id=None, sync_provider=False, auto_assign_next=True, create_reminders=True, grace_days=5):
+    tenant = Tenant.objects.get(id=tenant_id)
+    workspace = Workspace.objects.filter(id=workspace_id, tenant=tenant).first() if workspace_id else None
+    context = TenantContext(tenant=tenant, workspace=workspace, source="Celery")
+    result = AssessmentAutomationService.run_assessment_check(
+        context,
+        sync_provider=sync_provider,
+        auto_assign_next=auto_assign_next,
+        create_reminders=create_reminders,
+        grace_days=grace_days,
+    )
     return result.data
 
 

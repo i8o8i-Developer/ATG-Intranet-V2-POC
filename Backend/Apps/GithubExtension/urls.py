@@ -10,6 +10,8 @@ router.register("BranchTestingAssignments", views.BranchTestingAssignmentViewSet
 router.register("RepositoryBranchStatuses", views.RepositoryBranchStatusViewSet, basename="github-repository-branch-statuses")
 
 urlpatterns = [
+	path("api/login", views.LegacyGitHubTokenObtainPairView.as_view()),
+	path("api/login/refresh", views.LegacyGitHubTokenRefreshView.as_view(), name="token_refresh"),
 	path("api/branch-status-request/", views.RepoBranchStatusAPIView.as_view()),
 	path("api/post-branch-status/", views.PostBranchTesterOrReviewerAPIView.as_view()),
 	path("api/update-branch-status/<str:user_type>/<int:pk>", views.DetailBranchTesterOrReviewerAPIView.as_view()),

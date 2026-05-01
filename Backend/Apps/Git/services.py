@@ -25,6 +25,8 @@ class GitRepositoryService:
     def sync_github_repositories(context, provider=None, live=False):
         from Backend.Apps.GithubExtension.models import GitHubRepository
 
+        if not getattr(context, "tenant", None):
+            return ServiceResult.failure({"tenant": "Tenant context is required for Git sync."}, status_code=400)
         provider = provider or GitHubProvider(live=live)
         rows = provider.list_repositories()
         synced = []
@@ -72,6 +74,8 @@ class GitRepositoryService:
     def request_collaborator_access(context, employee_id=None, github_username="", repository_ids=None, live=False, provider=None):
         from Backend.Apps.Users.models import EmployeeProfile
 
+        if not getattr(context, "tenant", None):
+            return ServiceResult.failure({"tenant": "Tenant context is required for collaborator access."}, status_code=400)
         employee = EmployeeProfile.objects.filter(tenant=context.tenant, id=employee_id).first() if employee_id else None
         github_username = github_username or (employee.github_username if employee else "")
         if not github_username:
@@ -102,6 +106,8 @@ class GitRepositoryService:
     def deactivate_collaborator(context, employee_id=None, github_username="", repository_ids=None, live=False, provider=None):
         from Backend.Apps.Users.models import EmployeeProfile
 
+        if not getattr(context, "tenant", None):
+            return ServiceResult.failure({"tenant": "Tenant context is required for collaborator deactivation."}, status_code=400)
         employee = EmployeeProfile.objects.filter(tenant=context.tenant, id=employee_id).first() if employee_id else None
         github_username = github_username or (employee.github_username if employee else "")
         if not github_username:

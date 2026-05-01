@@ -76,6 +76,55 @@ class LeadCaptureSerializer(serializers.Serializer):
     metadata = serializers.JSONField(required=False)
 
 
+class LegacyLeadCaptureSerializer(serializers.Serializer):
+    full_name = serializers.CharField(required=False, allow_blank=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
+    phone = serializers.CharField(required=False, allow_blank=True)
+    message = serializers.CharField(required=False, allow_blank=True)
+    company_name = serializers.CharField(required=False, allow_blank=True)
+    origin = serializers.CharField(required=False, allow_blank=True, default="w")
+    industry = serializers.CharField(required=False, allow_blank=True, default="Others")
+    url = serializers.URLField(required=False, allow_blank=True)
+    linkedin_url = serializers.URLField(required=False, allow_blank=True)
+    source_page_name = serializers.CharField(required=False, allow_blank=True)
+    source_page_url = serializers.URLField(required=False, allow_blank=True)
+    page_name = serializers.CharField(required=False, allow_blank=True)
+    page_url = serializers.URLField(required=False, allow_blank=True)
+    form_page_name = serializers.CharField(required=False, allow_blank=True)
+    form_page_url = serializers.URLField(required=False, allow_blank=True)
+    country_code = serializers.CharField(required=False, allow_blank=True)
+    country = serializers.CharField(required=False, allow_blank=True)
+    country_iso = serializers.CharField(required=False, allow_blank=True)
+    country_iso_code = serializers.CharField(required=False, allow_blank=True)
+    phone_country_code = serializers.CharField(required=False, allow_blank=True)
+    country_dial_code = serializers.CharField(required=False, allow_blank=True)
+    dial_code = serializers.CharField(required=False, allow_blank=True)
+    countryCode = serializers.CharField(required=False, allow_blank=True)
+
+
+class LegacyLeadConnectionSerializer(serializers.Serializer):
+    domain = serializers.CharField()
+    intern_name = serializers.CharField(required=False, allow_blank=True)
+    client_name = serializers.CharField(required=False, allow_blank=True)
+
+
+class BanaoOfferDispatchSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    username = serializers.CharField(max_length=150)
+    name = serializers.CharField(max_length=180)
+    position_name = serializers.CharField(max_length=180)
+    department_name = serializers.CharField(max_length=160)
+    pay_type = serializers.CharField(required=False, allow_blank=True, default="Fixed")
+    base_pay = serializers.DecimalField(max_digits=14, decimal_places=2, required=False, default=0)
+    pay_per_task = serializers.DecimalField(max_digits=14, decimal_places=2, required=False, default=0)
+    offer_date = serializers.DateField(required=False)
+    offer_type = serializers.CharField(required=False, allow_blank=True, default="Intern")
+    title = serializers.CharField(required=False, allow_blank=True)
+    whatsapp = serializers.CharField(required=False, allow_blank=True)
+    slack = serializers.CharField(required=False, allow_blank=True)
+    whatsapp_link = serializers.CharField(required=False, allow_blank=True)
+
+
 class LeadNoteCreateSerializer(serializers.Serializer):
     title = serializers.CharField(required=False, allow_blank=True)
     body = serializers.CharField()

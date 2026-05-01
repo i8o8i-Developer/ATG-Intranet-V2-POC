@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
+from rest_framework.test import APIClient
 
 from Backend.Apps.Project.models import ComplianceAssignment, DeliveryDocument, DeliveryMilestone, ProjectWorkspace, RepositoryLink, TeamAssignment
 from Backend.Apps.Project.services import ProjectDeliveryService
@@ -19,6 +20,7 @@ class ProjectModuleTests(TestCase):
         self.employee = EmployeeProfile.objects.create(tenant=self.tenant, workspace=self.workspace, user=self.user, employee_code="PROJ-1", display_name="Project User")
         self.context = TenantContext(tenant=self.tenant, workspace=self.workspace, actor=self.user)
         self.project = ProjectWorkspace.objects.create(tenant=self.tenant, workspace=self.workspace, name="ERP", code="ERP", project_type="Build", terms_required=True, anti_phishing_enabled=True)
+        self.client = APIClient()
 
     def test_project_delivery_repo_document_and_compliance_flow(self):
         milestones = ProjectDeliveryService.create_default_checkpoints(self.context, self.project.id)
@@ -41,3 +43,125 @@ class ProjectModuleTests(TestCase):
         assignment = ComplianceAssignment.objects.get(id=campaign.data["assignmentIds"][0])
         completed = ProjectDeliveryService.complete_compliance_assignment(self.context, assignment.id, score=90)
         self.assertEqual(completed.data.status, "Completed")
+
+    def test_project_legacy_route_surface(self):
+        self.client.force_authenticate(self.user)
+
+        onboarding = self.client.get("/Project/onboarding/")
+        self.assertEqual(onboarding.status_code, 200)
+        self.assertEqual(onboarding.data["count"], 1)
+
+        member = self.client.post(
+            "/Project/addMember/",
+            {"project_id": self.project.id, "employee": self.employee.id, "role": "Developer"},
+            format="json",
+        )
+        self.assertEqual(member.status_code, 201)
+
+        terms = self.client.post(f"/Project/terms/{self.project.id}/", {"accept": True}, format="json")
+        self.assertEqual(terms.status_code, 200)
+
+        repo = self.client.post(
+            "/Project/create-repo/",
+            {"project_id": self.project.id, "name": "erp", "owner": "atgworld"},
+            format="json",
+        )
+        self.assertEqual(repo.status_code, 201)
+        repo_id = repo.data["id"]
+
+        assigned = self.client.post(
+            "/Project/assign-repo/",
+            {"repository_id": repo_id, "employee": self.employee.id, "access_status": "AccessGranted"},
+            format="json",
+        )
+        self.assertEqual(assigned.status_code, 200)
+
+        repo_exists = self.client.get(f"/Project/check-repo-exists/?project={self.project.id}&name=erp")
+        self.assertEqual(repo_exists.status_code, 200)
+        self.assertTrue(repo_exists.data["exists"])
+
+        dashboard = self.client.get(f"/Project/dashboard/{self.project.id}/ERP/")
+        self.assertEqual(dashboard.status_code, 200)
+        self.assertEqual(dashboard.data["project"]["id"], self.project.id)
+
+        clickup = self.client.post(
+            "/Project/create_clickup_mapping/",
+            {"project_id": self.project.id, "external_id": "space-1", "project_name": "ERP"},
+            format="json",
+        )
+        self.assertEqual(clickup.status_code, 201)
+
+        task = self.client.post(
+            "/Project/add_task/",
+            {"project_id": self.project.id, "title": "Build API", "owner": self.employee.id},
+            format="json",
+        )
+        self.assertEqual(task.status_code, 201)
+        task_id = task.data["id"]
+
+        updated = self.client.post(
+            "/Project/update-task/",
+            {"task_id": task_id, "description": "Updated", "priority": "High"},
+            format="json",
+        )
+        self.assertEqual(updated.status_code, 200)
+
+        details = self.client.get(f"/Project/get/tasks/{task_id}/")
+        self.assertEqual(details.status_code, 200)
+
+        due = self.client.post(
+            "/Project/update-duedate/",
+            {"task_id": task_id, "due_date": timezone.now().isoformat()},
+            format="json",
+        )
+        self.assertEqual(due.status_code, 200)
+
+        document = self.client.post(
+            "/Project/upload-project-docs/",
+            {"project_id": self.project.id, "title": "Spec", "file_id": "doc-1"},
+            format="json",
+        )
+        self.assertEqual(document.status_code, 201)
+        document_id = document.data["id"]
+
+        pinned = self.client.post(
+            "/Project/toggle-pin-document/",
+            {"document_id": document_id, "is_pinned": True},
+            format="json",
+        )
+        self.assertEqual(pinned.status_code, 200)
+
+        link = self.client.post(
+            "/Project/addnewlink/",
+            {"project_id": self.project.id, "title": "KT", "url": "https://example.com"},
+            format="json",
+        )
+        self.assertEqual(link.status_code, 201)
+
+        alerts = self.client.get(f"/Project/alert_data/{self.project.id}/")
+        self.assertEqual(alerts.status_code, 200)
+
+        days_left = self.client.get(f"/Project/days_left_data/{self.project.id}/")
+        self.assertEqual(days_left.status_code, 200)
+
+        campaign = self.client.post(
+            "/Project/send-anti-phishing-assessment/",
+            {"project_id": self.project.id, "employee_ids": [self.employee.id]},
+            format="json",
+        )
+        self.assertEqual(campaign.status_code, 201)
+        assignment = ComplianceAssignment.objects.get(id=campaign.data["assignmentIds"][0])
+
+        anti_get = self.client.get(f"/Project/anti-phishing-assessment/{assignment.token}/")
+        self.assertEqual(anti_get.status_code, 200)
+
+        anti_post = self.client.post(
+            f"/Project/anti-phishing-assessment/{assignment.token}/",
+            {"score": 88},
+            format="json",
+        )
+        self.assertEqual(anti_post.status_code, 200)
+
+        report = self.client.get(f"/Project/anti-phishing-reports/?project_id={self.project.id}")
+        self.assertEqual(report.status_code, 200)
+        self.assertEqual(report.data["count"], 1)

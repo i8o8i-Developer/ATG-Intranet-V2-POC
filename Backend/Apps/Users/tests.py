@@ -1,7 +1,11 @@
 from datetime import date
+from decimal import Decimal
 from io import StringIO
+from pathlib import Path
+from unittest.mock import Mock, patch
 
 from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.core.management import call_command
 from django.test import TestCase
 from rest_framework.test import APIClient
@@ -20,7 +24,9 @@ from Backend.Apps.Users.models import (
     UserEffortReport,
     UserSkill,
 )
-from Backend.EnterpriseCore.models import BusinessUnit, Organization, OutboxEvent, Tenant, Workspace
+from Backend.Apps.Users.services import PayrollExportService
+from Backend.EnterpriseCore.services import TenantContext
+from Backend.EnterpriseCore.models import BusinessUnit, Capability, Organization, OutboxEvent, Role, RoleAssignment, RoleCapability, Tenant, Workspace
 
 
 class UsersModuleTests(TestCase):
@@ -47,6 +53,33 @@ class UsersModuleTests(TestCase):
         self.client = APIClient()
         self.client.force_authenticate(self.user)
         self.headers = {"HTTP_X_TENANT_ID": str(self.tenant.id), "HTTP_X_WORKSPACE_ID": str(self.workspace.id)}
+
+    def test_session_auth_returns_current_operator_context(self):
+        capability = Capability.objects.create(code="Users.View", name="View users", module="Users")
+        role = Role.objects.create(tenant=self.tenant, name="HR Operator", code="HR_OPERATOR")
+        RoleCapability.objects.create(tenant=self.tenant, role=role, capability=capability)
+        RoleAssignment.objects.create(tenant=self.tenant, workspace=self.workspace, user=self.employee_user, role=role)
+
+        session_client = APIClient()
+        login_response = session_client.post(
+            "/Users/Auth/Login/",
+            {"username": "employee", "password": "test-password"},
+            format="json",
+        )
+        self.assertEqual(login_response.status_code, 200)
+        self.assertEqual(login_response.data["activeTenant"]["id"], self.tenant.id)
+        self.assertEqual(login_response.data["activeWorkspace"]["id"], self.workspace.id)
+        self.assertIn("Users.View", login_response.data["capabilities"])
+        self.assertEqual(login_response.data["employees"][0]["employeeCode"], "EMP-001")
+
+        me_response = session_client.get("/Users/Auth/Me/", **self.headers)
+        self.assertEqual(me_response.status_code, 200)
+        self.assertEqual(me_response.data["user"]["username"], "employee")
+
+        logout_response = session_client.post("/Users/Auth/Logout/", {}, format="json")
+        self.assertEqual(logout_response.status_code, 200)
+        protected_response = session_client.get("/Users/Departments/", **self.headers)
+        self.assertIn(protected_response.status_code, [401, 403])
 
     def test_department_transfer_assigns_default_skills(self):
         skill = Skill.objects.create(tenant=self.tenant, workspace=self.workspace, department=self.department, name="Django", category="Backend")
@@ -143,4 +176,74 @@ class UsersModuleTests(TestCase):
             call_command(command, "--tenant-id", str(self.tenant.id), "--workspace-id", str(self.workspace.id), stdout=output)
             self.assertTrue(output.getvalue())
 
+        setup_output = StringIO()
+        call_command(
+            "setup_interviewgod_test_data",
+            "--tenant-id",
+            str(self.tenant.id),
+            "--workspace-id",
+            str(self.workspace.id),
+            "--count",
+            "1",
+            stdout=setup_output,
+        )
+        self.assertIn("Prepared", setup_output.getvalue())
+
         self.assertTrue(OutboxEvent.objects.filter(tenant=self.tenant).exists())
+
+    @patch("Backend.Apps.Users.apis.generate_payroll_excel_task.delay")
+    def test_payroll_export_and_timezone_legacy_endpoints(self, mock_delay):
+        PayProfile.objects.create(tenant=self.tenant, workspace=self.workspace, employee=self.employee, pay_type="Fixed", base_pay=Decimal("1000.00"))
+        EmployeePaymentSnapshot.objects.create(
+            tenant=self.tenant,
+            workspace=self.workspace,
+            employee=self.employee,
+            month=4,
+            year=2026,
+            normal_pay=Decimal("1000.00"),
+            bonus=Decimal("50.00"),
+            deduction=Decimal("25.00"),
+            bounty=Decimal("10.00"),
+            payment_status="processed",
+            utr_number="UTR-1",
+        )
+        UserEffortReport.objects.create(
+            tenant=self.tenant,
+            workspace=self.workspace,
+            employee=self.employee,
+            report_month=4,
+            report_year=2026,
+            effort_percent=Decimal("80.00"),
+        )
+
+        context = TenantContext(tenant=self.tenant, workspace=self.workspace, actor=self.user, source="Test")
+        export_result = PayrollExportService.generate_excel(context, report_month=4, report_year=2026, pay_type="Fixed")
+        self.assertTrue(export_result.ok)
+        export_path = PayrollExportService.resolve_export_path(context, export_result.data["filename"])
+        self.assertIsNotNone(export_path)
+        self.assertTrue(export_path.exists())
+
+        download_response = self.client.get(f"/Users/api/download-payroll/{export_result.data['filename']}/", **self.headers)
+        self.assertEqual(download_response.status_code, 200)
+        self.assertEqual(
+            download_response["Content-Type"],
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        self.assertFalse(export_path.exists())
+
+        mock_delay.return_value = Mock(id="task-123")
+        start_response = self.client.get("/Users/api/export-payroll-async/?month=4&year=2026&pay_type=Fixed", **self.headers)
+        self.assertEqual(start_response.status_code, 202)
+        self.assertEqual(start_response.data["task_id"], "task-123")
+
+        timezone_client = APIClient()
+        timezone_client.force_authenticate(self.employee_user)
+        timezone_response = timezone_client.post(
+            "/Users/api/save-timezone/",
+            {"timezone": "Asia/Kolkata"},
+            format="json",
+            **self.headers,
+        )
+        self.assertEqual(timezone_response.status_code, 200)
+        self.employee.refresh_from_db()
+        self.assertEqual(self.employee.timezone_name, "Asia/Kolkata")

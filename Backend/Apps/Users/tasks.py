@@ -1,6 +1,6 @@
 from celery import shared_task
 
-from Backend.Apps.Users.services import InterviewSyncService, LeaveWalletService, PaymentSyncService, UserWorkflowService
+from Backend.Apps.Users.services import InterviewSyncService, LeaveWalletService, PaymentSyncService, PayrollExportService, UserWorkflowService
 from Backend.EnterpriseCore.models import Tenant, Workspace
 from Backend.EnterpriseCore.services import TenantContext
 
@@ -34,3 +34,13 @@ def sync_intern_interviews(tenant_id, workspace_id=None, dry_run=True, send_link
 @shared_task
 def sync_payments(tenant_id, workspace_id=None):
     return PaymentSyncService.request_payment_status_sync(_context(tenant_id, workspace_id)).data
+
+
+@shared_task(bind=True)
+def generate_payroll_excel_task(self, tenant_id, workspace_id=None, report_month=None, report_year=None, pay_type=""):
+    context = _context(tenant_id, workspace_id)
+    self.update_state(state="PROGRESS", meta={"status": "Building payroll export..."})
+    result = PayrollExportService.generate_excel(context, report_month=report_month, report_year=report_year, pay_type=pay_type)
+    if not result.ok:
+        raise RuntimeError(str(result.errors))
+    return result.data

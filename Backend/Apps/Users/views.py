@@ -1,3 +1,5 @@
+from django.contrib.auth import authenticate, login as session_login, logout as session_logout
+
 from Backend.Apps.Users.models import (
     BenchPeriod,
     Department,
@@ -45,6 +47,7 @@ from Backend.Apps.Users.serializers import (
     LeaveBalanceSerializer,
     LeavePolicySerializer,
     LeaveTransactionSerializer,
+    LoginSerializer,
     PayProfileSerializer,
     PositionSerializer,
     ResignationDecisionSerializer,
@@ -58,9 +61,122 @@ from Backend.Apps.Users.serializers import (
     TransferDepartmentSerializer,
 )
 from Backend.Apps.Users.services import EmployeeLifecycleService, HRMSDashboardService, InterviewSyncService, LeaveWalletService, PaymentSyncService, UserWorkflowService
+from Backend.EnterpriseCore.models import RoleAssignment, Tenant, Workspace
+from Backend.EnterpriseCore.services import CapabilityService
 from Backend.EnterpriseCore.viewsets import TenantScopedModelViewSet
+from rest_framework import permissions, status
+from rest_framework.views import APIView
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
+
+def _first_available_context(user, tenant_id=None, workspace_id=None):
+    employees = EmployeeProfile.objects.select_related("tenant", "workspace", "department", "position").filter(user=user, is_active=True)
+    assignments = RoleAssignment.objects.select_related("tenant", "workspace", "role").filter(user=user, is_active=True)
+    if tenant_id:
+        employees = employees.filter(tenant_id=tenant_id)
+        assignments = assignments.filter(tenant_id=tenant_id)
+    employee = employees.first()
+    assignment = assignments.first()
+    tenant = None
+    if tenant_id:
+        tenant = Tenant.objects.filter(id=tenant_id).first()
+    tenant = tenant or (employee.tenant if employee else None) or (assignment.tenant if assignment else None)
+    if not tenant and user.is_superuser:
+        tenant = Tenant.objects.filter(status=Tenant.STATUS_ACTIVE).first()
+    workspace = None
+    if tenant and workspace_id:
+        workspace = Workspace.objects.filter(id=workspace_id, tenant=tenant).first()
+    workspace = workspace or (employee.workspace if employee and employee.workspace_id else None)
+    if not workspace and assignment and assignment.workspace_id:
+        workspace = assignment.workspace
+    if tenant and not workspace:
+        workspace = Workspace.objects.filter(tenant=tenant).first()
+    return tenant, workspace
+
+
+def _current_user_payload(user, tenant_id=None, workspace_id=None):
+    tenant, workspace = _first_available_context(user, tenant_id=tenant_id, workspace_id=workspace_id)
+    employee_qs = EmployeeProfile.objects.select_related("tenant", "workspace", "department", "position").filter(user=user, is_active=True)
+    if tenant:
+        employee_qs = employee_qs.filter(tenant=tenant)
+    role_qs = RoleAssignment.objects.select_related("tenant", "workspace", "role").filter(user=user, is_active=True)
+    if tenant:
+        role_qs = role_qs.filter(tenant=tenant)
+    if workspace:
+        role_qs = role_qs.filter(workspace__in=[workspace, None])
+    capabilities = sorted(CapabilityService.list_user_capabilities(tenant, user, workspace)) if tenant else []
+    employees = [
+        {
+            "id": employee.id,
+            "displayName": employee.display_name,
+            "employeeCode": employee.employee_code,
+            "tenantId": employee.tenant_id,
+            "workspaceId": employee.workspace_id,
+            "departmentId": employee.department_id,
+            "departmentName": employee.department.name if employee.department_id else "",
+            "positionTitle": employee.position.title if employee.position_id else "",
+            "status": employee.status,
+        }
+        for employee in employee_qs
+    ]
+    roles = [
+        {
+            "id": assignment.role_id,
+            "code": assignment.role.code,
+            "name": assignment.role.name,
+            "tenantId": assignment.tenant_id,
+            "workspaceId": assignment.workspace_id,
+        }
+        for assignment in role_qs
+    ]
+    return {
+        "authenticated": user.is_authenticated,
+        "user": {"id": user.id, "username": user.username, "email": user.email, "isStaff": user.is_staff, "isSuperuser": user.is_superuser},
+        "activeTenant": {"id": tenant.id, "name": tenant.name, "slug": tenant.slug} if tenant else None,
+        "activeWorkspace": {"id": workspace.id, "name": workspace.name, "code": workspace.code} if workspace else None,
+        "employees": employees,
+        "roles": roles,
+        "capabilities": capabilities,
+    }
+
+
+class LoginAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        login_name = serializer.validated_data.get("username") or serializer.validated_data.get("email")
+        user = authenticate(request, username=login_name, password=serializer.validated_data["password"])
+        if not user:
+            return Response({"detail": "Invalid username/email or password."}, status=status.HTTP_401_UNAUTHORIZED)
+        session_login(request, user)
+        return Response(
+            _current_user_payload(
+                user,
+                tenant_id=serializer.validated_data.get("tenant_id"),
+                workspace_id=serializer.validated_data.get("workspace_id"),
+            )
+        )
+
+
+class LogoutAPIView(APIView):
+    def post(self, request):
+        session_logout(request)
+        return Response({"authenticated": False})
+
+
+class CurrentUserAPIView(APIView):
+    def get(self, request):
+        return Response(
+            _current_user_payload(
+                request.user,
+                tenant_id=request.headers.get("X-Tenant-Id") or request.query_params.get("tenant_id"),
+                workspace_id=request.headers.get("X-Workspace-Id") or request.query_params.get("workspace_id"),
+            )
+        )
 
 
 class DomainViewSet(TenantScopedModelViewSet):

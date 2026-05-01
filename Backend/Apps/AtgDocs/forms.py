@@ -6,7 +6,7 @@ from Backend.Apps.AtgDocs.models import KnowledgeDocument, KnowledgePermission
 class KnowledgeDocumentForm(forms.ModelForm):
     class Meta:
         model = KnowledgeDocument
-        fields = ["title", "slug", "document_type", "status", "body", "owner", "metadata"]
+        fields = ["title", "slug", "document_type", "status", "body", "owner", "department", "visibility", "metadata"]
 
 
 class KnowledgePermissionForm(forms.ModelForm):

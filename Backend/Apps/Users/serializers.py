@@ -28,6 +28,19 @@ from Backend.Apps.Users.models import (
 )
 
 
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField(required=False, allow_blank=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
+    password = serializers.CharField(write_only=True)
+    tenant_id = serializers.IntegerField(required=False, allow_null=True)
+    workspace_id = serializers.IntegerField(required=False, allow_null=True)
+
+    def validate(self, attrs):
+        if not attrs.get("username") and not attrs.get("email"):
+            raise serializers.ValidationError({"username": "Username or email is required."})
+        return attrs
+
+
 class DomainSerializer(serializers.ModelSerializer):
     class Meta:
         model = Domain

@@ -4,6 +4,9 @@ from Backend.Apps.AtgDocs.models import DocumentVersion, DriveFile, DriveFolder,
 
 
 class KnowledgeDocumentSerializer(serializers.ModelSerializer):
+    owner_name = serializers.CharField(source="owner.display_name", read_only=True)
+    department_name = serializers.CharField(source="department.name", read_only=True)
+
     class Meta:
         model = KnowledgeDocument
         fields = "__all__"
@@ -43,15 +46,31 @@ class KnowledgeDocumentCreateSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=240)
     body = serializers.CharField(required=False, allow_blank=True)
     owner = serializers.IntegerField(required=False, allow_null=True)
+    department = serializers.IntegerField(required=False, allow_null=True)
     document_type = serializers.CharField(default="Article")
     status = serializers.CharField(default="Draft")
+    visibility = serializers.ChoiceField(choices=KnowledgeDocument.VISIBILITY_CHOICES, default=KnowledgeDocument.VISIBILITY_PRIVATE)
+    slug = serializers.SlugField(required=False, allow_blank=True)
+    metadata = serializers.JSONField(required=False)
+    upload_to_drive = serializers.BooleanField(default=False)
+    folder_name = serializers.CharField(required=False, allow_blank=True, default="Documents")
+    make_public = serializers.BooleanField(required=False)
+
+
+class KnowledgeDocumentUpdateSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=240, required=False)
+    body = serializers.CharField(required=False, allow_blank=True)
+    department = serializers.IntegerField(required=False, allow_null=True)
+    document_type = serializers.CharField(required=False)
+    status = serializers.CharField(required=False)
+    visibility = serializers.ChoiceField(choices=KnowledgeDocument.VISIBILITY_CHOICES, required=False)
     slug = serializers.SlugField(required=False, allow_blank=True)
     metadata = serializers.JSONField(required=False)
 
 
 class DriveUploadSerializer(serializers.Serializer):
-    folder_name = serializers.CharField(default="ATG Docs")
-    make_public = serializers.BooleanField(default=False)
+    folder_name = serializers.CharField(default="Documents")
+    make_public = serializers.BooleanField(required=False)
 
 
 class KnowledgePermissionGrantSerializer(serializers.Serializer):

@@ -1,6 +1,14 @@
+from zoneinfo import ZoneInfo
+
+from celery.result import AsyncResult
+from django.http import Http404, HttpResponse
+from django.utils import timezone
+
 from Backend.Apps.Users.logics import get_previous_payment_data, get_user_issues
 from Backend.Apps.Users.models import EmployeeProfile
-from Backend.Apps.Users.services import EmployeeLifecycleService
+from Backend.Apps.Users.serializers import EmployeeProfileSerializer
+from Backend.Apps.Users.services import EmployeeLifecycleService, PayrollExportService
+from Backend.Apps.Users.tasks import generate_payroll_excel_task
 from Backend.EnterpriseCore.models import Tenant, Workspace
 from Backend.EnterpriseCore.services import TenantContext
 from rest_framework.response import Response
@@ -63,3 +71,107 @@ class ChangeDepartmentView(TenantContextAPIView):
             sub_department_id=request.data.get("sub_department"),
         )
         return Response(result.data if result.ok else result.errors, status=result.status_code)
+
+
+class ExportPayrollAsyncAPIView(TenantContextAPIView):
+    def _start_export(self, request):
+        context = self.get_context(request)
+        if not context.tenant:
+            return Response({"tenant": "X-Tenant-Id header or tenant query parameter is required."}, status=400)
+
+        payload = request.data if request.method == "POST" else request.query_params
+        report_month = payload.get("month")
+        report_year = payload.get("year")
+        pay_type = payload.get("pay_type") or payload.get("payType") or ""
+
+        if report_month and report_year:
+            current_date = timezone.localdate()
+            if (int(report_year), int(report_month)) > (current_date.year, current_date.month):
+                return Response({"error": "No payroll export exists for future months.", "status": "error"}, status=400)
+
+        task = generate_payroll_excel_task.delay(
+            context.tenant.id,
+            context.workspace.id if context.workspace else None,
+            report_month,
+            report_year,
+            pay_type,
+        )
+        return Response(
+            {
+                "task_id": task.id,
+                "status": "processing",
+                "message": "Payroll export started. Use the task id to poll export status.",
+            },
+            status=202,
+        )
+
+    def get(self, request):
+        return self._start_export(request)
+
+    def post(self, request):
+        return self._start_export(request)
+
+
+class PayrollExportStatusAPIView(TenantContextAPIView):
+    def get(self, request, task_id):
+        task = AsyncResult(task_id)
+        if task.state == "PENDING":
+            response = {"state": task.state, "status": "Task is waiting to start."}
+        elif task.state == "PROGRESS":
+            meta = task.info if isinstance(task.info, dict) else {}
+            response = {"state": task.state, "status": meta.get("status", "Processing.")}
+        elif task.state == "SUCCESS":
+            response = {"state": task.state, "status": "completed", "result": task.result}
+        elif task.state == "FAILURE":
+            response = {"state": task.state, "status": "failed", "error": str(task.info)}
+        else:
+            response = {"state": task.state, "status": str(task.info)}
+        return Response(response)
+
+
+class DownloadPayrollFileView(TenantContextAPIView):
+    def get(self, request, filename):
+        context = self.get_context(request)
+        export_path = PayrollExportService.resolve_export_path(context, filename)
+        if not export_path:
+            raise Http404("File not found or you do not have access to it.")
+
+        file_bytes = export_path.read_bytes()
+        export_path.unlink(missing_ok=True)
+        response = HttpResponse(
+            file_bytes,
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        response["Content-Disposition"] = f'attachment; filename="{export_path.name}"'
+        return response
+
+
+class SaveTimezoneAPIView(TenantContextAPIView):
+    def post(self, request):
+        timezone_name = request.data.get("timezone") or request.headers.get("X-User-Timezone")
+        if not timezone_name:
+            return Response({"error": "timezone required"}, status=400)
+
+        try:
+            ZoneInfo(timezone_name)
+        except Exception:
+            return Response({"error": "invalid timezone"}, status=400)
+
+        base_context = self.get_context(request)
+        employee_qs = EmployeeProfile.objects.filter(user=request.user, is_active=True).select_related("tenant", "workspace")
+        if base_context.tenant:
+            employee_qs = employee_qs.filter(tenant=base_context.tenant)
+        employee = employee_qs.first()
+        if not employee:
+            return Response({"employee": "Employee not found."}, status=404)
+
+        context = TenantContext(
+            tenant=base_context.tenant or employee.tenant,
+            workspace=base_context.workspace or employee.workspace,
+            actor=base_context.actor,
+            source=base_context.source,
+        )
+        result = EmployeeLifecycleService.save_timezone(context, employee.id, timezone_name)
+        if not result.ok:
+            return Response(result.errors, status=result.status_code)
+        return Response(EmployeeProfileSerializer(result.data).data, status=result.status_code)

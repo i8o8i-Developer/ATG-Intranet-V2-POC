@@ -1,3 +1,4 @@
+from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from Backend.Apps.Banao import views
@@ -14,4 +15,14 @@ router.register("AuditArtifacts", views.AuditArtifactViewSet, basename="banao-au
 router.register("WorkflowTransitions", views.WorkflowTransitionViewSet, basename="banao-workflow-transitions")
 router.register("WorkflowStatusHistory", views.WorkflowStatusHistoryViewSet, basename="banao-workflow-status-history")
 
-urlpatterns = router.urls
+urlpatterns = [
+	path("lead-create/", views.lead_create, name="banao-lead-create"),
+	path("new-lead-create/", views.new_lead_create, name="banao-new-lead-create"),
+	path("update-lead-on-connection-sent/", views.update_lead_on_connection_sent, name="update-lead-on-connection-sent"),
+	path("department-list/", views.department_options, name="department-list"),
+	path("user-list/", views.user_options, name="user-list"),
+	path("sendoffer/", views.sendoffer, name="banaosendoffer"),
+	path("offer/<str:token>", views.banao_dummy, name="banaodummy"),
+]
+
+urlpatterns += router.urls

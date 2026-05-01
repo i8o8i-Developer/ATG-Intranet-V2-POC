@@ -93,3 +93,33 @@ class PaymentOrderCreateSerializer(serializers.Serializer):
 class EmployeePayoutRequestSerializer(serializers.Serializer):
     payment_snapshot = serializers.IntegerField()
     live = serializers.BooleanField(default=False)
+
+
+class LegacyPaymentApprovalSerializer(serializers.Serializer):
+    role = serializers.CharField(required=False, allow_blank=True, default="Finance")
+    userid = serializers.IntegerField(required=False)
+    employee = serializers.IntegerField(required=False)
+    show_month = serializers.IntegerField(required=False, allow_null=True)
+    show_year = serializers.IntegerField(required=False, allow_null=True)
+    bonus = serializers.DecimalField(max_digits=14, decimal_places=2, required=False, default=0)
+    normalPay = serializers.DecimalField(max_digits=14, decimal_places=2, required=False, default=0)
+    bugIds = serializers.CharField(required=False, allow_blank=True, default="")
+    bounty = serializers.DecimalField(max_digits=14, decimal_places=2, required=False, default=0)
+    taskCount = serializers.IntegerField(required=False, default=0)
+    payNote = serializers.CharField(required=False, allow_blank=True, default="")
+    payFor = serializers.CharField(required=False, allow_blank=True, default="ATG")
+    customPay = serializers.BooleanField(required=False, default=False)
+    mode = serializers.CharField(required=False, allow_blank=True, default="")
+    live = serializers.BooleanField(required=False, default=False)
+
+
+class LegacyBankDetailsSerializer(serializers.Serializer):
+    employee = serializers.IntegerField(required=False)
+    userid = serializers.IntegerField(required=False)
+    Ac_No = serializers.CharField(required=False, allow_blank=True, default="")
+    Ac_IFSC = serializers.CharField(required=False, allow_blank=True, default="")
+    upi = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class LegacyProjectFinanceQuerySerializer(serializers.Serializer):
+    project_id = serializers.IntegerField()

@@ -4,6 +4,15 @@ from Backend.EnterpriseCore.models import ExternalReference, TenantScopedModel
 
 
 class KnowledgeDocument(TenantScopedModel, ExternalReference):
+    VISIBILITY_PRIVATE = "private"
+    VISIBILITY_AUTHENTICATED = "authenticated"
+    VISIBILITY_LINK = "link"
+    VISIBILITY_CHOICES = [
+        (VISIBILITY_PRIVATE, "Private"),
+        (VISIBILITY_AUTHENTICATED, "Authenticated User"),
+        (VISIBILITY_LINK, "Anyone with the Link"),
+    ]
+
     title = models.CharField(max_length=240)
     slug = models.SlugField(max_length=180)
     document_type = models.CharField(max_length=100, default="Article", db_index=True)
@@ -11,11 +20,16 @@ class KnowledgeDocument(TenantScopedModel, ExternalReference):
     body = models.TextField(blank=True)
     storage_reference = models.CharField(max_length=260, blank=True)
     owner = models.ForeignKey("Users.EmployeeProfile", null=True, blank=True, on_delete=models.SET_NULL, related_name="knowledge_documents")
+    department = models.ForeignKey("Users.Department", null=True, blank=True, on_delete=models.SET_NULL, related_name="knowledge_documents")
+    visibility = models.CharField(max_length=20, choices=VISIBILITY_CHOICES, default=VISIBILITY_PRIVATE, db_index=True)
     metadata = models.JSONField(default=dict, blank=True)
 
     class Meta:
         ordering = ["tenant_id", "title"]
         constraints = [models.UniqueConstraint(fields=["tenant", "slug"], name="docs_slug_per_tenant")]
+
+    def __str__(self):
+        return self.title
 
 
 class KnowledgePermission(TenantScopedModel):

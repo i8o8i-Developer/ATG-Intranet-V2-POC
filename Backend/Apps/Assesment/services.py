@@ -33,6 +33,13 @@ class AssessmentTemplateService:
 
 
 class AssessmentAssignmentService:
+    OPEN_STATUSES = {
+        AssessmentAssignment.STATUS_ASSIGNED,
+        AssessmentAssignment.STATUS_LINK_GENERATED,
+        AssessmentAssignment.STATUS_SENT,
+        AssessmentAssignment.STATUS_IN_PROGRESS,
+    }
+
     @staticmethod
     def assign_to_employee(context, assessment_id, employee_id, due_at=None):
         assessment = AssessmentTemplate.objects.filter(tenant=context.tenant, id=assessment_id, is_active=True).first()
@@ -65,6 +72,56 @@ class AssessmentAssignmentService:
             else:
                 errors.append({"employee": employee_id, "errors": result.errors})
         return ServiceResult.success({"created": [item.id for item in assignments], "errors": errors}, status_code=201)
+
+    @staticmethod
+    def assign_by_email(context, email, assessment_references, due_at=None, generate_provider_link=True):
+        employee = AssessmentAssignmentService._employee_from_email(context, email)
+        if not employee:
+            return ServiceResult.failure({"employee": f"Active employee profile not found for {email}."}, status_code=404)
+
+        created = []
+        errors = []
+        for reference in assessment_references:
+            template = AssessmentAssignmentService._resolve_template_reference(context, reference, employee.department_id)
+            if not template:
+                errors.append({"assessment": reference, "errors": {"assessment": "Assessment template not found."}})
+                continue
+            open_assignment = AssessmentAssignment.objects.filter(
+                tenant=context.tenant,
+                employee=employee,
+                assessment=template,
+                status__in=AssessmentAssignmentService.OPEN_STATUSES,
+            ).first()
+            if open_assignment:
+                errors.append(
+                    {
+                        "assessment": reference,
+                        "assignment": open_assignment.id,
+                        "errors": {"assignment": "An active assignment already exists for this employee and assessment."},
+                    }
+                )
+                continue
+
+            assignment_result = AssessmentAssignmentService.assign_to_employee(context, template.id, employee.id, due_at=due_at)
+            if not assignment_result.ok:
+                errors.append({"assessment": reference, "errors": assignment_result.errors})
+                continue
+
+            assignment = assignment_result.data
+            if generate_provider_link:
+                provider_result = AssessmentAssignmentService.generate_provider_link(context, assignment.id)
+                if provider_result.ok:
+                    assignment = provider_result.data
+                else:
+                    errors.append({"assessment": reference, "assignment": assignment.id, "errors": provider_result.errors})
+            created.append(assignment.id)
+
+        if not created:
+            return ServiceResult.failure({"email": email, "errors": errors}, status_code=400)
+        return ServiceResult.success(
+            {"email": email, "employee": employee.id, "created": created, "count": len(created), "errors": errors},
+            status_code=201,
+        )
 
     @staticmethod
     def get_assignment(context, assignment_id):
@@ -116,11 +173,15 @@ class AssessmentAssignmentService:
             sent_payload = client.send_link(generated_payload)
         except Exception as exc:
             return ServiceResult.failure({"provider": str(exc)}, status_code=502)
-        external_user_id = generated_payload.get("user_id") or generated_payload.get("external_user_id") or generated_payload.get("data", {}).get("user_id") or ""
+        external_user_id = generated_payload.get("external_user_id") or generated_payload.get("user_id") or generated_payload.get("data", {}).get("user_id") or ""
         assessment_url = generated_payload.get("assessment_url") or generated_payload.get("link") or generated_payload.get("url") or ""
         assignment.external_user_id = external_user_id
         assignment.assessment_url = assessment_url
-        assignment.provider_payload = {"generated": generated_payload, "sent": sent_payload}
+        assignment.provider_payload = {
+            "generated": generated_payload.get("raw", generated_payload),
+            "sendPayload": generated_payload.get("send_payload", {}),
+            "sent": sent_payload,
+        }
         assignment.status = AssessmentAssignment.STATUS_SENT
         assignment.updated_by = context.actor
         assignment.save(update_fields=["external_user_id", "assessment_url", "provider_payload", "status", "updated_by", "updated_at"])
@@ -233,6 +294,39 @@ class AssessmentAssignmentService:
             return ServiceResult.failure({"assessment": "No next active assessment found for employee department."}, status_code=404)
         return AssessmentAssignmentService.assign_to_employee(context, template.id, employee.id)
 
+    @staticmethod
+    def _employee_from_email(context, email):
+        queryset = EmployeeProfile.objects.filter(
+            tenant=context.tenant,
+            user__email__iexact=email,
+            status=EmployeeProfile.STATUS_ACTIVE,
+            is_active=True,
+        ).select_related("department", "user")
+        if context.workspace:
+            workspace_employee = queryset.filter(workspace=context.workspace).first()
+            if workspace_employee:
+                return workspace_employee
+        return queryset.order_by("workspace_id", "id").first()
+
+    @staticmethod
+    def _resolve_template_reference(context, reference, department_id=None):
+        reference_value = str(reference).strip()
+        if not reference_value:
+            return None
+
+        queryset = AssessmentTemplate.objects.filter(tenant=context.tenant, is_active=True)
+        if department_id:
+            queryset = queryset.filter(models.Q(department_id=department_id) | models.Q(department__isnull=True))
+
+        lookup = (
+            models.Q(provider_template_id=reference_value)
+            | models.Q(external_id=reference_value)
+            | models.Q(code=reference_value)
+        )
+        if reference_value.isdigit():
+            lookup |= models.Q(id=int(reference_value))
+        return queryset.filter(lookup).order_by("department_id", "sequence_number", "id").first()
+
 
 class AssessmentQueryService:
     @staticmethod
@@ -344,8 +438,18 @@ class AssessmentAutomationService:
                     provider_errors.append({"assignment": assignment.id, "error": result.errors})
 
         if auto_assign_next:
-            passed_assignments = AssessmentAssignment.objects.filter(tenant=context.tenant, is_pass=True).select_related("employee", "assessment")
-            for assignment in passed_assignments:
+            unassigned_employee_ids = AssessmentAutomationService._eligible_employee_ids_without_assignments(context)
+            for employee_id in unassigned_employee_ids:
+                result = AssessmentAssignmentService.auto_assign_next(context, employee_id)
+                if result.ok:
+                    auto_assigned.append(result.data.id)
+                elif result.status_code not in {404, 409}:
+                    auto_assign_errors.append({"employee": employee_id, "errors": result.errors})
+
+            latest_assignments = AssessmentAutomationService._latest_assignments_by_employee(context)
+            for assignment in latest_assignments.values():
+                if not assignment.is_pass:
+                    continue
                 has_next_assignment = AssessmentAssignment.objects.filter(
                     tenant=context.tenant,
                     employee=assignment.employee,
@@ -373,6 +477,28 @@ class AssessmentAutomationService:
                 "reminders": reminder_result.data,
             }
         )
+
+    @staticmethod
+    def _eligible_employee_ids_without_assignments(context):
+        assigned_employee_ids = AssessmentAssignment.objects.filter(tenant=context.tenant).values_list("employee_id", flat=True)
+        return list(
+            EmployeeProfile.objects.filter(
+                tenant=context.tenant,
+                status=EmployeeProfile.STATUS_ACTIVE,
+                is_active=True,
+            )
+            .exclude(department__isnull=True)
+            .exclude(id__in=assigned_employee_ids)
+            .values_list("id", flat=True)
+        )
+
+    @staticmethod
+    def _latest_assignments_by_employee(context):
+        latest_assignments = {}
+        queryset = AssessmentAssignment.objects.filter(tenant=context.tenant).select_related("employee", "assessment").order_by("employee_id", "-assigned_at", "-id")
+        for assignment in queryset:
+            latest_assignments.setdefault(assignment.employee_id, assignment)
+        return latest_assignments
 
 
 class AssessmentActivityService:
