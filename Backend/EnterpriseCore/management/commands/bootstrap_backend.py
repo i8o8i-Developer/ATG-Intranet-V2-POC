@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
+from Backend.Apps.Users.models import EmployeeProfile
 from Backend.Apps.LegacyBridge.legacy_app_map import LEGACY_APP_TO_BACKEND_APP
 from Backend.Apps.LegacyBridge.models import LegacyApplicationMap
 from Backend.EnterpriseCore.models import BusinessUnit, Capability, Organization, Role, RoleAssignment, RoleCapability, Tenant, Workspace
@@ -30,6 +31,10 @@ class Command(BaseCommand):
         parser.add_argument("--username", default="backend-admin")
         parser.add_argument("--password", default="backend-admin")
         parser.add_argument("--email", default="backend-admin@example.com")
+        parser.add_argument("--first-name", default="Backend")
+        parser.add_argument("--last-name", default="Admin")
+        parser.add_argument("--display-name", default="")
+        parser.add_argument("--employee-code", default="EMP-001")
 
     def handle(self, *args, **options):
         user_model = get_user_model()
@@ -56,11 +61,38 @@ class Command(BaseCommand):
         )
         user, created_user = user_model.objects.get_or_create(
             username=options["username"],
-            defaults={"email": options["email"], "is_staff": True, "is_superuser": True},
+            defaults={
+                "email": options["email"],
+                "first_name": options["first_name"],
+                "last_name": options["last_name"],
+                "is_staff": True,
+                "is_superuser": True,
+            },
         )
-        if created_user or not user.has_usable_password():
-            user.set_password(options["password"])
-            user.save(update_fields=["password", "is_staff", "is_superuser", "email"])
+        display_name = options["display_name"].strip() or " ".join(part for part in [options["first_name"].strip(), options["last_name"].strip()] if part).strip() or options["username"]
+
+        user.email = options["email"]
+        user.first_name = options["first_name"]
+        user.last_name = options["last_name"]
+        user.is_staff = True
+        user.is_superuser = True
+        user.set_password(options["password"])
+        if created_user:
+            user.save()
+        else:
+            user.save(update_fields=["email", "first_name", "last_name", "is_staff", "is_superuser", "password"])
+
+        EmployeeProfile.objects.update_or_create(
+            tenant=tenant,
+            user=user,
+            defaults={
+                "workspace": workspace,
+                "employee_code": options["employee_code"],
+                "display_name": display_name,
+                "employment_type": "Leadership",
+                "status": EmployeeProfile.STATUS_ACTIVE,
+            },
+        )
 
         role, _ = Role.objects.get_or_create(
             tenant=tenant,
@@ -95,5 +127,6 @@ class Command(BaseCommand):
         self.stdout.write(f"Tenant ID: {tenant.id}")
         self.stdout.write(f"Workspace ID: {workspace.id}")
         self.stdout.write(f"Admin username: {user.username}")
+        self.stdout.write(f"Employee profile: {display_name}")
         self.stdout.write(f"New capabilities: {capability_count}")
         self.stdout.write(f"New legacy mappings: {legacy_count}")

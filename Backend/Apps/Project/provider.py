@@ -1,6 +1,9 @@
 import os
+from datetime import timedelta
+from urllib.parse import urlencode
 
 import requests
+from django.utils import timezone
 
 
 class ProjectIntegrationProviderError(Exception):
@@ -56,3 +59,19 @@ class ProjectIntegrationProvider:
 
     def upload_document(self, project_name, title, content_type="application/octet-stream"):
         return {"dry_run": not self.live, "project_name": project_name, "title": title, "content_type": content_type}
+
+    def fetch_repository_commits(self, repository_full_name, since_days=10, branch=""):
+        since = (timezone.now() - timedelta(days=int(since_days or 10))).isoformat().replace("+00:00", "Z")
+        params = {"since": since, "per_page": 100}
+        if branch:
+            params["sha"] = branch
+        path = f"/repos/{repository_full_name}/commits?{urlencode(params)}"
+        if not self.live:
+            return {"dry_run": True, "repository": repository_full_name, "since": since, "commits": []}
+        return {"dry_run": False, "repository": repository_full_name, "since": since, "commits": self._request("GET", path)}
+
+    def fetch_pull_requests(self, repository_full_name, state="all", per_page=50):
+        path = f"/repos/{repository_full_name}/pulls?{urlencode({'state': state, 'per_page': per_page})}"
+        if not self.live:
+            return {"dry_run": True, "repository": repository_full_name, "pull_requests": []}
+        return {"dry_run": False, "repository": repository_full_name, "pull_requests": self._request("GET", path)}

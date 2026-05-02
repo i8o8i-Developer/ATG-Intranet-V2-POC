@@ -48,7 +48,8 @@ class CalculatePayments(TenantContextAPIView):
 
 
 class CalculatePayroll(CalculatePayments):
-    pass
+    def get(self, request):
+        return super().get(request)
 
 
 class CalculatePreviousPaymentData(TenantContextAPIView):

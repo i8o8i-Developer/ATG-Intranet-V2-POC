@@ -284,9 +284,9 @@ class MainAppLegacyActionAPIView(MainAppLegacyMixin, APIView):
         elif action == "dep_valid":
             result = MainAppLegacyService.department_validation(context, department_id=request.data.get("department_id") or request.query_params.get("department_id"))
         elif action == "remind_work":
-            result = MainAppLegacyService.remind_work(context)
+            result = MainAppLegacyService.remind_work(context, issue_id=request.data.get("name") or request.data.get("issue_id") or request.query_params.get("name") or request.query_params.get("issue_id"), summary=request.data.get("summary") or request.query_params.get("summary", ""))
         elif action == "execute":
-            result = MainAppLegacyService.remind_work(context)
+            result = MainAppLegacyService.execute_issue_sync(context, issues=request.data.get("issues") or [], provider=request.data.get("provider", "Mantis"), page=request.data.get("page", 0), page_size=request.data.get("page_size", 0))
         elif action == "send_pdf_offer":
             result = MainAppLegacyService.send_pdf_offer(context, request.data.get("offer_id"))
         elif action == "send_certificate":
@@ -306,7 +306,7 @@ class MainAppLegacyActionAPIView(MainAppLegacyMixin, APIView):
         elif action == "dep_pos_val":
             result = MainAppLegacyService.department_validation(context, department_id=request.data.get("department_id") or request.query_params.get("department_id"))
         elif action == "api_testing":
-            result = MainAppLegacyService.api_testing(context)
+            result = MainAppLegacyService.api_testing(context, branch_name=request.data.get("branchName") or request.data.get("branch_name") or request.query_params.get("branchName") or request.query_params.get("branch_name", "master"), live=self.parse_bool(request.data.get("live") or request.query_params.get("live"), False))
         elif action == "docs_view_all":
             result = MainAppLegacyService.all_users_doc_view(context)
         elif action == "search":

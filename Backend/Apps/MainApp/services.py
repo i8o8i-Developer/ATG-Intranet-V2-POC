@@ -8,6 +8,7 @@ from django.utils.encoding import force_bytes
 from django.utils.crypto import get_random_string
 
 from Backend.Apps.MainApp.models import CredentialShareGrant, CredentialVaultItem, ExternalIssueReference, LeaveRequest, ManagerScope, NotificationItem, NotificationSnoozeRecord, OnboardingOffer
+from Backend.Apps.MainApp.utils import PartyRemoteAutomationError, PartyRemoteAutomationProvider
 from Backend.Apps.Users.models import Department, EmployeeProfile, SubDepartment
 from Backend.EnterpriseCore.services import OutboxService, ServiceResult
 
@@ -432,8 +433,52 @@ class MainAppLegacyService:
         )
 
     @staticmethod
-    def remind_work(context):
-        return OfferLifecycleService.queue_offer_reminders(context)
+    def remind_work(context, issue_id=None, summary=""):
+        if not issue_id:
+            return OfferLifecycleService.queue_offer_reminders(context)
+        issue = ExternalIssueReference.objects.filter(tenant=context.tenant).filter(Q(id=issue_id) | Q(external_id=str(issue_id))).select_related("assigned_to").first()
+        if not issue:
+            return ServiceResult.failure({"issue": "External issue not found."}, status_code=404)
+        recipient = issue.assigned_to or context.actor
+        if not recipient:
+            return ServiceResult.failure({"recipient": "No issue assignee or actor available for reminder."}, status_code=400)
+        notification = NotificationService.notify(context, recipient, f"Reminder: {issue.title}", message=summary or "Issue needs attention.", category="IssueReminder", resource_type="ExternalIssueReference", resource_id=issue.id, metadata={"provider": issue.provider, "external_id": issue.external_id})
+        return ServiceResult.success({"issue_id": issue.id, "notification_id": notification.data.id}, status_code=notification.status_code)
+
+    @staticmethod
+    def execute_issue_sync(context, issues=None, provider="Mantis", page=0, page_size=0):
+        from Backend.Apps.IntegrationHub.models import IntegrationConnection, IntegrationProvider
+        from Backend.Apps.IntegrationHub.services import IntegrationJobService
+
+        issues = issues or []
+        imported = []
+        for issue in issues:
+            external_id = str(issue.get("id") or issue.get("external_id") or "")
+            if not external_id:
+                continue
+            title = issue.get("summary") or issue.get("title") or f"{provider} issue {external_id}"
+            item, _created = ExternalIssueReference.objects.update_or_create(
+                tenant=context.tenant,
+                provider=provider,
+                external_id=external_id,
+                defaults={"workspace": context.workspace, "title": title, "status": issue.get("status", {}).get("name", issue.get("status", "")), "metadata": issue, "updated_by": context.actor},
+            )
+            imported.append(item.id)
+        integration_provider, _created = IntegrationProvider.objects.get_or_create(
+            tenant=context.tenant,
+            name=provider,
+            defaults={"workspace": context.workspace, "provider_type": "IssueTracker", "auth_type": "Token", "created_by": context.actor, "updated_by": context.actor},
+        )
+        connection, _created = IntegrationConnection.objects.get_or_create(
+            tenant=context.tenant,
+            provider=integration_provider,
+            name=f"{provider} Legacy Sync",
+            defaults={"workspace": context.workspace, "owner_module": "MainApp", "status": "Active", "created_by": context.actor, "updated_by": context.actor},
+        )
+        job = IntegrationJobService.queue_sync(context, connection, "LegacyIssueSync", cursor=str(page or ""))
+        if job.ok:
+            IntegrationJobService.complete_job(context, job.data.id, {"importedIssueIds": imported, "page": page, "pageSize": page_size})
+        return ServiceResult.success({"status": "synced" if imported else "queued", "imported": len(imported), "issue_ids": imported, "job_id": job.data.id if job.ok else None}, status_code=201)
 
     @staticmethod
     def send_pdf_offer(context, offer_id):
@@ -489,8 +534,13 @@ class MainAppLegacyService:
         return ServiceResult.success({"count": len(rows), "employee_ids": rows})
 
     @staticmethod
-    def api_testing(context):
-        return ServiceResult.success({"status": "ok", "tenant": context.tenant.slug, "workspace": context.workspace.code if context.workspace else None})
+    def api_testing(context, branch_name="master", live=False):
+        try:
+            result = PartyRemoteAutomationProvider(live=live).run_branch_api_tests(branch_name)
+        except PartyRemoteAutomationError as exc:
+            return ServiceResult.failure({"automation": str(exc)}, status_code=502)
+        OutboxService.publish(context, "RemoteAutomation", branch_name or "master", "LegacyApiAutomationRequested", {"live": live, "failedCount": result["api_testing"].get("failed_count", 0)})
+        return ServiceResult.success({"status": "ok", "tenant": context.tenant.slug, "workspace": context.workspace.code if context.workspace else None, "automation": result})
 
     @staticmethod
     def all_users_doc_view(context):

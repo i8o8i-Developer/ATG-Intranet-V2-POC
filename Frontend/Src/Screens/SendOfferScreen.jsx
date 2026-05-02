@@ -1,0 +1,18 @@
+import React, { useState } from "react";
+
+import { apiPost } from "../Api/Client.js";
+import { Panel } from "./Shared/ScreenComponents.jsx";
+
+export function SendOfferScreen({ data, reload }) {
+  const [form, setForm] = useState({ company_name: "ATG", candidate_email: "", candidate_name: "", username: "", department: "", sub_department: "", position_title: "", employment_type: "", pay_type: "Performance Based" });
+  const [preview, setPreview] = useState(null);
+
+  const submit = async (issue) => {
+    const payload = { ...form, offer_payload: { department: form.department, sub_department: form.sub_department, username: form.username, pay_type: form.pay_type, employment_type: form.employment_type } };
+    const result = await apiPost(issue ? "/MainApp/Onboard/send-actual-offer" : "/MainApp/Onboard/Send_Offer", payload);
+    setPreview(result);
+    reload();
+  };
+
+  return <section className="offer-page"><div className="offer-actions"><button className="outline-button" onClick={() => setPreview(form)}>Preview</button><button className="outline-button" onClick={() => submit(true)}>Send Offer</button></div><form className="center-form" onSubmit={(event) => event.preventDefault()}><label>Domain Name:<span className="radio-row">{["ATG", "Banao", "Bunny"].map((name) => <label key={name}><input type="radio" checked={form.company_name === name} onChange={() => setForm({ ...form, company_name: name })} />{name}</label>)}</span></label><h3>Create An Offer</h3><strong>--------Profile Info--------</strong><label>Email<input value={form.candidate_email} onChange={(event) => setForm({ ...form, candidate_email: event.target.value })} /></label><div className="two-col"><label>Department Name<select value={form.department} onChange={(event) => setForm({ ...form, department: event.target.value })}><option>Select Department Name</option>{(data.departments || []).map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}</select></label><label>Role Type<input value={form.position_title} onChange={(event) => setForm({ ...form, position_title: event.target.value })} /></label></div><label>Sub Departments<select value={form.sub_department} onChange={(event) => setForm({ ...form, sub_department: event.target.value })}><option>----------</option>{(data.subDepartments || []).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Title<input value={form.position_title} onChange={(event) => setForm({ ...form, position_title: event.target.value })} /></label><div className="two-col"><label>Name<input value={form.candidate_name} onChange={(event) => setForm({ ...form, candidate_name: event.target.value })} /></label><label>Username<input value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} /></label></div><div className="two-col"><label>Employment Type<input value={form.employment_type} onChange={(event) => setForm({ ...form, employment_type: event.target.value })} /></label><label>Pay Type<select value={form.pay_type} onChange={(event) => setForm({ ...form, pay_type: event.target.value })}><option>Performance Based</option><option>Fixed</option></select></label></div><button className="primary-button" onClick={() => submit(false)}>Create Draft</button></form>{preview && <Panel title="Offer Result"><pre>{JSON.stringify(preview, null, 2)}</pre></Panel>}</section>;
+}

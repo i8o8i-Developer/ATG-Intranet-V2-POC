@@ -1,4 +1,6 @@
-from django.db.models import Count
+from difflib import SequenceMatcher
+
+from django.db.models import Count, Q
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 
@@ -423,6 +425,110 @@ class ProjectDeliveryService:
                 ],
             }
         )
+
+    @staticmethod
+    def extract_legacy_milestones(context, project_id=None):
+        projects = ProjectWorkspace.objects.filter(tenant=context.tenant)
+        if project_id:
+            projects = projects.filter(id=project_id)
+        created = []
+        updated = []
+        status_map = {"on-progress": "InProgress", "in-progress": "InProgress", "complete": "Completed", "completed": "Completed", "done": "Completed"}
+        for project in projects:
+            legacy_milestones = project.metadata.get("milestone") or project.metadata.get("milestones") or {}
+            if isinstance(legacy_milestones, list):
+                legacy_milestones = {str(item.get("name") or item.get("title") or index + 1): item.get("status", "Open") for index, item in enumerate(legacy_milestones) if isinstance(item, dict)}
+            if not isinstance(legacy_milestones, dict):
+                continue
+            for sequence, (title, raw_status) in enumerate(legacy_milestones.items(), start=1):
+                status = status_map.get(str(raw_status).strip().lower(), str(raw_status or "Open"))
+                milestone, was_created = DeliveryMilestone.objects.update_or_create(
+                    tenant=context.tenant,
+                    project=project,
+                    title=str(title),
+                    defaults={
+                        "workspace": context.workspace or project.workspace,
+                        "sequence": sequence,
+                        "status": status,
+                        "due_on": project.ends_on,
+                        "updated_by": context.actor,
+                    },
+                )
+                created.append(milestone.id) if was_created else updated.append(milestone.id)
+        OutboxService.publish(context, "DeliveryMilestone", 0, "LegacyMilestonesExtracted", {"created": len(created), "updated": len(updated)})
+        return ServiceResult.success({"created": len(created), "updated": len(updated), "milestone_ids": created + updated})
+
+    @staticmethod
+    def sync_repository_activity(context, live=False, since_days=10):
+        provider = ProjectIntegrationProvider(live=live)
+        rows = []
+        for repository in RepositoryLink.objects.filter(tenant=context.tenant).exclude(full_name=""):
+            payload = provider.fetch_repository_commits(repository.full_name, since_days=since_days, branch=repository.default_branch)
+            commits = payload.get("commits", [])
+            repository.metadata = {**repository.metadata, "last_activity_scan": {"at": timezone.now().isoformat(), "dry_run": payload.get("dry_run", False), "commit_count": len(commits)}}
+            repository.updated_by = context.actor
+            repository.save(update_fields=["metadata", "updated_by", "updated_at"])
+            rows.append({"repository_id": repository.id, "full_name": repository.full_name, "commit_count": len(commits), "dry_run": payload.get("dry_run", False)})
+        OutboxService.publish(context, "RepositoryLink", 0, "RepositoryActivitySynced", {"count": len(rows), "live": live})
+        return ServiceResult.success({"count": len(rows), "repositories": rows})
+
+    @staticmethod
+    def cleanup_repository_access(context):
+        inactive_assignments = TeamAssignment.objects.filter(tenant=context.tenant).filter(Q(status__in=["Removed", "Replaced", "Inactive"]) | Q(employee__status="Exited") | Q(employee__is_active=False))
+        count = inactive_assignments.exclude(github_access_status="Revoked").update(github_access_status="Revoked", updated_by=context.actor)
+        OutboxService.publish(context, "TeamAssignment", 0, "RepositoryAccessCleanupCompleted", {"revoked": count})
+        return ServiceResult.success({"revoked": count})
+
+    @staticmethod
+    def update_assignment_hat(context, project_id, employee_id, hat_type="Member"):
+        assignment = TeamAssignment.objects.filter(tenant=context.tenant, project_id=project_id, employee_id=employee_id).first()
+        if not assignment:
+            return ServiceResult.failure({"assignment": "Team assignment not found."}, status_code=404)
+        assignment.role = hat_type or "Member"
+        assignment.updated_by = context.actor
+        assignment.save(update_fields=["role", "updated_by", "updated_at"])
+        return ServiceResult.success(assignment)
+
+    @staticmethod
+    def detach_clickup_tasks(context, project_id):
+        tasks = WorkItem.objects.filter(tenant=context.tenant, project_id=project_id).filter(Q(source_system="ClickUp") | Q(external_mappings__provider="ClickUp")).distinct()
+        count = tasks.update(project=None, updated_by=context.actor)
+        return ServiceResult.success({"count": count, "project_id": project_id})
+
+    @staticmethod
+    def relink_clickup_tasks(context, project_id, clickup_name):
+        tasks = WorkItem.objects.filter(tenant=context.tenant, project__isnull=True).filter(Q(metadata__project__icontains=clickup_name) | Q(metadata__clickup_project__icontains=clickup_name) | Q(external_mappings__metadata__project__icontains=clickup_name)).distinct()
+        count = tasks.update(project_id=project_id, updated_by=context.actor)
+        return ServiceResult.success({"count": count, "project_id": project_id, "clickup_name": clickup_name})
+
+    @staticmethod
+    def link_pull_requests_to_tasks(context, live=False):
+        provider = ProjectIntegrationProvider(live=live)
+        linked = 0
+        checked = 0
+        for repository in RepositoryLink.objects.filter(tenant=context.tenant).exclude(full_name=""):
+            prs = provider.fetch_pull_requests(repository.full_name).get("pull_requests", [])
+            tasks = WorkItem.objects.filter(tenant=context.tenant, project=repository.project)
+            for task in tasks:
+                checked += 1
+                existing = task.metadata.get("prs") if isinstance(task.metadata.get("prs"), list) else []
+                existing_urls = {item.get("url") for item in existing if isinstance(item, dict)}
+                new_links = []
+                for pr in prs:
+                    title = pr.get("title", "")
+                    body = pr.get("body") or ""
+                    title_match = SequenceMatcher(None, title.lower(), task.title.lower()).ratio() >= 0.78
+                    body_match = bool(task.description) and SequenceMatcher(None, body.lower(), task.description.lower()).ratio() >= 0.78
+                    url = pr.get("html_url", "")
+                    if url and url not in existing_urls and (title_match or body_match):
+                        new_links.append({"name": title, "url": url, "state": pr.get("state", "")})
+                if new_links:
+                    task.metadata = {**task.metadata, "prs": existing + new_links}
+                    task.updated_by = context.actor
+                    task.save(update_fields=["metadata", "updated_by", "updated_at"])
+                    linked += len(new_links)
+        OutboxService.publish(context, "WorkItem", 0, "PullRequestsLinkedToTasks", {"linked": linked, "checked": checked, "live": live})
+        return ServiceResult.success({"checked": checked, "linked": linked, "live": live})
 
     @staticmethod
     def update_project_details(context, project_id, data):

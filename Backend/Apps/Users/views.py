@@ -97,6 +97,7 @@ def _first_available_context(user, tenant_id=None, workspace_id=None):
 
 def _current_user_payload(user, tenant_id=None, workspace_id=None):
     tenant, workspace = _first_available_context(user, tenant_id=tenant_id, workspace_id=workspace_id)
+    full_name = user.get_full_name().strip() if getattr(user, "is_authenticated", False) else ""
     employee_qs = EmployeeProfile.objects.select_related("tenant", "workspace", "department", "position").filter(user=user, is_active=True)
     if tenant:
         employee_qs = employee_qs.filter(tenant=tenant)
@@ -132,7 +133,16 @@ def _current_user_payload(user, tenant_id=None, workspace_id=None):
     ]
     return {
         "authenticated": user.is_authenticated,
-        "user": {"id": user.id, "username": user.username, "email": user.email, "isStaff": user.is_staff, "isSuperuser": user.is_superuser},
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "firstName": user.first_name,
+            "lastName": user.last_name,
+            "fullName": full_name or user.username,
+            "isStaff": user.is_staff,
+            "isSuperuser": user.is_superuser,
+        },
         "activeTenant": {"id": tenant.id, "name": tenant.name, "slug": tenant.slug} if tenant else None,
         "activeWorkspace": {"id": workspace.id, "name": workspace.name, "code": workspace.code} if workspace else None,
         "employees": employees,

@@ -1,0 +1,43 @@
+import React from "react";
+
+import { AssessmentScreen } from "./AssessmentScreen.jsx";
+import { BankDetailsScreen } from "./BankDetailsScreen.jsx";
+import { ConnectedSummaryScreen } from "./ConnectedSummaryScreen.jsx";
+import { DeactivateEmployeeScreen } from "./DeactivateEmployeeScreen.jsx";
+import { DocsDetailScreen, DocsScreen } from "./DocsScreen.jsx";
+import { EmployeeRegistrarScreen } from "./EmployeeRegistrarScreen.jsx";
+import { FinanceScreen } from "./FinanceScreen.jsx";
+import { HomeScreen } from "./HomeScreen.jsx";
+import { HrmsScreen } from "./HrmsScreen.jsx";
+import { LeaveApplyScreen } from "./LeaveApplyScreen.jsx";
+import { LmsScreen } from "./LmsScreen.jsx";
+import { MarketingProjectScreen } from "./MarketingProjectScreen.jsx";
+import { PayrollDownloadsScreen } from "./PayrollDownloadsScreen.jsx";
+import { ProjectDashboardScreen } from "./ProjectDashboardScreen.jsx";
+import { SendCertificateScreen } from "./SendCertificateScreen.jsx";
+import { SendOfferScreen } from "./SendOfferScreen.jsx";
+import { TasksScreen } from "./TasksScreen.jsx";
+import { WorkflowIntelligenceScreen } from "./WorkflowIntelligenceScreen.jsx";
+
+export function RouteRenderer(props) {
+  const path = props.route.split("?")[0];
+  if (path.startsWith("/hrms")) return <HrmsScreen {...props} />;
+  if (path.startsWith("/employee-registrar")) return <EmployeeRegistrarScreen {...props} />;
+  if (path.startsWith("/leave")) return <LeaveApplyScreen {...props} />;
+  if (path.startsWith("/project/dashboard")) return <ProjectDashboardScreen {...props} />;
+  if (path.startsWith("/marketing-project")) return <MarketingProjectScreen {...props} />;
+  if (path.startsWith("/docs/post-detail")) return <DocsDetailScreen {...props} />;
+  if (path.startsWith("/docs")) return <DocsScreen {...props} />;
+  if (path.startsWith("/Bankdetails") || path.startsWith("/bank")) return <BankDetailsScreen {...props} />;
+  if (path.startsWith("/Onboard/Send_Offer")) return <SendOfferScreen {...props} />;
+  if (path.startsWith("/send-certificate")) return <SendCertificateScreen {...props} />;
+  if (path.startsWith("/deactivate")) return <DeactivateEmployeeScreen {...props} />;
+  if (path.startsWith("/assessment")) return <AssessmentScreen {...props} />;
+  if (path.startsWith("/payroll-downloads") || path.startsWith("/Payroll")) return <PayrollDownloadsScreen {...props} />;
+  if (path.startsWith("/payments") || path.startsWith("/finance")) return <FinanceScreen {...props} />;
+  if (path.startsWith("/tasks")) return <TasksScreen {...props} />;
+  if (path.startsWith("/workflow")) return <WorkflowIntelligenceScreen {...props} />;
+  if (path.startsWith("/mcp")) return <ConnectedSummaryScreen {...props} title="MCP Agents" resources={["projects", "docs", "issues"]} />;
+  if (path.startsWith("/lms")) return <LmsScreen {...props} />;
+  return <HomeScreen {...props} />;
+}

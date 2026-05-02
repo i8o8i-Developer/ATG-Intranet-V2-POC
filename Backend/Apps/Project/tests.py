@@ -5,6 +5,7 @@ from rest_framework.test import APIClient
 
 from Backend.Apps.Project.models import ComplianceAssignment, DeliveryDocument, DeliveryMilestone, ProjectWorkspace, RepositoryLink, TeamAssignment
 from Backend.Apps.Project.services import ProjectDeliveryService
+from Backend.Apps.TasksDashboard.models import WorkItem
 from Backend.Apps.Users.models import EmployeeProfile
 from Backend.EnterpriseCore.models import BusinessUnit, Organization, Tenant, Workspace
 from Backend.EnterpriseCore.services import TenantContext
@@ -76,6 +77,10 @@ class ProjectModuleTests(TestCase):
         )
         self.assertEqual(assigned.status_code, 200)
 
+        git_sync = self.client.post("/Project/checkgit/", {}, format="json")
+        self.assertEqual(git_sync.status_code, 200)
+        self.assertEqual(git_sync.data["count"], 1)
+
         repo_exists = self.client.get(f"/Project/check-repo-exists/?project={self.project.id}&name=erp")
         self.assertEqual(repo_exists.status_code, 200)
         self.assertTrue(repo_exists.data["exists"])
@@ -105,6 +110,17 @@ class ProjectModuleTests(TestCase):
             format="json",
         )
         self.assertEqual(updated.status_code, 200)
+
+        WorkItem.objects.filter(id=task_id).update(source_system="ClickUp", external_id="CU-1", metadata={"clickup_project": "ERP"})
+        detached = self.client.post(f"/Project/remove_task/{self.project.id}", {}, format="json")
+        self.assertEqual(detached.status_code, 200)
+        self.assertEqual(detached.data["count"], 1)
+        relinked = self.client.post(f"/Project/relink_task/{self.project.id}/ERP", {}, format="json")
+        self.assertEqual(relinked.status_code, 200)
+        self.assertEqual(relinked.data["count"], 1)
+
+        link_prs = self.client.post("/Project/link/", {}, format="json")
+        self.assertEqual(link_prs.status_code, 200)
 
         details = self.client.get(f"/Project/get/tasks/{task_id}/")
         self.assertEqual(details.status_code, 200)
@@ -137,6 +153,32 @@ class ProjectModuleTests(TestCase):
             format="json",
         )
         self.assertEqual(link.status_code, 201)
+
+        hat = self.client.post(
+            "/Project/updateHat/",
+            {"project_id": self.project.id, "memberId": self.employee.id, "hatType": "SPM"},
+            format="json",
+        )
+        self.assertEqual(hat.status_code, 200)
+        self.assertEqual(hat.data["role"], "SPM")
+        removed_hat = self.client.post(
+            "/Project/removeHat/",
+            {"project_id": self.project.id, "memberId": self.employee.id},
+            format="json",
+        )
+        self.assertEqual(removed_hat.status_code, 200)
+        self.assertEqual(removed_hat.data["role"], "Member")
+
+        self.project.metadata = {"milestone": {"Kickoff": "on-progress"}}
+        self.project.save(update_fields=["metadata"])
+        extracted = self.client.post("/Project/extract/", {"project_id": self.project.id}, format="json")
+        self.assertEqual(extracted.status_code, 200)
+        self.assertGreaterEqual(extracted.data["created"], 1)
+
+        TeamAssignment.objects.filter(tenant=self.tenant, project=self.project, employee=self.employee).update(status="Removed")
+        cleanup = self.client.post("/Project/cleangit/", {}, format="json")
+        self.assertEqual(cleanup.status_code, 200)
+        self.assertEqual(cleanup.data["revoked"], 1)
 
         alerts = self.client.get(f"/Project/alert_data/{self.project.id}/")
         self.assertEqual(alerts.status_code, 200)

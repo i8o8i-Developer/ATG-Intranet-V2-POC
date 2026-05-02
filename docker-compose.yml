@@ -36,7 +36,7 @@ services:
     restart: unless-stopped
     command: >
       sh -c "python Backend/manage.py migrate &&
-             python Backend/manage.py seed_demo_erp --tenant Banao --workspace 'Default Workspace' --username backend-admin --password backend-admin --email backend-admin@example.com &&
+             python Backend/manage.py bootstrap_backend --tenant Banao --workspace 'Default Workspace' --username anubhav1608 --password AnubhavChaurasia --email anubhav1608@example.com --first-name Anubhav --last-name Chaurasia --display-name 'Anubhav Chaurasia' --employee-code EMP-001 &&
              python Backend/manage.py runserver 0.0.0.0:8000"
     environment:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-rebuild-development-only}

@@ -160,5 +160,20 @@ class MainAppModuleTests(TestCase):
         search = self.client.get("/MainApp/search/?q=Alex")
         self.assertEqual(search.status_code, 200)
 
+        execute = self.client.post(
+            "/MainApp/execute/",
+            {"issues": [{"id": "M-1", "summary": "Legacy issue", "status": {"name": "open"}}]},
+            format="json",
+        )
+        self.assertEqual(execute.status_code, 201)
+        issue = ExternalIssueReference.objects.get(external_id="M-1")
+        issue.assigned_to = self.user
+        issue.save(update_fields=["assigned_to"])
+
+        reminder = self.client.get(f"/MainApp/remind_work/?name={issue.id}&summary=Please%20check")
+        self.assertEqual(reminder.status_code, 201)
+        self.assertIn("notification_id", reminder.data)
+
         api_testing = self.client.get("/MainApp/api-testing")
         self.assertEqual(api_testing.status_code, 200)
+        self.assertTrue(api_testing.data["automation"]["api_testing"]["dry_run"])

@@ -247,7 +247,8 @@ class LegacyCalculatePayrollAPIView(FinanceLegacyMixin, APIView):
 
 
 class LegacyCalculatePaymentsAPIView(LegacyCalculatePayrollAPIView):
-    pass
+    def get(self, request):
+        return super().get(request)
 
 
 class LegacyPreviousPaymentDataAPIView(FinanceLegacyMixin, APIView):

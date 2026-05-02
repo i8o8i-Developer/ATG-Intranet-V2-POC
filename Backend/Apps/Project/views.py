@@ -292,6 +292,12 @@ class ProjectLegacyActionAPIView(ProjectLegacyMixin, APIView):
             result = ProjectDeliveryService.get_days_left(context, kwargs["project_id"])
         elif action == "alerts":
             result = ProjectDeliveryService.get_alerts(context, kwargs["project_id"])
+        elif action == "update_git":
+            result = ProjectDeliveryService.sync_repository_activity(context, live=self.parse_bool(request.data.get("live") or request.query_params.get("live"), False), since_days=request.data.get("since_days") or request.query_params.get("since_days", 10))
+        elif action == "cleanup_git":
+            result = ProjectDeliveryService.cleanup_repository_access(context)
+        elif action == "extract_milestones":
+            result = ProjectDeliveryService.extract_legacy_milestones(context, project_id=request.data.get("project_id") or request.query_params.get("project_id"))
         elif action == "create_clickup_mapping":
             result = ProjectDeliveryService.upsert_clickup_mapping(context, request.data.get("project") or request.data.get("project_id"), external_id=request.data.get("external_id", ""), project_name=request.data.get("project_name", ""), space_id=request.data.get("space_id", ""), list_id=request.data.get("list_id", ""))
         elif action == "add_task":
@@ -306,6 +312,8 @@ class ProjectLegacyActionAPIView(ProjectLegacyMixin, APIView):
             result = ProjectDeliveryService.save_task_link(context, request.data.get("task_id") or request.data.get("id"), request.data.get("url") or request.data.get("link", ""))
         elif action == "delete_item":
             result = ProjectDeliveryService.delete_task(context, request.data.get("task_id") or request.data.get("id"))
+        elif action == "link_prs_to_tasks":
+            result = ProjectDeliveryService.link_pull_requests_to_tasks(context, live=self.parse_bool(request.data.get("live") or request.query_params.get("live"), False))
         elif action == "rename_task":
             result = ProjectDeliveryService.update_task(context, kwargs["task_id"], {"title": request.data.get("title", "")})
         elif action == "assign_assignee":
@@ -342,6 +350,14 @@ class ProjectLegacyActionAPIView(ProjectLegacyMixin, APIView):
             result = ProjectDeliveryService.edit_project_document(context, request.data.get("document_id") or request.data.get("id"), title=request.data.get("title", ""), storage_reference=request.data.get("storage_reference", ""), metadata=request.data.get("metadata"))
         elif action == "toggle_pin_document":
             result = ProjectDeliveryService.pin_document(context, request.data.get("document_id") or request.data.get("id"), is_pinned=self.parse_bool(request.data.get("is_pinned"), True))
+        elif action == "update_hat":
+            result = ProjectDeliveryService.update_assignment_hat(context, request.data.get("project") or request.data.get("project_id"), request.data.get("employee") or request.data.get("memberId") or request.data.get("member_id"), hat_type=request.data.get("hatType") or request.data.get("hat_type") or "Member")
+        elif action == "remove_hat":
+            result = ProjectDeliveryService.update_assignment_hat(context, request.data.get("project") or request.data.get("project_id"), request.data.get("employee") or request.data.get("memberId") or request.data.get("member_id"), hat_type="Member")
+        elif action == "delete_clickup_tasks":
+            result = ProjectDeliveryService.detach_clickup_tasks(context, kwargs["project_id"])
+        elif action == "relink_clickup_tasks":
+            result = ProjectDeliveryService.relink_clickup_tasks(context, kwargs["project_id"], kwargs["clickup_name"])
         elif action == "send_anti_phishing_assessment":
             result = ProjectDeliveryService.send_anti_phishing_assessment(context, request.data.get("project") or request.data.get("project_id"), employee_ids=request.data.get("employee_ids") or [], name=request.data.get("name", "Anti phishing assessment"))
         elif action == "anti_phishing_reports":
