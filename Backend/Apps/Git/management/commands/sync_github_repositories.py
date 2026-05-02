@@ -6,7 +6,7 @@ from Backend.EnterpriseCore.services import TenantContext
 
 
 class Command(BaseCommand):
-    help = "Sync GitHub repositories into Git and GithubExtension read models."
+    help = "Sync GitHub Repositories Into Git And GithubExtension Read Models."
 
     def add_arguments(self, parser):
         parser.add_argument("--tenant-id", type=int, required=True)
@@ -16,9 +16,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         tenant = Tenant.objects.filter(id=options["tenant_id"]).first()
         if not tenant:
-            raise CommandError("Tenant not found.")
+            raise CommandError("Tenant Not Found.")
         workspace = Workspace.objects.filter(id=options.get("workspace_id"), tenant=tenant).first() if options.get("workspace_id") else None
         result = GitRepositoryService.sync_github_repositories(TenantContext(tenant=tenant, workspace=workspace, source="Command"), live=options["live"])
         if not result.ok:
             raise CommandError(result.errors)
-        self.stdout.write(self.style.SUCCESS(f"Synced {result.data['count']} GitHub repositories."))
+        self.stdout.write(self.style.SUCCESS(f"Synced {result.data['count']} GitHub Repositories."))

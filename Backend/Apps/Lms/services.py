@@ -12,7 +12,7 @@ class LearningAssignmentService:
     def mark_complete(context, assignment_id):
         assignment = LearningAssignment.objects.filter(tenant=context.tenant, id=assignment_id).first()
         if not assignment:
-            return ServiceResult.failure({"assignment": "Learning assignment not found."}, status_code=404)
+            return ServiceResult.failure({"assignment": "Learning Assignment Not Found."}, status_code=404)
         assignment.status = "Completed"
         assignment.completed_at = timezone.now()
         assignment.updated_by = context.actor
@@ -121,7 +121,7 @@ class LeadManagementService:
     def lead_dashboard(context, lead_id):
         lead = LeadAccount.objects.filter(tenant=context.tenant, id=lead_id).first()
         if not lead:
-            return ServiceResult.failure({"lead": "Lead not found."}, status_code=404)
+            return ServiceResult.failure({"lead": "Lead Not Found."}, status_code=404)
         return ServiceResult.success(
             {
                 "id": lead.id,
@@ -216,7 +216,7 @@ class LeadManagementService:
     def lead_detail(context, lead_id):
         lead = LeadAccount.objects.filter(tenant=context.tenant, id=lead_id).prefetch_related("tags", "notes", "proposals", "activities").select_related("owner").first()
         if not lead:
-            return ServiceResult.failure({"lead": "Lead not found."}, status_code=404)
+            return ServiceResult.failure({"lead": "Lead Not Found."}, status_code=404)
         bas = LeadManagementService.business_analysts(context)
         return ServiceResult.success(
             {
@@ -250,7 +250,7 @@ class LeadManagementService:
     def create_tag(context, data):
         name = (data.get("name") or "").strip()
         if not name:
-            return ServiceResult.failure({"name": "This field is required."}, status_code=400)
+            return ServiceResult.failure({"name": "This Field Is Required."}, status_code=400)
         tag, _created = LeadTag.objects.get_or_create(
             tenant=context.tenant,
             name=name,

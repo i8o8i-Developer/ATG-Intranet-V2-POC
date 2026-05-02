@@ -6,7 +6,7 @@ from Backend.EnterpriseCore.services import TenantContext
 
 
 class Command(BaseCommand):
-    help = "Calculate payroll for an employee."
+    help = "Calculate Payroll For An Employee."
 
     def add_arguments(self, parser):
         parser.add_argument("--tenant-id", type=int, required=True)

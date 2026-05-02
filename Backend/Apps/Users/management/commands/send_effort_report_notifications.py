@@ -6,7 +6,7 @@ from Backend.EnterpriseCore.services import TenantContext
 
 
 class Command(BaseCommand):
-    help = "Sends notifications to users to submit their monthly effort reports."
+    help = "Sends Notifications To Users To Submit Their Monthly Effort Reports."
 
     def add_arguments(self, parser):
         parser.add_argument("--tenant-id", type=int, required=True)
@@ -22,4 +22,4 @@ class Command(BaseCommand):
             report_month=options.get("month"),
             report_year=options.get("year"),
         )
-        self.stdout.write(self.style.SUCCESS(f"Created {result.data['count']} effort report reminders."))
+        self.stdout.write(self.style.SUCCESS(f"Created {result.data['count']} Effort Report Reminders."))

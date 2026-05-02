@@ -6,7 +6,7 @@ from Backend.EnterpriseCore.services import TenantContext
 
 
 class Command(BaseCommand):
-    help = "Runs assessment provider status checks, next-assessment assignment, and overdue reminder processing."
+    help = "Runs Assessment Provider Status Checks, Next-Assessment Assignment, and Overdue Reminder Processing."
 
     def add_arguments(self, parser):
         parser.add_argument("--tenant-id", type=int, required=True)
@@ -32,7 +32,7 @@ class Command(BaseCommand):
         if not result.ok:
             self.stdout.write(self.style.ERROR(str(result.errors)))
             return
-        self.stdout.write(self.style.SUCCESS("Assessment check completed successfully."))
-        self.stdout.write(f"Provider synced: {result.data['providerSynced']}")
-        self.stdout.write(f"Auto-assigned next assessments: {len(result.data['autoAssigned'])}")
-        self.stdout.write(f"Reminder events: {result.data['reminders']['count']}")
+        self.stdout.write(self.style.SUCCESS("Assessment Check Completed Successfully."))
+        self.stdout.write(f"Provider Synced: {result.data['providerSynced']}")
+        self.stdout.write(f"Auto-Assigned Next Assessments: {len(result.data['autoAssigned'])}")
+        self.stdout.write(f"Reminder Events: {result.data['reminders']['count']}")

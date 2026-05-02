@@ -29,7 +29,7 @@ class FetchIssuesAPIView(TenantContextAPIView):
         context = self.get_context(request)
         employee = EmployeeProfile.objects.filter(tenant=context.tenant, id=request.query_params.get("employee")).first()
         if not employee:
-            return Response({"employee": "Employee not found."}, status=404)
+            return Response({"employee": "Employee Not Found."}, status=404)
         return Response({"issues": get_user_issues(employee, status=request.query_params.get("status", ""))})
 
 
@@ -57,7 +57,7 @@ class CalculatePreviousPaymentData(TenantContextAPIView):
         context = self.get_context(request)
         employee = EmployeeProfile.objects.filter(tenant=context.tenant, id=request.query_params.get("employee") or request.query_params.get("user")).first()
         if not employee:
-            return Response({"employee": "Employee not found."}, status=404)
+            return Response({"employee": "Employee Not Found."}, status=404)
         rows = get_previous_payment_data(employee, int(request.query_params.get("month", 0)), int(request.query_params.get("year", 0)))
         return Response({"data": rows})
 
@@ -78,7 +78,7 @@ class ExportPayrollAsyncAPIView(TenantContextAPIView):
     def _start_export(self, request):
         context = self.get_context(request)
         if not context.tenant:
-            return Response({"tenant": "X-Tenant-Id header or tenant query parameter is required."}, status=400)
+            return Response({"tenant": "X-Tenant-Id Header Or Tenant Query Parameter Is Required."}, status=400)
 
         payload = request.data if request.method == "POST" else request.query_params
         report_month = payload.get("month")
@@ -88,7 +88,7 @@ class ExportPayrollAsyncAPIView(TenantContextAPIView):
         if report_month and report_year:
             current_date = timezone.localdate()
             if (int(report_year), int(report_month)) > (current_date.year, current_date.month):
-                return Response({"error": "No payroll export exists for future months.", "status": "error"}, status=400)
+                return Response({"error": "No Payroll Export Exists For Future Months.", "status": "error"}, status=400)
 
         task = generate_payroll_excel_task.delay(
             context.tenant.id,
@@ -101,7 +101,7 @@ class ExportPayrollAsyncAPIView(TenantContextAPIView):
             {
                 "task_id": task.id,
                 "status": "processing",
-                "message": "Payroll export started. Use the task id to poll export status.",
+                "message": "Payroll Export Started. Use The Task Id To Poll Export Status.",
             },
             status=202,
         )
@@ -117,7 +117,7 @@ class PayrollExportStatusAPIView(TenantContextAPIView):
     def get(self, request, task_id):
         task = AsyncResult(task_id)
         if task.state == "PENDING":
-            response = {"state": task.state, "status": "Task is waiting to start."}
+            response = {"state": task.state, "status": "Task Is Waiting To Start."}
         elif task.state == "PROGRESS":
             meta = task.info if isinstance(task.info, dict) else {}
             response = {"state": task.state, "status": meta.get("status", "Processing.")}
@@ -135,7 +135,7 @@ class DownloadPayrollFileView(TenantContextAPIView):
         context = self.get_context(request)
         export_path = PayrollExportService.resolve_export_path(context, filename)
         if not export_path:
-            raise Http404("File not found or you do not have access to it.")
+            raise Http404("File Not Found Or You Do Not Have Access To It.")
 
         file_bytes = export_path.read_bytes()
         export_path.unlink(missing_ok=True)
@@ -164,7 +164,7 @@ class SaveTimezoneAPIView(TenantContextAPIView):
             employee_qs = employee_qs.filter(tenant=base_context.tenant)
         employee = employee_qs.first()
         if not employee:
-            return Response({"employee": "Employee not found."}, status=404)
+            return Response({"employee": "Employee Not Found."}, status=404)
 
         context = TenantContext(
             tenant=base_context.tenant or employee.tenant,

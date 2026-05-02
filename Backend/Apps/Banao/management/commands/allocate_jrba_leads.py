@@ -6,7 +6,7 @@ from Backend.EnterpriseCore.services import TenantContext
 
 
 class Command(BaseCommand):
-    help = "Allocate unassigned JRBA leads to employees."
+    help = "Allocate Unassigned JRBA Leads To Employees."
 
     def add_arguments(self, parser):
         parser.add_argument("--tenant-id", type=int, required=True)
@@ -17,7 +17,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         tenant = Tenant.objects.filter(id=options["tenant_id"]).first()
         if not tenant:
-            raise CommandError("Tenant not found.")
+            raise CommandError("Tenant Not Found.")
         workspace = Workspace.objects.filter(id=options.get("workspace_id"), tenant=tenant).first() if options.get("workspace_id") else None
         result = LeadWorkflowService.allocate_jrba_leads(
             TenantContext(tenant=tenant, workspace=workspace, source="Command"),
@@ -26,4 +26,4 @@ class Command(BaseCommand):
         )
         if not result.ok:
             raise CommandError(result.errors)
-        self.stdout.write(self.style.SUCCESS(f"Allocated {result.data['count']} leads."))
+        self.stdout.write(self.style.SUCCESS(f"Allocated {result.data['count']} Leads."))

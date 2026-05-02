@@ -1,1 +1,1 @@
-"""Project management package."""
+"""Project Management Package."""

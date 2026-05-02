@@ -6,7 +6,7 @@ from Backend.EnterpriseCore.services import TenantContext
 
 
 class Command(BaseCommand):
-    help = "Generate dashboard reminders for EOD, bounty, and leave updates."
+    help = "Generate Dashboard Reminders For EOD, Bounty, And Leave Updates."
 
     def add_arguments(self, parser):
         parser.add_argument("--tenant-id", type=int, required=True)
@@ -20,4 +20,4 @@ class Command(BaseCommand):
             TenantContext(tenant=tenant, workspace=workspace, source="Command"),
             reminder_type=options["reminder_type"],
         )
-        self.stdout.write(self.style.SUCCESS(f"Created {result.data['count']} daily activity reminders."))
+        self.stdout.write(self.style.SUCCESS(f"Created {result.data['count']} Daily Activity Reminders."))

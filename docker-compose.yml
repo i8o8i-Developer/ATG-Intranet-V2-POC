@@ -1,7 +1,7 @@
-name: intranet-rebuild
+name: intranet-v2
 
 services:
-  db:
+  Database:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
@@ -18,7 +18,7 @@ services:
       timeout: 5s
       retries: 20
 
-  redis:
+  Redis:
     image: redis:7-alpine
     restart: unless-stopped
     ports:
@@ -29,17 +29,20 @@ services:
       timeout: 5s
       retries: 20
 
-  backend:
+  Backend:
     build:
       context: .
       dockerfile: Backend/Dockerfile
+    image: intranet-v2-backend
     restart: unless-stopped
     command: >
       sh -c "python Backend/manage.py migrate &&
-             python Backend/manage.py bootstrap_backend --tenant Banao --workspace 'Default Workspace' --username anubhav1608 --password AnubhavChaurasia --email anubhav1608@example.com --first-name Anubhav --last-name Chaurasia --display-name 'Anubhav Chaurasia' --employee-code EMP-001 &&
+             python Backend/manage.py Bootstrap_Backend --tenant Banao --workspace 'Default Workspace' --username anubhav1608 --password AnubhavChaurasia --email anubhav1608@example.com --first-name Anubhav --last-name Chaurasia --display-name 'Anubhav Chaurasia' --employee-code EMP-001 &&
+             python Backend/manage.py Seed_Hrms_Data --tenant Banao --workspace 'Default Workspace' &&
+             python Backend/manage.py Seed_Demo_Erp --username anubhav1608 --password AnubhavChaurasia &&
              python Backend/manage.py runserver 0.0.0.0:8000"
     environment:
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-rebuild-development-only}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-Rebuild-Development-Only}
       DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend,0.0.0.0}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
@@ -47,74 +50,77 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-intranet_rebuild}
       POSTGRES_USER: ${POSTGRES_USER:-intranet}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
-      POSTGRES_HOST: db
+      POSTGRES_HOST: Database
       POSTGRES_PORT: 5432
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://Redis:6379/0
+      CELERY_RESULT_BACKEND: redis://Redis:6379/0
     ports:
       - "8000:8000"
     volumes:
       - ./Backend:/app/Backend
       - backend_media:/app/Backend/media
     depends_on:
-      db:
+      Database:
         condition: service_healthy
-      redis:
+      Redis:
         condition: service_healthy
 
-  celery-worker:
+  Celery-Worker:
     build:
       context: .
       dockerfile: Backend/Dockerfile
+    image: intranet-v2-celery-worker
     restart: unless-stopped
     command: celery -A Backend.celery_app worker -l info
     environment:
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-rebuild-development-only}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-Rebuild-Development-Only}
       DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
       POSTGRES_DB: ${POSTGRES_DB:-intranet_rebuild}
       POSTGRES_USER: ${POSTGRES_USER:-intranet}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
-      POSTGRES_HOST: db
+      POSTGRES_HOST: Database
       POSTGRES_PORT: 5432
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://Redis:6379/0
+      CELERY_RESULT_BACKEND: redis://Redis:6379/0
     volumes:
       - ./Backend:/app/Backend
       - backend_media:/app/Backend/media
     depends_on:
-      backend:
+      Backend:
         condition: service_started
-      redis:
+      Redis:
         condition: service_healthy
 
-  celery-beat:
+  Celery-Beat:
     build:
       context: .
       dockerfile: Backend/Dockerfile
+    image: intranet-v2-celery-beat
     restart: unless-stopped
     command: celery -A Backend.celery_app beat -l info
     environment:
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-rebuild-development-only}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-Rebuild-Development-Only}
       DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
       POSTGRES_DB: ${POSTGRES_DB:-intranet_rebuild}
       POSTGRES_USER: ${POSTGRES_USER:-intranet}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
-      POSTGRES_HOST: db
+      POSTGRES_HOST: Database
       POSTGRES_PORT: 5432
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://Redis:6379/0
+      CELERY_RESULT_BACKEND: redis://Redis:6379/0
     volumes:
       - ./Backend:/app/Backend
     depends_on:
-      backend:
+      Backend:
         condition: service_started
-      redis:
+      Redis:
         condition: service_healthy
 
-  frontend:
+  Frontend:
     build:
       context: ./Frontend
       dockerfile: Dockerfile
+    image: intranet-v2-frontend
     restart: unless-stopped
     command: npm run dev -- --host 0.0.0.0
     environment:
@@ -125,7 +131,7 @@ services:
       - ./Frontend:/app
       - frontend_node_modules:/app/node_modules
     depends_on:
-      backend:
+      Backend:
         condition: service_started
 
 volumes:

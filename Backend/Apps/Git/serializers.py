@@ -33,5 +33,5 @@ class CollaboratorAccessSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         if not attrs.get("employee") and not attrs.get("github_username"):
-            raise serializers.ValidationError("Either employee or github_username is required.")
+            raise serializers.ValidationError("Either Employee Or Github Username Is Required.")
         return attrs

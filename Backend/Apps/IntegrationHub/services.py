@@ -36,7 +36,7 @@ class IntegrationJobService:
     def start_job(context, job_id):
         job = IntegrationSyncJob.objects.filter(tenant=context.tenant, id=job_id).first()
         if not job:
-            return ServiceResult.failure({"job": "Integration sync job not found."}, status_code=404)
+            return ServiceResult.failure({"job": "Integration Sync Job Not Found."}, status_code=404)
         job.status = "Running"
         job.started_at = timezone.now()
         job.attempt_count += 1
@@ -48,7 +48,7 @@ class IntegrationJobService:
     def complete_job(context, job_id, result_payload=None):
         job = IntegrationSyncJob.objects.filter(tenant=context.tenant, id=job_id).first()
         if not job:
-            return ServiceResult.failure({"job": "Integration sync job not found."}, status_code=404)
+            return ServiceResult.failure({"job": "Integration Sync Job Not Found."}, status_code=404)
         job.status = "Completed"
         job.finished_at = timezone.now()
         job.result_payload = result_payload or job.result_payload
@@ -62,7 +62,7 @@ class IntegrationJobService:
     def fail_job(context, job_id, failure_reason):
         job = IntegrationSyncJob.objects.filter(tenant=context.tenant, id=job_id).first()
         if not job:
-            return ServiceResult.failure({"job": "Integration sync job not found."}, status_code=404)
+            return ServiceResult.failure({"job": "Integration Sync Job Not Found."}, status_code=404)
         job.status = "Failed"
         job.finished_at = timezone.now()
         job.failure_reason = failure_reason
@@ -113,7 +113,7 @@ class WebhookInboxService:
     def mark_processed(context, event_id, status="Processed", failure_reason=""):
         event = WebhookInboxEvent.objects.filter(tenant=context.tenant, id=event_id).first()
         if not event:
-            return ServiceResult.failure({"webhook": "Webhook event not found."}, status_code=404)
+            return ServiceResult.failure({"webhook": "Webhook Event Not Found."}, status_code=404)
         event.status = status
         event.processed_at = timezone.now()
         event.failure_reason = failure_reason

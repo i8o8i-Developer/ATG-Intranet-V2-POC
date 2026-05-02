@@ -249,7 +249,7 @@ def _resolve_request_tenant_context(request):
         if len(active_tenants) == 1:
             tenant = active_tenants[0]
     if not tenant:
-        return ServiceResult.failure({"tenant": "Tenant context is required for this request."}, status_code=400)
+        return ServiceResult.failure({"tenant": "Tenant Context Is Required For This Request."}, status_code=400)
     workspace = None
     if workspace_hint:
         workspace_text = str(workspace_hint).strip()
@@ -341,16 +341,16 @@ def _get_source_page_details(request, validated_data):
 
 
 def _notification_bodies(source_label, formatted_message, source_page_name="", source_page_url=""):
-    plain_lines = [f"Request received from {source_label}."]
+    plain_lines = [f"Request Received From {source_label}."]
     if source_page_url:
         page_label = source_page_name or source_page_url
-        plain_lines.append(f"Source page: {page_label} - {source_page_url}")
+        plain_lines.append(f"Source Page: {page_label} - {source_page_url}")
     plain_lines.append("")
     plain_lines.append(formatted_message)
-    html_lines = [f"<p>Request received from {source_label}.</p>"]
+    html_lines = [f"<p>Request Received From {source_label}.</p>"]
     if source_page_url:
         link_label = source_page_name or source_page_url
-        html_lines.append(f'<p>Source page: <a href="{source_page_url}" target="_blank" rel="noopener noreferrer">{link_label}</a></p>')
+        html_lines.append(f'<p>Source Page: <a href="{source_page_url}" target="_blank" rel="noopener noreferrer">{link_label}</a></p>')
     html_lines.append(f"<p>{formatted_message.replace(chr(10), '<br>')}</p>")
     return "\n".join(plain_lines), "\n".join(html_lines)
 
@@ -358,12 +358,12 @@ def _notification_bodies(source_label, formatted_message, source_page_name="", s
 def _send_lead_notification_email(full_name, formatted_message, source_label, source_page_name="", source_page_url=""):
     recipients = getattr(settings, "BANAO_LEAD_RECIPIENTS", DEFAULT_BANAO_LEAD_RECIPIENTS)
     if not recipients:
-        return {"sent": False, "reason": "No Banao lead recipients configured."}
+        return {"sent": False, "reason": "No Banao Lead Recipients Configured."}
     from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "") or getattr(settings, "EMAIL_HOST_USER", "") or "noreply@atg.world"
     plain_body, html_body = _notification_bodies(source_label, formatted_message, source_page_name=source_page_name, source_page_url=source_page_url)
     try:
         message = EmailMultiAlternatives(
-            subject=f"New Lead submitted - {full_name}",
+            subject=f"New Lead Submitted - {full_name}",
             body=plain_body,
             from_email=from_email,
             to=list(recipients),
@@ -396,9 +396,9 @@ def _capture_public_lead(request, dedupe_by_url=False):
     validated_data = serializer.validated_data
     lead_context = _build_lead_contact_context(request, validated_data, context.tenant)
     if not (lead_context["full_name"] and lead_context["email"] and lead_context["phone"] and lead_context["original_message"]):
-        return Response({"error": "full_name, email, phone, and message are required"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "Full Name, Email, Phone, and Message Are Required"}, status=status.HTTP_400_BAD_REQUEST)
     if _is_personal_email(lead_context["email"]) and not lead_context["linkedin_url"]:
-        return Response({"error": "LinkedIn profile is required when using a personal email address.", "linkedin_required": True}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "LinkedIn Profile Is Required When Using a Personal Email Address.", "linkedin_required": True}, status=status.HTTP_400_BAD_REQUEST)
     origin = str(validated_data.get("origin") or "w").strip() or "w"
     source_label = _origin_label(origin)
     source_page_name, source_page_url = _get_source_page_details(request, validated_data)
@@ -416,9 +416,9 @@ def _capture_public_lead(request, dedupe_by_url=False):
         website_url=website_url if dedupe_by_url else "",
     )
     if duplicate_lead:
-        duplicate_message = "Lead already exists with the same URL" if dedupe_by_url and website_url else "Lead already exists with the same full_name, email, and phone"
+        duplicate_message = "Lead Already Exists With The Same URL" if dedupe_by_url and website_url else "Lead Already Exists With The Same Full Name, Email, And Phone"
         return Response({"message": duplicate_message, "lead_id": duplicate_lead.id}, status=status.HTTP_200_OK)
-    structured_message = f"Request received from {source_label}.\n\n{_build_structured_lead_message(lead_context)}"
+    structured_message = f"Request Received From {source_label}.\n\n{_build_structured_lead_message(lead_context)}"
     metadata = {
         "url": website_url,
         "linkedin_url": lead_context["linkedin_url"],
@@ -447,7 +447,7 @@ def _capture_public_lead(request, dedupe_by_url=False):
     )
     if not result.ok:
         return Response(result.errors, status=result.status_code)
-    notification_result = {"sent": False, "reason": "Skipped for client website leads."}
+    notification_result = {"sent": False, "reason": "Skipped For Client Website Leads."}
     if origin != "cw":
         notification_result = _send_lead_notification_email(
             lead_context["full_name"],
@@ -490,7 +490,7 @@ def _offer_payload(validated_data, preview_mode=False):
 def _send_offer_email(offer, offer_url):
     payload = offer.offer_payload or {}
     from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "") or getattr(settings, "EMAIL_HOST_USER", "") or "noreply@atg.world"
-    subject = f"Congratulations! Offer as {payload.get('position_name') or offer.position_title} ({payload.get('title') or offer.position_title}) from Across The Globe (ATG)"
+    subject = f"Congratulations! Offer As {payload.get('position_name') or offer.position_title} ({payload.get('title') or offer.position_title}) From Across The Globe (ATG)"
     plain_body = "\n".join(
         [
             f"Hi {offer.candidate_name},",
@@ -579,9 +579,9 @@ def sendoffer(request):
 
             department = Department.objects.filter(tenant=context.tenant, name=department_name).first()
         if not department:
-            return Response({"error": "Department not found."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Department Not Found."}, status=status.HTTP_400_BAD_REQUEST)
         if department.category and department.category != validated_data.get("position_name"):
-            return Response({"error": "Department and Position does not have dependency!!"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Department And Position Does Not Have Dependency!!"}, status=status.HTTP_400_BAD_REQUEST)
     offer_payload = _offer_payload(validated_data, preview_mode=preview_mode)
     if preview_mode:
         return HttpResponse(LeadWorkflowService.render_offer_preview_html(offer_payload), content_type="text/html")
@@ -600,11 +600,11 @@ def sendoffer(request):
 def banao_dummy(request, token):
     offer = OnboardingOffer.objects.filter(company_name__iexact="Banao", token=token).first()
     if not offer:
-        return HttpResponse("Offer letter has Expired!", status=404)
+        return HttpResponse("Offer Letter Has Expired!", status=404)
     if offer.status == "Accepted":
-        return HttpResponse("Offer already accepted!!!")
+        return HttpResponse("Offer Already Accepted!!!")
     if offer.expires_at and timezone.now() > offer.expires_at:
-        return HttpResponse("Offer Expired, valid for 2 Days from offer sent date!", status=410)
+        return HttpResponse("Offer Expired, Valid For 2 Days From Offer Sent Date!", status=410)
     offer_url = request.build_absolute_uri(reverse("banaodummy", args=[offer.token]))
     return HttpResponse(LeadWorkflowService.render_offer_preview_html(offer.offer_payload or {}, offer_url=offer_url), content_type="text/html")
 

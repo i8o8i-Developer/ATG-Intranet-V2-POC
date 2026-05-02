@@ -26,10 +26,10 @@ class KnowledgeDocumentService:
         make_public=None,
     ):
         if not context.tenant:
-            return ServiceResult.failure({"tenant": "Tenant context is required."}, status_code=400)
+            return ServiceResult.failure({"tenant": "Tenant Context Is Required."}, status_code=400)
         slug = slug or slugify(title)[:180]
         if KnowledgeDocument.objects.filter(tenant=context.tenant, slug=slug).exists():
-            return ServiceResult.failure({"slug": "Knowledge document slug already exists."}, status_code=400)
+            return ServiceResult.failure({"slug": "Knowledge Document Slug Already Exists."}, status_code=400)
         actor_employee = KnowledgeDocumentService._actor_employee(context)
         owner = KnowledgeDocumentService._resolve_owner(context, owner_id=owner_id, actor_employee=actor_employee)
         department = KnowledgeDocumentService._resolve_department(context, department_id=department_id, actor_employee=actor_employee)
@@ -68,7 +68,7 @@ class KnowledgeDocumentService:
     def publish(context, document_id):
         document = KnowledgeDocument.objects.filter(tenant=context.tenant, id=document_id).first()
         if not document:
-            return ServiceResult.failure({"document": "Knowledge document not found."}, status_code=404)
+            return ServiceResult.failure({"document": "Knowledge Document Not Found."}, status_code=404)
         document.status = "Published"
         document.updated_by = context.actor
         document.save(update_fields=["status", "updated_by", "updated_at"])
@@ -111,7 +111,7 @@ class KnowledgeDocumentService:
     def upload_to_drive(context, document_id, folder_name="ATG Docs", provider=None, make_public=False):
         document = KnowledgeDocument.objects.filter(tenant=context.tenant, id=document_id).select_related("department", "owner__user").first()
         if not document:
-            return ServiceResult.failure({"document": "Knowledge document not found."}, status_code=404)
+            return ServiceResult.failure({"document": "Knowledge Document Not Found."}, status_code=404)
         provider = provider or GoogleDriveProvider()
         root_name = folder_name or "Documents"
         root_payload = provider.get_or_create_folder(root_name)
@@ -181,7 +181,7 @@ class KnowledgeDocumentService:
     def grant_permission(context, document_id, subject_type, subject_id, permission="Read", provider=None, email=""):
         document = KnowledgeDocument.objects.filter(tenant=context.tenant, id=document_id).first()
         if not document:
-            return ServiceResult.failure({"document": "Knowledge document not found."}, status_code=404)
+            return ServiceResult.failure({"document": "Knowledge Document Not Found."}, status_code=404)
         row, _created = KnowledgePermission.objects.update_or_create(
             tenant=context.tenant,
             workspace=context.workspace or document.workspace,
@@ -207,14 +207,14 @@ class KnowledgeDocumentService:
     def update_document(context, document_id, **changes):
         document = KnowledgeDocument.objects.filter(tenant=context.tenant, id=document_id).select_related("owner__user", "department").first()
         if not document:
-            return ServiceResult.failure({"document": "Knowledge document not found."}, status_code=404)
+            return ServiceResult.failure({"document": "Knowledge Document Not Found."}, status_code=404)
         actor_employee = KnowledgeDocumentService._actor_employee(context)
         if not KnowledgeDocumentService._can_edit(context, document, actor_employee=actor_employee):
-            return ServiceResult.failure({"document": "You do not have permission to update this document."}, status_code=403)
+            return ServiceResult.failure({"document": "You Do Not Have Permission To Update This Document."}, status_code=403)
 
         if "slug" in changes and changes.get("slug") and changes["slug"] != document.slug:
             if KnowledgeDocument.objects.filter(tenant=context.tenant, slug=changes["slug"]).exclude(id=document.id).exists():
-                return ServiceResult.failure({"slug": "Knowledge document slug already exists."}, status_code=400)
+                return ServiceResult.failure({"slug": "Knowledge Document Slug Already Exists."}, status_code=400)
 
         if "department_id" in changes:
             document.department = KnowledgeDocumentService._resolve_department(context, department_id=changes.get("department_id"), actor_employee=actor_employee, allow_null=True)
@@ -251,7 +251,7 @@ class KnowledgeDocumentService:
     @staticmethod
     def document_library(context):
         if not context.tenant:
-            return ServiceResult.failure({"tenant": "Tenant context is required."}, status_code=400)
+            return ServiceResult.failure({"tenant": "Tenant Context Is Required."}, status_code=400)
         actor_employee = KnowledgeDocumentService._actor_employee(context)
         queryset = KnowledgeDocumentService._queryset(context)
         if context.actor and getattr(context.actor, "is_authenticated", False) and (context.actor.is_staff or context.actor.is_superuser):
@@ -326,10 +326,10 @@ class KnowledgeDocumentService:
     def open_document(context, document_id, record_view=True):
         document = KnowledgeDocumentService._queryset(context).filter(id=document_id).first()
         if not document:
-            return ServiceResult.failure({"document": "Knowledge document not found."}, status_code=404)
+            return ServiceResult.failure({"document": "Knowledge Document Not Found."}, status_code=404)
         actor_employee = KnowledgeDocumentService._actor_employee(context)
         if not KnowledgeDocumentService._can_view(context, document, actor_employee=actor_employee):
-            return ServiceResult.failure({"document": "You do not have permission to access this document."}, status_code=403)
+            return ServiceResult.failure({"document": "You Do Not Have Permission To Access This Document."}, status_code=403)
         if record_view:
             KnowledgeDocumentService._record_view(context, document, actor_employee=actor_employee)
         return ServiceResult.success({"document": document, "openUrl": KnowledgeDocumentService._open_url(document)})

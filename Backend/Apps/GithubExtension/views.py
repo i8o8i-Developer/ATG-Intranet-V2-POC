@@ -128,7 +128,7 @@ class DetailBranchTesterOrReviewerAPIView(GithubExtensionLegacyMixin, APIView):
 class CheckRepositoryAPIView(GithubExtensionLegacyMixin, APIView):
     def get(self, request, repo_name):
         result = GitHubBranchService.check_repository(self.get_context(request), repo_name)
-        message = "The repo name is valid" if result.data["exists"] else "The repo name does not found"
+        message = "The Repo Name Is Valid" if result.data["exists"] else "The Repo Name Does Not Found"
         return Response({"Message": message, **result.data}, status=result.status_code)
 
 

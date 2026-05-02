@@ -20,7 +20,7 @@ class TemplateRenderService:
     def get_active_template(context, template_type, name):
         template = ContentTemplate.objects.filter(tenant=context.tenant, template_type=template_type, name=name, status="Active").first()
         if not template:
-            return ServiceResult.failure({"template": "Active template not found."}, status_code=404)
+            return ServiceResult.failure({"template": "Active Template Not Found."}, status_code=404)
         return ServiceResult.success(template)
 
     @staticmethod
@@ -74,7 +74,7 @@ class TemplateRenderService:
                 with open(template_path, "r", encoding="utf-8") as template_file:
                     html_content = template_file.read()
             except FileNotFoundError:
-                return ServiceResult.failure({"templatePath": f"Template file not found at: {template_path}"}, status_code=404)
+                return ServiceResult.failure({"templatePath": f"Template File Not Found At: {template_path}"}, status_code=404)
         rows = []
         for domain in domains:
             content_template, _created = ContentTemplate.objects.update_or_create(

@@ -71,7 +71,7 @@ class TenantScopedModelViewSet(viewsets.ModelViewSet):
         tenant = self.get_request_tenant()
         workspace = self.get_request_workspace()
         if "tenant" in model_fields and not tenant and "tenant" not in serializer.validated_data:
-            raise serializers.ValidationError({"tenant": "X-Tenant-Id header or tenant field is required."})
+            raise serializers.ValidationError({"tenant": "X-Tenant-Id Header Or Tenant Field Is Required."})
         if tenant and "tenant" in model_fields and "tenant" not in serializer.validated_data:
             values["tenant"] = tenant
         if workspace and "workspace" in model_fields and "workspace" not in serializer.validated_data:

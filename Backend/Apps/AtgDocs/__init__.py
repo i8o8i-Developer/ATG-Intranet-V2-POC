@@ -1,1 +1,1 @@
-"""Knowledge document APIs."""
+"""Knowledge Document APIs."""

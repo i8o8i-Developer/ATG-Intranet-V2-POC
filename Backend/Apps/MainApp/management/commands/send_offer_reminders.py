@@ -6,7 +6,7 @@ from Backend.EnterpriseCore.services import TenantContext
 
 
 class Command(BaseCommand):
-    help = "Queue offer reminder notifications."
+    help = "Queue Offer Reminder Notifications."
 
     def add_arguments(self, parser):
         parser.add_argument("--tenant-id", type=int, required=True)
@@ -15,7 +15,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         tenant = Tenant.objects.filter(id=options["tenant_id"]).first()
         if not tenant:
-            raise CommandError("Tenant not found.")
+            raise CommandError("Tenant Not Found.")
         workspace = Workspace.objects.filter(id=options.get("workspace_id"), tenant=tenant).first() if options.get("workspace_id") else None
         result = OfferLifecycleService.queue_offer_reminders(TenantContext(tenant=tenant, workspace=workspace, source="Command"))
-        self.stdout.write(self.style.SUCCESS(f"Queued {result.data['count']} reminders."))
+        self.stdout.write(self.style.SUCCESS(f"Queued {result.data['count']} Reminders."))

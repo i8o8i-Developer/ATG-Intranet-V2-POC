@@ -42,7 +42,7 @@ class AssignAssessmentSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         if not attrs.get("employee") and not attrs.get("employees"):
-            raise serializers.ValidationError("Either employee or employees is required.")
+            raise serializers.ValidationError("Either Employee Or Employees Is Required.")
         return attrs
 
 
@@ -84,9 +84,9 @@ class AssessmentEmailDispatchSerializer(serializers.Serializer):
         emails = attrs.get("emails") or ([attrs["email"]] if attrs.get("email") else [])
         assessment_ids = attrs.get("assessment_ids") or attrs.get("assesment") or []
         if not emails:
-            raise serializers.ValidationError({"email": "At least one email is required."})
+            raise serializers.ValidationError({"email": "At Least One Email Is Required."})
         if not assessment_ids:
-            raise serializers.ValidationError({"assessment_ids": "At least one assessment reference is required."})
+            raise serializers.ValidationError({"assessment_ids": "At Least One Assessment Reference Is Required."})
         attrs["emails"] = emails
         attrs["assessment_ids"] = assessment_ids
         return attrs

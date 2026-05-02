@@ -14,7 +14,7 @@ class AssessmentTemplateService:
     def activate(context, template_id):
         template = AssessmentTemplate.objects.filter(tenant=context.tenant, id=template_id).first()
         if not template:
-            return ServiceResult.failure({"template": "Assessment template not found."}, status_code=404)
+            return ServiceResult.failure({"template": "Assessment Template Not Found."}, status_code=404)
         template.status = AssessmentTemplate.STATUS_ACTIVE
         template.updated_by = context.actor
         template.save(update_fields=["status", "updated_by", "updated_at"])
@@ -24,7 +24,7 @@ class AssessmentTemplateService:
     def archive(context, template_id):
         template = AssessmentTemplate.objects.filter(tenant=context.tenant, id=template_id).first()
         if not template:
-            return ServiceResult.failure({"template": "Assessment template not found."}, status_code=404)
+            return ServiceResult.failure({"template": "Assessment Template Not Found."}, status_code=404)
         template.status = AssessmentTemplate.STATUS_ARCHIVED
         template.is_active = False
         template.updated_by = context.actor
@@ -44,10 +44,10 @@ class AssessmentAssignmentService:
     def assign_to_employee(context, assessment_id, employee_id, due_at=None):
         assessment = AssessmentTemplate.objects.filter(tenant=context.tenant, id=assessment_id, is_active=True).first()
         if not assessment:
-            return ServiceResult.failure({"assessment": "Active assessment template not found."}, status_code=404)
+            return ServiceResult.failure({"assessment": "Active Assessment Template Not Found."}, status_code=404)
         employee = EmployeeProfile.objects.filter(tenant=context.tenant, id=employee_id, is_active=True).first()
         if not employee:
-            return ServiceResult.failure({"employee": "Employee profile not found."}, status_code=404)
+            return ServiceResult.failure({"employee": "Employee Profile Not Found."}, status_code=404)
         assignment = AssessmentAssignment.objects.create(
             tenant=context.tenant,
             workspace=context.workspace,
@@ -77,14 +77,14 @@ class AssessmentAssignmentService:
     def assign_by_email(context, email, assessment_references, due_at=None, generate_provider_link=True):
         employee = AssessmentAssignmentService._employee_from_email(context, email)
         if not employee:
-            return ServiceResult.failure({"employee": f"Active employee profile not found for {email}."}, status_code=404)
+            return ServiceResult.failure({"employee": f"Active Employee Profile Not Found for {email}."}, status_code=404)
 
         created = []
         errors = []
         for reference in assessment_references:
             template = AssessmentAssignmentService._resolve_template_reference(context, reference, employee.department_id)
             if not template:
-                errors.append({"assessment": reference, "errors": {"assessment": "Assessment template not found."}})
+                errors.append({"assessment": reference, "errors": {"assessment": "Assessment Template Not Found."}})
                 continue
             open_assignment = AssessmentAssignment.objects.filter(
                 tenant=context.tenant,
@@ -97,7 +97,7 @@ class AssessmentAssignmentService:
                     {
                         "assessment": reference,
                         "assignment": open_assignment.id,
-                        "errors": {"assignment": "An active assignment already exists for this employee and assessment."},
+                        "errors": {"assignment": "An Active Assignment Already Exists for This Employee and Assessment."},
                     }
                 )
                 continue
@@ -134,38 +134,38 @@ class AssessmentAssignmentService:
     def start_assignment(context, assignment_id):
         assignment = AssessmentAssignmentService.get_assignment(context, assignment_id)
         if not assignment:
-            return ServiceResult.failure({"assignment": "Assessment assignment not found."}, status_code=404)
+            return ServiceResult.failure({"assignment": "Assessment Assignment Not Found."}, status_code=404)
         if assignment.status in {AssessmentAssignment.STATUS_PASSED, AssessmentAssignment.STATUS_FAILED, AssessmentAssignment.STATUS_CANCELLED}:
-            return ServiceResult.failure({"status": "Completed or cancelled assignments cannot be started."}, status_code=409)
+            return ServiceResult.failure({"status": "Completed or Cancelled Assignments Cannot Be Started."}, status_code=409)
         assignment.status = "InProgress"
         assignment.started_at = assignment.started_at or timezone.now()
         assignment.updated_by = context.actor
         assignment.save(update_fields=["status", "started_at", "updated_by", "updated_at"])
-        AssessmentActivityService.record(context, assignment, "Started", "Assessment started")
+        AssessmentActivityService.record(context, assignment, "Started", "Assessment Started")
         return ServiceResult.success(assignment)
 
     @staticmethod
     def record_provider_link(context, assignment_id, external_user_id="", assessment_url="", provider_payload=None):
         assignment = AssessmentAssignmentService.get_assignment(context, assignment_id)
         if not assignment:
-            return ServiceResult.failure({"assignment": "Assessment assignment not found."}, status_code=404)
+            return ServiceResult.failure({"assignment": "Assessment Assignment Not Found."}, status_code=404)
         assignment.external_user_id = external_user_id or assignment.external_user_id
         assignment.assessment_url = assessment_url or assignment.assessment_url
         assignment.provider_payload = provider_payload or assignment.provider_payload
         assignment.status = AssessmentAssignment.STATUS_LINK_GENERATED if assignment.assessment_url else AssessmentAssignment.STATUS_SENT
         assignment.updated_by = context.actor
         assignment.save(update_fields=["external_user_id", "assessment_url", "provider_payload", "status", "updated_by", "updated_at"])
-        AssessmentActivityService.record(context, assignment, "ProviderLinkRecorded", "Assessment provider link recorded", assignment.provider_payload)
+        AssessmentActivityService.record(context, assignment, "ProviderLinkRecorded", "Assessment Provider Link Recorded", assignment.provider_payload)
         return ServiceResult.success(assignment)
 
     @staticmethod
     def generate_provider_link(context, assignment_id, client=None):
         assignment = AssessmentAssignmentService.get_assignment(context, assignment_id)
         if not assignment:
-            return ServiceResult.failure({"assignment": "Assessment assignment not found."}, status_code=404)
+            return ServiceResult.failure({"assignment": "Assessment Assignment Not Found."}, status_code=404)
         email = assignment.employee.user.email
         if not email:
-            return ServiceResult.failure({"employee": "Employee email is required to generate an assessment link."}, status_code=400)
+            return ServiceResult.failure({"employee": "Employee Email Is Required To Generate An Assessment Link."}, status_code=400)
         provider_assessment_id = assignment.assessment.provider_template_id or assignment.assessment.external_id or assignment.assessment.code
         client = client or ExternalAssessmentProviderClient()
         try:
@@ -185,16 +185,16 @@ class AssessmentAssignmentService:
         assignment.status = AssessmentAssignment.STATUS_SENT
         assignment.updated_by = context.actor
         assignment.save(update_fields=["external_user_id", "assessment_url", "provider_payload", "status", "updated_by", "updated_at"])
-        AssessmentActivityService.record(context, assignment, "ProviderLinkSent", "Assessment provider link generated and sent", assignment.provider_payload)
+        AssessmentActivityService.record(context, assignment, "ProviderLinkSent", "Assessment Provider Link Generated And Sent", assignment.provider_payload)
         return ServiceResult.success(assignment)
 
     @staticmethod
     def submit_assignment(context, assignment_id, score=0, percentage=None, answer_payload=None, evaluated_payload=None, provider_attempt_id="", status=""):
         assignment = AssessmentAssignmentService.get_assignment(context, assignment_id)
         if not assignment:
-            return ServiceResult.failure({"assignment": "Assessment assignment not found."}, status_code=404)
+            return ServiceResult.failure({"assignment": "Assessment Assignment Not Found."}, status_code=404)
         if assignment.status == AssessmentAssignment.STATUS_CANCELLED:
-            return ServiceResult.failure({"status": "Cancelled assignments cannot be submitted."}, status_code=409)
+            return ServiceResult.failure({"status": "Cancelled Assignments Cannot Be Submitted."}, status_code=409)
         score = AssessmentAssignmentService._decimal(score)
         percentage = AssessmentAssignmentService._decimal(percentage if percentage is not None else score)
         passed = percentage >= assignment.assessment.passing_score
@@ -224,7 +224,7 @@ class AssessmentAssignmentService:
         assignment.completed_at = submission.submitted_at
         assignment.updated_by = context.actor
         assignment.save(update_fields=["status", "note", "is_pass", "score", "percentage", "attempts_count", "submitted_at", "completed_at", "updated_by", "updated_at"])
-        AssessmentActivityService.record(context, assignment, "Submitted", "Assessment submitted", {"submissionId": submission.id, "passed": passed})
+        AssessmentActivityService.record(context, assignment, "Submitted", "Assessment Submitted", {"submissionId": submission.id, "passed": passed})
         OutboxService.publish(context, "AssessmentAssignment", assignment.id, "AssessmentSubmitted", {"submissionId": submission.id, "passed": passed})
         return ServiceResult.success(submission, status_code=201)
 
@@ -232,7 +232,7 @@ class AssessmentAssignmentService:
     def sync_provider_status(context, assignment_id, provider_payload):
         assignment = AssessmentAssignmentService.get_assignment(context, assignment_id)
         if not assignment:
-            return ServiceResult.failure({"assignment": "Assessment assignment not found."}, status_code=404)
+            return ServiceResult.failure({"assignment": "Assessment Assignment Not Found."}, status_code=404)
         attempts = provider_payload.get("attempts") or provider_payload.get("assessments", [{}])[0].get("attempts", [])
         assignment.provider_payload = provider_payload
         assignment.last_synced_at = timezone.now()
@@ -248,7 +248,7 @@ class AssessmentAssignmentService:
             assignment.submitted_at = assignment.submitted_at or timezone.now()
         assignment.updated_by = context.actor
         assignment.save(update_fields=["provider_payload", "last_synced_at", "attempts_count", "percentage", "score", "is_pass", "status", "note", "completed_at", "submitted_at", "updated_by", "updated_at"])
-        AssessmentActivityService.record(context, assignment, "ProviderStatusSynced", "Assessment provider status synced", provider_payload)
+        AssessmentActivityService.record(context, assignment, "ProviderStatusSynced", "Assessment Provider Status Synced", provider_payload)
         return ServiceResult.success(assignment)
 
     @staticmethod
@@ -266,22 +266,22 @@ class AssessmentAssignmentService:
     def mark_overdue(context, assignment_id):
         assignment = AssessmentAssignmentService.get_assignment(context, assignment_id)
         if not assignment:
-            return ServiceResult.failure({"assignment": "Assessment assignment not found."}, status_code=404)
+            return ServiceResult.failure({"assignment": "Assessment Assignment Not Found."}, status_code=404)
         assignment.status = AssessmentAssignment.STATUS_OVERDUE
         assignment.note = "Incomplete"
         assignment.updated_by = context.actor
         assignment.save(update_fields=["status", "note", "updated_by", "updated_at"])
-        AssessmentActivityService.record(context, assignment, "Overdue", "Assessment marked overdue")
+        AssessmentActivityService.record(context, assignment, "Overdue", "Assessment Marked Overdue")
         return ServiceResult.success(assignment)
 
     @staticmethod
     def auto_assign_next(context, employee_id):
         employee = EmployeeProfile.objects.filter(tenant=context.tenant, id=employee_id).select_related("department").first()
         if not employee:
-            return ServiceResult.failure({"employee": "Employee profile not found."}, status_code=404)
+            return ServiceResult.failure({"employee": "Employee Profile Not Found."}, status_code=404)
         latest_assignment = AssessmentAssignment.objects.filter(tenant=context.tenant, employee=employee).select_related("assessment").order_by("-assigned_at").first()
         if latest_assignment and not latest_assignment.is_pass:
-            return ServiceResult.failure({"assignment": "Latest assessment is not passed yet."}, status_code=409)
+            return ServiceResult.failure({"assignment": "Latest Assessment Is Not Passed Yet."}, status_code=409)
         next_sequence = latest_assignment.assessment.sequence_number + 1 if latest_assignment else 1
         template = AssessmentTemplate.objects.filter(
             tenant=context.tenant,
@@ -291,7 +291,7 @@ class AssessmentAssignmentService:
             is_active=True,
         ).first()
         if not template:
-            return ServiceResult.failure({"assessment": "No next active assessment found for employee department."}, status_code=404)
+            return ServiceResult.failure({"assessment": "No Next Active Assessment Found For Employee Department."}, status_code=404)
         return AssessmentAssignmentService.assign_to_employee(context, template.id, employee.id)
 
     @staticmethod
@@ -429,7 +429,7 @@ class AssessmentAutomationService:
                     payload = client.fetch_status(assignment.external_user_id, provider_assessment_id, assignment.id)
                 except Exception as exc:
                     provider_errors.append({"assignment": assignment.id, "error": str(exc)})
-                    AssessmentActivityService.record(context, assignment, "ProviderStatusSyncFailed", "Assessment provider status sync failed", {"error": str(exc)})
+                    AssessmentActivityService.record(context, assignment, "ProviderStatusSyncFailed", "Assessment Provider Status Sync Failed", {"error": str(exc)})
                     continue
                 result = AssessmentAssignmentService.sync_provider_status(context, assignment.id, payload)
                 if result.ok:

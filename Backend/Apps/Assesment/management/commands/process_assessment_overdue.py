@@ -6,7 +6,7 @@ from Backend.EnterpriseCore.services import TenantContext
 
 
 class Command(BaseCommand):
-    help = "Creates outbox-backed reminders for incomplete assessment assignments."
+    help = "Creates Outbox-Backed Reminders For Incomplete Assessment Assignments."
 
     def add_arguments(self, parser):
         parser.add_argument("--tenant-id", type=int, required=True)
@@ -20,4 +20,4 @@ class Command(BaseCommand):
             workspace = Workspace.objects.get(id=options["workspace_id"], tenant=tenant)
         context = TenantContext(tenant=tenant, workspace=workspace, source="Command")
         result = AssessmentQueryService.create_overdue_reminders(context, grace_days=options["grace_days"])
-        self.stdout.write(self.style.SUCCESS(f"Created {result.data['count']} assessment reminder events."))
+        self.stdout.write(self.style.SUCCESS(f"Created {result.data['count']} Assessment Reminder Events."))

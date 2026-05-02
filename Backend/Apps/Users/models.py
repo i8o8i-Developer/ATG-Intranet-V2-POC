@@ -145,11 +145,11 @@ class DepartmentMembership(TenantScopedModel):
 
     def clean(self):
         if self.employee_id and self.tenant_id and self.employee.tenant_id != self.tenant_id:
-            raise ValidationError("Department membership employee must belong to the same tenant.")
+            raise ValidationError("Department Membership Employee Must Belong To The Same Tenant.")
         if self.department_id and self.tenant_id and self.department.tenant_id != self.tenant_id:
-            raise ValidationError("Department membership department must belong to the same tenant.")
+            raise ValidationError("Department Membership Department Must Belong To The Same Tenant.")
         if self.sub_department_id and self.sub_department.department_id != self.department_id:
-            raise ValidationError("Sub-department must belong to the selected department.")
+            raise ValidationError("Sub-Department Must Belong To The Selected Department.")
 
 
 class UserSkill(TenantScopedModel):
@@ -165,9 +165,9 @@ class UserSkill(TenantScopedModel):
 
     def clean(self):
         if self.employee_id and self.tenant_id and self.employee.tenant_id != self.tenant_id:
-            raise ValidationError("User skill employee must belong to the same tenant.")
+            raise ValidationError("User Skill Employee Must Belong To The Same Tenant.")
         if self.skill_id and self.tenant_id and self.skill.tenant_id != self.tenant_id:
-            raise ValidationError("User skill must belong to the same tenant.")
+            raise ValidationError("User Skill Must Belong To The Same Tenant.")
         if self.skill_id and self.skill.department_id and self.employee_id and self.employee.department_id != self.skill.department_id:
             is_member = DepartmentMembership.objects.filter(
                 tenant=self.tenant,
@@ -176,7 +176,7 @@ class UserSkill(TenantScopedModel):
                 status=DepartmentMembership.STATUS_ACTIVE,
             ).exists()
             if not is_member:
-                raise ValidationError("Employee must be in the skill department before the skill can be assigned.")
+                raise ValidationError("Employee Must Be In The Skill Department Before The Skill Can Be Assigned.")
 
 
 class Goal(TenantScopedModel):

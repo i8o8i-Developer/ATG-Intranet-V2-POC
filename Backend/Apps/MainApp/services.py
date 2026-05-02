@@ -34,7 +34,7 @@ class NotificationService:
     def mark_read(context, notification_id):
         notification = NotificationItem.objects.filter(tenant=context.tenant, id=notification_id).first()
         if not notification:
-            return ServiceResult.failure({"notification": "Notification not found."}, status_code=404)
+            return ServiceResult.failure({"notification": "Notification Not Found."}, status_code=404)
         notification.is_read = True
         notification.read_at = timezone.now()
         notification.updated_by = context.actor
@@ -45,7 +45,7 @@ class NotificationService:
     def snooze(context, notification_id, snoozed_until, reason=""):
         notification = NotificationItem.objects.filter(tenant=context.tenant, id=notification_id).first()
         if not notification:
-            return ServiceResult.failure({"notification": "Notification not found."}, status_code=404)
+            return ServiceResult.failure({"notification": "Notification Not Found."}, status_code=404)
         notification.snoozed_until = snoozed_until
         notification.updated_by = context.actor
         notification.save(update_fields=["snoozed_until", "updated_by", "updated_at"])
@@ -67,7 +67,7 @@ class LeaveApprovalService:
     def approve(context, leave_request_id):
         leave_request = LeaveRequest.objects.filter(tenant=context.tenant, id=leave_request_id).first()
         if not leave_request:
-            return ServiceResult.failure({"leaveRequest": "Leave request not found."}, status_code=404)
+            return ServiceResult.failure({"leaveRequest": "Leave Request Not Found."}, status_code=404)
         leave_request.status = "Approved"
         leave_request.approved_by = context.actor
         leave_request.approved_at = timezone.now()
@@ -81,7 +81,7 @@ class LeaveApprovalService:
     def reject(context, leave_request_id, reason=""):
         leave_request = LeaveRequest.objects.filter(tenant=context.tenant, id=leave_request_id).first()
         if not leave_request:
-            return ServiceResult.failure({"leaveRequest": "Leave request not found."}, status_code=404)
+            return ServiceResult.failure({"leaveRequest": "Leave Request Not Found."}, status_code=404)
         leave_request.status = "Rejected"
         leave_request.rejected_at = timezone.now()
         leave_request.approval_payload = {**leave_request.approval_payload, "rejectedAt": timezone.now().isoformat(), "reason": reason}
@@ -96,7 +96,7 @@ class OfferLifecycleService:
     def issue_offer(context, offer_id, expires_at=None):
         offer = OnboardingOffer.objects.filter(tenant=context.tenant, id=offer_id).first()
         if not offer:
-            return ServiceResult.failure({"offer": "Onboarding offer not found."}, status_code=404)
+            return ServiceResult.failure({"offer": "Onboarding Offer Not Found."}, status_code=404)
         offer.status = "Issued"
         offer.issued_at = timezone.now()
         offer.expires_at = expires_at or offer.expires_at
@@ -110,7 +110,7 @@ class OfferLifecycleService:
     def accept_offer(context, token, payload=None):
         offer = OnboardingOffer.objects.filter(tenant=context.tenant, token=token).first()
         if not offer:
-            return ServiceResult.failure({"offer": "Offer token not found."}, status_code=404)
+            return ServiceResult.failure({"offer": "Offer Token Not Found."}, status_code=404)
         offer.status = "Accepted"
         offer.accepted_at = timezone.now()
         offer.offer_payload = {**offer.offer_payload, "acceptance": payload or {}}
@@ -139,7 +139,7 @@ class CredentialVaultService:
     def share(context, credential_id, grantee, permission="Read", expires_at=None, reason=""):
         credential = CredentialVaultItem.objects.filter(tenant=context.tenant, id=credential_id).first()
         if not credential:
-            return ServiceResult.failure({"credential": "Credential not found."}, status_code=404)
+            return ServiceResult.failure({"credential": "Credential Not Found."}, status_code=404)
         grant, _created = CredentialShareGrant.objects.update_or_create(
             tenant=context.tenant,
             credential=credential,
@@ -152,7 +152,7 @@ class CredentialVaultService:
     def revoke_share(context, grant_id):
         grant = CredentialShareGrant.objects.filter(tenant=context.tenant, id=grant_id).first()
         if not grant:
-            return ServiceResult.failure({"grant": "Credential share grant not found."}, status_code=404)
+            return ServiceResult.failure({"grant": "Credential Share Grant Not Found."}, status_code=404)
         grant.revoked_at = timezone.now()
         grant.updated_by = context.actor
         grant.save(update_fields=["revoked_at", "updated_by", "updated_at"])
@@ -162,7 +162,7 @@ class CredentialVaultService:
     def rotate(context, credential_id, secret_reference=""):
         credential = CredentialVaultItem.objects.filter(tenant=context.tenant, id=credential_id).first()
         if not credential:
-            return ServiceResult.failure({"credential": "Credential not found."}, status_code=404)
+            return ServiceResult.failure({"credential": "Credential Not Found."}, status_code=404)
         if secret_reference:
             credential.secret_reference = secret_reference
         credential.last_rotated_at = timezone.now()
@@ -209,7 +209,7 @@ class MainAppLegacyService:
     def create_leave(context, employee_id, leave_type, starts_on, ends_on, reason="", status="Submitted"):
         employee = EmployeeProfile.objects.filter(tenant=context.tenant, id=employee_id).first()
         if not employee:
-            return ServiceResult.failure({"employee": "Employee not found."}, status_code=404)
+            return ServiceResult.failure({"employee": "Employee Not Found."}, status_code=404)
         requested_days = (ends_on - starts_on).days + 1
         leave = LeaveRequest.objects.create(
             tenant=context.tenant,
@@ -348,7 +348,7 @@ class MainAppLegacyService:
     def get_offer_by_token(token):
         offer = OnboardingOffer.objects.filter(token=token).first()
         if not offer:
-            return ServiceResult.failure({"offer": "Offer token not found."}, status_code=404)
+            return ServiceResult.failure({"offer": "Offer Token Not Found."}, status_code=404)
         return ServiceResult.success(offer)
 
     @staticmethod
@@ -438,11 +438,11 @@ class MainAppLegacyService:
             return OfferLifecycleService.queue_offer_reminders(context)
         issue = ExternalIssueReference.objects.filter(tenant=context.tenant).filter(Q(id=issue_id) | Q(external_id=str(issue_id))).select_related("assigned_to").first()
         if not issue:
-            return ServiceResult.failure({"issue": "External issue not found."}, status_code=404)
+            return ServiceResult.failure({"issue": "External Issue Not Found."}, status_code=404)
         recipient = issue.assigned_to or context.actor
         if not recipient:
-            return ServiceResult.failure({"recipient": "No issue assignee or actor available for reminder."}, status_code=400)
-        notification = NotificationService.notify(context, recipient, f"Reminder: {issue.title}", message=summary or "Issue needs attention.", category="IssueReminder", resource_type="ExternalIssueReference", resource_id=issue.id, metadata={"provider": issue.provider, "external_id": issue.external_id})
+            return ServiceResult.failure({"recipient": "No Issue Assignee or Actor Available for Reminder."}, status_code=400)
+        notification = NotificationService.notify(context, recipient, f"Reminder: {issue.title}", message=summary or "Issue Needs Attention.", category="IssueReminder", resource_type="ExternalIssueReference", resource_id=issue.id, metadata={"provider": issue.provider, "external_id": issue.external_id})
         return ServiceResult.success({"issue_id": issue.id, "notification_id": notification.data.id}, status_code=notification.status_code)
 
     @staticmethod
@@ -456,7 +456,7 @@ class MainAppLegacyService:
             external_id = str(issue.get("id") or issue.get("external_id") or "")
             if not external_id:
                 continue
-            title = issue.get("summary") or issue.get("title") or f"{provider} issue {external_id}"
+            title = issue.get("summary") or issue.get("title") or f"{provider} Issue {external_id}"
             item, _created = ExternalIssueReference.objects.update_or_create(
                 tenant=context.tenant,
                 provider=provider,
@@ -484,7 +484,7 @@ class MainAppLegacyService:
     def send_pdf_offer(context, offer_id):
         offer = OnboardingOffer.objects.filter(tenant=context.tenant, id=offer_id).first()
         if not offer:
-            return ServiceResult.failure({"offer": "Onboarding offer not found."}, status_code=404)
+            return ServiceResult.failure({"offer": "Onboarding Offer Not Found."}, status_code=404)
         if offer.status == "Draft":
             issued = OfferLifecycleService.issue_offer(context, offer.id)
             if not issued.ok:
@@ -497,8 +497,8 @@ class MainAppLegacyService:
         user_model = get_user_model()
         recipient = user_model.objects.filter(id=recipient_id).first()
         if not recipient:
-            return ServiceResult.failure({"recipient": "Recipient user not found."}, status_code=404)
-        return NotificationService.notify(context, recipient, title, message="Certificate has been generated.", category="Certificate")
+            return ServiceResult.failure({"recipient": "Recipient User Not Found."}, status_code=404)
+        return NotificationService.notify(context, recipient, title, message="Certificate Has Been Generated.", category="Certificate")
 
     @staticmethod
     def search_username(context, query):
@@ -510,14 +510,14 @@ class MainAppLegacyService:
     def get_joining_date(context, employee_id=None):
         employee = EmployeeProfile.objects.filter(tenant=context.tenant, id=employee_id).first() if employee_id else MainAppLegacyService.actor_employee(context)
         if not employee:
-            return ServiceResult.failure({"employee": "Employee not found."}, status_code=404)
+            return ServiceResult.failure({"employee": "Employee Not Found."}, status_code=404)
         return ServiceResult.success({"employee_id": employee.id, "joined_on": employee.joined_on.isoformat() if employee.joined_on else None})
 
     @staticmethod
     def deactivate_employee(context, employee_id):
         employee = EmployeeProfile.objects.filter(tenant=context.tenant, id=employee_id).first()
         if not employee:
-            return ServiceResult.failure({"employee": "Employee not found."}, status_code=404)
+            return ServiceResult.failure({"employee": "Employee Not Found."}, status_code=404)
         employee.status = EmployeeProfile.STATUS_EXITED
         employee.exited_on = timezone.localdate()
         employee.updated_by = context.actor
@@ -564,10 +564,10 @@ class MainAppLegacyService:
     def update_reportee(context, issue_id, employee_id):
         issue = ExternalIssueReference.objects.filter(tenant=context.tenant, id=issue_id).first()
         if not issue:
-            return ServiceResult.failure({"issue": "External issue not found."}, status_code=404)
+            return ServiceResult.failure({"issue": "External Issue Not Found."}, status_code=404)
         employee = EmployeeProfile.objects.filter(tenant=context.tenant, id=employee_id).select_related("user").first()
         if not employee:
-            return ServiceResult.failure({"employee": "Employee not found."}, status_code=404)
+            return ServiceResult.failure({"employee": "Employee Not Found."}, status_code=404)
         issue.assigned_to = employee.user
         issue.updated_by = context.actor
         issue.save(update_fields=["assigned_to", "updated_by", "updated_at"])
@@ -596,7 +596,7 @@ class MainAppLegacyService:
         user_model = get_user_model()
         owner = user_model.objects.filter(id=owner_id).first()
         if not owner:
-            return ServiceResult.failure({"owner": "Owner user not found."}, status_code=404)
+            return ServiceResult.failure({"owner": "Owner User Not Found."}, status_code=404)
         credential = CredentialVaultItem.objects.create(
             tenant=context.tenant,
             workspace=context.workspace,
@@ -635,7 +635,7 @@ class MainAppLegacyService:
         user_model = get_user_model()
         grantee = user_model.objects.filter(id=grantee_id).first()
         if not grantee:
-            return ServiceResult.failure({"grantee": "Grantee user not found."}, status_code=404)
+            return ServiceResult.failure({"grantee": "Grantee User Not Found."}, status_code=404)
         return CredentialVaultService.share(context, credential_id, grantee, permission=permission, expires_at=expires_at, reason=reason)
 
     @staticmethod
@@ -652,7 +652,7 @@ class MainAppLegacyService:
         user_model = get_user_model()
         user = user_model.objects.filter(id=user_id).first() if user_id else user_model.objects.filter(email__iexact=email).first()
         if not user:
-            return ServiceResult.failure({"user": "User not found."}, status_code=404)
+            return ServiceResult.failure({"user": "User Not Found."}, status_code=404)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
         return ServiceResult.success({"uid": uid, "token": token, "email": user.email})

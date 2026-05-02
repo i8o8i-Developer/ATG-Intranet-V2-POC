@@ -94,7 +94,7 @@ class LegacyBridgeMixin:
         if tenant and not workspace:
             workspace = Workspace.objects.filter(tenant=tenant).order_by("id").first()
         if not tenant:
-            return ServiceResult.failure({"tenant": "Tenant context is required for LegacyBridge request."}, status_code=400)
+            return ServiceResult.failure({"tenant": "Tenant Context Is Required For LegacyBridge Request."}, status_code=400)
         return ServiceResult.success(TenantContext(tenant=tenant, workspace=workspace, actor=actor, source="LegacyBridgeAPI"))
 
     def with_context(self, request):

@@ -23,16 +23,16 @@ CAPABILITY_MODULES = {
 
 
 class Command(BaseCommand):
-    help = "Bootstrap a runnable tenant, workspace, admin user, capabilities, and legacy app map for the new Backend."
+    help = "Bootstrap A Runnable Tenant, Workspace, Admin User, Capabilities, And Legacy App Map For The New Backend."
 
     def add_arguments(self, parser):
         parser.add_argument("--tenant", default="Banao")
         parser.add_argument("--workspace", default="Default Workspace")
-        parser.add_argument("--username", default="backend-admin")
-        parser.add_argument("--password", default="backend-admin")
-        parser.add_argument("--email", default="backend-admin@example.com")
-        parser.add_argument("--first-name", default="Backend")
-        parser.add_argument("--last-name", default="Admin")
+        parser.add_argument("--username", default="admin")
+        parser.add_argument("--password", default="admin")
+        parser.add_argument("--email", default="admin@example.com")
+        parser.add_argument("--first-name", default="Admin")
+        parser.add_argument("--last-name", default="User")
         parser.add_argument("--display-name", default="")
         parser.add_argument("--employee-code", default="EMP-001")
 
@@ -97,7 +97,7 @@ class Command(BaseCommand):
         role, _ = Role.objects.get_or_create(
             tenant=tenant,
             code="OWNER",
-            defaults={"name": "Owner", "description": "Default backend owner role", "is_system_role": True},
+            defaults={"name": "Owner", "description": "Default Backend Owner Role", "is_system_role": True},
         )
         RoleAssignment.objects.get_or_create(tenant=tenant, workspace=workspace, user=user, role=role)
 
@@ -123,10 +123,10 @@ class Command(BaseCommand):
             if was_created:
                 legacy_count += 1
 
-        self.stdout.write(self.style.SUCCESS("Backend bootstrap complete."))
+        self.stdout.write(self.style.SUCCESS("Backend Bootstrap Complete."))
         self.stdout.write(f"Tenant ID: {tenant.id}")
         self.stdout.write(f"Workspace ID: {workspace.id}")
-        self.stdout.write(f"Admin username: {user.username}")
-        self.stdout.write(f"Employee profile: {display_name}")
-        self.stdout.write(f"New capabilities: {capability_count}")
-        self.stdout.write(f"New legacy mappings: {legacy_count}")
+        self.stdout.write(f"Admin Username: {user.username}")
+        self.stdout.write(f"Employee Profile: {display_name}")
+        self.stdout.write(f"New Capabilities: {capability_count}")
+        self.stdout.write(f"New Legacy Mappings: {legacy_count}")

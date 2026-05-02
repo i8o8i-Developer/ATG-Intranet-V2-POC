@@ -1,1 +1,1 @@
-"""GitHub extension workflow APIs."""
+"""GitHub Extension Workflow APIs."""

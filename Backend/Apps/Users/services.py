@@ -34,7 +34,7 @@ class EmployeeLifecycleService:
     def activate_employee(context, employee_id):
         employee = EmployeeProfile.objects.filter(tenant=context.tenant, id=employee_id).first()
         if not employee:
-            return ServiceResult.failure({"employee": "Employee not found."}, status_code=404)
+            return ServiceResult.failure({"employee": "Employee Not Found."}, status_code=404)
         employee.status = EmployeeProfile.STATUS_ACTIVE
         employee.updated_by = context.actor
         employee.save(update_fields=["status", "updated_by", "updated_at"])
@@ -45,7 +45,7 @@ class EmployeeLifecycleService:
     def change_status(context, employee_id, status, reason="", effective_from=None):
         employee = EmployeeProfile.objects.filter(tenant=context.tenant, id=employee_id).first()
         if not employee:
-            return ServiceResult.failure({"employee": "Employee not found."}, status_code=404)
+            return ServiceResult.failure({"employee": "Employee Not Found."}, status_code=404)
         effective_from = effective_from or timezone.localdate()
         employee.status = status
         if status == EmployeeProfile.STATUS_EXITED and not employee.exited_on:
@@ -82,10 +82,10 @@ class EmployeeLifecycleService:
     def transfer_department(context, employee_id, department_id, sub_department_id=None, started_on=None, end_existing=True):
         employee = EmployeeProfile.objects.filter(tenant=context.tenant, id=employee_id).first()
         if not employee:
-            return ServiceResult.failure({"employee": "Employee not found."}, status_code=404)
+            return ServiceResult.failure({"employee": "Employee Not Found."}, status_code=404)
         department = Department.objects.filter(tenant=context.tenant, id=department_id).first()
         if not department:
-            return ServiceResult.failure({"department": "Department not found."}, status_code=404)
+            return ServiceResult.failure({"department": "Department Not Found."}, status_code=404)
         if end_existing:
             DepartmentMembership.objects.filter(tenant=context.tenant, employee=employee, status=DepartmentMembership.STATUS_ACTIVE).update(
                 status=DepartmentMembership.STATUS_ENDED,
@@ -147,7 +147,7 @@ class EmployeeLifecycleService:
     def complete_onboarding(context, employee_id):
         employee = EmployeeProfile.objects.filter(tenant=context.tenant, id=employee_id).first()
         if not employee:
-            return ServiceResult.failure({"employee": "Employee not found."}, status_code=404)
+            return ServiceResult.failure({"employee": "Employee Not Found."}, status_code=404)
         employee.onboarding_completed = True
         employee.updated_by = context.actor
         employee.save(update_fields=["onboarding_completed", "updated_by", "updated_at"])
@@ -157,7 +157,7 @@ class EmployeeLifecycleService:
     def save_timezone(context, employee_id, timezone_name):
         employee = EmployeeProfile.objects.filter(tenant=context.tenant, id=employee_id).first()
         if not employee:
-            return ServiceResult.failure({"employee": "Employee not found."}, status_code=404)
+            return ServiceResult.failure({"employee": "Employee Not Found."}, status_code=404)
         employee.timezone_name = timezone_name
         employee.updated_by = context.actor
         employee.save(update_fields=["timezone_name", "updated_by", "updated_at"])
@@ -220,7 +220,7 @@ class UserWorkflowService:
     def submit_effort_report(context, employee_id, report_month, report_year, effort_percent, project_reference="", metadata=None):
         employee = EmployeeProfile.objects.filter(tenant=context.tenant, id=employee_id).first()
         if not employee:
-            return ServiceResult.failure({"employee": "Employee not found."}, status_code=404)
+            return ServiceResult.failure({"employee": "Employee Not Found."}, status_code=404)
         report = UserEffortReport.objects.create(
             tenant=context.tenant,
             workspace=context.workspace or employee.workspace,
@@ -277,7 +277,7 @@ class UserWorkflowService:
     def submit_resignation(context, employee_id, reason, last_working_day=None):
         employee = EmployeeProfile.objects.filter(tenant=context.tenant, id=employee_id).first()
         if not employee:
-            return ServiceResult.failure({"employee": "Employee not found."}, status_code=404)
+            return ServiceResult.failure({"employee": "Employee Not Found."}, status_code=404)
         resignation = ResignationRequest.objects.create(
             tenant=context.tenant,
             workspace=context.workspace or employee.workspace,
@@ -353,7 +353,7 @@ class PayrollExportService:
     @staticmethod
     def generate_excel(context, report_month=None, report_year=None, pay_type=""):
         if not context.tenant:
-            return ServiceResult.failure({"tenant": "Tenant context is required."}, status_code=400)
+            return ServiceResult.failure({"tenant": "Tenant Context Is Required."}, status_code=400)
 
         report_month = int(report_month) if report_month else None
         report_year = int(report_year) if report_year else None

@@ -1,1 +1,1 @@
-"""Talent pipeline and college operations APIs."""
+"""Talent Pipeline And College Operations APIs."""

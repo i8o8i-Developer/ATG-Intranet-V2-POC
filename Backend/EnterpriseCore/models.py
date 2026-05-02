@@ -82,7 +82,7 @@ class BusinessUnit(AuditStampedModel):
 
     def clean(self):
         if self.organization_id and self.tenant_id and self.organization.tenant_id != self.tenant_id:
-            raise ValidationError("Business unit organization must belong to the same tenant.")
+            raise ValidationError("Business Unit Organization Must Belong To The Same Tenant.")
 
     def __str__(self):
         return self.name
@@ -101,7 +101,7 @@ class Workspace(AuditStampedModel):
 
     def clean(self):
         if self.business_unit_id and self.tenant_id and self.business_unit.tenant_id != self.tenant_id:
-            raise ValidationError("Workspace business unit must belong to the same tenant.")
+            raise ValidationError("Workspace Business Unit Must Belong To The Same Tenant.")
 
     def __str__(self):
         return self.name
@@ -145,7 +145,7 @@ class RoleCapability(AuditStampedModel):
 
     def clean(self):
         if self.role_id and self.tenant_id and self.role.tenant_id != self.tenant_id:
-            raise ValidationError("Role capability must stay within one tenant.")
+            raise ValidationError("Role Capability Must Stay Within One Tenant.")
 
 
 class RoleAssignment(AuditStampedModel):
@@ -168,9 +168,9 @@ class RoleAssignment(AuditStampedModel):
 
     def clean(self):
         if self.role_id and self.tenant_id and self.role.tenant_id != self.tenant_id:
-            raise ValidationError("Role assignment role must belong to the same tenant.")
+            raise ValidationError("Role Assignment Role Must Belong To The Same Tenant.")
         if self.workspace_id and self.tenant_id and self.workspace.tenant_id != self.tenant_id:
-            raise ValidationError("Role assignment workspace must belong to the same tenant.")
+            raise ValidationError("Role Assignment Workspace Must Belong To The Same Tenant.")
 
 
 class ResourcePolicy(AuditStampedModel):
@@ -223,7 +223,7 @@ class TenantScopedModel(AuditStampedModel):
 
     def clean(self):
         if self.workspace_id and self.tenant_id and self.workspace.tenant_id != self.tenant_id:
-            raise ValidationError("Workspace must belong to the same tenant as the record.")
+            raise ValidationError("Workspace Must Belong To The Same Tenant As The Record.")
 
 
 class ExternalReference(models.Model):

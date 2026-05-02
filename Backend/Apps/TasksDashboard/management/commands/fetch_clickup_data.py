@@ -7,7 +7,7 @@ from Backend.EnterpriseCore.services import TenantContext
 
 
 class Command(BaseCommand):
-    help = "Dry-run sync ClickUp task payloads into the rebuilt task dashboard."
+    help = "Dry-run Sync ClickUp Task Payloads Into The Rebuilt Task Dashboard."
 
     def add_arguments(self, parser):
         parser.add_argument("--tenant-id", type=int, required=True)
@@ -20,9 +20,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         tenant = Tenant.objects.filter(id=options["tenant_id"]).first()
         if not tenant:
-            raise CommandError("Tenant not found.")
+            raise CommandError("Tenant Not Found.")
         workspace = Workspace.objects.filter(id=options.get("workspace_id"), tenant=tenant).first() if options.get("workspace_id") else None
         provider = TasksDashboardProvider(live=options["live"])
         payload = provider.fetch_clickup_tasks(project_name=options["project_name"], space_ids=options["space_ids"], team_id=options["team_id"])
         result = ClickUpSyncService.sync_tasks(TenantContext(tenant=tenant, workspace=workspace, source="Command"), payload["tasks"])
-        self.stdout.write(self.style.SUCCESS(f"Synced {result.data['count']} tasks."))
+        self.stdout.write(self.style.SUCCESS(f"Synced {result.data['count']} Tasks."))

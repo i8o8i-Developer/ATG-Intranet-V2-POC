@@ -6,7 +6,7 @@ from Backend.EnterpriseCore.services import TenantContext
 
 
 class Command(BaseCommand):
-    help = "Start a tracked legacy migration run."
+    help = "Start A Tracked Legacy Migration Run."
 
     def add_arguments(self, parser):
         parser.add_argument("--tenant-id", type=int, required=True)
@@ -18,7 +18,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         tenant = Tenant.objects.filter(id=options["tenant_id"]).first()
         if not tenant:
-            raise CommandError("Tenant not found.")
+            raise CommandError("Tenant Not Found.")
         workspace = Workspace.objects.filter(id=options.get("workspace_id"), tenant=tenant).first() if options.get("workspace_id") else None
         result = LegacyMigrationService.start_run(TenantContext(tenant=tenant, workspace=workspace, source="Command"), options["source_app"], target_app_label=options.get("target_app", ""), dry_run=not options["live"])
-        self.stdout.write(self.style.SUCCESS(f"Started migration run {result.data.batch_id}."))
+        self.stdout.write(self.style.SUCCESS(f"Started Migration Run {result.data.batch_id}."))

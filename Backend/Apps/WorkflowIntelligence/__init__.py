@@ -1,1 +1,1 @@
-"""Workflow intelligence read model APIs."""
+"""Workflow Intelligence Read Model APIs."""

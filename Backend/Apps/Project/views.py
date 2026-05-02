@@ -192,7 +192,7 @@ class ProjectLegacyMixin:
         if tenant and not workspace:
             workspace = Workspace.objects.filter(tenant=tenant).order_by("id").first()
         if not tenant:
-            return ServiceResult.failure({"tenant": "Tenant context is required for Project request."}, status_code=400)
+            return ServiceResult.failure({"tenant": "Tenant Context Is Required For Project Request."}, status_code=400)
         return ServiceResult.success(TenantContext(tenant=tenant, workspace=workspace, actor=actor, source="ProjectLegacyAPI"))
 
     def with_context(self, request):
@@ -359,7 +359,7 @@ class ProjectLegacyActionAPIView(ProjectLegacyMixin, APIView):
         elif action == "relink_clickup_tasks":
             result = ProjectDeliveryService.relink_clickup_tasks(context, kwargs["project_id"], kwargs["clickup_name"])
         elif action == "send_anti_phishing_assessment":
-            result = ProjectDeliveryService.send_anti_phishing_assessment(context, request.data.get("project") or request.data.get("project_id"), employee_ids=request.data.get("employee_ids") or [], name=request.data.get("name", "Anti phishing assessment"))
+            result = ProjectDeliveryService.send_anti_phishing_assessment(context, request.data.get("project") or request.data.get("project_id"), employee_ids=request.data.get("employee_ids") or [], name=request.data.get("name", "Anti Phishing Assessment"))
         elif action == "anti_phishing_reports":
             result = ProjectDeliveryService.anti_phishing_reports(context, project_id=request.query_params.get("project_id") or request.data.get("project_id"))
         elif action == "add_delay":
@@ -369,7 +369,7 @@ class ProjectLegacyActionAPIView(ProjectLegacyMixin, APIView):
         elif action == "daily_notifications":
             result = ProjectDeliveryService.daily_notifications(context)
         else:
-            result = ServiceResult.failure({"action": "Unsupported project compatibility action."}, status_code=400)
+            result = ServiceResult.failure({"action": "Unsupported Project Compatibility Action."}, status_code=400)
 
         return self.to_response(result, self.response_serializer)
 

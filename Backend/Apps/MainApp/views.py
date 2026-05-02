@@ -269,7 +269,7 @@ class MainAppLegacyActionAPIView(MainAppLegacyMixin, APIView):
         elif action == "delete_onboard":
             offer = OnboardingOffer.objects.filter(tenant=context.tenant, id=request.data.get("offer_id")).first()
             if not offer:
-                result = ServiceResult.failure({"offer": "Onboarding offer not found."}, status_code=404)
+                result = ServiceResult.failure({"offer": "Onboarding Offer Not Found."}, status_code=404)
             else:
                 offer.delete()
                 result = ServiceResult.success({"offer_id": request.data.get("offer_id"), "deleted": True})
@@ -334,7 +334,7 @@ class MainAppLegacyActionAPIView(MainAppLegacyMixin, APIView):
         elif action == "nda":
             result = ServiceResult.success({"document": "NDA", "status": "available"})
         else:
-            result = ServiceResult.failure({"action": "Unsupported MainApp compatibility action."}, status_code=400)
+            result = ServiceResult.failure({"action": "UnSupported MainApp Compatibility Action."}, status_code=400)
 
         return self.to_response(result, self.response_serializer)
 

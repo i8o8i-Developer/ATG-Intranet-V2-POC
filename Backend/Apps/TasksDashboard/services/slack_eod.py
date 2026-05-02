@@ -32,7 +32,7 @@ class SlackEODService:
 
     def _headers(self):
         if not self.token:
-            raise SlackAPIError("SLACK_BOT_TOKEN is not configured.")
+            raise SlackAPIError("SLACK_BOT_TOKEN Is Not Configured.")
         return {
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json; charset=utf-8",
@@ -50,17 +50,17 @@ class SlackEODService:
         )
         if response.status_code == 429:
             retry_after = int(response.headers.get("Retry-After", "60"))
-            raise SlackRateLimitError("Slack API rate limit exceeded.", retry_after=retry_after)
+            raise SlackRateLimitError("Slack API Rate Limit Exceeded.", retry_after=retry_after)
         if response.status_code >= 500:
-            raise SlackAPIError(f"Slack API server error ({response.status_code}).")
+            raise SlackAPIError(f"Slack API Server Error ({response.status_code}).")
 
         data = response.json()
         if not data.get("ok"):
             error_code = data.get("error", "unknown_error")
             if error_code == "ratelimited":
                 retry_after = int(response.headers.get("Retry-After", "60"))
-                raise SlackRateLimitError("Slack API rate limit exceeded.", retry_after=retry_after)
-            raise SlackAPIError(f"Slack API error: {error_code}")
+                raise SlackRateLimitError("Slack API Rate Limit Exceeded.", retry_after=retry_after)
+            raise SlackAPIError(f"Slack API Error: {error_code}")
         return data
 
     def post_message(self, channel_id, text, blocks=None, thread_ts=None):
@@ -97,7 +97,7 @@ class SlackEODService:
     def get_department_for_employee(self, employee):
         if employee and employee.department_id:
             return employee.department
-        raise SlackAPIError(f"No department mapping found for employee {getattr(employee, 'id', '')}.")
+        raise SlackAPIError(f"No Department Mapping Found For Employee {getattr(employee, 'id', '')}.")
 
     def get_department_for_user(self, user):
         employee = self._employee_from_subject(user)
@@ -124,7 +124,7 @@ class SlackEODService:
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": f"*Department:* {department.name}\nEmployee reports for the day will appear in this thread.",
+                    "text": f"*Department:* {department.name}\nEmployee Reports For The Day Will Appear In This Thread.",
                 },
             },
         ]
@@ -143,15 +143,15 @@ class SlackEODService:
             f"Date: {report_date.isoformat()}",
             "",
             "Summary:",
-            daily_status.summary or "No summary provided.",
+            daily_status.summary or "No Summary Provided.",
         ]
         if daily_status.blockers:
             lines.extend(["", "Blockers:", daily_status.blockers])
         if daily_status.next_plan:
-            lines.extend(["", "Next plan:", daily_status.next_plan])
+            lines.extend(["", "Next Plan:", daily_status.next_plan])
         for index, entry in enumerate(work_entries or [], start=1):
             project_name = entry.work_item.project.name if entry.work_item and entry.work_item.project_id else "No Project"
-            lines.extend(["", f"{index}. [{project_name}] {entry.work_item.title}", entry.summary or f"{entry.minutes} minutes logged."])
+            lines.extend(["", f"{index}. [{project_name}] {entry.work_item.title}", entry.summary or f"{entry.minutes} Minutes Logged."])
         return "\n".join(lines).strip()
 
     def build_employee_blocks(self, employee, department, report_date, daily_status, work_entries=None):
@@ -168,12 +168,12 @@ class SlackEODService:
                     ),
                 },
             },
-            {"type": "section", "text": {"type": "mrkdwn", "text": f"*Summary:*\n{daily_status.summary or 'No summary provided.'}"}},
+            {"type": "section", "text": {"type": "mrkdwn", "text": f"*Summary:*\n{daily_status.summary or 'No Summary Provided.'}"}},
         ]
         if daily_status.blockers:
             blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": f"*Blockers:*\n{daily_status.blockers}"}})
         if daily_status.next_plan:
-            blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": f"*Next plan:*\n{daily_status.next_plan}"}})
+            blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": f"*Next Plan:*\n{daily_status.next_plan}"}})
         if work_entries:
             blocks.append({"type": "divider"})
         for entry in work_entries or []:
@@ -183,7 +183,7 @@ class SlackEODService:
                     "type": "section",
                     "text": {
                         "type": "mrkdwn",
-                        "text": f"*Task:* {entry.work_item.title}\n*Project:* {project_name}\n*Update:*\n{entry.summary or f'{entry.minutes} minutes logged.'}",
+                        "text": f"*Task:* {entry.work_item.title}\n*Project:* {project_name}\n*Update:*\n{entry.summary or f'{entry.minutes} Minutes Logged.'}",
                     },
                 }
             )
@@ -225,12 +225,12 @@ class SlackEODService:
         report_date = self._parse_date(report_date)
         employee = self._employee_from_subject(subject)
         if not employee:
-            raise SlackAPIError("Employee profile not found for EOD Slack sync.")
+            raise SlackAPIError("Employee Profile Not Found For EOD Slack Sync.")
         department = self.get_department_for_employee(employee)
         channel_mapping = self.get_channel_mapping(department)
         daily_status = DailyStatusEntry.objects.filter(tenant=self.context.tenant, employee=employee, status_date=report_date).first()
         if not daily_status:
-            raise SlackAPIError(f"No EOD entry found for employee {employee.id} on {report_date}.")
+            raise SlackAPIError(f"No EOD Entry Found For Employee {employee.id} On {report_date}.")
 
         daily_thread = self.ensure_daily_thread(department, report_date, channel_mapping["channel_id"], channel_mapping["channel_name"])
         slack_message, _created = SlackDeliveryMessage.objects.get_or_create(
@@ -272,7 +272,7 @@ class SlackEODService:
         submitted_count = DailyStatusEntry.objects.filter(tenant=self.context.tenant, employee__in=employees, status_date=report_date).values("employee_id").distinct().count()
         total_users = employees.count()
         missing_count = max(total_users - submitted_count, 0)
-        text = f"EOD summary for {department.name} on {report_date.isoformat()}: {submitted_count}/{total_users} employees submitted. Missing: {missing_count}."
+        text = f"EOD Summary For {department.name} On {report_date.isoformat()}: {submitted_count}/{total_users} Employees Submitted. Missing: {missing_count}."
         blocks = [
             {
                 "type": "section",
@@ -291,13 +291,13 @@ class SlackEODService:
         if not missing_names:
             return None, None
         user_lines = "\n".join(f"- {name}" for name in missing_names[:50])
-        text = f"EOD reminder for {department.name}: {len(missing_names)} employees have not submitted their EOD for {report_date.isoformat()}."
+        text = f"EOD Reminder For {department.name}: {len(missing_names)} Employees Have Not Submitted Their EOD For {report_date.isoformat()}."
         blocks = [
             {
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": f"*EOD Reminder*\n*Department:* {department.name}\n*Date:* {report_date.isoformat()}\n*Pending submissions:* {len(missing_names)}\n{user_lines}",
+                    "text": f"*EOD Reminder*\n*Department:* {department.name}\n*Date:* {report_date.isoformat()}\n*Pending Submissions:* {len(missing_names)}\n{user_lines}",
                 },
             }
         ]

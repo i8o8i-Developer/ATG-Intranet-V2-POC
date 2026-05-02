@@ -6,7 +6,7 @@ from Backend.EnterpriseCore.services import TenantContext
 
 
 class Command(BaseCommand):
-    help = "Report leads that need BA follow-up reminders."
+    help = "Report Leads That Need BA Follow-Up Reminders."
 
     def add_arguments(self, parser):
         parser.add_argument("--tenant-id", type=int, required=True)
@@ -15,7 +15,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         tenant = Tenant.objects.filter(id=options["tenant_id"]).first()
         if not tenant:
-            raise CommandError("Tenant not found.")
+            raise CommandError("Tenant Not Found.")
         workspace = Workspace.objects.filter(id=options.get("workspace_id"), tenant=tenant).first() if options.get("workspace_id") else None
         result = LeadManagementService.check_leads_without_today_note(TenantContext(tenant=tenant, workspace=workspace, source="Command"))
-        self.stdout.write(self.style.SUCCESS(f"Follow-up reminders needed: {result.data['count']}"))
+        self.stdout.write(self.style.SUCCESS(f"Follow-Up Reminders Needed: {result.data['count']}"))

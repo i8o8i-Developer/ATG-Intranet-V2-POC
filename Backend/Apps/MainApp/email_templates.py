@@ -7,8 +7,8 @@ def html_template(name, position_name, title, message, company_logo=""):
 
 
 def reminder_text(name, offer_date, position_name, title):
-    return f"Hello {name}, your {position_name} offer {title} is pending since {offer_date}."
+    return f"Hello {name}, Your {position_name} Offer {title} Is Ending Since {offer_date}."
 
 
 def reminder_html_template(name, offer_date, position_name, title):
-    return f"<p>Hello {name}, your <strong>{position_name}</strong> offer {title} is pending since {offer_date}.</p>"
+    return f"<p>Hello {name}, Your <strong>{position_name}</strong> Offer {title} Is Ending Since {offer_date}.</p>"

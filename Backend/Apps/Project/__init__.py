@@ -1,1 +1,1 @@
-"""Project delivery and client workspace APIs."""
+"""Project Delivery and Client Workspace APIs."""

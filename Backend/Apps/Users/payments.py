@@ -17,7 +17,7 @@ def start_payment(context, employee_id, month, year, amount=None, bonus=0, bount
 
     employee = EmployeeProfile.objects.filter(tenant=context.tenant, id=employee_id).first()
     if not employee:
-        return {"ok": False, "errors": {"employee": "Employee not found."}}
+        return {"ok": False, "errors": {"employee": "Employee Not Found."}}
     snapshot, _created = EmployeePaymentSnapshot.objects.update_or_create(
         tenant=context.tenant,
         workspace=context.workspace or employee.workspace,

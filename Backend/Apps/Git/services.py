@@ -26,7 +26,7 @@ class GitRepositoryService:
         from Backend.Apps.GithubExtension.models import GitHubRepository
 
         if not getattr(context, "tenant", None):
-            return ServiceResult.failure({"tenant": "Tenant context is required for Git sync."}, status_code=400)
+            return ServiceResult.failure({"tenant": "Tenant Context Is Required For Git Sync."}, status_code=400)
         provider = provider or GitHubProvider(live=live)
         rows = provider.list_repositories()
         synced = []
@@ -75,11 +75,11 @@ class GitRepositoryService:
         from Backend.Apps.Users.models import EmployeeProfile
 
         if not getattr(context, "tenant", None):
-            return ServiceResult.failure({"tenant": "Tenant context is required for collaborator access."}, status_code=400)
+            return ServiceResult.failure({"tenant": "Tenant Context Is Required For Collaborator Access."}, status_code=400)
         employee = EmployeeProfile.objects.filter(tenant=context.tenant, id=employee_id).first() if employee_id else None
         github_username = github_username or (employee.github_username if employee else "")
         if not github_username:
-            return ServiceResult.failure({"githubUsername": "GitHub username is required."}, status_code=400)
+            return ServiceResult.failure({"githubUsername": "GitHub Username Is Required."}, status_code=400)
         repositories = GitRepositoryService._repository_queryset(context, repository_ids)
         provider = provider or GitHubProvider(live=live)
         requests = []
@@ -107,11 +107,11 @@ class GitRepositoryService:
         from Backend.Apps.Users.models import EmployeeProfile
 
         if not getattr(context, "tenant", None):
-            return ServiceResult.failure({"tenant": "Tenant context is required for collaborator deactivation."}, status_code=400)
+            return ServiceResult.failure({"tenant": "Tenant Context Is Required For Collaborator Deactivation."}, status_code=400)
         employee = EmployeeProfile.objects.filter(tenant=context.tenant, id=employee_id).first() if employee_id else None
         github_username = github_username or (employee.github_username if employee else "")
         if not github_username:
-            return ServiceResult.failure({"githubUsername": "GitHub username is required."}, status_code=400)
+            return ServiceResult.failure({"githubUsername": "GitHub Username Is Required."}, status_code=400)
         provider = provider or GitHubProvider(live=live)
         requests = []
         for repository in GitRepositoryService._repository_queryset(context, repository_ids):
@@ -137,7 +137,7 @@ class GitRepositoryService:
     def record_activity_snapshot(context, repository_id, snapshot_date, commit_count=0, pull_request_count=0, review_count=0, metrics=None):
         repository = GitRepositorySnapshot.objects.filter(tenant=context.tenant, id=repository_id).first()
         if not repository:
-            return ServiceResult.failure({"repository": "Repository snapshot not found."}, status_code=404)
+            return ServiceResult.failure({"repository": "Repository Snapshot Not Found."}, status_code=404)
         snapshot, _created = GitActivitySnapshot.objects.update_or_create(
             tenant=context.tenant,
             repository=repository,

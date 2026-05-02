@@ -7,7 +7,7 @@ from Backend.EnterpriseCore.services import TenantContext
 
 
 class Command(BaseCommand):
-    help = "Sync interns with InterviewGod. Defaults to dry-run mode."
+    help = "Sync Interns With InterviewGod. Defaults To Dry-Run Mode."
 
     def add_arguments(self, parser):
         parser.add_argument("--tenant-id", type=int, required=True)
@@ -26,4 +26,4 @@ class Command(BaseCommand):
             send_links=options["send_links"],
             client=InterviewGodClient() if options["live"] else None,
         )
-        self.stdout.write(self.style.SUCCESS(f"Processed {result.data['count']} interns."))
+        self.stdout.write(self.style.SUCCESS(f"Processed {result.data['count']} Interns."))

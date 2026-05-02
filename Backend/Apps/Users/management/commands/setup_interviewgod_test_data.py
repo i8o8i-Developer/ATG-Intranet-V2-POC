@@ -6,7 +6,7 @@ from Backend.EnterpriseCore.models import Tenant, Workspace
 
 
 class Command(BaseCommand):
-    help = "Create lightweight test data for InterviewGod sync."
+    help = "Create Lightweight Test Data For InterviewGod Sync."
 
     def add_arguments(self, parser):
         parser.add_argument("--tenant-id", type=int, required=True)
@@ -32,4 +32,4 @@ class Command(BaseCommand):
             )
             InterviewProgress.objects.get_or_create(tenant=tenant, workspace=workspace, employee=employee)
             created.append(employee.id)
-        self.stdout.write(self.style.SUCCESS(f"Prepared {len(created)} InterviewGod test interns."))
+        self.stdout.write(self.style.SUCCESS(f"Prepared {len(created)} InterviewGod Test Interns."))

@@ -39,7 +39,7 @@ def sync_payments(tenant_id, workspace_id=None):
 @shared_task(bind=True)
 def generate_payroll_excel_task(self, tenant_id, workspace_id=None, report_month=None, report_year=None, pay_type=""):
     context = _context(tenant_id, workspace_id)
-    self.update_state(state="PROGRESS", meta={"status": "Building payroll export..."})
+    self.update_state(state="PROGRESS", meta={"status": "Building Payroll Export..."})
     result = PayrollExportService.generate_excel(context, report_month=report_month, report_year=report_year, pay_type=pay_type)
     if not result.ok:
         raise RuntimeError(str(result.errors))

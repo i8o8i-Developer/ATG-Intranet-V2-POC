@@ -6,7 +6,7 @@ from Backend.EnterpriseCore.services import TenantContext
 
 
 class Command(BaseCommand):
-    help = "Queues payment status sync requests for records with payout IDs."
+    help = "Queues Payment Status Sync Requests For Records With Payout IDs."
 
     def add_arguments(self, parser):
         parser.add_argument("--tenant-id", type=int, required=True)
@@ -16,4 +16,4 @@ class Command(BaseCommand):
         tenant = Tenant.objects.get(id=options["tenant_id"])
         workspace = Workspace.objects.filter(id=options.get("workspace_id"), tenant=tenant).first() if options.get("workspace_id") else None
         result = PaymentSyncService.request_payment_status_sync(TenantContext(tenant=tenant, workspace=workspace, source="Command"))
-        self.stdout.write(self.style.SUCCESS(f"Queued {result.data['count']} payment sync requests."))
+        self.stdout.write(self.style.SUCCESS(f"Queued {result.data['count']} Payment Sync Requests."))

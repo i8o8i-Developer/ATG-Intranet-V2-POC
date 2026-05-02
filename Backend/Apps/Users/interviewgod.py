@@ -40,7 +40,7 @@ class InterviewGodClient:
 
     def _request(self, method, endpoint, **kwargs):
         if not self.base_url:
-            raise InterviewGodAuthError("InterviewGod base URL is not configured.")
+            raise InterviewGodAuthError("InterviewGod Base URL Is Not Configured.")
         response = self.session.request(method, f"{self.base_url}{endpoint}", headers=self._headers(), timeout=self.timeout, **kwargs)
         if response.status_code == 401 and self.refresh_token:
             self.refresh_access_token()
@@ -56,7 +56,7 @@ class InterviewGodClient:
         data = response.json()
         token = data.get("access_token") or data.get("token")
         if not token:
-            raise InterviewGodAuthError("InterviewGod refresh response did not include an access token.")
+            raise InterviewGodAuthError("InterviewGod Refresh Response Did Not Include An Access Token.")
         self.auth_token = token
         return token
 
@@ -91,9 +91,9 @@ class InterviewGodService:
     def validate_employee(employee):
         errors = {}
         if not employee.user.email:
-            errors["email"] = "Employee user email is required."
+            errors["email"] = "Employee User Email Is Required."
         if not employee.display_name:
-            errors["display_name"] = "Employee display name is required."
+            errors["display_name"] = "Employee Display Name Is Required."
         return ValidationResult(ok=not errors, errors=errors or None)
 
     @staticmethod

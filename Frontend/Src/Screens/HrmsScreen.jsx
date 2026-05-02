@@ -1,142 +1,665 @@
-import React, { useEffect, useState } from "react";
-import { AlertTriangle, ChevronDown, ChevronRight, Menu, MoreHorizontal, Search } from "lucide-react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  AlertTriangle, Briefcase, CheckCircle, ChevronDown, ChevronUp,
+  Clock, FileText, Info, Menu, MoreHorizontal, Search, Target,
+  TrendingUp, Users, X, Zap,
+} from "lucide-react";
 
+import { MilestoneRail, Modal, Panel, SimpleTable, Tabs } from "./Shared/ScreenComponents.jsx";
+import { apiPatch, apiPost } from "../Api/Client.js";
 import {
-  Disclosure,
-  MilestoneRail,
-  Modal,
-  Panel,
-  SimpleTable,
-  StatusPill,
-  Tabs,
-} from "./Shared/ScreenComponents.jsx";
-import {
-  calendarDays,
-  filterForEmployee,
-  findDailyStatus,
-  formatDate,
-  groupBy,
-  indexById,
-  isCompleted,
-  isoDate,
-  lastDays,
-  money,
-  projectName,
-  toggleSet,
+  calendarDays, filterForEmployee, findDailyStatus, formatDate,
+  groupBy, indexById, isCompleted, isoDate, lastDays, money,
+  projectName, toggleSet,
 } from "./Shared/ScreenUtils.jsx";
 
+/* ─── colour helpers ─────────────────────────────────────────── */
+const AVATAR_COLORS = ["#6366f1","#0ea5e9","#10b981","#f59e0b","#ec4899","#8b5cf6","#14b8a6","#f97316"];
+function avatarColor(name = "") {
+  let n = 0;
+  for (let i = 0; i < name.length; i += 1) n += name.charCodeAt(i);
+  return AVATAR_COLORS[n % AVATAR_COLORS.length];
+}
+function initials(name = "") {
+  return name.trim().split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "?";
+}
+
+/* ─── HrmsScreen ─────────────────────────────────────────────── */
 export function HrmsScreen({ data, reload }) {
-  const [tab, setTab] = useState("team");
-  const [search, setSearch] = useState("");
+  const [tab, setTab]           = useState("team");
+  const [search, setSearch]     = useState("");
   const [expanded, setExpanded] = useState(new Set());
   const [eodEmployee, setEodEmployee] = useState(null);
-  const employees = (data.employees || []).filter((employee) => employee.display_name?.toLowerCase().includes(search.toLowerCase()) || employee.department_name?.toLowerCase().includes(search.toLowerCase()));
-  const departments = groupBy(employees, (employee) => employee.department_name || "Unassigned");
+
+  const employees   = (data.employees || []).filter((e) =>
+    e.display_name?.toLowerCase().includes(search.toLowerCase()) ||
+    e.department_name?.toLowerCase().includes(search.toLowerCase()),
+  );
+  const departments = groupBy(employees, (e) => e.department_name || "Unassigned");
+
+  const totalEmp   = (data.employees || []).length;
+  const activeEmp  = (data.employees || []).filter((e) => e.status === "Active").length;
+  const benchEmp   = (data.employees || []).filter((e) => e.status === "OnBench").length;
+  const deptCount  = new Set((data.employees || []).map((e) => e.department_name).filter(Boolean)).size;
 
   useEffect(() => {
-    if (!expanded.size && departments.size) setExpanded(new Set([departments.keys().next().value]));
-  }, [departments, expanded.size]);
+    if (!expanded.size && departments.size)
+      setExpanded(new Set([departments.keys().next().value]));
+  }, [departments.size]);
 
-  const toggleAll = () => {
-    if (expanded.size === departments.size) setExpanded(new Set());
-    else setExpanded(new Set(Array.from(departments.keys())));
-  };
+  const toggleAll = () =>
+    expanded.size === departments.size
+      ? setExpanded(new Set())
+      : setExpanded(new Set(Array.from(departments.keys())));
 
   return (
-    <section className="legacy-screen hrms-screen">
-      <Disclosure title="Notifications" defaultOpen={false}>
-        {(data.notifications || []).slice(0, 4).map((item) => <div className="notice-row compact" key={item.id}>{item.title}</div>)}
-      </Disclosure>
-      <Tabs value={tab} onChange={setTab} items={[["team", "Team"], ["sanity", "Project Sanity"], ["finance", "Project Finance"]]} />
+    <section className="hrms-v2">
+      {/* ── Hero ── */}
+      <div className="hrms-hero">
+        <div className="hrms-hero-left">
+          <span className="hrms-kicker">Human Resources</span>
+          <h1 className="hrms-hero-title">Team Management</h1>
+          <p className="hrms-hero-sub">Workforce Overview, EOD Tracking, And Project Health.</p>
+        </div>
+        <div className="hrms-kpi-row">
+          {[
+            { label: "Total", value: totalEmp,  cls: "" },
+            { label: "Active", value: activeEmp, cls: "green" },
+            { label: "On Bench", value: benchEmp, cls: "gold" },
+            { label: "Departments", value: deptCount, cls: "blue" },
+          ].map(({ label, value, cls }) => (
+            <div key={label} className={`hrms-kpi ${cls}`}>
+              <strong>{value}</strong>
+              <span>{label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Tabs ── */}
+      <div className="hrms-tab-shell">
+        <Tabs
+          value={tab}
+          onChange={setTab}
+          items={[["team", "Team"], ["sanity", "Project Sanity"], ["finance", "Project Finance"]]}
+        />
+      </div>
+
+      {/* ── Team ── */}
       {tab === "team" && (
-        <>
-          <div className="toolbar-row"><div className="search-box"><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search Here..." /><Search size={20} /></div><button className="outline-button" onClick={toggleAll}><Menu size={15} /> Expand All</button></div>
-          <div className="department-stack">
-            {Array.from(departments.entries()).map(([departmentName, rows]) => {
-              const assigned = rows.filter((item) => item.status === "Active").length;
-              const bench = rows.filter((item) => item.status === "OnBench").length;
-              const isOpen = expanded.has(departmentName);
+        <div className="hrms-body">
+          <div className="hrms-toolbar">
+            <div className="hrms-search">
+              <Search size={16} />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search Employees Or Departments…"
+              />
+            </div>
+            <button className="outline-button" onClick={toggleAll}>
+              <Menu size={14} />
+              {expanded.size === departments.size ? "Collapse All" : "Expand All"}
+            </button>
+          </div>
+          <div className="hrms-dept-stack">
+            {Array.from(departments.entries()).map(([deptName, rows]) => {
+              const assigned     = rows.filter((e) => e.status === "Active").length;
+              const bench        = rows.filter((e) => e.status === "OnBench").length;
+              const notAssigned  = Math.max(rows.length - assigned - bench, 0);
+              const isOpen       = expanded.has(deptName);
               return (
-                <section className="department-card" key={departmentName}>
-                  <button className="department-head" onClick={() => setExpanded(toggleSet(expanded, departmentName))}>
-                    <strong>{departmentName} ({rows.length})</strong>
-                    <span><StatusPill tone="green">Assigned: {assigned}</StatusPill><StatusPill tone="red">Not Assigned: {Math.max(rows.length - assigned - bench, 0)}</StatusPill><StatusPill tone="slate">On-Bench: {bench}</StatusPill>{isOpen ? <ChevronDown /> : <ChevronRight />}</span>
+                <div className="hrms-dept-card" key={deptName}>
+                  <button
+                    className="hrms-dept-head"
+                    onClick={() => setExpanded(toggleSet(expanded, deptName))}
+                  >
+                    <div className="hrms-dept-left">
+                      <span className="hrms-dept-icon"><Users size={16} /></span>
+                      <strong>{deptName}</strong>
+                      <span className="hrms-dept-badge">{rows.length}</span>
+                    </div>
+                    <div className="hrms-dept-right">
+                      <span className="hrms-pill green">Assigned: {assigned}</span>
+                      <span className="hrms-pill red">Not Assigned: {notAssigned}</span>
+                      <span className="hrms-pill slate">On-Bench: {bench}</span>
+                      {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                    </div>
                   </button>
-                  {isOpen && <HrmsTeamTable rows={rows} data={data} setEodEmployee={setEodEmployee} />}
-                </section>
+                  {isOpen && (
+                    <HrmsTeamTable
+                      rows={rows}
+                      data={data}
+                      setEodEmployee={setEodEmployee}
+                      reload={reload}
+                    />
+                  )}
+                </div>
               );
             })}
           </div>
-        </>
+        </div>
       )}
-      {tab === "sanity" && <ProjectSanity data={data} />}
+
+      {tab === "sanity"  && <ProjectSanity  data={data} />}
       {tab === "finance" && <ProjectFinance data={data} />}
-      {eodEmployee && <EodSummaryModal employee={eodEmployee} data={data} onClose={() => setEodEmployee(null)} reload={reload} />}
+
+      {eodEmployee && (
+        <EodSummaryModal
+          employee={eodEmployee}
+          data={data}
+          onClose={() => setEodEmployee(null)}
+          reload={reload}
+        />
+      )}
     </section>
   );
 }
 
-function HrmsTeamTable({ rows, data, setEodEmployee }) {
-  const days = lastDays(7);
-  const projectMap = indexById(data.projects);
+/* ─── HrmsTeamTable ──────────────────────────────────────────── */
+function HrmsTeamTable({ rows, data, setEodEmployee, reload }) {
   return (
-    <div className="table-wrap tint">
-      <table className="erp-table hrms-table">
-        <thead><tr><th>Name / Joining Date</th><th>Skill Level</th><th>Project</th><th>Remarks</th><th>BA</th><th>BC (This Month)</th><th>EOD Summary & Attendance</th><th /></tr></thead>
+    <div className="hrms-table-wrap">
+      <table className="hrms-emp-table">
+        <thead>
+          <tr>
+            <th>Name / Joining Date</th>
+            <th>Skill Level</th>
+            <th>Project</th>
+            <th>Remarks</th>
+            <th>BA</th>
+            <th>BC (This Month)</th>
+            <th>EOD &amp; Attendance</th>
+            <th />
+          </tr>
+        </thead>
         <tbody>
-          {rows.map((employee) => {
-            const assignments = (data.teamAssignments || []).filter((item) => String(item.employee) === String(employee.id));
-            const skills = (data.userSkills || []).filter((item) => String(item.employee) === String(employee.id));
-            const employeeProjects = assignments.map((item) => projectMap.get(String(item.project))?.name).filter(Boolean);
-            return (
-              <tr key={employee.id}>
-                <td><div className="plain-name"><strong>{employee.display_name}</strong><small>{formatDate(employee.joined_on)}</small></div></td>
-                <td><span className="skill-badge"><AlertTriangle size={12} />{skills[0]?.proficiency > 2 ? "Advanced" : "Basic"}</span></td>
-                <td>{employeeProjects.length ? employeeProjects.slice(0, 4).map((name) => <span className="stacked" key={name}>{name}</span>) : "-"}</td>
-                <td><textarea defaultValue={employee.profile_payload?.remarks || ""} /></td>
-                <td>0</td><td>0</td>
-                <td><div className="attendance-mini">{days.map((day) => {
-                  const status = findDailyStatus(data.dailyStatus, employee.id, day.iso);
-                  return <button key={day.iso} className={status ? "green" : "gold"} onClick={() => setEodEmployee({ ...employee, selectedDate: day.iso })}>{day.label}</button>;
-                })}</div><button className="view-more" onClick={() => setEodEmployee(employee)}>View More <ChevronDown size={17} /></button></td>
-                <td><button className="icon-button"><MoreHorizontal size={18} /></button></td>
-              </tr>
-            );
-          })}
+          {rows.map((emp) => (
+            <EmployeeRow
+              key={emp.id}
+              employee={emp}
+              data={data}
+              setEodEmployee={setEodEmployee}
+              reload={reload}
+            />
+          ))}
         </tbody>
       </table>
     </div>
   );
 }
 
-function EodSummaryModal({ employee, data, onClose }) {
-  const [tab, setTab] = useState("calendar");
-  const statuses = (data.dailyStatus || []).filter((item) => String(item.employee) === String(employee.id));
-  const tasks = filterForEmployee(data.tasks, employee.id);
-  const month = new Date(2026, 4, 1);
-  const monthDays = calendarDays(month);
+/* ─── EmployeeRow ────────────────────────────────────────────── */
+const PERF_OPTIONS = [
+  { label: "Good Performer",   color: "#10b981" },
+  { label: "Medium Performer", color: "#f59e0b" },
+  { label: "Low Performer",    color: "#f97316" },
+  { label: "On Notice",        color: "#ef4444" },
+  { label: "On Bench",         color: "#94a3b8" },
+];
+
+function EmployeeRow({ employee, data, setEodEmployee, reload }) {
+  const [showPerfMenu, setShowPerfMenu] = useState(false);
+  const [showMenu,     setShowMenu]     = useState(false);
+  const [eodPopover,   setEodPopover]   = useState(null); // iso date string or null
+  const [saving,       setSaving]       = useState(false);
+  const menuRef   = useRef(null);
+  const perfRef   = useRef(null);
+  const remarkRef = useRef(null);
+
+  const days       = lastDays(7);
+  const projectMap = indexById(data.projects);
+  const assignments = (data.teamAssignments || []).filter(
+    (a) => String(a.employee) === String(employee.id),
+  );
+  const skills = (data.userSkills || []).filter(
+    (s) => String(s.employee) === String(employee.id),
+  );
+  const empProjects = assignments
+    .map((a) => projectMap.get(String(a.project))?.name)
+    .filter(Boolean);
+
+  const skill     = skills[0];
+  const prof      = skill?.proficiency ?? 1;
+  const profLabel = prof >= 3 ? "Advanced" : prof >= 2 ? "Intermediate" : "Basic";
+  const profCls   = prof >= 3 ? "adv" : prof >= 2 ? "mid" : "bas";
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setShowMenu(false);
+      if (perfRef.current && !perfRef.current.contains(e.target)) setShowPerfMenu(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const saveRemark = useCallback(async () => {
+    if (!remarkRef.current || saving) return;
+    setSaving(true);
+    try {
+      await apiPatch(`/Users/EmployeeProfiles/${employee.id}/`, {
+        profile_payload: { ...employee.profile_payload, remarks: remarkRef.current.value },
+      });
+      if (reload) reload();
+    } catch { /* silent */ }
+    setSaving(false);
+  }, [employee.id, employee.profile_payload, saving, reload]);
+
+  const ic = initials(employee.display_name);
+  const ac = avatarColor(employee.display_name);
+
   return (
-    <Modal onClose={onClose} wide title={`${employee.display_name}'s EOD Summary`}>
-      <Tabs value={tab} onChange={setTab} items={[["calendar", "Calendar"], ["bounties", "Bounties"], ["summaries", "EOD Summaries"]]} />
-      {tab === "calendar" && <div className="calendar-grid"><div className="calendar-nav"><button className="outline-button">Previous</button><h3>May 2026</h3><button className="outline-button">Next</button></div>{["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => <strong key={day}>{day}</strong>)}{monthDays.map((day, index) => day ? <button key={index} className={findDailyStatus(statuses, employee.id, day.iso) ? "submitted" : day.future ? "future" : "empty"}>{day.day}<small>{day.iso === isoDate(new Date()) ? "Today" : ""}</small></button> : <span key={index} />)}</div>}
-      {tab === "bounties" && <SimpleTable columns={["Date", "Project", "Task", "Status", "Bounty"]} rows={tasks.slice(0, 10).map((task) => [formatDate(task.updated_at || task.created_at), projectName(data, task.project), task.title, task.status, money(task.bounty)])} />}
-      {tab === "summaries" && <SimpleTable columns={["Date", "Project Name", "EOD Summary"]} rows={lastDays(7).map((day) => { const status = findDailyStatus(statuses, employee.id, day.iso); return [day.iso, status?.metadata?.project || "-", status ? status.summary : "No EOD Submitted Today"]; })} />}
+    <tr className="hrms-emp-row">
+      {/* Name */}
+      <td>
+        <div className="hrms-name-cell">
+          <span className="hrms-avatar" style={{ background: ac }}>{ic}</span>
+          <div className="hrms-name-stack" ref={perfRef}>
+            <button
+              className="hrms-name-btn"
+              onClick={() => setShowPerfMenu(!showPerfMenu)}
+            >
+              <strong>{employee.display_name}</strong>
+              {showPerfMenu ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+            </button>
+            <small className="hrms-join-date">Joined: {formatDate(employee.joined_on)}</small>
+            {showPerfMenu && (
+              <div className="hrms-perf-menu">
+                <button
+                  className="hrms-perf-close"
+                  onClick={() => setShowPerfMenu(false)}
+                >
+                  <X size={13} />
+                </button>
+                {PERF_OPTIONS.map((opt) => (
+                  <button key={opt.label} className="hrms-perf-opt">
+                    <span className="hrms-perf-dot" style={{ background: opt.color }} />
+                    {opt.label}
+                  </button>
+                ))}
+                <button className="hrms-perf-opt muted">Unselect</button>
+              </div>
+            )}
+          </div>
+          <button className="hrms-info-btn" title="View Profile">
+            <Info size={14} />
+          </button>
+        </div>
+      </td>
+
+      {/* Skill */}
+      <td>
+        <span className={`hrms-skill-badge ${profCls}`}>
+          <AlertTriangle size={11} />
+          {profLabel}
+          <ChevronDown size={11} />
+        </span>
+      </td>
+
+      {/* Projects */}
+      <td>
+        <div className="hrms-proj-stack">
+          {empProjects.length
+            ? empProjects.slice(0, 3).map((name) => (
+                <span key={name} className="hrms-proj-tag">{name}</span>
+              ))
+            : <span className="hrms-no-proj">—</span>}
+        </div>
+      </td>
+
+      {/* Remarks */}
+      <td>
+        <textarea
+          ref={remarkRef}
+          className="hrms-remark"
+          defaultValue={employee.profile_payload?.remarks || ""}
+          placeholder="Add Remarks…"
+          onBlur={saveRemark}
+        />
+      </td>
+
+      {/* BA / BC */}
+      <td className="hrms-num">0</td>
+      <td className="hrms-num">0</td>
+
+      {/* EOD & Attendance */}
+      <td>
+        <div className="hrms-att-cell">
+          <div className="hrms-att-strip">
+            {days.map((day) => {
+              const ds = findDailyStatus(data.dailyStatus, employee.id, day.iso);
+              const isOpen = eodPopover === day.iso;
+              return (
+                <div key={day.iso} className="hrms-att-wrap">
+                  <button
+                    className={`hrms-att-day ${ds ? "submitted" : "missing"}`}
+                    onClick={() => setEodPopover(isOpen ? null : day.iso)}
+                    title={day.iso}
+                  >
+                    {day.label}
+                  </button>
+                  {isOpen && ds && (
+                    <div className="hrms-eod-pop">
+                      <button
+                        className="hrms-eod-pop-close"
+                        onClick={() => setEodPopover(null)}
+                      >
+                        <X size={13} />
+                      </button>
+                      <strong className="hrms-eod-pop-name">{employee.display_name}</strong>
+                      <small className="hrms-eod-pop-date">{day.iso} · EOD Report</small>
+                      <div className="hrms-eod-pop-project">
+                        <span>{ds.metadata?.project || "Project"}</span>
+                        <p>{ds.summary || "No Summary Provided."}</p>
+                      </div>
+                      <div className="hrms-eod-pop-status">
+                        <span className="dot" /> Submitted
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <button
+            className="hrms-view-more"
+            onClick={() => setEodEmployee(employee)}
+          >
+            View More <ChevronDown size={14} />
+          </button>
+        </div>
+      </td>
+
+      {/* Actions */}
+      <td>
+        <div className="hrms-action-wrap" ref={menuRef}>
+          <button
+            className="icon-button"
+            onClick={() => setShowMenu(!showMenu)}
+          >
+            <MoreHorizontal size={16} />
+          </button>
+          {showMenu && (
+            <div className="hrms-ctx-menu">
+              <button onClick={() => setShowMenu(false)}>
+                <Target size={13} /> Assign Goal
+              </button>
+              <button onClick={() => setShowMenu(false)}>
+                <Clock size={13} /> Goal Overview
+              </button>
+              <button
+                onClick={() => { setEodEmployee(employee); setShowMenu(false); }}
+              >
+                <FileText size={13} /> EOD Summary
+              </button>
+              <button onClick={() => setShowMenu(false)}>
+                <Zap size={13} /> Send Interview
+              </button>
+            </div>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+/* ─── EodSummaryModal ────────────────────────────────────────── */
+function EodSummaryModal({ employee, data, onClose, reload }) {
+  const [tab, setTab]         = useState("calendar");
+  const [calMonth, setCalMonth] = useState(new Date());
+  const [submitting, setSubmitting] = useState(false);
+  const [eodText, setEodText] = useState("");
+
+  const statuses  = (data.dailyStatus || []).filter(
+    (s) => String(s.employee) === String(employee.id),
+  );
+  const tasks     = filterForEmployee(data.tasks, employee.id);
+  const monthDays = calendarDays(calMonth);
+  const monthLabel = calMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const today     = isoDate(new Date());
+
+  const prevMonth = () =>
+    setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth() - 1, 1));
+  const nextMonth = () =>
+    setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 1));
+
+  const submitEod = async () => {
+    if (!eodText.trim() || submitting) return;
+    setSubmitting(true);
+    try {
+      await apiPost("/TasksDashboard/DailyStatusEntries/", {
+        employee: employee.id,
+        status_date: today,
+        summary: eodText.trim(),
+      });
+      setEodText("");
+      if (reload) reload();
+    } catch { /* silent */ }
+    setSubmitting(false);
+  };
+
+  const ic = initials(employee.display_name);
+  const ac = avatarColor(employee.display_name);
+  const todayStatus = findDailyStatus(statuses, employee.id, today);
+
+  return (
+    <Modal onClose={onClose} wide title="">
+      <div className="eod-modal-hero">
+        <span className="eod-modal-avatar" style={{ background: ac }}>{ic}</span>
+        <div>
+          <h2 className="eod-modal-name">{employee.display_name}</h2>
+          <p className="eod-modal-sub">
+            {employee.department_name || "—"} · Joined {formatDate(employee.joined_on)}
+          </p>
+        </div>
+        <div className="eod-modal-today">
+          {todayStatus
+            ? <span className="hrms-pill green"><CheckCircle size={12} /> EOD Submitted Today</span>
+            : <span className="hrms-pill red">No EOD Today</span>}
+        </div>
+      </div>
+
+      <Tabs
+        value={tab}
+        onChange={setTab}
+        items={[["calendar", "Calendar"], ["submit", "Submit EOD"], ["bounties", "Bounties"], ["summaries", "EOD Summaries"]]}
+      />
+
+      {/* Calendar */}
+      {tab === "calendar" && (
+        <div className="eod-cal-wrap">
+          <div className="eod-cal-nav">
+            <button className="outline-button" onClick={prevMonth}>← Previous</button>
+            <h3>{monthLabel}</h3>
+            <button className="outline-button" onClick={nextMonth}>Next →</button>
+          </div>
+          <div className="eod-cal-grid">
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+              <strong key={d} className="eod-cal-hdr">{d}</strong>
+            ))}
+            {monthDays.map((day, i) =>
+              !day ? (
+                <span key={i} />
+              ) : (
+                <button
+                  key={i}
+                  className={`eod-cal-day ${
+                    findDailyStatus(statuses, employee.id, day.iso)
+                      ? "submitted"
+                      : day.future
+                      ? "future"
+                      : "empty"
+                  }`}
+                >
+                  <strong>{day.day}</strong>
+                  <small>{day.iso === today ? "Today" : ""}</small>
+                </button>
+              ),
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Submit EOD */}
+      {tab === "submit" && (
+        <div className="eod-submit-wrap">
+          <div className="eod-submit-card">
+            <h3>Submit EOD Report For Today ({today})</h3>
+            {todayStatus ? (
+              <div className="eod-already-submitted">
+                <CheckCircle size={20} />
+                <div>
+                  <strong>EOD Already Submitted</strong>
+                  <p>{todayStatus.summary}</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <textarea
+                  value={eodText}
+                  onChange={(e) => setEodText(e.target.value)}
+                  placeholder="Describe What You Worked On Today…"
+                  className="eod-text-input"
+                />
+                <button
+                  className="primary-button"
+                  onClick={submitEod}
+                  disabled={submitting || !eodText.trim()}
+                >
+                  {submitting ? "Submitting…" : "Submit EOD"}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Bounties */}
+      {tab === "bounties" && (
+        <div className="eod-tab-body">
+          <SimpleTable
+            columns={["Date", "Project", "Task", "Status", "Bounty"]}
+            rows={tasks.slice(0, 20).map((t) => [
+              formatDate(t.updated_at || t.created_at),
+              projectName(data, t.project),
+              t.title,
+              t.status,
+              "₹" + money(t.bounty),
+            ])}
+          />
+        </div>
+      )}
+
+      {/* EOD Summaries */}
+      {tab === "summaries" && (
+        <div className="eod-tab-body">
+          <div className="eod-summary-list">
+            {lastDays(14).reverse().map((day) => {
+              const ds = findDailyStatus(statuses, employee.id, day.iso);
+              return (
+                <div key={day.iso} className={`eod-summary-row ${ds ? "has" : "no"}`}>
+                  <div className="eod-sum-date"><strong>{day.iso}</strong></div>
+                  {ds ? (
+                    <div className="eod-sum-content">
+                      <span className="eod-sum-proj">{ds.metadata?.project || "—"}</span>
+                      <p>{ds.summary || "No Summary Text."}</p>
+                    </div>
+                  ) : (
+                    <div className="eod-sum-content empty">No EOD Submitted</div>
+                  )}
+                  <span className={`eod-sum-badge ${ds ? "submitted" : "missing"}`}>
+                    <span className="dot" />
+                    {ds ? "Submitted" : "Missing"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </Modal>
   );
 }
 
+/* ─── ProjectSanity ──────────────────────────────────────────── */
 function ProjectSanity({ data }) {
-  const milestonesByProject = groupBy(data.milestones || [], (item) => String(item.project));
+  const byProject = groupBy(data.milestones || [], (m) => String(m.project));
   return (
-    <div className="sanity-list">
-      {(data.projects || []).map((project) => {
-        const milestones = milestonesByProject.get(String(project.id)) || [];
-        return <section className="sanity-row" key={project.id}><button><ChevronDown size={18} /></button><StatusPill>{project.priority}</StatusPill><strong>{project.name}</strong><span>{project.project_type || project.status}</span><MilestoneRail milestones={milestones} /><b className={project.health === "Escalated" ? "danger-text" : ""}>{project.health || "Null"}</b></section>;
-      })}
+    <div className="hrms-body">
+      <div className="hrms-sanity-list">
+        {(data.projects || []).map((project) => {
+          const milestones = byProject.get(String(project.id)) || [];
+          const done = milestones.filter((m) => isCompleted(m.status)).length;
+          const pct  = milestones.length
+            ? Math.round((done / milestones.length) * 100)
+            : 0;
+          return (
+            <div className="hrms-sanity-card" key={project.id}>
+              <div className="hrms-sanity-left">
+                <span className="hrms-sanity-priority">P{project.priority}</span>
+                <div className="hrms-sanity-meta">
+                  <strong>{project.name}</strong>
+                  <small>{project.project_type || project.status || "—"}</small>
+                </div>
+              </div>
+              <div className="hrms-sanity-mid">
+                <MilestoneRail milestones={milestones} />
+                <small className="hrms-milestone-ct">{done}/{milestones.length} Milestones</small>
+              </div>
+              <div className="hrms-sanity-right">
+                <span className="hrms-pct">{pct}%</span>
+                <span className={`hrms-health ${
+                  project.health === "Escalated" ? "danger" :
+                  project.health === "On Track"  ? "ok"     : ""
+                }`}>
+                  {project.health || "Null"}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
 
+/* ─── ProjectFinance ─────────────────────────────────────────── */
 function ProjectFinance({ data }) {
-  return <Panel title="Project Finance"><SimpleTable columns={["Project", "Health", "Team", "Tasks", "Bounty"]} rows={(data.projects || []).map((project) => [project.name, project.health, (data.teamAssignments || []).filter((item) => item.project === project.id).length, (data.tasks || []).filter((task) => task.project === project.id).length, money((data.tasks || []).filter((task) => task.project === project.id).reduce((sum, task) => sum + Number(task.bounty || 0), 0))])} /></Panel>;
+  const totalBounty = (data.tasks || []).reduce(
+    (sum, t) => sum + Number(t.bounty || 0), 0,
+  );
+  return (
+    <div className="hrms-body">
+      <div className="hrms-fin-kpis">
+        {[
+          { icon: <Briefcase size={18} />, label: "Total Projects",    value: (data.projects || []).length },
+          { icon: <CheckCircle size={18} />, label: "Total Tasks",     value: (data.tasks || []).length },
+          { icon: <TrendingUp size={18} />, label: "Total Bounty",     value: "₹" + money(totalBounty) },
+          { icon: <Users size={18} />,      label: "Team Assignments", value: (data.teamAssignments || []).length },
+        ].map(({ icon, label, value }) => (
+          <div key={label} className="hrms-fin-kpi">
+            <span className="hrms-fin-icon">{icon}</span>
+            <strong>{value}</strong>
+            <span>{label}</span>
+          </div>
+        ))}
+      </div>
+      <Panel title="Project Finance Breakdown">
+        <SimpleTable
+          columns={["Project", "Health", "Team Size", "Tasks", "Bounty Pool"]}
+          rows={(data.projects || []).map((project) => [
+            project.name,
+            project.health || "—",
+            (data.teamAssignments || []).filter((a) => a.project === project.id).length,
+            (data.tasks || []).filter((t) => t.project === project.id).length,
+            "₹" + money(
+              (data.tasks || [])
+                .filter((t) => t.project === project.id)
+                .reduce((sum, t) => sum + Number(t.bounty || 0), 0),
+            ),
+          ])}
+        />
+      </Panel>
+    </div>
+  );
 }

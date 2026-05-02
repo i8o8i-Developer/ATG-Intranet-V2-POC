@@ -161,7 +161,7 @@ class LoginAPIView(APIView):
         login_name = serializer.validated_data.get("username") or serializer.validated_data.get("email")
         user = authenticate(request, username=login_name, password=serializer.validated_data["password"])
         if not user:
-            return Response({"detail": "Invalid username/email or password."}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"detail": "Invalid UserName/Email Or Password."}, status=status.HTTP_401_UNAUTHORIZED)
         session_login(request, user)
         return Response(
             _current_user_payload(

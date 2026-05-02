@@ -153,7 +153,7 @@ class ManagerAbbreviationViewSet(TenantScopedModelViewSet):
 
         employee = EmployeeProfile.objects.filter(tenant=self.get_tenant_context().tenant, id=request.data.get("employee")).first()
         if not employee:
-            return Response({"employee": "Employee profile not found."}, status=404)
+            return Response({"employee": "Employee Profile Not Found."}, status=404)
         result = ManagerAbbreviationService.generate(self.get_tenant_context(), employee)
         return self.service_response(result, ManagerAbbreviationSerializer)
 
@@ -178,7 +178,7 @@ class TasksDashboardLegacyMixin:
         if tenant and not workspace:
             workspace = Workspace.objects.filter(tenant=tenant).order_by("id").first()
         if not tenant:
-            return ServiceResult.failure({"tenant": "Tenant context is required for TasksDashboard request."}, status_code=400)
+            return ServiceResult.failure({"tenant": "Tenant Context Is Required For TasksDashboard Request."}, status_code=400)
         return ServiceResult.success(TenantContext(tenant=tenant, workspace=workspace, actor=actor, source="TasksDashboardLegacyAPI"))
 
     def with_context(self, request):

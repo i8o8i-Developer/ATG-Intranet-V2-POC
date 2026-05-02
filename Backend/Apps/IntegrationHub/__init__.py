@@ -1,1 +1,1 @@
-"""External provider connection, webhook, and sync APIs."""
+"""External Provider Connection, Webhook, and Sync APIs."""

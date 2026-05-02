@@ -1,1 +1,1 @@
-"""Project management commands."""
+"""Project Management Commands."""

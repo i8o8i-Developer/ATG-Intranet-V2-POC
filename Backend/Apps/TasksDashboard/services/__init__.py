@@ -35,7 +35,7 @@ class WorkManagementService:
 	def transition_work_item(context, work_item_id, status, message=""):
 		work_item = WorkItem.objects.filter(tenant=context.tenant, id=work_item_id).first()
 		if not work_item:
-			return ServiceResult.failure({"workItem": "Work item not found."}, status_code=404)
+			return ServiceResult.failure({"workItem": "Work Item Not Found."}, status_code=404)
 		previous_status = work_item.status
 		work_item.status = status
 		if status in {"Completed", "C", "Done"}:
@@ -77,7 +77,7 @@ class WorkManagementService:
 	def log_work_entry(context, work_item_id, employee_id, minutes=0, summary="", entry_date=None, entry_type="WorkLog"):
 		work_item = WorkItem.objects.filter(tenant=context.tenant, id=work_item_id).first()
 		if not work_item:
-			return ServiceResult.failure({"workItem": "Work item not found."}, status_code=404)
+			return ServiceResult.failure({"workItem": "Work Item Not Found."}, status_code=404)
 		entry = WorkEntry.objects.create(
 			tenant=context.tenant,
 			workspace=context.workspace or work_item.workspace,

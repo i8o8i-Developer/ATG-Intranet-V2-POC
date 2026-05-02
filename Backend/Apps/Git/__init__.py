@@ -1,1 +1,1 @@
-"""Git utility and repository read model APIs."""
+"""Git Utility And Repository Read Model APIs."""

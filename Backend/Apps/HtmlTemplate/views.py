@@ -106,7 +106,7 @@ class HtmlTemplateLegacyMixin:
         if tenant and not workspace:
             workspace = Workspace.objects.filter(tenant=tenant).order_by("id").first()
         if not tenant:
-            return ServiceResult.failure({"tenant": "Tenant context is required for HtmlTemplate request."}, status_code=400)
+            return ServiceResult.failure({"tenant": "Tenant Context Is Required For HtmlTemplate Request."}, status_code=400)
         return ServiceResult.success(TenantContext(tenant=tenant, workspace=workspace, actor=actor, source="HtmlTemplateLegacyAPI"))
 
     def with_context(self, request):
@@ -134,7 +134,7 @@ class ContentTemplateRenderLegacyAPIView(HtmlTemplateLegacyMixin, APIView):
             return error_response
         template = ContentTemplate.objects.filter(tenant=context.tenant, id=pk).first()
         if not template:
-            return Response({"template": "Content template not found."}, status=404)
+            return Response({"template": "Content Template Not Found."}, status=404)
         serializer = TemplateRenderSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         result = TemplateRenderService.render_text_template(template, serializer.validated_data.get("variables") or {})
@@ -167,7 +167,7 @@ class GenericHtmlTemplateRenderLegacyAPIView(HtmlTemplateLegacyMixin, APIView):
             return error_response
         template = GenericHtmlTemplate.objects.filter(tenant=context.tenant, id=pk).first()
         if not template:
-            return Response({"template": "Generic HTML template not found."}, status=404)
+            return Response({"template": "Generic HTML Template Not Found."}, status=404)
         serializer = TemplateRenderSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         result = TemplateRenderService.render_text_template(template, serializer.validated_data.get("variables") or {})

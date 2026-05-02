@@ -1,1 +1,1 @@
-"""TasksDashboard management package."""
+"""TasksDashboard Management Package."""

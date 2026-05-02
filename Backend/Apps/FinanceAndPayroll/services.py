@@ -16,7 +16,7 @@ class PayrollRunService:
     def recalculate_totals(context, payroll_run_id):
         payroll_run = PayrollRun.objects.filter(tenant=context.tenant, id=payroll_run_id).first()
         if not payroll_run:
-            return ServiceResult.failure({"payrollRun": "Payroll run not found."}, status_code=404)
+            return ServiceResult.failure({"payrollRun": "Payroll Run Not Found."}, status_code=404)
         line_items = PayrollLineItem.objects.filter(tenant=context.tenant, payroll_run=payroll_run)
         payroll_run.gross_amount = sum(item.gross_amount for item in line_items)
         payroll_run.deduction_amount = sum(item.deduction_amount for item in line_items)
@@ -29,7 +29,7 @@ class PayrollRunService:
     def submit_for_approval(context, payroll_run_id):
         payroll_run = PayrollRun.objects.filter(tenant=context.tenant, id=payroll_run_id).first()
         if not payroll_run:
-            return ServiceResult.failure({"payrollRun": "Payroll run not found."}, status_code=404)
+            return ServiceResult.failure({"payrollRun": "Payroll Run Not Found."}, status_code=404)
         payroll_run.status = "PendingApproval"
         payroll_run.updated_by = context.actor
         payroll_run.save(update_fields=["status", "updated_by", "updated_at"])
@@ -48,7 +48,7 @@ class PayrollCalculationService:
 
         employee = EmployeeProfile.objects.filter(tenant=context.tenant, id=employee_id).select_related("department", "position", "user").first()
         if not employee:
-            return ServiceResult.failure({"employee": "Employee not found."}, status_code=404)
+            return ServiceResult.failure({"employee": "Employee Not Found."}, status_code=404)
         now = timezone.localdate()
         month = int(month or now.month)
         year = int(year or now.year)
@@ -373,7 +373,7 @@ class FinanceLegacyService:
 
         return ServiceResult.success(
             {
-                "message": "Bank details saved successfully.",
+                "message": "Bank Details Saved Successfully.",
                 "employee": employee.id,
                 "bank_details": {
                     "masked_account_number": user_account.masked_account_number,
@@ -392,7 +392,7 @@ class FinanceLegacyService:
 
         employee = FinanceLegacyService._resolve_employee(context, employee_id=employee_id, user_id=user_id)
         if not employee:
-            return ServiceResult.failure({"employee": "Employee not found."}, status_code=404)
+            return ServiceResult.failure({"employee": "Employee Not Found."}, status_code=404)
         accounts = EmployeeBankAccount.objects.filter(tenant=context.tenant, employee=employee)
         return ServiceResult.success(
             {
@@ -433,7 +433,7 @@ class FinanceLegacyService:
 
         employee = FinanceLegacyService._resolve_employee(context, employee_id=employee_id, user_id=user_id)
         if not employee:
-            return ServiceResult.failure({"employee": "Employee not found."}, status_code=404)
+            return ServiceResult.failure({"employee": "Employee Not Found."}, status_code=404)
         month, year = FinanceLegacyService.resolve_period(month=month, year=year)
         total_bonus = FinanceLegacyService._decimal(bonus)
         total_normal_pay = FinanceLegacyService._decimal(normal_pay)
@@ -445,7 +445,7 @@ class FinanceLegacyService:
         if role_name == "manager" and snapshot and snapshot.manager_status == "Approved":
             return ServiceResult.success(
                 {
-                    "msg": "Already Approved For user ",
+                    "msg": "Already Approved For User ",
                     "user": employee.user.username,
                     "status": "Error",
                 }
@@ -499,7 +499,7 @@ class FinanceLegacyService:
         snapshot.refresh_from_db()
         return ServiceResult.success(
             {
-                "msg": f"Payment Amount is {snapshot.payment_status or 'Queued'} to ",
+                "msg": f"Payment Amount Is {snapshot.payment_status or 'Queued'} To ",
                 "user": employee.user.username,
                 "status": "Success",
                 "payment_status": snapshot.payment_status,
@@ -515,7 +515,7 @@ class FinanceLegacyService:
 
         project = ProjectWorkspace.objects.filter(tenant=context.tenant, id=project_id).first()
         if not project:
-            return ServiceResult.failure({"error": "Project not found"}, status_code=404)
+            return ServiceResult.failure({"error": "Project Not Found"}, status_code=404)
         assignments = TeamAssignment.objects.filter(tenant=context.tenant, project=project, status="Active").select_related("employee", "employee__user")
         milestones = DeliveryMilestone.objects.filter(tenant=context.tenant, project=project)
         total_bounties = sum((FinanceLegacyService._decimal(item.bounty) for item in milestones), Decimal("0"))
@@ -605,7 +605,7 @@ class PayoutService:
 
         snapshot = EmployeePaymentSnapshot.objects.filter(tenant=context.tenant, id=payment_snapshot_id).select_related("employee").first()
         if not snapshot:
-            return ServiceResult.failure({"payment": "Employee payment snapshot not found."}, status_code=404)
+            return ServiceResult.failure({"payment": "Employee Payment Snapshot Not Found."}, status_code=404)
         amount = snapshot.normal_pay + snapshot.bonus + snapshot.bounty - snapshot.deduction
         execution = PayoutExecution.objects.create(
             tenant=context.tenant,
@@ -626,7 +626,7 @@ class PayoutService:
         if live:
             bank_account = EmployeeBankAccount.objects.filter(tenant=context.tenant, employee=snapshot.employee).order_by("-created_at").first()
             if not bank_account or not bank_account.fund_account_reference:
-                return ServiceResult.failure({"bankAccount": "Fund account reference is required for live payout."}, status_code=400)
+                return ServiceResult.failure({"bankAccount": "Fund Account Reference Is Required For Live Payout."}, status_code=400)
             provider = provider or RazorpayClient()
             payload = provider.create_payout(
                 bank_account.fund_account_reference,
@@ -651,7 +651,7 @@ class PayoutService:
     def sync_payout_status(context, payout_execution_id, provider_payload=None, provider=None):
         execution = PayoutExecution.objects.filter(tenant=context.tenant, id=payout_execution_id).first()
         if not execution:
-            return ServiceResult.failure({"payout": "Payout execution not found."}, status_code=404)
+            return ServiceResult.failure({"payout": "Payout Execution Not Found."}, status_code=404)
         payload = provider_payload or {}
         if not payload and execution.external_id:
             payload = (provider or RazorpayClient()).fetch_payout(execution.external_id)

@@ -6,7 +6,7 @@ from Backend.EnterpriseCore.services import TenantContext
 
 
 class Command(BaseCommand):
-    help = "Seed default legacy-to-backend app mappings."
+    help = "Seed Default Legacy-to-Backend App Mappings."
 
     def add_arguments(self, parser):
         parser.add_argument("--tenant-id", type=int, required=True)
@@ -15,7 +15,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         tenant = Tenant.objects.filter(id=options["tenant_id"]).first()
         if not tenant:
-            raise CommandError("Tenant not found.")
+            raise CommandError("Tenant Not Found.")
         workspace = Workspace.objects.filter(id=options.get("workspace_id"), tenant=tenant).first() if options.get("workspace_id") else None
         result = LegacyMappingService.seed_default_app_map(TenantContext(tenant=tenant, workspace=workspace, source="Command"))
         self.stdout.write(self.style.SUCCESS(f"Created {result.data['count']} mappings."))

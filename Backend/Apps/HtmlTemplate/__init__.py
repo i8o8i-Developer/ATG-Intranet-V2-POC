@@ -1,1 +1,1 @@
-"""HTML and offer template APIs."""
+"""HTML And Offer Template APIs."""

@@ -48,7 +48,7 @@ class TalentPipelineService:
     def assign_candidate(context, candidate_id, employee, assignment_type="Review"):
         candidate = CandidateProfile.objects.filter(tenant=context.tenant, id=candidate_id).first()
         if not candidate:
-            return ServiceResult.failure({"candidate": "Candidate not found."}, status_code=404)
+            return ServiceResult.failure({"candidate": "Candidate Not Found."}, status_code=404)
         assignment = TalentAssignment.objects.create(
             tenant=context.tenant,
             workspace=context.workspace,
@@ -65,7 +65,7 @@ class TalentPipelineService:
 
         employee = EmployeeProfile.objects.filter(tenant=context.tenant, id=employee_id).first()
         if not employee:
-            return ServiceResult.failure({"employee": "Employee profile not found."}, status_code=404)
+            return ServiceResult.failure({"employee": "Employee Profile Not Found."}, status_code=404)
         colleges = CollegePipelineRecord.objects.filter(tenant=context.tenant, is_archived=False)
         if college_ids:
             colleges = colleges.filter(id__in=college_ids)
@@ -100,7 +100,7 @@ class TalentPipelineService:
     def assign_batch_by_username(context, username, limit=10):
         employee = TalentPipelineService._resolve_employee(context, username=username)
         if not employee:
-            return ServiceResult.failure({"employee": "Employee profile not found."}, status_code=404)
+            return ServiceResult.failure({"employee": "Employee Profile Not Found."}, status_code=404)
         return TalentPipelineService.assign_colleges(context, employee.id, limit=limit, workflow_status="Assigned")
 
     @staticmethod
@@ -111,11 +111,11 @@ class TalentPipelineService:
         elif college_id:
             assignment = CollegeAssignment.objects.filter(tenant=context.tenant, college_id=college_id, is_archived=False).select_related("college").order_by("-created_at").first()
         if not assignment:
-            return ServiceResult.failure({"assignment": "College assignment not found."}, status_code=404)
+            return ServiceResult.failure({"assignment": "College Assignment Not Found."}, status_code=404)
         assignment.workflow_status = workflow_status
         assignment.notes = notes or assignment.notes
         assignment.follow_up_at = follow_up_at or assignment.follow_up_at
-        if workflow_status in {"Completed", "Data received", "Not interested", "Wrong call"}:
+        if workflow_status in {"Completed", "Data received", "Not Interested", "Wrong Call"}:
             assignment.completed_at = timezone.now()
         assignment.updated_by = context.actor
         assignment.save(update_fields=["workflow_status", "notes", "follow_up_at", "completed_at", "updated_by", "updated_at"])
@@ -130,7 +130,7 @@ class TalentPipelineService:
     def send_college_email(context, college_id, template_id=None, subject="", body="", path="", assignment_id=None, live=False):
         college = CollegePipelineRecord.objects.filter(tenant=context.tenant, id=college_id).first()
         if not college:
-            return ServiceResult.failure({"college": "College record not found."}, status_code=404)
+            return ServiceResult.failure({"college": "College Record Not Found."}, status_code=404)
         template = CollegeEmailTemplate.objects.filter(tenant=context.tenant, id=template_id).first() if template_id else None
         email = TalentEmail.objects.create(
             tenant=context.tenant,
@@ -165,14 +165,14 @@ class TalentPipelineService:
     def list_assignments(context, username="", bucket="new"):
         employee = TalentPipelineService._resolve_employee(context, username=username)
         if not employee:
-            return ServiceResult.failure({"employee": "Employee profile not found."}, status_code=404)
+            return ServiceResult.failure({"employee": "Employee Profile Not Found."}, status_code=404)
         assignments = CollegeAssignment.objects.filter(tenant=context.tenant, assigned_to=employee, is_archived=False).select_related("college", "assigned_to", "assigned_to__user")
         if bucket == "pending":
             assignments = assignments.exclude(workflow_status__in=["Assigned", "New", ""]).filter(completed_at__isnull=True)
         elif bucket == "manager":
-            assignments = assignments.filter(workflow_status__in=["Wrong email", "Manager Action", "Data received", "Not interested"])
+            assignments = assignments.filter(workflow_status__in=["Wrong Email", "Manager Action", "Data Received", "Not Interested"])
         elif bucket == "wrong":
-            assignments = assignments.filter(workflow_status="Wrong call")
+            assignments = assignments.filter(workflow_status="Wrong Call")
         else:
             assignments = assignments.filter(workflow_status__in=["Assigned", "New", ""])
         rows = [
@@ -194,7 +194,7 @@ class TalentPipelineService:
     def set_hold_status(context, username, is_paused):
         employee = TalentPipelineService._resolve_employee(context, username=username)
         if not employee:
-            return ServiceResult.failure({"employee": "Employee profile not found."}, status_code=404)
+            return ServiceResult.failure({"employee": "Employee Profile Not Found."}, status_code=404)
         employee.profile_payload = {**employee.profile_payload, "l3_is_paused": bool(is_paused)}
         employee.updated_by = context.actor
         employee.save(update_fields=["profile_payload", "updated_by", "updated_at"])
@@ -204,7 +204,7 @@ class TalentPipelineService:
     def update_college_contact(context, college_id, contact_email="", contact_phone=""):
         college = CollegePipelineRecord.objects.filter(tenant=context.tenant, id=college_id).first()
         if not college:
-            return ServiceResult.failure({"college": "College record not found."}, status_code=404)
+            return ServiceResult.failure({"college": "College Record Not Found."}, status_code=404)
         update_fields = ["updated_by", "updated_at"]
         if contact_email:
             college.contact_email = contact_email
@@ -221,7 +221,7 @@ class TalentPipelineService:
     def archive_assignment(context, assignment_id):
         assignment = CollegeAssignment.objects.filter(tenant=context.tenant, id=assignment_id).select_related("college").first()
         if not assignment:
-            return ServiceResult.failure({"assignment": "College assignment not found."}, status_code=404)
+            return ServiceResult.failure({"assignment": "College Assignment Not Found."}, status_code=404)
         assignment.is_archived = True
         assignment.updated_by = context.actor
         assignment.save(update_fields=["is_archived", "updated_by", "updated_at"])
@@ -244,7 +244,7 @@ class TalentPipelineService:
     def performance_detail(context, username):
         employee = TalentPipelineService._resolve_employee(context, username=username)
         if not employee:
-            return ServiceResult.failure({"employee": "Employee profile not found."}, status_code=404)
+            return ServiceResult.failure({"employee": "Employee Profile Not Found."}, status_code=404)
         pending = TalentPipelineService.list_assignments(context, username=username, bucket="pending").data
         manager = TalentPipelineService.list_assignments(context, username=username, bucket="manager").data
         return ServiceResult.success(

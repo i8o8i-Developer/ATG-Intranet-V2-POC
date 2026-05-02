@@ -37,7 +37,7 @@ class LoginSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         if not attrs.get("username") and not attrs.get("email"):
-            raise serializers.ValidationError({"username": "Username or email is required."})
+            raise serializers.ValidationError({"username": "UserName Or Email Is Required."})
         return attrs
 
 

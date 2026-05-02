@@ -1,1 +1,1 @@
-"""MCP-compatible access layer for external AI agents."""
+"""MCP-Compatible Access Layer for External AI Agents."""

@@ -1,1 +1,1 @@
-"""Shared enterprise platform foundations."""
+"""Shared Enterprise Platform Foundations."""

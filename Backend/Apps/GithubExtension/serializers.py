@@ -63,7 +63,7 @@ class LegacyGitHubTokenObtainPairSerializer(serializers.Serializer):
         request = self.context.get("request")
         user = authenticate(request=request, username=attrs["username"], password=attrs["password"])
         if not user or not user.is_active:
-            raise serializers.ValidationError({"detail": "No active account found with the given credentials."})
+            raise serializers.ValidationError({"detail": "No Active Account Found With The Given Credentials."})
         self.user = user
         data = {
             "refresh": signing.dumps({"user_id": user.id, "type": "refresh"}, salt="github-extension-refresh"),
@@ -75,7 +75,7 @@ class LegacyGitHubTokenObtainPairSerializer(serializers.Serializer):
         elif employee and employee.department and employee.department.category:
             user_type = employee.department.category
         else:
-            user_type = "Position not found"
+            user_type = "Position Not Found"
         data["user_type"] = user_type
         return data
 
@@ -87,7 +87,7 @@ class LegacyGitHubTokenRefreshSerializer(serializers.Serializer):
         try:
             payload = signing.loads(attrs["refresh"], salt="github-extension-refresh", max_age=604800)
         except signing.BadSignature as exc:
-            raise serializers.ValidationError({"detail": "Invalid refresh token."}) from exc
+            raise serializers.ValidationError({"detail": "Invalid Refresh Token."}) from exc
         return {
             "access": signing.dumps({"user_id": payload.get("user_id"), "type": "access"}, salt="github-extension-access")
         }
@@ -99,6 +99,6 @@ class LegacyGitHubTokenRefreshSerializer(serializers.Serializer):
         elif employee and employee.department and employee.department.category:
             user_type = employee.department.category
         else:
-            user_type = "Position not found"
+            user_type = "Position Not Found"
         data["user_type"] = user_type
         return data

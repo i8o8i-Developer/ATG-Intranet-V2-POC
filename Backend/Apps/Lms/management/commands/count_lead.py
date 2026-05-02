@@ -6,7 +6,7 @@ from Backend.EnterpriseCore.services import TenantContext
 
 
 class Command(BaseCommand):
-    help = "Count LMS leads by current filters."
+    help = "Count LMS Leads By Current Filters."
 
     def add_arguments(self, parser):
         parser.add_argument("--tenant-id", type=int, required=True)

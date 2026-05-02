@@ -1,0 +1,224 @@
+﻿
+FRESH START (Wipe Everything And Rebuild From Scratch)
+  
+  docker compose down -v --remove-orphans
+  docker compose build --no-cache
+  docker compose up
+
+  Or Single Line :
+  docker compose down -v --remove-orphans ; docker compose build --no-cache ; docker compose up
+
+
+DAILY WORKFLOW :
+
+  Start Stack (Foreground)
+    docker compose up
+
+  Start Stack (Background)
+    docker compose up -d
+
+  Stop Stack (Keep Data Volumes)
+    docker compose down
+
+  Stop Stack + Wipe All Volumes
+    docker compose down -v
+
+  Restart Single Service
+    docker compose restart Backend
+    docker compose restart Frontend
+    docker compose restart Celery-Worker
+
+  Check Service Status
+    docker compose ps
+
+  Check Running Processes
+    docker compose top
+
+LOGS :
+
+  All Services (Follow)
+    docker compose logs -f
+
+  Single Service (Follow)
+    docker compose logs -f Backend
+    docker compose logs -f Frontend
+    docker compose logs -f Celery-Worker
+    docker compose logs -f Celery-Beat
+    docker compose logs -f Database
+    docker compose logs -f Redis
+
+  Last N Lines
+    docker compose logs --tail=100 Backend
+    docker compose logs --tail=50 Celery-Worker
+
+SHELL / EXEC INTO CONTAINER :
+
+  Backend Shell
+    docker compose exec Backend bash
+
+  Django Python REPL
+    docker compose exec Backend python Backend/manage.py shell
+
+  PostgreSQL Shell
+    docker compose exec Database psql -U intranet -d intranet_rebuild
+
+  Redis CLI
+    docker compose exec Redis redis-cli
+
+  Frontend Shell
+    docker compose exec Frontend sh
+
+DJANGO MANAGEMENT COMMANDS : 
+
+  Run Migrations
+    docker compose exec Backend python Backend/manage.py migrate
+
+  Create Superuser
+    docker compose exec Backend python Backend/manage.py createsuperuser
+
+  Bootstrap Tenant + Admin User
+    docker compose exec Backend python Backend/manage.py Bootstrap_Backend \
+      --tenant Banao \
+      --workspace "Default Workspace" \
+      --username anubhav1608 \
+      --password AnubhavChaurasia \
+      --email anubhav1608@example.com \
+      --first-name Anubhav \
+      --last-name Chaurasia \
+      --display-name "Anubhav Chaurasia" \
+      --employee-code EMP-001
+
+  Seed Full ERP Demo Data (All Modules)
+    docker compose exec Backend python Backend/manage.py Seed_Demo_Erp \
+      --username anubhav1608 --password AnubhavChaurasia
+
+  Seed HRMS-Specific Rich Data (20 Employees, 3 Projects, 14-Day EOD History)
+    docker compose exec Backend python Backend/manage.py Seed_Hrms_Data
+
+  Seed HRMS Data - Wipe And Re-Seed Clean
+    docker compose exec Backend python Backend/manage.py Seed_Hrms_Data --wipe
+
+  Collect Static Files
+    docker compose exec Backend python Backend/manage.py collectstatic --noinput
+
+  Show All Available Management Commands
+    docker compose exec Backend python Backend/manage.py help
+
+REBUILD SINGLE SERVICE (After Code Change) :
+
+  Rebuild And Restart Backend Only
+    docker compose up -d --build Backend
+
+  Rebuild And Restart Frontend Only
+    docker compose up -d --build Frontend
+
+  Rebuild All (No Cache)
+    docker compose build --no-cache
+    docker compose up -d
+
+DATABASE OPERATIONS :   
+
+  Connect To DB
+    docker compose exec Database psql -U intranet -d intranet_rebuild
+
+  List Tables
+    docker compose exec Database psql -U intranet -d intranet_rebuild -c "\dt"
+
+  Show Table Row Counts (Quick Health Check)
+    docker compose exec Database psql -U intranet -d intranet_rebuild \
+      -c "SELECT schemaname, tablename, n_live_tup FROM pg_stat_user_tables ORDER BY n_live_tup DESC LIMIT 20;"
+
+  Wipe DB Only (Keep Images, Re-Seed On Next Start)
+    docker compose down -v
+    docker compose up -d Database Redis
+    docker compose up -d Backend
+
+  Dump DB To File
+    docker compose exec Database pg_dump -U intranet intranet_rebuild > backup.sql
+
+  Restore DB From File
+    docker compose exec -T Database psql -U intranet -d intranet_rebuild < backup.sql
+
+REDIS OPERATIONS :
+
+  Connect To Redis CLI
+    docker compose exec Redis redis-cli
+
+  Ping Redis
+    docker compose exec Redis redis-cli ping
+
+  List All Keys
+    docker compose exec Redis redis-cli keys "*"
+
+  Flush All Redis Data
+    docker compose exec Redis redis-cli flushall
+
+CELERY :
+
+  View Celery Worker Logs
+    docker compose logs -f Celery-Worker
+
+  View Celery Beat Logs
+    docker compose logs -f Celery-Beat
+
+  Restart Celery Worker
+    docker compose restart Celery-Worker
+
+  Inspect Active Celery Tasks
+    docker compose exec Celery-Worker celery -A Backend.celery_app inspect active
+
+  Purge All Celery Queues
+    docker compose exec Celery-Worker celery -A Backend.celery_app purge -f
+
+STARTUP SEQUENCE (What Docker-Compose Does Automatically)
+
+  1. Database + Redis start first (healthchecks pass before Backend starts)
+  2. Backend:
+       python Backend/manage.py migrate
+       python Backend/manage.py Bootstrap_Backend  [creates tenant + admin]
+       python Backend/manage.py Seed_Hrms_Data     [20 employees, 3 projects, EODs]
+       python Backend/manage.py Seed_Demo_Erp      [full ERP demo data all modules]
+       python Backend/manage.py runserver 0.0.0.0:8000
+  3. Celery-Worker + Celery-Beat start (wait for Backend)
+  4. Frontend starts (npm run dev -- --host 0.0.0.0)
+
+ENVIRONMENT VARIABLES (.env.example)
+
+  DJANGO_SECRET_KEY=your-secret-key-here
+  DJANGO_DEBUG=1
+  DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,backend,0.0.0.0
+  CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+  CSRF_TRUSTED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:8000,http://127.0.0.1:8000
+  POSTGRES_DB=intranet_rebuild
+  POSTGRES_USER=intranet
+  POSTGRES_PASSWORD=intranet
+  VITE_API_BASE_URL=http://localhost:8000/
+
+TROUBLESHOOTING :
+
+  Backend Won't Start / Migration Errors
+    docker compose logs Backend
+    docker compose down -v ; docker compose up --build
+
+  Frontend Shows Blank Page
+    docker compose logs Frontend
+    Check VITE_API_BASE_URL points to correct backend host
+
+  401 Unauthorized In FE
+    Login with username=anubhav1608 password=AnubhavChaurasia
+    Or re-run: docker compose exec Backend python Backend/manage.py Bootstrap_Backend
+
+  DB Connection Refused
+    docker compose ps Database        <- check db is healthy
+    docker compose restart Database
+
+  Port Already In Use
+    netstat -ano | findstr :8000
+    netstat -ano | findstr :5173
+    taskkill /PID <pid> /F
+
+  Full Clean Reset
+    docker compose down -v --remove-orphans
+    docker system prune -f
+    docker compose build --no-cache
+    docker compose up

@@ -22,7 +22,7 @@ class TenantScopedSerializer(serializers.ModelSerializer):
         tenant = attrs.get("tenant") or getattr(self.instance, "tenant", None)
         workspace = attrs.get("workspace") or getattr(self.instance, "workspace", None)
         if tenant and workspace and workspace.tenant_id != tenant.id:
-            raise serializers.ValidationError({"workspace": "Workspace must belong to the same tenant."})
+            raise serializers.ValidationError({"workspace": "Workspace Must Belong To The Same Tenant."})
         return attrs
 
 

@@ -161,15 +161,15 @@ class LeadWorkflowService:
     def record_connection_sent(context, domain, intern_name="", client_name=""):
         normalized_domain = LeadWorkflowService._normalize_domain(domain)
         if not normalized_domain:
-            return ServiceResult.failure({"domain": "Domain is required."}, status_code=400)
+            return ServiceResult.failure({"domain": "Domain Is Required."}, status_code=400)
         lead = None
         for candidate in LeadAccount.objects.filter(tenant=context.tenant).order_by("id"):
             if LeadWorkflowService._lead_matches_domain(candidate, normalized_domain):
                 lead = candidate
                 break
         if not lead:
-            return ServiceResult.failure({"lead": "Lead not found."}, status_code=404)
-        note_body = f"Connection sent to {client_name or lead.company_name} by {intern_name or 'Unknown'}"
+            return ServiceResult.failure({"lead": "Lead Not Found."}, status_code=404)
+        note_body = f"Connection Sent To {client_name or lead.company_name} By {intern_name or 'Unknown'}"
         metadata = dict(lead.metadata or {})
         if intern_name:
             metadata["intern_name"] = intern_name
@@ -191,7 +191,7 @@ class LeadWorkflowService:
             tenant=context.tenant,
             workspace=context.workspace or lead.workspace,
             lead=lead,
-            title="Connection sent",
+            title="Connection Sent",
             body=note_body,
             metadata={"domain": normalized_domain},
             created_by=context.actor,
@@ -203,7 +203,7 @@ class LeadWorkflowService:
             lead=lead,
             actor=actor_profile,
             activity_type="ConnectionSent",
-            title="Connection sent",
+            title="Connection Sent",
             note=note_body,
             payload={"domain": normalized_domain, "internName": intern_name, "clientName": client_name},
             created_by=context.actor,
@@ -234,17 +234,17 @@ class LeadWorkflowService:
         normalized_email = str(email or "").strip().lower()
         normalized_username = str(username or "").strip().lower()
         if normalized_email and user_model.objects.filter(email__iexact=normalized_email).exists():
-            return "Username or Email Already Exists"
+            return "Username Or Email Already Exists"
         if normalized_username and user_model.objects.filter(username__iexact=normalized_username).exists():
-            return "Username or Email Already Exists"
+            return "Username Or Email Already Exists"
         offers = OnboardingOffer.objects.filter(tenant=context.tenant, company_name__iexact="Banao")
         if normalized_email and offers.filter(candidate_email__iexact=normalized_email).exists():
-            return "Username or Email Already Exists"
+            return "Username Or Email Already Exists"
         if normalized_username:
             for offer in offers.only("offer_payload"):
                 existing_username = str((offer.offer_payload or {}).get("username") or "").strip().lower()
                 if existing_username == normalized_username:
-                    return "Username or Email Already Exists"
+                    return "Username Or Email Already Exists"
         return ""
 
     @staticmethod
@@ -284,16 +284,16 @@ class LeadWorkflowService:
         position_name = str(offer_payload.get("position_name") or offer_payload.get("position_title") or "")
         department_name = str(offer_payload.get("department_name") or "")
         offer_date = str(offer_payload.get("offer_date") or timezone.localdate().isoformat())
-        compensation_line = f"Fixed pay: INR {base_pay}"
+        compensation_line = f"Fixed Pay : INR {base_pay}"
         if pay_type.lower() == "performance based" and pay_per_task not in {"", "0", "0.00"}:
-            compensation_line = f"Expected monthly pay: INR {base_pay}; performance pay: INR {pay_per_task} per task"
+            compensation_line = f"Expected Monthly Pay: INR {base_pay}; Performance Pay: INR {pay_per_task} per task"
         cta_html = f'<p style="margin-top:24px;"><a href="{offer_url}" style="display:inline-block;padding:12px 18px;background:#111827;color:#ffffff;text-decoration:none;border-radius:8px;">Open Offer</a></p>' if offer_url else ""
         return (
             "<html><body style=\"font-family:Segoe UI,Arial,sans-serif;background:#f6f7fb;padding:32px;\">"
             "<div style=\"max-width:720px;margin:0 auto;background:#ffffff;border:1px solid #d8dee8;border-radius:16px;padding:32px;\">"
             f"<p style=\"margin:0 0 12px;color:#4b5563;\">Offer Date: {offer_date}</p>"
-            f"<h1 style=\"margin:0 0 12px;color:#111827;\">Offer for {offer_payload.get('name') or offer_payload.get('candidate_name') or 'Candidate'}</h1>"
-            f"<p style=\"margin:0 0 16px;color:#374151;\">Banao is pleased to extend an offer for <strong>{position_name or 'the requested role'}</strong>.</p>"
+            f"<h1 style=\"margin:0 0 12px;color:#111827;\">Offer For {offer_payload.get('name') or offer_payload.get('candidate_name') or 'Candidate'}</h1>"
+            f"<p style=\"margin:0 0 16px;color:#374151;\">Banao Is Pleased To Extend an Offer For <strong>{position_name or 'the requested role'}</strong>.</p>"
             f"<p style=\"margin:0 0 8px;color:#374151;\"><strong>Department:</strong> {department_name or 'Banao'}</p>"
             f"<p style=\"margin:0 0 8px;color:#374151;\"><strong>Title:</strong> {title or position_name or 'Team Member'}</p>"
             f"<p style=\"margin:0 0 8px;color:#374151;\"><strong>Offer Type:</strong> {offer_payload.get('offer_type') or 'Intern'}</p>"
@@ -307,7 +307,7 @@ class LeadWorkflowService:
     def move_stage(context, lead_id, to_stage, reason=""):
         lead = LeadAccount.objects.filter(tenant=context.tenant, id=lead_id).first()
         if not lead:
-            return ServiceResult.failure({"lead": "Lead not found."}, status_code=404)
+            return ServiceResult.failure({"lead": "Lead Not Found."}, status_code=404)
         from_stage = lead.stage
         lead.stage = to_stage
         lead.updated_by = context.actor
@@ -328,7 +328,7 @@ class LeadWorkflowService:
     def add_note(context, lead_id, body, title="", author_id=None, metadata=None):
         lead = LeadAccount.objects.filter(tenant=context.tenant, id=lead_id).first()
         if not lead:
-            return ServiceResult.failure({"lead": "Lead not found."}, status_code=404)
+            return ServiceResult.failure({"lead": "Lead Not Found."}, status_code=404)
         note = LeadNote.objects.create(
             tenant=context.tenant,
             workspace=context.workspace or lead.workspace,
@@ -355,7 +355,7 @@ class LeadWorkflowService:
     def add_test(context, lead_id, title, status="Pending", score=0, due_at=None, metadata=None):
         lead = LeadAccount.objects.filter(tenant=context.tenant, id=lead_id).first()
         if not lead:
-            return ServiceResult.failure({"lead": "Lead not found."}, status_code=404)
+            return ServiceResult.failure({"lead": "Lead Not Found."}, status_code=404)
         test = LeadTest.objects.create(
             tenant=context.tenant,
             workspace=context.workspace or lead.workspace,
@@ -375,14 +375,14 @@ class LeadWorkflowService:
     def send_to_bbd(context, lead_id, notes=None):
         lead = LeadAccount.objects.filter(tenant=context.tenant, id=lead_id).first()
         if not lead:
-            return ServiceResult.failure({"lead": "Lead not found."}, status_code=404)
+            return ServiceResult.failure({"lead": "Lead Not Found."}, status_code=404)
         template = get_bbd_email_template(lead)
         LeadActivity.objects.create(
             tenant=context.tenant,
             workspace=context.workspace or lead.workspace,
             lead=lead,
             activity_type="SentToBBD",
-            title="Sent to BBD",
+            title="Sent To BBD",
             payload={"template": template, "notes": notes or {}},
             created_by=context.actor,
         )
@@ -393,12 +393,12 @@ class LeadWorkflowService:
     def send_audit(context, lead_id, notes=None):
         lead = LeadAccount.objects.filter(tenant=context.tenant, id=lead_id).first()
         if not lead:
-            return ServiceResult.failure({"lead": "Lead not found."}, status_code=404)
+            return ServiceResult.failure({"lead": "Lead Not Found."}, status_code=404)
         audit = AuditArtifact.objects.create(
             tenant=context.tenant,
             workspace=context.workspace or lead.workspace,
             lead=lead,
-            title=f"Audit for {lead.company_name}",
+            title=f"Audit For {lead.company_name}",
             status="Queued",
             metadata=notes or {},
             created_by=context.actor,
@@ -412,12 +412,12 @@ class LeadWorkflowService:
     def create_offer_template(context, lead_id, amount=None, notes=None):
         lead = LeadAccount.objects.filter(tenant=context.tenant, id=lead_id).first()
         if not lead:
-            return ServiceResult.failure({"lead": "Lead not found."}, status_code=404)
+            return ServiceResult.failure({"lead": "Lead Not Found."}, status_code=404)
         proposal = ProposalArtifact.objects.create(
             tenant=context.tenant,
             workspace=context.workspace or lead.workspace,
             lead=lead,
-            title=f"Offer for {lead.company_name}",
+            title=f"Offer For {lead.company_name}",
             status="Draft",
             amount=amount or lead.estimated_value,
             metadata=notes or {},
@@ -454,7 +454,7 @@ class LeadWorkflowService:
         if not owners:
             owners = list(EmployeeProfile.objects.filter(tenant=context.tenant, is_active=True).order_by("id")[:5])
         if not owners:
-            return ServiceResult.failure({"owners": "No active employees available for JRBA allocation."}, status_code=400)
+            return ServiceResult.failure({"owners": "No Active Employees Available For JRBA Allocation."}, status_code=400)
         rows = []
         leads = LeadAccount.objects.filter(tenant=context.tenant, source__iexact=source, owner__isnull=True).order_by("id")
         for index, lead in enumerate(leads):

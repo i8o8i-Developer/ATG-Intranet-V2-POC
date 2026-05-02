@@ -37,11 +37,11 @@ class PartyRemoteAutomationProvider:
         if not self.live:
             return {"dry_run": True, "command": command, "stdout": ""}
         if not self.host or not self.key_path:
-            raise PartyRemoteAutomationError("PARTY_REMOTE_HOST and PARTY_REMOTE_KEY_PATH are required for live remote automation.")
+            raise PartyRemoteAutomationError("PARTY_REMOTE_HOST and PARTY_REMOTE_KEY_PATH Are Required For Live Remote Automation.")
         try:
             import paramiko
         except ImportError as exc:
-            raise PartyRemoteAutomationError("paramiko is required for live remote automation.") from exc
+            raise PartyRemoteAutomationError("paramiko is Required For Live Remote Automation.") from exc
         key = paramiko.RSAKey.from_private_key_file(self.key_path)
         client = self.session_factory() if self.session_factory else paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())

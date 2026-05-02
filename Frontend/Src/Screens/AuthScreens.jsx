@@ -53,80 +53,37 @@ export function LoginScreen({ settings, onLogin }) {
 
   return (
     <main className="login-page">
-      <section className="login-brand-panel">
-        <div className="login-brand-shell">
-          <div className="brand-block login-brand">
-            <div className="brand-mark">B</div>
-            <div className="brand-copy">
-              <strong>Banao</strong>
-              <span>Intranet v2</span>
-            </div>
-          </div>
-          <div className="login-hero-copy">
-            <span className="section-kicker">Operator-Ready Workspace</span>
-            <h1>One Login For People, Delivery, Finance, And Intelligence.</h1>
-            <p>Sign In To The Rebuilt Intranet And Work Against The Live Django Backend Without The Old Demo Controls Or Developer Clutter.</p>
-          </div>
-
-          <div className="login-proof-grid">
-            <article className="login-proof-card">
-              <strong>Real Backend Auth</strong>
-              <p>Every Session Validates Directly Against The Running Django API.</p>
-            </article>
-            <article className="login-proof-card">
-              <strong>Focused Workbench</strong>
-              <p>Use One Secure Entry Point For HRMS, Projects, Payroll, Docs, And Workflow Visibility.</p>
-            </article>
-            <article className="login-proof-card">
-              <strong>Minimal Setup Surface</strong>
-              <p>Backend, Tenant, And Workspace Stay Environment-Driven Instead Of Filling The Sign-In Form.</p>
-            </article>
-          </div>
-
-          <div className="login-environment-rail">
-            <span>Connected Environment</span>
-            <strong>{environmentLabel}</strong>
-            <p>Tenant {form.tenantId} / Workspace {form.workspaceId}</p>
+      <form className="login-card" onSubmit={submit}>
+        <div className="brand-block">
+          <div className="brand-mark">B</div>
+          <div className="brand-copy">
+            <strong>Banao Intranet</strong>
+            <span>v2</span>
           </div>
         </div>
-      </section>
 
-      <section className="login-panel">
-        <form className="login-card" onSubmit={submit}>
-          <header>
-            <ShieldCheck size={22} />
-            <div>
-              <span className="login-card-badge">Secure Sign In</span>
-              <h2>Employee Login</h2>
-              <p>Authenticated Against The Live Django Backend.</p>
-            </div>
-          </header>
+        <h2 style={{ margin: 0, fontSize: "20px" }}>Sign In</h2>
 
-          {error && <div className="login-error"><AlertTriangle size={16} />{error}</div>}
+        {error && <div className="login-error"><AlertTriangle size={15} />{error}</div>}
 
-          <label>
-            Username
-            <input autoFocus value={form.username} onChange={(event) => update("username", event.target.value)} autoComplete="username" placeholder="Enter Your Username" />
-          </label>
-          <label>
-            Password
-            <span className="password-field">
-              <input type={showPassword ? "text" : "password"} value={form.password} onChange={(event) => update("password", event.target.value)} autoComplete="current-password" placeholder="Enter Your Password" />
-              <button type="button" className="icon-button" onClick={() => setShowPassword((value) => !value)} title={showPassword ? "Hide Password" : "Show Password"}>{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}</button>
-            </span>
-          </label>
+        <label>
+          Username
+          <input autoFocus value={form.username} onChange={(e) => update("username", e.target.value)} autoComplete="username" placeholder="Username" />
+        </label>
+        <label>
+          Password
+          <span className="password-field">
+            <input type={showPassword ? "text" : "password"} value={form.password} onChange={(e) => update("password", e.target.value)} autoComplete="current-password" placeholder="Password" />
+            <button type="button" className="icon-button" onClick={() => setShowPassword((v) => !v)} title={showPassword ? "Hide" : "Show"}>
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </span>
+        </label>
 
-          <button className="primary-button login-submit" type="submit" disabled={submitting}>
-            <LogIn size={16} />
-            {submitting ? "Signing In" : "Sign In"}
-          </button>
-
-          <div className="login-card-footer">
-            <div className="login-environment-pill">{environmentLabel}</div>
-            <p>Tenant {form.tenantId} / Workspace {form.workspaceId}</p>
-          </div>
-        </form>
-      </section>
+        <button className="primary-button login-submit" type="submit" disabled={submitting}>
+          <LogIn size={16} />{submitting ? "Signing In…" : "Sign In"}
+        </button>
+      </form>
     </main>
   );
 }

@@ -41,7 +41,7 @@ class GitHubBranchService:
     def list_branch_status(context, repo_name, branches):
         repository = GitHubBranchService.repository_by_legacy_name(context, repo_name)
         if not repository:
-            return ServiceResult.failure({"repository": "Repository not found."}, status_code=404)
+            return ServiceResult.failure({"repository": "Repository Not Found."}, status_code=404)
         rows = []
         for branch_name in branches:
             status_row, _created = RepositoryBranchStatus.objects.get_or_create(
@@ -69,10 +69,10 @@ class GitHubBranchService:
 
         repository = GitHubRepository.objects.filter(tenant=context.tenant, id=repository_id).first() if repository_id else GitHubBranchService.repository_by_legacy_name(context, repo_name)
         if not repository:
-            return ServiceResult.failure({"repository": "Repository not found."}, status_code=404)
+            return ServiceResult.failure({"repository": "Repository Not Found."}, status_code=404)
         employee = EmployeeProfile.objects.filter(tenant=context.tenant, id=employee_id).first()
         if not employee:
-            return ServiceResult.failure({"employee": "Employee profile is required."}, status_code=400)
+            return ServiceResult.failure({"employee": "Employee Profile Is Required."}, status_code=400)
         data = data or {}
         if user_type.lower() == "reviewer":
             assignment = BranchReviewerAssignment.objects.create(
@@ -120,7 +120,7 @@ class GitHubBranchService:
         model = BranchReviewerAssignment if user_type.lower() == "reviewer" else BranchTestingAssignment
         assignment = model.objects.filter(tenant=context.tenant, id=assignment_id).select_related("repository").first()
         if not assignment:
-            return ServiceResult.failure({"assignment": "Branch assignment not found."}, status_code=404)
+            return ServiceResult.failure({"assignment": "Branch Assignment Not Found."}, status_code=404)
         for field in ["is_pass", "comment", "metadata"]:
             if field in data:
                 setattr(assignment, field, data[field])

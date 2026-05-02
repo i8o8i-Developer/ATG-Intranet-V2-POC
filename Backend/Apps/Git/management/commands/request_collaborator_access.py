@@ -6,7 +6,7 @@ from Backend.EnterpriseCore.services import TenantContext
 
 
 class Command(BaseCommand):
-    help = "Queue or send GitHub collaborator access requests."
+    help = "Queue Or Send GitHub Collaborator Access Requests."
 
     def add_arguments(self, parser):
         parser.add_argument("--tenant-id", type=int, required=True)

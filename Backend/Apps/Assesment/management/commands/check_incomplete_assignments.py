@@ -6,7 +6,7 @@ from Backend.EnterpriseCore.services import TenantContext
 
 
 class Command(BaseCommand):
-    help = "Creates reminders for incomplete assessment assignments older than the configured grace window."
+    help = "Creates Reminders For Incomplete Assessment Assignments Older Than The Configured Grace Window."
 
     def add_arguments(self, parser):
         parser.add_argument("--tenant-id", type=int, required=True)
@@ -23,4 +23,4 @@ class Command(BaseCommand):
         if not result.ok:
             self.stdout.write(self.style.ERROR(str(result.errors)))
             return
-        self.stdout.write(self.style.SUCCESS(f"Processed {result.data['count']} incomplete assessment assignments."))
+        self.stdout.write(self.style.SUCCESS(f"Processed {result.data['count']} Incomplete Assessment Assignments."))

@@ -1,1 +1,1 @@
-"""TasksDashboard management commands."""
+"""TasksDashboard Management Commands."""

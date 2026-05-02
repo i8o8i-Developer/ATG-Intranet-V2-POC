@@ -17,7 +17,7 @@ class RazorpayClient:
 
     def _auth(self):
         if not self.key or not self.secret:
-            raise ValueError("Razorpay credentials are not configured.")
+            raise ValueError("Razorpay Credentials Are Not Configured.")
         return (self.key, self.secret)
 
     def create_order(self, amount, currency="INR", receipt="", notes=None):

@@ -21,7 +21,7 @@ class ProjectIntegrationProvider:
 
     def _github_headers(self):
         if not self.github_token:
-            raise ProjectIntegrationProviderError("GITHUB_ACCESS_TOKEN is not configured.")
+            raise ProjectIntegrationProviderError("GITHUB_ACCESS_TOKEN Is Not Configured.")
         return {
             "Authorization": f"Bearer {self.github_token}",
             "Accept": "application/vnd.github+json",
@@ -31,7 +31,7 @@ class ProjectIntegrationProvider:
     def _request(self, method, path, payload=None):
         response = self.session.request(method, f"{self.github_base_url}{path}", headers=self._github_headers(), json=payload or {}, timeout=self.timeout)
         if response.status_code >= 400:
-            raise ProjectIntegrationProviderError(f"GitHub request failed with {response.status_code}: {response.text}")
+            raise ProjectIntegrationProviderError(f"GitHub Request Failed With {response.status_code}: {response.text}")
         return response.json() if response.content else {}
 
     def create_repository(self, owner, name, private=True):

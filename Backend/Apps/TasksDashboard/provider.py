@@ -30,18 +30,18 @@ class TasksDashboardProvider:
                 time.sleep(wait_seconds)
                 continue
             if response.status_code >= 400:
-                raise TasksDashboardProviderError(f"Provider request failed with {response.status_code}: {response.text}")
+                raise TasksDashboardProviderError(f"Provider Request Failed With {response.status_code}: {response.text}")
             return response.json() if response.content else {}
-        raise TasksDashboardProviderError("Provider request failed after retry limit.")
+        raise TasksDashboardProviderError("Provider Request Failed After Retry Limit.")
 
     def _clickup_headers(self):
         if not self.clickup_token:
-            raise TasksDashboardProviderError("CLICKUP_API_TOKEN is not configured.")
+            raise TasksDashboardProviderError("CLICKUP_API_TOKEN Is Not Configured.")
         return {"Authorization": self.clickup_token}
 
     def _slack_headers(self):
         if not self.slack_token:
-            raise TasksDashboardProviderError("SLACK_BOT_TOKEN is not configured.")
+            raise TasksDashboardProviderError("SLACK_BOT_TOKEN Is Not Configured.")
         return {"Authorization": f"Bearer {self.slack_token}", "Content-Type": "application/json; charset=utf-8"}
 
     def fetch_clickup_tasks(self, project_name="", space_ids=None, team_id="", include_closed=False):
@@ -77,5 +77,5 @@ class TasksDashboardProvider:
             return {"dry_run": True, **payload, "ts": "dry-run"}
         data = self._request_json("POST", f"{self.slack_base_url}/chat.postMessage", headers=self._slack_headers(), payload=payload)
         if not data.get("ok"):
-            raise TasksDashboardProviderError(f"Slack API error: {data.get('error', 'unknown_error')}")
+            raise TasksDashboardProviderError(f"Slack API Error: {data.get('error', 'unknown_error')}")
         return data

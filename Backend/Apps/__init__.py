@@ -1,1 +1,1 @@
-"""PascalCase backend domain apps."""
+"""PascalCase Backend Domain Apps."""

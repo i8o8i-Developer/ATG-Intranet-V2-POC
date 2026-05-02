@@ -141,7 +141,7 @@ class L3LegacyMixin:
         if tenant and not workspace:
             workspace = Workspace.objects.filter(tenant=tenant).order_by("id").first()
         if not tenant:
-            return ServiceResult.failure({"tenant": "Tenant context is required for L3 request."}, status_code=400)
+            return ServiceResult.failure({"tenant": "Tenant Context Is Required For L3 Request."}, status_code=400)
         return ServiceResult.success(TenantContext(tenant=tenant, workspace=workspace, actor=actor, source="L3LegacyAPI"))
 
     def with_context(self, request):
@@ -271,7 +271,7 @@ class UpdateEmailLegacyAPIView(L3LegacyMixin, APIView):
             return error_response
         college = CollegePipelineRecord.objects.filter(tenant=context.tenant, id=id).first()
         if not college:
-            return Response({"college": "College record not found."}, status=404)
+            return Response({"college": "College Record Not Found."}, status=404)
         return Response({"college_id": college.id, "contact_email": college.contact_email, "intern": intern})
 
     def post(self, request, id, intern):
@@ -289,7 +289,7 @@ class UpdateContactLegacyAPIView(L3LegacyMixin, APIView):
             return error_response
         college = CollegePipelineRecord.objects.filter(tenant=context.tenant, id=id).first()
         if not college:
-            return Response({"college": "College record not found."}, status=404)
+            return Response({"college": "College Record Not Found."}, status=404)
         return Response({"college_id": college.id, "contact_phone": college.contact_phone, "assignment_id": assign_id})
 
     def post(self, request, id, assign_id):

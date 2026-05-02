@@ -132,7 +132,7 @@ class IntegrationHubLegacyMixin:
         if tenant and not workspace:
             workspace = Workspace.objects.filter(tenant=tenant).order_by("id").first()
         if not tenant:
-            return ServiceResult.failure({"tenant": "Tenant context is required for IntegrationHub request."}, status_code=400)
+            return ServiceResult.failure({"tenant": "Tenant Context Is Required For IntegrationHub Request."}, status_code=400)
         return ServiceResult.success(TenantContext(tenant=tenant, workspace=workspace, actor=actor, source="IntegrationHubLegacyAPI"))
 
     def with_context(self, request):
@@ -149,7 +149,7 @@ class QueueSyncLegacyAPIView(IntegrationHubLegacyMixin, APIView):
             return error_response
         connection = IntegrationConnection.objects.filter(tenant=context.tenant, id=connection_id).first()
         if not connection:
-            return Response({"connection": "Integration connection not found."}, status=404)
+            return Response({"connection": "Integration Connection Not Found."}, status=404)
         serializer = QueueSyncSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         result = IntegrationJobService.queue_sync(context, connection, serializer.validated_data.get("job_type", "ManualSync"), cursor=serializer.validated_data.get("cursor", ""))
@@ -163,7 +163,7 @@ class RecordAttemptLegacyAPIView(IntegrationHubLegacyMixin, APIView):
             return error_response
         connection = IntegrationConnection.objects.filter(tenant=context.tenant, id=connection_id).first()
         if not connection:
-            return Response({"connection": "Integration connection not found."}, status=404)
+            return Response({"connection": "Integration Connection Not Found."}, status=404)
         serializer = RecordAttemptSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
@@ -178,7 +178,7 @@ class RetryFailedLegacyAPIView(IntegrationHubLegacyMixin, APIView):
             return error_response
         connection = IntegrationConnection.objects.filter(tenant=context.tenant, id=connection_id).first()
         if not connection:
-            return Response({"connection": "Integration connection not found."}, status=404)
+            return Response({"connection": "Integration Connection Not Found."}, status=404)
         result = IntegrationJobService.retry_failed_jobs(context, connection=connection)
         return Response(result.data if result.ok else result.errors, status=result.status_code)
 

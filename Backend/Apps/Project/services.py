@@ -16,7 +16,7 @@ class ProjectDeliveryService:
     def create_default_checkpoints(context, project_id):
         project = ProjectWorkspace.objects.filter(tenant=context.tenant, id=project_id).first()
         if not project:
-            return ServiceResult.failure({"project": "Project not found."}, status_code=404)
+            return ServiceResult.failure({"project": "Project Not Found."}, status_code=404)
         defaults = DefaultCheckpoint.objects.filter(tenant=context.tenant).filter(project_type__in=[project.project_type, ""]).order_by("sequence")
         if not defaults.exists():
             seed_titles = ["Discovery", "Planning", "Implementation", "Review", "Handover"]
@@ -44,7 +44,7 @@ class ProjectDeliveryService:
     def mark_milestone_complete(context, milestone_id, completed_on=None):
         milestone = DeliveryMilestone.objects.filter(tenant=context.tenant, id=milestone_id).first()
         if not milestone:
-            return ServiceResult.failure({"milestone": "Milestone not found."}, status_code=404)
+            return ServiceResult.failure({"milestone": "Milestone Not Found."}, status_code=404)
         milestone.status = "Completed"
         if completed_on:
             milestone.completed_on = completed_on
@@ -57,7 +57,7 @@ class ProjectDeliveryService:
     def calculate_health(context, project_id):
         project = ProjectWorkspace.objects.filter(tenant=context.tenant, id=project_id).first()
         if not project:
-            return ServiceResult.failure({"project": "Project not found."}, status_code=404)
+            return ServiceResult.failure({"project": "Project Not Found."}, status_code=404)
         milestones = DeliveryMilestone.objects.filter(tenant=context.tenant, project=project)
         total = milestones.count()
         completed = milestones.filter(status="Completed").count()
@@ -77,7 +77,7 @@ class ProjectDeliveryService:
     def raise_delivery_alert(context, project_id, severity, title, description="", metadata=None):
         project = ProjectWorkspace.objects.filter(tenant=context.tenant, id=project_id).first()
         if not project:
-            return ServiceResult.failure({"project": "Project not found."}, status_code=404)
+            return ServiceResult.failure({"project": "Project Not Found."}, status_code=404)
         alert = DeliveryAlert.objects.create(
             tenant=context.tenant,
             workspace=context.workspace,
@@ -94,7 +94,7 @@ class ProjectDeliveryService:
     def add_team_member(context, project_id, employee_id, role="Member", allocation_percent=100):
         project = ProjectWorkspace.objects.filter(tenant=context.tenant, id=project_id).first()
         if not project:
-            return ServiceResult.failure({"project": "Project not found."}, status_code=404)
+            return ServiceResult.failure({"project": "Project Not Found."}, status_code=404)
         assignment, _created = TeamAssignment.objects.update_or_create(
             tenant=context.tenant,
             project=project,
@@ -108,7 +108,7 @@ class ProjectDeliveryService:
     def remove_team_member(context, assignment_id, reason=""):
         assignment = TeamAssignment.objects.filter(tenant=context.tenant, id=assignment_id).first()
         if not assignment:
-            return ServiceResult.failure({"assignment": "Team assignment not found."}, status_code=404)
+            return ServiceResult.failure({"assignment": "Team Assignment Not Found."}, status_code=404)
         assignment.status = "Removed"
         assignment.ends_on = timezone.localdate()
         assignment.metadata = {**assignment.metadata, "remove_reason": reason}
@@ -120,7 +120,7 @@ class ProjectDeliveryService:
     def accept_terms(context, assignment_id):
         assignment = TeamAssignment.objects.filter(tenant=context.tenant, id=assignment_id).first()
         if not assignment:
-            return ServiceResult.failure({"assignment": "Team assignment not found."}, status_code=404)
+            return ServiceResult.failure({"assignment": "Team Assignment Not Found."}, status_code=404)
         assignment.terms_accepted_at = timezone.now()
         assignment.updated_by = context.actor
         assignment.save(update_fields=["terms_accepted_at", "updated_by", "updated_at"])
@@ -130,7 +130,7 @@ class ProjectDeliveryService:
     def create_repository_link(context, project_id, name, owner="", provider="GitHub", default_branch="main", live=False):
         project = ProjectWorkspace.objects.filter(tenant=context.tenant, id=project_id).first()
         if not project:
-            return ServiceResult.failure({"project": "Project not found."}, status_code=404)
+            return ServiceResult.failure({"project": "Project Not Found."}, status_code=404)
         owner = owner or project.github_organization
         provider_payload = ProjectIntegrationProvider(live=live).create_repository(owner, name, private=True)
         full_name = provider_payload.get("full_name") or (f"{owner}/{name}" if owner else name)
@@ -147,7 +147,7 @@ class ProjectDeliveryService:
     def update_repository_access(context, repository_id, employee_id, access_status="AccessRequested"):
         repository = RepositoryLink.objects.filter(tenant=context.tenant, id=repository_id).first()
         if not repository:
-            return ServiceResult.failure({"repository": "Repository link not found."}, status_code=404)
+            return ServiceResult.failure({"repository": "Repository Link Not Found."}, status_code=404)
         TeamAssignment.objects.filter(tenant=context.tenant, project=repository.project, employee_id=employee_id).update(github_access_status=access_status, updated_by=context.actor)
         repository.access_status = access_status
         repository.updated_by = context.actor
@@ -158,7 +158,7 @@ class ProjectDeliveryService:
     def record_document(context, project_id, title, document_type="General", storage_reference="", file_id=""):
         project = ProjectWorkspace.objects.filter(tenant=context.tenant, id=project_id).first()
         if not project:
-            return ServiceResult.failure({"project": "Project not found."}, status_code=404)
+            return ServiceResult.failure({"project": "Project Not Found."}, status_code=404)
         document = DeliveryDocument.objects.create(
             tenant=context.tenant,
             workspace=context.workspace or project.workspace,
@@ -176,7 +176,7 @@ class ProjectDeliveryService:
     def pin_document(context, document_id, is_pinned=True):
         document = DeliveryDocument.objects.filter(tenant=context.tenant, id=document_id).first()
         if not document:
-            return ServiceResult.failure({"document": "Delivery document not found."}, status_code=404)
+            return ServiceResult.failure({"document": "Delivery Document Not Found."}, status_code=404)
         document.is_pinned = is_pinned
         document.updated_by = context.actor
         document.save(update_fields=["is_pinned", "updated_by", "updated_at"])
@@ -186,7 +186,7 @@ class ProjectDeliveryService:
     def launch_compliance_campaign(context, project_id, name="Anti phishing assessment", employee_ids=None):
         project = ProjectWorkspace.objects.filter(tenant=context.tenant, id=project_id).first()
         if not project:
-            return ServiceResult.failure({"project": "Project not found."}, status_code=404)
+            return ServiceResult.failure({"project": "Project Not Found."}, status_code=404)
         campaign = ComplianceCampaign.objects.create(
             tenant=context.tenant,
             workspace=context.workspace or project.workspace,
@@ -216,7 +216,7 @@ class ProjectDeliveryService:
     def complete_compliance_assignment(context, assignment_id, score=0, evidence=None):
         assignment = ComplianceAssignment.objects.filter(tenant=context.tenant, id=assignment_id).first()
         if not assignment:
-            return ServiceResult.failure({"assignment": "Compliance assignment not found."}, status_code=404)
+            return ServiceResult.failure({"assignment": "Compliance Assignment Not Found."}, status_code=404)
         assignment.status = "Completed"
         assignment.score = score or 0
         assignment.evidence = evidence or {}
@@ -259,7 +259,7 @@ class ProjectDeliveryService:
     def project_dashboard(context, project_id):
         project = ProjectWorkspace.objects.filter(tenant=context.tenant, id=project_id).first()
         if not project:
-            return ServiceResult.failure({"project": "Project not found."}, status_code=404)
+            return ServiceResult.failure({"project": "Project Not Found."}, status_code=404)
         milestones = DeliveryMilestone.objects.filter(tenant=context.tenant, project=project).order_by("sequence", "due_on")
         assignments = TeamAssignment.objects.filter(tenant=context.tenant, project=project).select_related("employee", "employee__user")
         repositories = RepositoryLink.objects.filter(tenant=context.tenant, project=project).order_by("name")
@@ -351,7 +351,7 @@ class ProjectDeliveryService:
 
         project = ProjectWorkspace.objects.filter(tenant=context.tenant, id=project_id).first()
         if not project:
-            return ServiceResult.failure({"project": "Project not found."}, status_code=404)
+            return ServiceResult.failure({"project": "Project Not Found."}, status_code=404)
         actor_employee = EmployeeProfile.objects.filter(tenant=context.tenant, user=context.actor).first() if context.actor else None
         employee_id = employee_id or (actor_employee.id if actor_employee else None)
         assignment = TeamAssignment.objects.filter(tenant=context.tenant, project=project, employee_id=employee_id).first()
@@ -408,7 +408,7 @@ class ProjectDeliveryService:
     def get_days_left(context, project_id):
         project = ProjectWorkspace.objects.filter(tenant=context.tenant, id=project_id).first()
         if not project:
-            return ServiceResult.failure({"project": "Project not found."}, status_code=404)
+            return ServiceResult.failure({"project": "Project Not Found."}, status_code=404)
         if not project.ends_on:
             return ServiceResult.success({"project_id": project.id, "days_left": None})
         return ServiceResult.success({"project_id": project.id, "days_left": (project.ends_on - timezone.localdate()).days})
@@ -483,7 +483,7 @@ class ProjectDeliveryService:
     def update_assignment_hat(context, project_id, employee_id, hat_type="Member"):
         assignment = TeamAssignment.objects.filter(tenant=context.tenant, project_id=project_id, employee_id=employee_id).first()
         if not assignment:
-            return ServiceResult.failure({"assignment": "Team assignment not found."}, status_code=404)
+            return ServiceResult.failure({"assignment": "Team Assignment Not Found."}, status_code=404)
         assignment.role = hat_type or "Member"
         assignment.updated_by = context.actor
         assignment.save(update_fields=["role", "updated_by", "updated_at"])
@@ -534,7 +534,7 @@ class ProjectDeliveryService:
     def update_project_details(context, project_id, data):
         project = ProjectWorkspace.objects.filter(tenant=context.tenant, id=project_id).first()
         if not project:
-            return ServiceResult.failure({"project": "Project not found."}, status_code=404)
+            return ServiceResult.failure({"project": "Project Not Found."}, status_code=404)
         update_fields = ["updated_by", "updated_at"]
         for field in ["name", "code", "client_name", "description", "project_type", "priority", "status", "health", "github_organization", "clickup_sync_enabled", "terms_required", "anti_phishing_enabled"]:
             if field in data:
@@ -555,7 +555,7 @@ class ProjectDeliveryService:
     def update_milestone_details(context, milestone_id, data):
         milestone = DeliveryMilestone.objects.filter(tenant=context.tenant, id=milestone_id).first()
         if not milestone:
-            return ServiceResult.failure({"milestone": "Milestone not found."}, status_code=404)
+            return ServiceResult.failure({"milestone": "Milestone Not Found."}, status_code=404)
         update_fields = ["updated_by", "updated_at"]
         for field in ["title", "status", "sequence", "bounty", "delayed_days"]:
             if field in data:
@@ -601,7 +601,7 @@ class ProjectDeliveryService:
     def mark_absent(context, project_id, employee_id, is_absent=True, absent_reason=""):
         assignment = TeamAssignment.objects.filter(tenant=context.tenant, project_id=project_id, employee_id=employee_id).first()
         if not assignment:
-            return ServiceResult.failure({"assignment": "Team assignment not found."}, status_code=404)
+            return ServiceResult.failure({"assignment": "Team Assignment Not Found."}, status_code=404)
         assignment.is_absent = is_absent
         assignment.absent_reason = absent_reason
         assignment.updated_by = context.actor
@@ -612,7 +612,7 @@ class ProjectDeliveryService:
     def upsert_clickup_mapping(context, project_id, external_id="", project_name="", space_id="", list_id=""):
         project = ProjectWorkspace.objects.filter(tenant=context.tenant, id=project_id).first()
         if not project:
-            return ServiceResult.failure({"project": "Project not found."}, status_code=404)
+            return ServiceResult.failure({"project": "Project Not Found."}, status_code=404)
         mapping, _created = ClickUpProjectMapping.objects.update_or_create(
             tenant=context.tenant,
             project=project,
@@ -631,7 +631,7 @@ class ProjectDeliveryService:
     def task_detail(context, task_id):
         task = WorkItem.objects.filter(tenant=context.tenant, id=task_id).select_related("project", "owner").first()
         if not task:
-            return ServiceResult.failure({"task": "Work item not found."}, status_code=404)
+            return ServiceResult.failure({"task": "Work Item Not Found."}, status_code=404)
         return ServiceResult.success(
             {
                 "id": task.id,
@@ -654,7 +654,7 @@ class ProjectDeliveryService:
     def update_task(context, task_id, data):
         task = WorkItem.objects.filter(tenant=context.tenant, id=task_id).first()
         if not task:
-            return ServiceResult.failure({"task": "Work item not found."}, status_code=404)
+            return ServiceResult.failure({"task": "Work Item Not Found."}, status_code=404)
         update_fields = ["updated_by", "updated_at"]
         for field in ["title", "description", "priority", "status", "owner_id", "parent_id"]:
             if field in data:
@@ -677,7 +677,7 @@ class ProjectDeliveryService:
     def delete_task(context, task_id):
         task = WorkItem.objects.filter(tenant=context.tenant, id=task_id).first()
         if not task:
-            return ServiceResult.failure({"task": "Work item not found."}, status_code=404)
+            return ServiceResult.failure({"task": "Work Item Not Found."}, status_code=404)
         task.delete()
         return ServiceResult.success({"task_id": task_id, "deleted": True})
 
@@ -701,7 +701,7 @@ class ProjectDeliveryService:
     def save_task_link(context, task_id, url):
         task = WorkItem.objects.filter(tenant=context.tenant, id=task_id).first()
         if not task:
-            return ServiceResult.failure({"task": "Work item not found."}, status_code=404)
+            return ServiceResult.failure({"task": "Work Item Not Found."}, status_code=404)
         task.metadata = {**task.metadata, "task_link": url}
         task.updated_by = context.actor
         task.save(update_fields=["metadata", "updated_by", "updated_at"])
@@ -725,7 +725,7 @@ class ProjectDeliveryService:
     def add_delay(context, milestone_id, delayed_days=1):
         milestone = DeliveryMilestone.objects.filter(tenant=context.tenant, id=milestone_id).first()
         if not milestone:
-            return ServiceResult.failure({"milestone": "Milestone not found."}, status_code=404)
+            return ServiceResult.failure({"milestone": "Milestone Not Found."}, status_code=404)
         milestone.delayed_days += int(delayed_days or 1)
         milestone.updated_by = context.actor
         milestone.save(update_fields=["delayed_days", "updated_by", "updated_at"])
@@ -744,7 +744,7 @@ class ProjectDeliveryService:
     def edit_project_document(context, document_id, title="", storage_reference="", metadata=None):
         document = DeliveryDocument.objects.filter(tenant=context.tenant, id=document_id).first()
         if not document:
-            return ServiceResult.failure({"document": "Delivery document not found."}, status_code=404)
+            return ServiceResult.failure({"document": "Delivery Document Not Found."}, status_code=404)
         if title:
             document.title = title
         if storage_reference:
@@ -759,7 +759,7 @@ class ProjectDeliveryService:
     def delete_project_document(context, document_id):
         document = DeliveryDocument.objects.filter(tenant=context.tenant, id=document_id).first()
         if not document:
-            return ServiceResult.failure({"document": "Delivery document not found."}, status_code=404)
+            return ServiceResult.failure({"document": "Delivery Document Not Found."}, status_code=404)
         document.status = "Archived"
         document.updated_by = context.actor
         document.save(update_fields=["status", "updated_by", "updated_at"])
@@ -789,7 +789,7 @@ class ProjectDeliveryService:
     def complete_compliance_by_token(context, token, score=0, evidence=None):
         assignment = ComplianceAssignment.objects.filter(tenant=context.tenant, token=token).first()
         if not assignment:
-            return ServiceResult.failure({"assignment": "Compliance assignment not found."}, status_code=404)
+            return ServiceResult.failure({"assignment": "Compliance Assignment Not Found."}, status_code=404)
         return ProjectDeliveryService.complete_compliance_assignment(context, assignment.id, score=score, evidence=evidence)
 
     @staticmethod

@@ -6,7 +6,7 @@ from Backend.EnterpriseCore.services import TenantContext
 
 
 class Command(BaseCommand):
-    help = "Assign all existing department skills to active users."
+    help = "Assign All Existing Department Skills To Active Users."
 
     def add_arguments(self, parser):
         parser.add_argument("--tenant-id", type=int, required=True)
@@ -16,4 +16,4 @@ class Command(BaseCommand):
         tenant = Tenant.objects.get(id=options["tenant_id"])
         workspace = Workspace.objects.filter(id=options.get("workspace_id"), tenant=tenant).first() if options.get("workspace_id") else None
         result = EmployeeLifecycleService.assign_all_department_skills(TenantContext(tenant=tenant, workspace=workspace, source="Command"))
-        self.stdout.write(self.style.SUCCESS(f"Processed {result.data['count']} active employees."))
+        self.stdout.write(self.style.SUCCESS(f"Processed {result.data['count']} Active Employees."))
