@@ -210,13 +210,24 @@ export function uniqueOptions(values) {
   return Array.from(new Set((values || []).filter(Boolean).map((value) => String(value))));
 }
 
+export function toPascalCase(value) {
+  return String(value || "")
+    .replace(/[_\-]+/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join("");
+}
+
 export function downloadCsv(filename, columns, rows) {
-  const csv = [columns, ...rows].map((row) => row.map(csvValue).join(",")).join("\n");
+  const headers = (columns || []).map((column) => toPascalCase(column));
+  const safeName = filename && filename.endsWith(".csv") ? filename : `${toPascalCase(filename || "Export")}.csv`;
+  const csv = [headers, ...rows].map((row) => row.map(csvValue).join(",")).join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = filename;
+  link.download = safeName;
   link.click();
   URL.revokeObjectURL(url);
 }

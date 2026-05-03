@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { AlertTriangle, Eye, EyeOff, LogIn, LogOut, ShieldCheck, UserRound } from "lucide-react";
-import { apiGet, clearApiAuth, saveApiSettings } from "../Api/Client.js";
+import { AlertTriangle, Edit3, Eye, EyeOff, LogIn, LogOut, ShieldCheck, UserRound } from "lucide-react";
+import { apiGet, apiPatch, clearApiAuth, saveApiSettings } from "../Api/Client.js";
+import { Modal } from "./Shared/ScreenComponents.jsx";
 
 export function LoginScreen({ settings, onLogin }) {
   const [form, setForm] = useState({
@@ -88,7 +89,8 @@ export function LoginScreen({ settings, onLogin }) {
   );
 }
 
-export function ProfileScreen({ data, onLogout }) {
+export function ProfileScreen({ data, onLogout, reload }) {
+  const [editOpen, setEditOpen] = useState(false);
   const user = data.me?.user || data.me?.account || data.me || {};
   const employee = data.me?.employees?.[0] || (data.employees || []).find((item) => String(item.user) === String(user.id)) || (data.employees || [])[0] || {};
   const fullName = employee.display_name || employee.displayName || user.fullName || user.full_name || user.username || "User";
@@ -115,6 +117,7 @@ export function ProfileScreen({ data, onLogout }) {
           <h1>{fullName}</h1>
           <p>{employee.department_name || "Banao"} / {employee.position_title || "Intranet User"}</p>
         </div>
+        <button className="outline-button" onClick={() => setEditOpen(true)}><Edit3 size={16} /> Edit Profile</button>
         <button className="outline-button" onClick={onLogout}><LogOut size={16} /> Logout</button>
       </section>
 
@@ -138,6 +141,55 @@ export function ProfileScreen({ data, onLogout }) {
           </dl>
         </article>
       </section>
+      {editOpen && <ProfileEditModal employee={employee} onClose={() => setEditOpen(false)} reload={reload} />}
     </section>
+  );
+}
+
+function ProfileEditModal({ employee, onClose, reload }) {
+  const [form, setForm] = useState({
+    display_name: employee.display_name || "",
+    phone: employee.phone || "",
+    address: employee.address || "",
+    department_name: employee.department_name || "",
+    position_title: employee.position_title || "",
+    joined_on: employee.joined_on || "",
+  });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const save = async () => {
+    if (!employee.id) {
+      setError("No Employee Profile Linked To This User.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const payload = { ...form };
+      if (!payload.joined_on) delete payload.joined_on;
+      await apiPatch(`/Users/EmployeeProfiles/${employee.id}/`, payload);
+      if (reload) reload(["employees", "me"]);
+      onClose();
+    } catch (saveError) {
+      setError(saveError?.message || "Update Failed.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal title="Edit Profile" onClose={onClose} wide>
+      {error && <div className="login-error"><AlertTriangle size={14} /> {error}</div>}
+      <div className="form-grid two modal-form">
+        <label>Display Name<input value={form.display_name} onChange={(event) => setForm({ ...form, display_name: event.target.value })} /></label>
+        <label>Phone<input value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} /></label>
+        <label>Department<input value={form.department_name} onChange={(event) => setForm({ ...form, department_name: event.target.value })} /></label>
+        <label>Position<input value={form.position_title} onChange={(event) => setForm({ ...form, position_title: event.target.value })} /></label>
+        <label>Joined On<input type="date" value={form.joined_on ? String(form.joined_on).slice(0, 10) : ""} onChange={(event) => setForm({ ...form, joined_on: event.target.value })} /></label>
+      </div>
+      <label>Address<textarea rows={3} value={form.address} onChange={(event) => setForm({ ...form, address: event.target.value })} /></label>
+      <button className="primary-button" onClick={save} disabled={busy}>Save Profile</button>
+    </Modal>
   );
 }

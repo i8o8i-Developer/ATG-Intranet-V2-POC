@@ -331,6 +331,10 @@ class MainAppLegacyActionAPIView(MainAppLegacyMixin, APIView):
             result = MainAppLegacyService.remove_share(context, request.data.get("grant_id"))
         elif action == "test_password_reset":
             result = MainAppLegacyService.test_password_reset(context, user_id=request.data.get("user_id"), email=request.data.get("email", ""))
+        elif action == "register_employee":
+            from Backend.Apps.Users.serializers import EmployeeProfileSerializer
+            result = MainAppLegacyService.register_employee(context, request.data)
+            return self.to_response(result, EmployeeProfileSerializer)
         elif action == "nda":
             result = ServiceResult.success({"document": "NDA", "status": "available"})
         else:

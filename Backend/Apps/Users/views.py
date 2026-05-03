@@ -189,6 +189,28 @@ class CurrentUserAPIView(APIView):
         )
 
 
+class ChangePasswordAPIView(APIView):
+    def post(self, request):
+        target_user = request.user
+        new_password = request.data.get("new_password") or request.data.get("password")
+        old_password = request.data.get("old_password") or request.data.get("current_password")
+        target_user_id = request.data.get("user_id") or request.data.get("user")
+        if not new_password or len(str(new_password)) < 6:
+            return Response({"detail": "Password Must Be At Least 6 Characters."}, status=status.HTTP_400_BAD_REQUEST)
+        if target_user_id and (request.user.is_superuser or request.user.is_staff):
+            from django.contrib.auth import get_user_model
+            try:
+                target_user = get_user_model().objects.get(pk=target_user_id)
+            except get_user_model().DoesNotExist:
+                return Response({"detail": "User Not Found."}, status=status.HTTP_404_NOT_FOUND)
+        elif target_user.pk and not (request.user.is_superuser or request.user.is_staff):
+            if not old_password or not target_user.check_password(old_password):
+                return Response({"detail": "Current Password Is Incorrect."}, status=status.HTTP_400_BAD_REQUEST)
+        target_user.set_password(str(new_password))
+        target_user.save(update_fields=["password"])
+        return Response({"detail": "Password Updated.", "user_id": target_user.pk})
+
+
 class DomainViewSet(TenantScopedModelViewSet):
     queryset = Domain.objects.select_related("tenant", "workspace").all()
     serializer_class = DomainSerializer

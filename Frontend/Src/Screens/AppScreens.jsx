@@ -1,6 +1,7 @@
 import React from "react";
 
 import { AssessmentScreen } from "./AssessmentScreen.jsx";
+import { AdminChangePasswordScreen } from "./AdminChangePasswordScreen.jsx";
 import { BankDetailsScreen } from "./BankDetailsScreen.jsx";
 import { ConnectedSummaryScreen } from "./ConnectedSummaryScreen.jsx";
 import { DeactivateEmployeeScreen } from "./DeactivateEmployeeScreen.jsx";
@@ -12,11 +13,13 @@ import { HrmsScreen } from "./HrmsScreen.jsx";
 import { LeaveApplyScreen } from "./LeaveApplyScreen.jsx";
 import { LmsScreen } from "./LmsScreen.jsx";
 import { MarketingProjectScreen } from "./MarketingProjectScreen.jsx";
+import { McpScreen } from "./McpScreen.jsx";
+import { NotificationsScreen } from "./NotificationsScreen.jsx";
 import { PayrollDownloadsScreen } from "./PayrollDownloadsScreen.jsx";
+import { PayslipsScreen } from "./PayslipsScreen.jsx";
 import { ProjectDashboardScreen } from "./ProjectDashboardScreen.jsx";
 import { SendCertificateScreen } from "./SendCertificateScreen.jsx";
 import { SendOfferScreen } from "./SendOfferScreen.jsx";
-import { TasksScreen } from "./TasksScreen.jsx";
 import { WorkflowIntelligenceScreen } from "./WorkflowIntelligenceScreen.jsx";
 
 export function RouteRenderer(props) {
@@ -34,10 +37,12 @@ export function RouteRenderer(props) {
   if (path.startsWith("/deactivate")) return <DeactivateEmployeeScreen {...props} />;
   if (path.startsWith("/assessment")) return <AssessmentScreen {...props} />;
   if (path.startsWith("/payroll-downloads") || path.startsWith("/Payroll")) return <PayrollDownloadsScreen {...props} />;
+  if (path.startsWith("/payslips")) return <PayslipsScreen {...props} />;
   if (path.startsWith("/payments") || path.startsWith("/finance")) return <FinanceScreen {...props} />;
-  if (path.startsWith("/tasks")) return <TasksScreen {...props} />;
   if (path.startsWith("/workflow")) return <WorkflowIntelligenceScreen {...props} />;
-  if (path.startsWith("/mcp")) return <ConnectedSummaryScreen {...props} title="MCP Agents" resources={["projects", "docs", "issues"]} />;
+  if (path.startsWith("/notifications")) return <NotificationsScreen {...props} />;
+  if (path.startsWith("/change-password") || path.startsWith("/admin/change-password")) return <AdminChangePasswordScreen {...props} />;
+  if (path.startsWith("/mcp")) return <McpScreen {...props} />;
   if (path.startsWith("/lms")) return <LmsScreen {...props} />;
   return <HomeScreen {...props} />;
 }

@@ -34,6 +34,7 @@ urlpatterns = [
 	path("Auth/Login/", views.LoginAPIView.as_view(), name="users-auth-login"),
 	path("Auth/Logout/", views.LogoutAPIView.as_view(), name="users-auth-logout"),
 	path("Auth/Me/", views.CurrentUserAPIView.as_view(), name="users-auth-me"),
+	path("Auth/ChangePassword/", views.ChangePasswordAPIView.as_view(), name="users-auth-change-password"),
 	path("api/issues/", apis.FetchIssuesAPIView.as_view(), name="users-api-issues"),
 	path("api/export-payroll-async/", apis.ExportPayrollAsyncAPIView.as_view(), name="users-api-export-payroll-async"),
 	path("api/payroll-export-status/<str:task_id>/", apis.PayrollExportStatusAPIView.as_view(), name="users-api-payroll-export-status"),

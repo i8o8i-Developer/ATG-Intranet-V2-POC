@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
 
 import { apiPost } from "../Api/Client.js";
-import { Disclosure, EmptyState, Panel, StatCard } from "./Shared/ScreenComponents.jsx";
+import { EmptyState, Panel, StatCard } from "./Shared/ScreenComponents.jsx";
 import {
   avatar,
   employeeName,
@@ -72,15 +72,6 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
         <StatCard label="Pending Compliance" value={pendingCompliance.length} />
         <StatCard label="Open Assessments" value={useWorkspaceScope ? (data.assessmentAssignments || []).filter((item) => !isCompleted(item.status)).length : pendingCompliance.length} />
       </div>
-      <Disclosure title="Notifications" subtitle={unread.length ? `${unread.length} Unread` : "No Unread Notifications"} defaultOpen>
-        {(data.notifications || []).slice(0, 6).map((item) => (
-          <div className="notice-row" key={item.id}>
-            <div><strong>{item.title}</strong><p>{item.message}</p><span>{item.created_at}</span></div>
-            <button className="soft-button">Review</button>
-          </div>
-        ))}
-        {!data.notifications?.length && <EmptyState label="No Notifications Loaded From Backend." />}
-      </Disclosure>
       <Panel title="Attendance Overview" subtitle={attendanceSubtitle}>
         <div className="attendance-strip">
           {days.map((day) => {

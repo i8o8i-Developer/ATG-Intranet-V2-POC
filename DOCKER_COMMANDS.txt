@@ -170,29 +170,6 @@ CELERY :
   Purge All Celery Queues
     docker compose exec Celery-Worker celery -A Backend.celery_app purge -f
 
-STARTUP SEQUENCE (What Docker-Compose Does Automatically)
-
-  1. Database + Redis start first (healthchecks pass before Backend starts)
-  2. Backend:
-       python Backend/manage.py migrate
-       python Backend/manage.py Bootstrap_Backend  [creates tenant + admin]
-       python Backend/manage.py Seed_Hrms_Data     [20 employees, 3 projects, EODs]
-       python Backend/manage.py Seed_Demo_Erp      [full ERP demo data all modules]
-       python Backend/manage.py runserver 0.0.0.0:8000
-  3. Celery-Worker + Celery-Beat start (wait for Backend)
-  4. Frontend starts (npm run dev -- --host 0.0.0.0)
-
-ENVIRONMENT VARIABLES (.env.example)
-
-  DJANGO_SECRET_KEY=your-secret-key-here
-  DJANGO_DEBUG=1
-  DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,backend,0.0.0.0
-  CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-  CSRF_TRUSTED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:8000,http://127.0.0.1:8000
-  POSTGRES_DB=intranet_rebuild
-  POSTGRES_USER=intranet
-  POSTGRES_PASSWORD=intranet
-  VITE_API_BASE_URL=http://localhost:8000/
 
 TROUBLESHOOTING :
 

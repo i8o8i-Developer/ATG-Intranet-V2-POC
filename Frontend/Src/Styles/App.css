@@ -44,6 +44,20 @@ button { cursor: pointer; }
 .user-chip:hover, .user-chip.active { border-color: #111827; background: #f8fafc; }
 .sync-state { border-radius: 999px; padding: 7px 10px; font-size: 12px; background: #eef4ff; color: #2454d6; }
 .sync-state.danger { background: #fee2e2; color: #b91c1c; }
+.notification-bell { position: relative; display: inline-flex; }
+.notification-bell .icon-button { position: relative; }
+.notification-bell .icon-button.active { border-color: #111827; background: #f8fafc; }
+.notification-count { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: #ef4444; color: #fff; font-size: 10px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
+.notification-popover { position: absolute; top: calc(100% + 8px); right: 0; width: min(380px, calc(100vw - 32px)); background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 18px 46px rgba(15, 23, 42, .2); z-index: 50; overflow: hidden; }
+.notification-popover-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.notification-popover-head span { color: var(--muted); font-size: 12px; }
+.notification-list { max-height: 360px; overflow: auto; }
+.notification-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 11px 12px; border-bottom: 1px solid #edf1f7; align-items: center; }
+.notification-item.unread { background: #f8fbff; }
+.notification-item strong { font-size: 13px; }
+.notification-item p { margin: 3px 0; color: #475467; font-size: 12px; line-height: 1.35; }
+.notification-item small { font-size: 11px; }
+.notification-empty { padding: 16px; color: var(--muted); text-align: center; font-size: 13px; }
 .topbar-actions label, .settings-strip label { display: grid; gap: 3px; font-size: 10px; color: var(--muted); }
 .topbar-actions input { width: 56px; }
 .settings-strip { display: flex; gap: 12px; align-items: end; padding: 12px 28px; border-bottom: 1px solid var(--line); background: #f8fafc; }
@@ -142,11 +156,19 @@ textarea { min-height: 90px; resize: vertical; }
 .primary-button { background: var(--blue); color: #fff; }
 .primary-button.small { padding: 7px 10px; font-size: 12px; }
 .soft-button { background: #e0f2fe; color: #075985; }
+.soft-button.small { padding: 6px 9px; font-size: 12px; }
+.soft-button.danger { background: #fee2e2; color: #b91c1c; }
 .outline-button { background: #fff; border-color: #cfd8e3; color: #111827; }
 .danger-button { background: #ef6f7d; color: #fff; }
 .warning-button { background: #ffc107; color: #111827; padding: 6px 9px; }
 .black-button { background: #000; color: #fff; width: max-content; }
 .icon-button { background: #fff; border-color: #d7e0ec; width: 38px; height: 34px; padding: 0; }
+.table-actions { display: inline-flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.table-actions.top-actions { display: flex; margin-bottom: 10px; }
+.inline-form-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.inline-form-row input { min-width: 190px; flex: 1; }
+.modal-form { margin: 0 0 14px; }
+.modal label { display: grid; gap: 6px; margin-bottom: 12px; color: #374151; font-size: 12px; }
 
 .erp-table { width: 100%; border-collapse: collapse; }
 .erp-table th { background: #f3f6fb; font-weight: 700; text-align: left; color: #475467; }
@@ -686,7 +708,7 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: #2454d6; b
 .hrms-dept-stack { display: grid; gap: 14px; }
 .hrms-dept-card {
   background: #fff; border: 1px solid var(--line); border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(24,32,47,.06); overflow: hidden;
+  box-shadow: 0 2px 8px rgba(24,32,47,.06); overflow: visible;
 }
 .hrms-dept-head {
   width: 100%; border: 0; background: #fff; padding: 16px 18px;
@@ -718,8 +740,16 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: #2454d6; b
 .hrms-pill.slate { color: #475467; background: #e2e8f0; }
 
 /* ── Employee table ── */
-.hrms-table-wrap { overflow-x: auto; background: #f8fbff; border-top: 1px solid #e8edf5; }
-.hrms-emp-table { width: 100%; min-width: 1040px; border-collapse: collapse; }
+.hrms-table-wrap { overflow: visible; background: #f8fbff; border-top: 1px solid #e8edf5; }
+.hrms-emp-table { width: 100%; min-width: 0; table-layout: fixed; border-collapse: collapse; }
+.hrms-emp-table th:nth-child(1), .hrms-emp-table td:nth-child(1) { width: 21%; }
+.hrms-emp-table th:nth-child(2), .hrms-emp-table td:nth-child(2) { width: 13%; }
+.hrms-emp-table th:nth-child(3), .hrms-emp-table td:nth-child(3) { width: 14%; }
+.hrms-emp-table th:nth-child(4), .hrms-emp-table td:nth-child(4) { width: 15%; }
+.hrms-emp-table th:nth-child(5), .hrms-emp-table td:nth-child(5) { width: 5%; }
+.hrms-emp-table th:nth-child(6), .hrms-emp-table td:nth-child(6) { width: 7%; }
+.hrms-emp-table th:nth-child(7), .hrms-emp-table td:nth-child(7) { width: 20%; }
+.hrms-emp-table th:nth-child(8), .hrms-emp-table td:nth-child(8) { width: 5%; }
 .hrms-emp-table th {
   background: #f0f4fb; font-size: 12px; font-weight: 700; color: #475467;
   text-align: left; padding: 10px 14px; border-bottom: 1px solid #dde4ef;
@@ -727,7 +757,7 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: #2454d6; b
 }
 .hrms-emp-row { border-bottom: 1px solid #edf2f9; }
 .hrms-emp-row:last-child { border-bottom: 0; }
-.hrms-emp-row td { padding: 12px 14px; vertical-align: middle; }
+.hrms-emp-row td { padding: 12px 14px; vertical-align: middle; overflow: visible; }
 .hrms-emp-row:hover { background: #f5f8ff; }
 
 /* ── Name cell ── */
@@ -783,6 +813,18 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: #2454d6; b
 .hrms-skill-badge.bas { border-color: #f59e0b; color: #92400e; background: #fffbeb; }
 .hrms-skill-badge.mid { border-color: #818cf8; color: #3730a3; background: #eef2ff; }
 .hrms-skill-badge.adv { border-color: #34d399; color: #065f46; background: #ecfdf5; }
+.hrms-skill-wrap { position: relative; display: inline-flex; }
+.hrms-skill-badge { border: 1px solid transparent; background: #fff; }
+.hrms-skill-menu {
+  position: absolute; left: 0; top: calc(100% + 6px); z-index: 58;
+  width: 190px; background: #fff; border: 1px solid #e2e8f0;
+  border-radius: 10px; box-shadow: 0 14px 34px rgba(15,23,42,.18);
+  padding: 8px; display: grid; gap: 4px;
+}
+.hrms-skill-menu strong { font-size: 12px; color: #111827; padding: 3px 6px; }
+.hrms-skill-menu button { border: 0; background: transparent; text-align: left; padding: 8px; border-radius: 6px; color: #1f2937; }
+.hrms-skill-menu button:hover { background: #f1f5f9; }
+.hrms-skill-menu small { padding: 6px; }
 
 /* ── Project stack ── */
 .hrms-proj-stack { display: grid; gap: 3px; }
@@ -838,8 +880,12 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: #2454d6; b
 }
 .hrms-eod-pop-project span { font-size: 12px; font-weight: 700; color: #047857; }
 .hrms-eod-pop-project p { margin: 0; font-size: 12px; color: #374151; line-height: 1.4; }
+.hrms-eod-pop-project.missing { border-left-color: #f59e0b; }
+.hrms-eod-pop-project.missing span { color: #92400e; }
 .hrms-eod-pop-status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #047857; font-weight: 600; justify-content: flex-end; }
 .hrms-eod-pop-status .dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; }
+.hrms-eod-pop-status.missing { color: #92400e; }
+.hrms-eod-pop-status.missing .dot { background: #f59e0b; }
 
 /* ── Context menu ── */
 .hrms-action-wrap { position: relative; }
@@ -977,3 +1023,33 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: #2454d6; b
   .eod-summary-row { grid-template-columns: 1fr; }
   .eod-cal-day { min-height: 44px; font-size: 14px; }
 }
+/* Project dashboard - milestone groups & subtasks */
+.milestone-block { border: 1px solid #e5e7eb; border-radius: 10px; margin-bottom: 14px; overflow: hidden; }
+.milestone-block-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #f9fafb; }
+.milestone-block-head strong { margin-right: 8px; }
+.milestone-empty { padding: 14px; display: flex; align-items: center; justify-content: space-between; color: var(--muted); }
+.project-task-row .subtask-arrow { color: #94a3b8; margin-right: 6px; }
+.project-task-table { width: 100%; }
+.danger-text { color: #dc2626; }
+
+/* Member repo icon + tooltip */
+.member-repo-icon { position: relative; display: inline-flex; cursor: pointer; }
+.member-repo-tooltip { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); background: #111827; color: #f9fafb; border-radius: 6px; padding: 8px 10px; font-size: 12px; min-width: 180px; z-index: 30; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); }
+.member-repo-tooltip small { color: #94a3b8; }
+.member-repo-tooltip .danger-text { color: #fca5a5; }
+
+/* Repository modal list */
+.repo-list { list-style: none; padding: 0; margin: 0 0 14px; display: flex; flex-direction: column; gap: 6px; }
+.repo-list li { display: grid; grid-template-columns: minmax(0,1fr) 120px auto; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+
+/* Form helpers */
+.inline-checkbox { display: inline-flex; align-items: center; gap: 6px; }
+.checkbox-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px; max-height: 300px; overflow-y: auto; padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px; margin: 8px 0 14px; }
+.inline-form-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.muted-text { color: var(--muted); font-size: 12px; }
+
+/* Project title bar refinements */
+.project-title-bar { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; flex-wrap: wrap; }
+.project-title-bar > div { display: inline-flex; align-items: center; gap: 8px; }
+.project-title-bar > div:last-child { margin-left: auto; gap: 6px; }

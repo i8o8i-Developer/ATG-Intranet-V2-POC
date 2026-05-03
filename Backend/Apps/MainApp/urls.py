@@ -62,4 +62,5 @@ urlpatterns = [
 	path("api/search-user/", views.MainAppLegacyActionAPIView.as_view(action_name="search_user"), name="search-user"),
 	path("api/credentials/remove-share/", views.MainAppLegacyActionAPIView.as_view(action_name="remove_share", response_serializer=CredentialShareGrantSerializer), name="remove-share"),
 	path("api/test-password-reset/", views.MainAppLegacyActionAPIView.as_view(action_name="test_password_reset"), name="test-password-reset"),
+	path("Onboard/register-employee", views.MainAppLegacyActionAPIView.as_view(action_name="register_employee"), name="onboard-register-employee"),
 ] + router.urls

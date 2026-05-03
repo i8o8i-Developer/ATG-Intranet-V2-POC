@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   BarChart3,
+  Bell,
   BookOpen,
   BriefcaseBusiness,
   CalendarDays,
@@ -11,7 +12,6 @@ import {
   FileText,
   Home,
   KeyRound,
-  ListChecks,
   LogOut,
   Megaphone,
   Plug,
@@ -20,7 +20,7 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
-import { apiGet, clearApiAuth, getApiSettings, unpackList } from "./Api/Client.js";
+import { apiGet, apiPost, clearApiAuth, getApiSettings, unpackList } from "./Api/Client.js";
 import { LoginScreen, ProfileScreen } from "./Screens/AuthScreens.jsx";
 import { RouteRenderer } from "./Screens/AppScreens.jsx";
 
@@ -31,14 +31,16 @@ const navItems = [
   { label: "Leave Apply", path: "/leave/apply/", icon: CalendarDays },
   { label: "Development Projects", path: "/project/dashboard/", icon: BriefcaseBusiness },
   { label: "Marketing Project", path: "/marketing-project/", icon: Megaphone },
-  { label: "Tasks Dashboard", path: "/tasks/", icon: ListChecks },
   { label: "LMS / Banao", path: "/lms/", icon: BarChart3 },
   { label: "Finance", path: "/payments/?pay_month=current&month_name=May", icon: DollarSign },
   { label: "Payroll Downloads", path: "/payroll-downloads/", icon: Download },
+  { label: "Payslips", path: "/payslips/", icon: FileText },
   { label: "Docs", path: "/docs/", icon: BookOpen },
   { label: "Assessment", path: "/assessment/", icon: ClipboardCheck },
   { label: "Workflow Intelligence", path: "/workflow/", icon: Plug },
   { label: "MCP Agents", path: "/mcp/", icon: KeyRound },
+  { label: "Notifications", path: "/notifications/", icon: Bell },
+  { label: "Change Password", path: "/change-password/", icon: KeyRound },
   { label: "Bank Details", path: "/Bankdetails/", icon: FileText },
   { label: "Send Offer", path: "/Onboard/Send_Offer", icon: Send },
   { label: "Send Certificate", path: "/send-certificate", icon: ShieldCheck },
@@ -232,12 +234,15 @@ function App() {
   }, [data.employees, data.me, selectedEmployeeId]);
 
   useEffect(() => {
-    if (errors.some((error) => error.status === 401)) {
+    if (!hasAuth || isLoginRoute) return;
+    const unauthorized = errors.some((error) => error.status === 401);
+    const offline = !loading && !apiOnline && errors.length > 0;
+    if (unauthorized || offline) {
       clearApiAuth();
       setSettings(getApiSettings());
       navigate("/login/");
     }
-  }, [errors, navigate]);
+  }, [errors, loading, apiOnline, hasAuth, isLoginRoute, navigate]);
 
   const login = () => {
     setSettings(getApiSettings());
@@ -260,65 +265,86 @@ function App() {
     data,
     settings,
     selectedEmployeeId,
-    reload: () => {
-      reload();
-      setReloadKey((value) => value + 1);
-    },
+    reload,
     navigate,
   };
 
   return (
-    <AppShell route={route} navigate={navigate} data={data} apiOnline={apiOnline} loading={loading} logout={logout} errors={errors}>
-      {path.startsWith("/profile") ? <ProfileScreen data={data} onLogout={logout} /> : <RouteRenderer route={route} {...commonProps} />}
+    <AppShell route={route} navigate={navigate} data={data} apiOnline={apiOnline} loading={loading} logout={logout} errors={errors} reloadData={commonProps.reload}>
+      {path.startsWith("/profile") ? <ProfileScreen data={data} onLogout={logout} reload={reload} /> : <RouteRenderer route={route} {...commonProps} />}
     </AppShell>
   );
 }
 
 function useIntranetData(reloadKey, enabled) {
   const [state, setState] = useState({ data: {}, loading: false, errors: [], apiOnline: false });
+  const hasInitiallyLoaded = useRef(false);
 
-  const load = useCallback(async () => {
+  const applyPayload = (nextData, key, mode, payload) => {
+    if (key === "assessmentLegacy") {
+      nextData.assessmentRows = payload?.data || payload?.results || [];
+      nextData.assessmentLegacy = payload;
+    } else if (key === "financeDashboard") {
+      nextData.financeRows = payload?.user_list || [];
+      nextData.financeDashboard = payload;
+    } else if (key === "lmsLeads") {
+      nextData.lmsLeads = payload;
+      nextData.leadRows = payload?.results || [];
+      nextData.leadOriginCounts = payload?.origin_counts || {};
+    } else {
+      nextData[key] = mode === "list" ? unpackList(payload) : payload;
+    }
+  };
+
+  const load = useCallback(async (keysFilter) => {
     if (!enabled) {
       setState({ data: {}, loading: false, errors: [], apiOnline: false });
+      hasInitiallyLoaded.current = false;
       return;
     }
-    setState((current) => ({ ...current, loading: true, errors: [] }));
-    const results = await Promise.allSettled(endpointMap.map(([key, path, mode]) => apiGet(path).then((payload) => ({ key, payload, mode }))));
-    const nextData = {};
-    const requestErrors = [];
-    results.forEach((result, index) => {
-      const [key] = endpointMap[index];
-      if (result.status === "fulfilled") {
-        const { payload, mode } = result.value;
-        if (key === "assessmentLegacy") {
-          nextData.assessmentRows = payload?.data || payload?.results || [];
-          nextData.assessmentLegacy = payload;
-        } else if (key === "financeDashboard") {
-          nextData.financeRows = payload?.user_list || [];
-          nextData.financeDashboard = payload;
-        } else if (key === "lmsLeads") {
-          nextData.lmsLeads = payload;
-          nextData.leadRows = payload?.results || [];
-          nextData.leadOriginCounts = payload?.origin_counts || {};
+    
+    let effectiveFilter = keysFilter;
+    if (keysFilter === undefined && hasInitiallyLoaded.current) {
+      effectiveFilter = ["me", "notifications", "employees", "tasks", "projects", "leaveRequests"];
+    } else if (keysFilter === true || keysFilter === "__all__") {
+      effectiveFilter = undefined;
+    }
+    const subset = Array.isArray(effectiveFilter) && effectiveFilter.length
+      ? endpointMap.filter(([key]) => effectiveFilter.includes(key))
+      : endpointMap;
+    const isPartial = subset.length !== endpointMap.length;
+    setState((current) => ({ ...current, loading: !isPartial ? true : current.loading, errors: isPartial ? current.errors : [] }));
+    const results = await Promise.allSettled(subset.map(([key, p, mode]) => apiGet(p).then((payload) => ({ key, payload, mode }))));
+    setState((current) => {
+      const nextData = isPartial ? { ...current.data } : {};
+      const requestErrors = isPartial ? current.errors.filter((err) => !effectiveFilter.includes(err.key)) : [];
+      results.forEach((result, index) => {
+        const [key, , mode] = subset[index];
+        if (result.status === "fulfilled") {
+          applyPayload(nextData, key, mode, result.value.payload);
         } else {
-          nextData[key] = mode === "list" ? unpackList(payload) : payload;
+          requestErrors.push({ key, status: result.reason?.status, message: result.reason?.message || "Request failed" });
+          if (!isPartial) nextData[key] = mode === "list" ? [] : null;
         }
-      } else {
-        requestErrors.push({ key, status: result.reason?.status, message: result.reason?.message || "Request failed" });
-        nextData[key] = endpointMap[index][2] === "list" ? [] : null;
-      }
+      });
+      return {
+        data: nextData,
+        loading: false,
+        errors: requestErrors,
+        apiOnline: isPartial ? current.apiOnline : requestErrors.length < endpointMap.length,
+      };
     });
-    setState({ data: nextData, loading: false, errors: requestErrors, apiOnline: requestErrors.length < endpointMap.length });
+    if (!isPartial) hasInitiallyLoaded.current = true;
   }, [enabled]);
 
   useEffect(() => {
-    load();
+    load("__all__");
   }, [load, reloadKey]);
 
   return { ...state, reload: load };
 }
 
-function AppShell({ children, route, navigate, data, apiOnline, loading, logout, errors }) {
+function AppShell({ children, route, navigate, data, apiOnline, loading, logout, errors, reloadData }) {
   const activePath = route.split("?")[0];
   const activeItem = navItems.find((item) => activePath === item.path || (item.path !== "/home/" && activePath.startsWith(item.path.replace(/\/$/, ""))));
   const pageTitle = activePath.startsWith("/profile") ? "Profile" : activeItem?.label || "Home";
@@ -360,6 +386,7 @@ function AppShell({ children, route, navigate, data, apiOnline, loading, logout,
           <div className="topbar-actions user-actions">
             {loading && <span className="sync-state">Syncing</span>}
             {!loading && !apiOnline && <span className="sync-state danger">Offline</span>}
+            <NotificationBell notifications={data.notifications || []} navigate={navigate} reloadData={reloadData} />
             <button className={activePath.startsWith("/profile") ? "user-chip active" : "user-chip"} onClick={() => navigate("/profile/")}>
               <span>{initials}</span>
               <b>{displayName}</b>
@@ -375,6 +402,88 @@ function AppShell({ children, route, navigate, data, apiOnline, loading, logout,
         )}
         {children}
       </main>
+    </div>
+  );
+}
+
+function NotificationBell({ notifications = [], navigate, reloadData }) {
+  const [open, setOpen] = useState(false);
+  const [busyId, setBusyId] = useState("");
+  const ref = useRef(null);
+  const unread = notifications.filter((item) => !item.is_read);
+  const rows = [...notifications].sort((left, right) => new Date(right.created_at || 0) - new Date(left.created_at || 0)).slice(0, 8);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDocumentClick = (event) => {
+      if (ref.current && !ref.current.contains(event.target)) setOpen(false);
+    };
+    const onKeyDown = (event) => { if (event.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDocumentClick);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onDocumentClick);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  const notificationPath = (item) => {
+    const resourceType = String(item.resource_type || item.category || "").toLowerCase();
+    const resourceId = item.resource_id || item.metadata?.project || item.metadata?.project_id;
+    if (resourceType.includes("project") && resourceId) return `/project/dashboard/${resourceId}/project/`;
+    if (resourceType.includes("leave")) return "/leave/apply/";
+    if (resourceType.includes("assessment")) return "/assessment/";
+    return "/notifications/";
+  };
+
+  const review = async (item) => {
+    setBusyId(String(item.id));
+    try {
+      if (!item.is_read) await apiPost(`/MainApp/Notifications/${item.id}/read/`, {});
+      if (reloadData) reloadData(["notifications"]);
+      navigate(notificationPath(item));
+      setOpen(false);
+    } finally {
+      setBusyId("");
+    }
+  };
+
+  const markAllRead = async () => {
+    await Promise.allSettled(unread.map((item) => apiPost(`/MainApp/Notifications/${item.id}/read/`, {})));
+    if (reloadData) reloadData(["notifications"]);
+  };
+
+  return (
+    <div className="notification-bell" ref={ref}>
+      <button className={open ? "icon-button active" : "icon-button"} onClick={() => setOpen((value) => !value)} title="Notifications">
+        <Bell size={16} />
+        {unread.length > 0 && <span className="notification-count">{unread.length}</span>}
+      </button>
+      {open && (
+        <div className="notification-popover">
+          <div className="notification-popover-head">
+            <strong>Notifications</strong>
+            <span>{unread.length} Unread</span>
+            {unread.length > 0 && <button className="link-button" onClick={markAllRead}>Mark All Read</button>}
+            <button className="link-button" onClick={() => { setOpen(false); navigate("/notifications/"); }}>View All</button>
+          </div>
+          <div className="notification-list">
+            {rows.map((item) => (
+              <div className={item.is_read ? "notification-item" : "notification-item unread"} key={item.id}>
+                <div>
+                  <strong>{item.title || item.category || "Notification"}</strong>
+                  <p>{item.message || item.description || "Open This Notification."}</p>
+                  <small>{item.created_at || ""}</small>
+                </div>
+                <button className="soft-button small" onClick={() => review(item)} disabled={busyId === String(item.id)}>
+                  {busyId === String(item.id) ? "Opening" : "Review"}
+                </button>
+              </div>
+            ))}
+            {!rows.length && <div className="notification-empty">No Notifications Loaded.</div>}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

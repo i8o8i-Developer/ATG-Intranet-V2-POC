@@ -182,9 +182,11 @@ class MainAppLegacyService:
     @staticmethod
     def list_leaves(context, employee_id=None):
         queryset = LeaveRequest.objects.filter(tenant=context.tenant).select_related("employee", "employee__user")
+        actor = getattr(context, "actor", None)
+        is_privileged = bool(actor and (getattr(actor, "is_superuser", False) or getattr(actor, "is_staff", False)))
         if employee_id:
             queryset = queryset.filter(employee_id=employee_id)
-        elif MainAppLegacyService.actor_employee(context):
+        elif not is_privileged and MainAppLegacyService.actor_employee(context):
             queryset = queryset.filter(employee=MainAppLegacyService.actor_employee(context))
         return ServiceResult.success(
             {
@@ -656,3 +658,61 @@ class MainAppLegacyService:
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
         return ServiceResult.success({"uid": uid, "token": token, "email": user.email})
+
+    @staticmethod
+    def register_employee(context, data):
+        user_model = get_user_model()
+        username = (data.get("username") or "").strip()
+        email = (data.get("email") or data.get("candidate_email") or "").strip()
+        display_name = (data.get("display_name") or data.get("candidate_name") or username or email or "Employee").strip()
+        employee_code = (data.get("employee_code") or "").strip()
+        if not employee_code:
+            return ServiceResult.failure({"employee_code": "Employee Code Is Required."}, status_code=400)
+        if not username and not email:
+            return ServiceResult.failure({"username": "Username Or Email Is Required."}, status_code=400)
+        if not username:
+            username = email.split("@")[0]
+        existing = user_model.objects.filter(Q(username__iexact=username) | (Q(email__iexact=email) if email else Q(pk__in=[]))).first()
+        if existing:
+            user = existing
+        else:
+            password = data.get("password") or get_random_string(12)
+            user = user_model.objects.create_user(username=username, email=email or "", password=password)
+            first, _, last = display_name.partition(" ")
+            if first:
+                user.first_name = first[:30]
+            if last:
+                user.last_name = last[:150]
+            user.save(update_fields=["first_name", "last_name"])
+        if EmployeeProfile.objects.filter(tenant=context.tenant, user=user).exists():
+            employee = EmployeeProfile.objects.filter(tenant=context.tenant, user=user).first()
+            return ServiceResult.success(employee, status_code=200)
+        if EmployeeProfile.objects.filter(tenant=context.tenant, employee_code=employee_code).exists():
+            return ServiceResult.failure({"employee_code": "Employee Code Already In Use."}, status_code=400)
+        department_id = data.get("department") or None
+        position_id = data.get("position") or None
+        manager_id = data.get("manager") or None
+        joined_on = data.get("joined_on") or None
+        employee = EmployeeProfile.objects.create(
+            tenant=context.tenant,
+            workspace=context.workspace,
+            user=user,
+            employee_code=employee_code,
+            display_name=display_name,
+            contact_number=data.get("contact_number", ""),
+            github_username=data.get("github_username", ""),
+            department_id=department_id or None,
+            position_id=position_id or None,
+            manager_id=manager_id or None,
+            employment_type=data.get("employment_type", ""),
+            status=data.get("status") or EmployeeProfile.STATUS_ACTIVE,
+            joined_on=joined_on or timezone.localdate(),
+            leaves_wallet=data.get("leaves_wallet") or 0,
+            leaves_per_month=data.get("leaves_per_month") or 0,
+            onboarding_completed=False,
+            profile_payload=data.get("profile_payload") or {"registered_via": "employee_registrar"},
+            created_by=context.actor,
+            updated_by=context.actor,
+        )
+        return ServiceResult.success(employee, status_code=201)
+

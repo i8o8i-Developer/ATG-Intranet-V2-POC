@@ -5,7 +5,7 @@ import {
   TrendingUp, Users, X, Zap,
 } from "lucide-react";
 
-import { MilestoneRail, Modal, Panel, SimpleTable, Tabs } from "./Shared/ScreenComponents.jsx";
+import { EmptyState, MilestoneRail, Modal, Panel, SimpleTable, Tabs } from "./Shared/ScreenComponents.jsx";
 import { apiPatch, apiPost } from "../Api/Client.js";
 import {
   calendarDays, filterForEmployee, findDailyStatus, formatDate,
@@ -30,6 +30,7 @@ export function HrmsScreen({ data, reload }) {
   const [search, setSearch]     = useState("");
   const [expanded, setExpanded] = useState(new Set());
   const [eodEmployee, setEodEmployee] = useState(null);
+  const [goalEmployee, setGoalEmployee] = useState(null);
 
   const employees   = (data.employees || []).filter((e) =>
     e.display_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -131,6 +132,7 @@ export function HrmsScreen({ data, reload }) {
                       rows={rows}
                       data={data}
                       setEodEmployee={setEodEmployee}
+                      setGoalEmployee={setGoalEmployee}
                       reload={reload}
                     />
                   )}
@@ -152,12 +154,19 @@ export function HrmsScreen({ data, reload }) {
           reload={reload}
         />
       )}
+      {goalEmployee && (
+        <GoalOverviewModal
+          employee={goalEmployee}
+          data={data}
+          onClose={() => setGoalEmployee(null)}
+        />
+      )}
     </section>
   );
 }
 
 /* ─── HrmsTeamTable ──────────────────────────────────────────── */
-function HrmsTeamTable({ rows, data, setEodEmployee, reload }) {
+function HrmsTeamTable({ rows, data, setEodEmployee, setGoalEmployee, reload }) {
   return (
     <div className="hrms-table-wrap">
       <table className="hrms-emp-table">
@@ -180,6 +189,7 @@ function HrmsTeamTable({ rows, data, setEodEmployee, reload }) {
               employee={emp}
               data={data}
               setEodEmployee={setEodEmployee}
+              setGoalEmployee={setGoalEmployee}
               reload={reload}
             />
           ))}
@@ -198,8 +208,9 @@ const PERF_OPTIONS = [
   { label: "On Bench",         color: "#94a3b8" },
 ];
 
-function EmployeeRow({ employee, data, setEodEmployee, reload }) {
+function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }) {
   const [showPerfMenu, setShowPerfMenu] = useState(false);
+  const [showSkillMenu, setShowSkillMenu] = useState(false);
   const [showMenu,     setShowMenu]     = useState(false);
   const [eodPopover,   setEodPopover]   = useState(null); // iso date string or null
   const [saving,       setSaving]       = useState(false);
@@ -211,6 +222,9 @@ function EmployeeRow({ employee, data, setEodEmployee, reload }) {
   const projectMap = indexById(data.projects);
   const assignments = (data.teamAssignments || []).filter(
     (a) => String(a.employee) === String(employee.id),
+  );
+  const skillOptions = (data.skills || []).filter(
+    (item) => !item.department || String(item.department) === String(employee.department),
   );
   const skills = (data.userSkills || []).filter(
     (s) => String(s.employee) === String(employee.id),
@@ -228,6 +242,7 @@ function EmployeeRow({ employee, data, setEodEmployee, reload }) {
     const handler = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) setShowMenu(false);
       if (perfRef.current && !perfRef.current.contains(e.target)) setShowPerfMenu(false);
+      if (!e.target.closest?.(".hrms-skill-wrap")) setShowSkillMenu(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -244,6 +259,72 @@ function EmployeeRow({ employee, data, setEodEmployee, reload }) {
     } catch { /* silent */ }
     setSaving(false);
   }, [employee.id, employee.profile_payload, saving, reload]);
+
+  const patchProfilePayload = async (patch) => {
+    await apiPatch(`/Users/EmployeeProfiles/${employee.id}/`, {
+      profile_payload: { ...employee.profile_payload, ...patch },
+    });
+    if (reload) reload();
+  };
+
+  const savePerformance = async (label) => {
+    setSaving(true);
+    try {
+      await patchProfilePayload({ performance: label || "" });
+      setShowPerfMenu(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveSkillLevel = async (proficiency) => {
+    const skillId = skill?.skill || skillOptions[0]?.id;
+    if (!skillId || saving) return;
+    setSaving(true);
+    try {
+      await apiPost(`/Users/EmployeeProfiles/${employee.id}/assign-skill/`, {
+        skill: skillId,
+        proficiency,
+        rating: Math.min(proficiency * 3, 10),
+      });
+      setShowSkillMenu(false);
+      if (reload) reload();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const assignGoal = async () => {
+    const due = new Date();
+    due.setDate(due.getDate() + 14);
+    setSaving(true);
+    try {
+      await apiPost("/Users/Goals/", {
+        employee: employee.id,
+        title: `HRMS Follow Up For ${employee.display_name}`,
+        description: "Created From HRMS Action Menu.",
+        due_on: isoDate(due),
+        status: "Open",
+        metadata: { source: "hrms-action-menu" },
+      });
+      if (reload) reload();
+    } finally {
+      setSaving(false);
+      setShowMenu(false);
+    }
+  };
+
+  const sendInterview = async () => {
+    if (!employee.user || saving) return;
+    setSaving(true);
+    try {
+      await apiPost(`/Users/api/interviewgod/send-interview/${employee.user}/`, { dry_run: false, send_links: true });
+      if (reload) reload();
+    } finally {
+      setSaving(false);
+      setShowMenu(false);
+    }
+  };
 
   const ic = initials(employee.display_name);
   const ac = avatarColor(employee.display_name);
@@ -272,12 +353,12 @@ function EmployeeRow({ employee, data, setEodEmployee, reload }) {
                   <X size={13} />
                 </button>
                 {PERF_OPTIONS.map((opt) => (
-                  <button key={opt.label} className="hrms-perf-opt">
+                  <button key={opt.label} className="hrms-perf-opt" onClick={() => savePerformance(opt.label)} disabled={saving}>
                     <span className="hrms-perf-dot" style={{ background: opt.color }} />
                     {opt.label}
                   </button>
                 ))}
-                <button className="hrms-perf-opt muted">Unselect</button>
+                <button className="hrms-perf-opt muted" onClick={() => savePerformance("")} disabled={saving}>Unselect</button>
               </div>
             )}
           </div>
@@ -289,11 +370,28 @@ function EmployeeRow({ employee, data, setEodEmployee, reload }) {
 
       {/* Skill */}
       <td>
-        <span className={`hrms-skill-badge ${profCls}`}>
-          <AlertTriangle size={11} />
-          {profLabel}
-          <ChevronDown size={11} />
-        </span>
+        <div className="hrms-skill-wrap">
+          <button className={`hrms-skill-badge ${profCls}`} onClick={() => setShowSkillMenu(!showSkillMenu)} title={skill?.skill_name || "Assign Skill Level"}>
+            <AlertTriangle size={11} />
+            {profLabel}
+            <ChevronDown size={11} />
+          </button>
+          {showSkillMenu && (
+            <div className="hrms-skill-menu">
+              <strong>{skill?.skill_name || skillOptions[0]?.name || "Department Skill"}</strong>
+              {[
+                [1, "Basic"],
+                [2, "Intermediate"],
+                [3, "Advanced"],
+              ].map(([value, label]) => (
+                <button key={value} onClick={() => saveSkillLevel(value)} disabled={saving}>
+                  {label}
+                </button>
+              ))}
+              {!skill?.skill && !skillOptions.length && <small>No Skill Exists For This Department.</small>}
+            </div>
+          )}
+        </div>
       </td>
 
       {/* Projects */}
@@ -330,15 +428,16 @@ function EmployeeRow({ employee, data, setEodEmployee, reload }) {
               const ds = findDailyStatus(data.dailyStatus, employee.id, day.iso);
               const isOpen = eodPopover === day.iso;
               return (
-                <div key={day.iso} className="hrms-att-wrap">
+                <div key={day.iso} className="hrms-att-wrap" onMouseLeave={() => setEodPopover(null)}>
                   <button
                     className={`hrms-att-day ${ds ? "submitted" : "missing"}`}
                     onClick={() => setEodPopover(isOpen ? null : day.iso)}
+                    onMouseEnter={() => setEodPopover(day.iso)}
                     title={day.iso}
                   >
                     {day.label}
                   </button>
-                  {isOpen && ds && (
+                  {isOpen && (
                     <div className="hrms-eod-pop">
                       <button
                         className="hrms-eod-pop-close"
@@ -348,12 +447,19 @@ function EmployeeRow({ employee, data, setEodEmployee, reload }) {
                       </button>
                       <strong className="hrms-eod-pop-name">{employee.display_name}</strong>
                       <small className="hrms-eod-pop-date">{day.iso} · EOD Report</small>
-                      <div className="hrms-eod-pop-project">
-                        <span>{ds.metadata?.project || "Project"}</span>
-                        <p>{ds.summary || "No Summary Provided."}</p>
-                      </div>
-                      <div className="hrms-eod-pop-status">
-                        <span className="dot" /> Submitted
+                      {ds ? (
+                        <div className="hrms-eod-pop-project">
+                          <span>{ds.metadata?.project || "Project"}</span>
+                          <p>{ds.summary || "No Summary Provided."}</p>
+                        </div>
+                      ) : (
+                        <div className="hrms-eod-pop-project missing">
+                          <span>No EOD Submitted</span>
+                          <p>Use View More To Submit Or Review The Full EOD Calendar.</p>
+                        </div>
+                      )}
+                      <div className={`hrms-eod-pop-status ${ds ? "" : "missing"}`}>
+                        <span className="dot" /> {ds ? "Submitted" : "Missing"}
                       </div>
                     </div>
                   )}
@@ -381,10 +487,10 @@ function EmployeeRow({ employee, data, setEodEmployee, reload }) {
           </button>
           {showMenu && (
             <div className="hrms-ctx-menu">
-              <button onClick={() => setShowMenu(false)}>
+              <button onClick={assignGoal} disabled={saving}>
                 <Target size={13} /> Assign Goal
               </button>
-              <button onClick={() => setShowMenu(false)}>
+              <button onClick={() => { setGoalEmployee(employee); setShowMenu(false); }}>
                 <Clock size={13} /> Goal Overview
               </button>
               <button
@@ -392,7 +498,7 @@ function EmployeeRow({ employee, data, setEodEmployee, reload }) {
               >
                 <FileText size={13} /> EOD Summary
               </button>
-              <button onClick={() => setShowMenu(false)}>
+              <button onClick={sendInterview} disabled={saving || !employee.user}>
                 <Zap size={13} /> Send Interview
               </button>
             </div>
@@ -400,6 +506,31 @@ function EmployeeRow({ employee, data, setEodEmployee, reload }) {
         </div>
       </td>
     </tr>
+  );
+}
+
+function GoalOverviewModal({ employee, data, onClose }) {
+  const goals = (data.goals || []).filter((goal) => String(goal.employee) === String(employee.id));
+  const feedback = data.goalFeedback || [];
+
+  return (
+    <Modal onClose={onClose} wide title={`${employee.display_name} Goals`}>
+      <div className="eod-tab-body">
+        {goals.length ? (
+          <SimpleTable
+            columns={["Goal", "Status", "Due On", "Feedback"]}
+            rows={goals.map((goal) => [
+              goal.title,
+              goal.status,
+              formatDate(goal.due_on),
+              feedback.filter((item) => String(item.goal) === String(goal.id)).length,
+            ])}
+          />
+        ) : (
+          <EmptyState label="No Goals Assigned Yet." />
+        )}
+      </div>
+    </Modal>
   );
 }
 
@@ -544,7 +675,7 @@ function EodSummaryModal({ employee, data, onClose, reload }) {
               projectName(data, t.project),
               t.title,
               t.status,
-              "₹" + money(t.bounty),
+              Math.round(Number(t.bounty || 0)),
             ])}
           />
         </div>
@@ -634,7 +765,7 @@ function ProjectFinance({ data }) {
         {[
           { icon: <Briefcase size={18} />, label: "Total Projects",    value: (data.projects || []).length },
           { icon: <CheckCircle size={18} />, label: "Total Tasks",     value: (data.tasks || []).length },
-          { icon: <TrendingUp size={18} />, label: "Total Bounty",     value: "₹" + money(totalBounty) },
+          { icon: <TrendingUp size={18} />, label: "Total Bounty",     value: Math.round(totalBounty) },
           { icon: <Users size={18} />,      label: "Team Assignments", value: (data.teamAssignments || []).length },
         ].map(({ icon, label, value }) => (
           <div key={label} className="hrms-fin-kpi">

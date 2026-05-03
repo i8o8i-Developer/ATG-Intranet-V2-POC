@@ -1,18 +1,285 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
+import { Award, FileSignature, Plus, Save, ShieldCheck } from "lucide-react";
 
 import { apiPost } from "../Api/Client.js";
+import { Modal, Panel, Tabs } from "./Shared/ScreenComponents.jsx";
 import { findById } from "./Shared/ScreenUtils.jsx";
 
-export function SendCertificateScreen({ data, reload }) {
-  const [form, setForm] = useState({ user_id: "", joined_on: "", completion_date: "", position: "", responsibilities: "", send: false });
-  const users = data.employees || [];
+const CERTIFICATE_TYPES = [
+  { id: "Completion", label: "Internship / Engagement Completion", color: "#7a5a1f", subtitle: "OF COMPLETION" },
+  { id: "Experience", label: "Experience Letter", color: "#1d4e89", subtitle: "OF EXPERIENCE" },
+  { id: "Achievement", label: "Achievement / Award", color: "#a4133c", subtitle: "OF ACHIEVEMENT" },
+  { id: "Recognition", label: "Recognition", color: "#0f766e", subtitle: "OF RECOGNITION" },
+  { id: "Custom", label: "Custom (Use Template)", color: "#4b5563", subtitle: "" },
+];
 
-  const submit = async () => {
-    const employee = findById(users, form.user_id) || users[0];
-    if (!employee?.user) return;
-    await apiPost("/MainApp/send-certificate", { recipient: employee.user, title: `Certificate for ${employee.display_name}`, metadata: form });
-    reload();
+function fmtDate(value) {
+  return value ? new Date(value).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—";
+}
+
+function applyTemplate(template, vars) {
+  if (!template) return "";
+  return String(template).replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, key) => (vars[key] ?? `{{${key}}}`));
+}
+
+function defaultBody(typeId, vars) {
+  if (typeId === "Experience") {
+    return `<p>This Is To Certify That <strong>${vars.name}</strong> Has Been Associated With Us As <strong>${vars.position}</strong> From <strong>${vars.joined}</strong> To <strong>${vars.completion}</strong>.</p><p>During This Tenure, Key Contributions Included <strong>${vars.responsibilities || "—"}</strong>. We Wish Them Success In Future Endeavours.</p>`;
+  }
+  if (typeId === "Achievement") {
+    return `<p>Awarded To <strong>${vars.name}</strong> In Recognition Of Outstanding Achievement In <strong>${vars.responsibilities || vars.position}</strong> On   <strong>${vars.completion}</strong>.</p>`;
+  }
+  if (typeId === "Recognition") {
+    return `<p>We Hereby Recognise <strong>${vars.name}</strong> For Exceptional Contribution As <strong>${vars.position}</strong>. ${vars.responsibilities ? `Highlights: <strong>${vars.responsibilities}</strong>.` : ""}</p>`;
+  }
+  return `<p>This Is To Certify That <strong>${vars.name}</strong> Has Successfully Served As <strong>${vars.position}</strong> With Major Responsibilities Including <strong>${vars.responsibilities || "—"}</strong>, From <strong>${vars.joined}</strong> To <strong>${vars.completion}</strong>.</p><p>We Acknowledge The Dedication, Commitment And Contribution Made During This Engagement.</p>`;
+}
+
+function buildCertificateHtml({ typeId, body, vars, accent }) {
+  const type = CERTIFICATE_TYPES.find((item) => item.id === typeId) || CERTIFICATE_TYPES[0];
+  const accentColor = accent || type.color;
+  return `<!doctype html><html><head><meta charset='utf-8'><style>
+    body{font-family:Georgia,serif;background:#f5f3ec;margin:0;padding:32px}
+    .cert{max-width:820px;margin:0 auto;background:#fffdf6;border:8px double ${accentColor};padding:48px 64px;text-align:center;box-shadow:0 14px 30px rgba(0,0,0,0.08)}
+    h1{font-size:34px;letter-spacing:6px;color:${accentColor};margin:0 0 4px}
+    h2{font-size:14px;letter-spacing:3px;color:#9b8045;margin:0 0 24px}
+    p{color:#3f3520;line-height:1.7;font-size:15px}
+    .name{font-size:32px;color:#1f2937;margin:18px 0 6px;font-weight:700}
+    hr{border:none;border-top:1px solid #cdb98a;margin:24px auto;width:60%}
+    .foot{margin-top:36px;display:flex;justify-content:space-between;color:#6b5e3b;font-size:13px}
+  </style></head><body><div class='cert'>
+    <h1>CERTIFICATE</h1>
+    <h2>${type.subtitle || (typeId || "").toUpperCase()}</h2>
+    <p>This Is To Certify That</p>
+    <div class='name'>${vars.name}</div>
+    <hr/>
+    ${body}
+    <div class='foot'><span>Issued ${new Date().toLocaleDateString()}</span><span>${vars.issuer || "Banao HR"}</span></div>
+  </div></body></html>`;
+}
+
+export function SendCertificateScreen({ data, reload }) {
+  const [tab, setTab] = useState("issue");
+  const employees = data.employees || [];
+  const templates = (data.contentTemplates || []).filter((tpl) => /certificate|experience|achievement|completion/i.test(`${tpl.code || ""} ${tpl.title || ""} ${tpl.category || ""}`));
+
+  const [form, setForm] = useState({
+    typeId: "Completion",
+    selectedEmployees: [],
+    joined_on: "",
+    completion_date: "",
+    position: "",
+    responsibilities: "",
+    issuer: "Banao HR",
+    accent: "",
+    templateId: "",
+    customBody: "",
+    send: true,
+  });
+  const [showPreview, setShowPreview] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [results, setResults] = useState([]);
+  const [createTemplateOpen, setCreateTemplateOpen] = useState(false);
+
+  const previewEmployee = findById(employees, form.selectedEmployees[0]) || employees[0] || {};
+  const previewVars = {
+    name: previewEmployee.display_name || previewEmployee.candidate_name || previewEmployee.username || "Recipient",
+    position: form.position || previewEmployee.position_title || "Team Member",
+    responsibilities: form.responsibilities,
+    joined: fmtDate(form.joined_on || previewEmployee.joined_on),
+    completion: fmtDate(form.completion_date),
+    issuer: form.issuer,
+  };
+  const selectedTemplate = templates.find((tpl) => String(tpl.id) === String(form.templateId));
+  const body = useMemo(() => {
+    if (form.typeId === "Custom" && form.customBody) return applyTemplate(form.customBody, previewVars);
+    if (selectedTemplate?.body) return applyTemplate(selectedTemplate.body, previewVars);
+    return defaultBody(form.typeId, previewVars);
+  }, [form.typeId, form.customBody, selectedTemplate, previewVars]);
+
+  const html = buildCertificateHtml({ typeId: form.typeId, body, vars: previewVars, accent: form.accent });
+
+  const toggleEmployee = (id) => {
+    setForm((prev) => prev.selectedEmployees.includes(id)
+      ? { ...prev, selectedEmployees: prev.selectedEmployees.filter((value) => value !== id) }
+      : { ...prev, selectedEmployees: [...prev.selectedEmployees, id] });
   };
 
-  return <section className="certificate-page"><h1>Send Certificate</h1><div className="center-form"><label>Username:<select value={form.user_id} onChange={(event) => setForm({ ...form, user_id: event.target.value })}><option>Search Username</option>{users.map((employee) => <option key={employee.id} value={employee.id}>{employee.username || employee.display_name}</option>)}</select></label><label>Joining Date:<input type="date" value={form.joined_on} onChange={(event) => setForm({ ...form, joined_on: event.target.value })} /></label><label>Completion Date:<input type="date" value={form.completion_date} onChange={(event) => setForm({ ...form, completion_date: event.target.value })} /></label><label>Position:<input value={form.position} onChange={(event) => setForm({ ...form, position: event.target.value })} /></label><label>Major Responsibilities (If Any):<input value={form.responsibilities} onChange={(event) => setForm({ ...form, responsibilities: event.target.value })} /></label><label className="check-label"><input type="checkbox" checked={form.send} onChange={(event) => setForm({ ...form, send: event.target.checked })} />Send Certificate</label><div className="button-pair"><button className="outline-button">Preview Certificate</button><button className="outline-button" onClick={submit}>Send Certificate</button></div></div></section>;
+  const submit = async () => {
+    if (!form.selectedEmployees.length) return;
+    setBusy(true);
+    const issued = [];
+    try {
+      for (const id of form.selectedEmployees) {
+        const employee = findById(employees, id);
+        if (!employee) continue;
+        const vars = {
+          name: employee.display_name || employee.candidate_name || employee.username || "Recipient",
+          position: form.position || employee.position_title || "Team Member",
+          responsibilities: form.responsibilities,
+          joined: fmtDate(form.joined_on || employee.joined_on),
+          completion: fmtDate(form.completion_date),
+          issuer: form.issuer,
+        };
+        const renderedBody = form.typeId === "Custom" && form.customBody
+          ? applyTemplate(form.customBody, vars)
+          : selectedTemplate?.body
+            ? applyTemplate(selectedTemplate.body, vars)
+            : defaultBody(form.typeId, vars);
+        const certificateHtml = buildCertificateHtml({ typeId: form.typeId, body: renderedBody, vars, accent: form.accent });
+        try {
+          const response = await apiPost("/MainApp/send-certificate", {
+            recipient: employee.user,
+            title: `${form.typeId} Certificate For ${vars.name}`,
+            metadata: {
+              certificate_type: form.typeId,
+              template_id: form.templateId || null,
+              position: form.position,
+              responsibilities: form.responsibilities,
+              joined_on: form.joined_on,
+              completion_date: form.completion_date,
+              issuer: form.issuer,
+              html: certificateHtml,
+            },
+          });
+          issued.push({ employee: vars.name, ok: true, response });
+        } catch (error) {
+          issued.push({ employee: vars.name, ok: false, error: error?.data || error?.message });
+        }
+      }
+      setResults(issued);
+      reload(["employeeCertificates", "notifications"]);
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <section className="certificate-page screen-stack">
+      <Tabs value={tab} onChange={setTab} items={[["issue", "Issue Certificates"], ["templates", "Templates"]]} />
+
+      {tab === "issue" && (
+        <>
+          <Panel title={<span><Award size={18} /> Issue Certificates</span>} subtitle="Pick A Type, Choose Recipients, Customise Content, Preview, Then Send.">
+            <div className="form-grid two">
+              <label>Certificate Type
+                <select value={form.typeId} onChange={(event) => setForm({ ...form, typeId: event.target.value, templateId: "" })}>
+                  {CERTIFICATE_TYPES.map((type) => <option key={type.id} value={type.id}>{type.label}</option>)}
+                </select>
+              </label>
+              <label>Template (optional)
+                <select value={form.templateId} onChange={(event) => setForm({ ...form, templateId: event.target.value })}>
+                  <option value="">— Use Default Body —</option>
+                  {templates.map((tpl) => <option key={tpl.id} value={tpl.id}>{tpl.title || tpl.code}</option>)}
+                </select>
+              </label>
+              <label>Position / Role<input value={form.position} onChange={(event) => setForm({ ...form, position: event.target.value })} /></label>
+              <label>Issuer<input value={form.issuer} onChange={(event) => setForm({ ...form, issuer: event.target.value })} /></label>
+              <label>Joining Date<input type="date" value={form.joined_on} onChange={(event) => setForm({ ...form, joined_on: event.target.value })} /></label>
+              <label>Completion Date<input type="date" value={form.completion_date} onChange={(event) => setForm({ ...form, completion_date: event.target.value })} /></label>
+              <label className="span-2">Responsibilities / Highlights<input value={form.responsibilities} onChange={(event) => setForm({ ...form, responsibilities: event.target.value })} /></label>
+              <label>Accent Colour<input type="color" value={form.accent || (CERTIFICATE_TYPES.find((t) => t.id === form.typeId)?.color || "#7a5a1f")} onChange={(event) => setForm({ ...form, accent: event.target.value })} /></label>
+              {form.typeId === "Custom" && (
+                <label className="span-2">Custom Body (HTML, supports {"{{name}}"}, {"{{position}}"}, {"{{joined}}"}, {"{{completion}}"}, {"{{responsibilities}}"})
+                  <textarea rows={6} value={form.customBody} onChange={(event) => setForm({ ...form, customBody: event.target.value })} />
+                </label>
+              )}
+            </div>
+          </Panel>
+
+          <Panel title={<span><ShieldCheck size={18} /> Recipients ({form.selectedEmployees.length})</span>} right={(
+            <div className="button-pair">
+              <button className="outline-button" onClick={() => setShowPreview((value) => !value)}>{showPreview ? "Hide Preview" : "Preview"}</button>
+              <button className="primary-button" onClick={submit} disabled={busy || !form.selectedEmployees.length}>
+                {busy ? "Sending…" : `Issue To ${form.selectedEmployees.length || "—"}`}
+              </button>
+            </div>
+          )}>
+            <div className="recipient-grid">
+              {employees.map((employee) => {
+                const checked = form.selectedEmployees.includes(employee.id);
+                return (
+                  <label key={employee.id} className={checked ? "recipient-card active" : "recipient-card"}>
+                    <input type="checkbox" checked={checked} onChange={() => toggleEmployee(employee.id)} />
+                    <div>
+                      <strong>{employee.display_name || employee.candidate_name || `#${employee.id}`}</strong>
+                      <small>{employee.position_title || "—"} · {employee.candidate_email || ""}</small>
+                    </div>
+                  </label>
+                );
+              })}
+              {!employees.length && <p>No Employees Available.</p>}
+            </div>
+          </Panel>
+
+          {showPreview && (
+            <Panel title="Certificate Preview" right={<button className="soft-button small" onClick={() => setShowPreview(false)}>Close</button>}>
+              <iframe title="Certificate Preview" srcDoc={html} style={{ width: "100%", minHeight: "560px", border: "1px solid #e5e7eb", borderRadius: "10px", background: "#fff" }} />
+            </Panel>
+          )}
+
+          {results.length > 0 && (
+            <Panel title={`Send Result (${results.filter((row) => row.ok).length}/${results.length})`}>
+              <ul>
+                {results.map((row, index) => (
+                  <li key={index}>{row.ok ? "✅" : "❌"} {row.employee}{row.error ? ` — ${typeof row.error === "string" ? row.error : JSON.stringify(row.error)}` : ""}</li>
+                ))}
+              </ul>
+            </Panel>
+          )}
+        </>
+      )}
+
+      {tab === "templates" && (
+        <Panel title={<span><FileSignature size={18} /> Certificate Templates</span>} right={<button className="primary-button small" onClick={() => setCreateTemplateOpen(true)}><Plus size={14} /> New Template</button>}>
+          <table className="erp-table">
+            <thead><tr><th>Title</th><th>Category</th><th>Variables</th><th>Updated</th></tr></thead>
+            <tbody>
+              {templates.map((tpl) => (
+                <tr key={tpl.id}>
+                  <td>{tpl.title || tpl.code}</td>
+                  <td>{tpl.category || "Certificate"}</td>
+                  <td>{(tpl.variables || []).join(", ") || "—"}</td>
+                  <td>{tpl.updated_at || "—"}</td>
+                </tr>
+              ))}
+              {!templates.length && <tr><td colSpan={4}>No Certificate Templates Yet. Create One To Make Issuing Repeatable.</td></tr>}
+            </tbody>
+          </table>
+        </Panel>
+      )}
+
+      {createTemplateOpen && <CreateCertificateTemplateModal onClose={() => setCreateTemplateOpen(false)} reload={reload} />}
+    </section>
+  );
+}
+
+function CreateCertificateTemplateModal({ onClose, reload }) {
+  const [form, setForm] = useState({ title: "", category: "Certificate", code: "", body: "" });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const save = async () => {
+    if (!form.title || !form.body) return;
+    setBusy(true);
+    setError("");
+    try {
+      await apiPost("/HtmlTemplate/ContentTemplates/", { ...form, status: "Active", variables: ["name", "position", "joined", "completion", "responsibilities"] });
+      reload(["contentTemplates"]);
+      onClose();
+    } catch (err) {
+      setError(err?.data ? JSON.stringify(err.data) : err?.message || "Failed to save template.");
+    } finally { setBusy(false); }
+  };
+  return (
+    <Modal title="New Certificate Template" onClose={onClose} wide>
+      <div className="form-grid two modal-form">
+        <label>Title<input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label>
+        <label>Code<input value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} /></label>
+        <label>Category<select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}><option>Certificate</option><option>Letter</option><option>Award</option></select></label>
+      </div>
+      <label>Body (HTML, use {"{{name}}"}, {"{{position}}"}, {"{{joined}}"}, {"{{completion}}"}, {"{{responsibilities}}"})
+        <textarea rows={10} value={form.body} onChange={(event) => setForm({ ...form, body: event.target.value })} />
+      </label>
+      {error && <p style={{ color: "#b91c1c" }}>{error}</p>}
+      <button className="primary-button" onClick={save} disabled={busy || !form.title || !form.body}><Save size={14} /> {busy ? "Saving…" : "Save Template"}</button>
+    </Modal>
+  );
 }

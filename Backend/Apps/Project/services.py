@@ -669,6 +669,10 @@ class ProjectDeliveryService:
         if "task_type" in data:
             task.metadata = {**task.metadata, "task_type": data.get("task_type")}
             update_fields.append("metadata")
+        if "metadata" in data:
+            task.metadata = data.get("metadata") or {}
+            if "metadata" not in update_fields:
+                update_fields.append("metadata")
         task.updated_by = context.actor
         task.save(update_fields=update_fields)
         return ServiceResult.success(task)

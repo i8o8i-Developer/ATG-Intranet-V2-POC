@@ -40,9 +40,12 @@ export function EmployeeRegistrarScreen({ data, reload }) {
 
   const createEmployeeProfile = async () => {
     const payload = {
-      user: numberOrNull(form.user),
+      username: form.candidate_email ? form.candidate_email.split("@")[0] : form.display_name,
+      email: form.candidate_email,
       employee_code: form.employee_code,
       display_name: form.display_name || form.candidate_name,
+      candidate_name: form.candidate_name,
+      candidate_email: form.candidate_email,
       contact_number: form.contact_number,
       github_username: form.github_username,
       department: numberOrNull(form.department),
@@ -53,12 +56,15 @@ export function EmployeeRegistrarScreen({ data, reload }) {
       leaves_wallet: form.leaves_wallet || "0",
       leaves_per_month: form.leaves_per_month || "0",
       status: "Active",
-      onboarding_completed: false,
       profile_payload: { registered_from: "react_employee_registrar", candidate_email: form.candidate_email },
     };
-    const response = await apiPost("/Users/EmployeeProfiles/", payload);
-    setResult({ mode: "employee_profile", response });
-    reload();
+    try {
+      const response = await apiPost("/MainApp/Onboard/register-employee", payload);
+      setResult({ mode: "employee_profile", response });
+      reload(["employees", "users"]);
+    } catch (err) {
+      setResult({ mode: "error", response: err?.data || { error: err?.message || "Failed To Register Employee." } });
+    }
   };
 
   return (
@@ -83,7 +89,7 @@ export function EmployeeRegistrarScreen({ data, reload }) {
             <label>Leave Wallet<input type="number" value={form.leaves_wallet} onChange={(event) => update("leaves_wallet", event.target.value)} /></label>
             <label>Leaves Per Month<input type="number" value={form.leaves_per_month} onChange={(event) => update("leaves_per_month", event.target.value)} /></label>
           </div>
-          <div className="button-row"><button className="outline-button" onClick={createOfferRegistration} disabled={!form.candidate_email || !(form.candidate_name || form.display_name)}>Create Registration Offer</button><button className="primary-button" onClick={createEmployeeProfile} disabled={!form.user || !form.employee_code || !(form.display_name || form.candidate_name)}>Create Employee Profile</button></div>
+          <div className="button-row"><button className="outline-button" onClick={createOfferRegistration} disabled={!form.candidate_email || !(form.candidate_name || form.display_name)}>Create Registration Offer</button><button className="primary-button" onClick={createEmployeeProfile} disabled={!form.employee_code || !form.candidate_email || !(form.display_name || form.candidate_name)}>Create Employee Profile</button></div>
           {result && <pre>{JSON.stringify(result, null, 2)}</pre>}
         </Panel>
         <Panel title="Recent Registered Employees"><SimpleTable columns={["Code", "Name", "Department", "Position", "Status", "Joined"]} rows={(data.employees || []).slice(0, 12).map((item) => [item.employee_code, item.display_name, item.department_name, item.position_title, item.status, formatDate(item.joined_on)])} /></Panel>
