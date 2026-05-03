@@ -5,11 +5,11 @@ import {
   TrendingUp, Users, X, Zap,
 } from "lucide-react";
 
-import { EmptyState, MilestoneRail, Modal, Panel, SimpleTable, Tabs } from "./Shared/ScreenComponents.jsx";
+import { EmptyState, MilestoneRail, Modal, Panel, Progress, SimpleTable, Tabs } from "./Shared/ScreenComponents.jsx";
 import { apiPatch, apiPost } from "../Api/Client.js";
 import {
   calendarDays, filterForEmployee, findDailyStatus, formatDate,
-  groupBy, indexById, isCompleted, isoDate, lastDays, money,
+  groupBy, indexById, isCompleted, isoDate, lastDays, money, progressForTask,
   projectName, toggleSet,
 } from "./Shared/ScreenUtils.jsx";
 
@@ -548,6 +548,13 @@ function EodSummaryModal({ employee, data, onClose, reload }) {
   const monthDays = calendarDays(calMonth);
   const monthLabel = calMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" });
   const today     = isoDate(new Date());
+  const orderedTasks = [...tasks].sort((left, right) => Number(left.bounty || 0) - Number(right.bounty || 0) || new Date(left.due_at || 0) - new Date(right.due_at || 0));
+  const completedTasks = orderedTasks.filter((task) => isCompleted(task.status)).length;
+  const averageProgress = orderedTasks.length
+    ? Math.round(orderedTasks.reduce((sum, task) => sum + progressForTask(task, data.tasks || []), 0) / orderedTasks.length)
+    : 0;
+  const totalBountyCount = orderedTasks.reduce((sum, task) => sum + Number(task.bounty || 0), 0);
+  const credentials = employee.profile_payload?.demo_credentials || null;
 
   const prevMonth = () =>
     setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth() - 1, 1));
@@ -588,6 +595,35 @@ function EodSummaryModal({ employee, data, onClose, reload }) {
             ? <span className="hrms-pill green"><CheckCircle size={12} /> EOD Submitted Today</span>
             : <span className="hrms-pill red">No EOD Today</span>}
         </div>
+      </div>
+
+      <div className="eod-kpi-grid">
+        <article className="eod-kpi-card">
+          <span>Assigned Tasks</span>
+          <strong>{orderedTasks.length}</strong>
+          <small>Current Workload</small>
+        </article>
+        <article className="eod-kpi-card">
+          <span>Completed</span>
+          <strong>{completedTasks}</strong>
+          <small>Finished Bounties</small>
+        </article>
+        <article className="eod-kpi-card">
+          <span>Average Progress</span>
+          <strong>{averageProgress}%</strong>
+          <small>Status And Task Metadata</small>
+        </article>
+        <article className="eod-kpi-card">
+          <span>Total Bounty Count</span>
+          <strong>{totalBountyCount}</strong>
+          <small>Numbered Bounties</small>
+        </article>
+        <article className="eod-credential-card">
+          <span>Seed Login</span>
+          <strong>{credentials?.username || employee.username || "—"}</strong>
+          <small>User Id: {credentials?.user_id || employee.user || "—"}</small>
+          <small>Password: {credentials?.password || "—"}</small>
+        </article>
       </div>
 
       <Tabs
@@ -668,16 +704,24 @@ function EodSummaryModal({ employee, data, onClose, reload }) {
       {/* Bounties */}
       {tab === "bounties" && (
         <div className="eod-tab-body">
-          <SimpleTable
-            columns={["Date", "Project", "Task", "Status", "Bounty"]}
-            rows={tasks.slice(0, 20).map((t) => [
-              formatDate(t.updated_at || t.created_at),
-              projectName(data, t.project),
-              t.title,
-              t.status,
-              Math.round(Number(t.bounty || 0)),
-            ])}
-          />
+          {orderedTasks.length ? (
+            <SimpleTable
+              columns={["Bounty #", "Task", "Project", "Status", "Progress", "Due"]}
+              rows={orderedTasks.slice(0, 20).map((task) => {
+                const progress = Math.round(progressForTask(task, data.tasks || []));
+                return [
+                  Math.round(Number(task.bounty || 0)),
+                  task.title,
+                  projectName(data, task.project),
+                  task.status,
+                  <span key={`progress-${task.id}`} className="eod-progress-cell"><Progress value={progress} /><small>{progress}%</small></span>,
+                  formatDate(task.due_at || task.updated_at || task.created_at),
+                ];
+              })}
+            />
+          ) : (
+            <EmptyState label="No Bounties Assigned Yet." />
+          )}
         </div>
       )}
 

@@ -44,10 +44,28 @@ export function isCompleted(status = "") {
   return ["completed", "complete", "done", "passed", "submitted", "closed"].includes(String(status).toLowerCase());
 }
 
+function boundedProgress(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return null;
+  return Math.min(Math.max(number, 0), 100);
+}
+
+function progressFromStatus(status = "") {
+  const normalized = String(status || "").toLowerCase();
+  if (isCompleted(normalized)) return 100;
+  if (normalized.includes("review") || normalized.includes("submit")) return 85;
+  if (normalized.includes("progress") || normalized.includes("working")) return 60;
+  if (normalized.includes("block") || normalized.includes("delay") || normalized.includes("hold")) return 30;
+  if (normalized.includes("open") || normalized.includes("assign") || normalized.includes("sent")) return 20;
+  return 0;
+}
+
 export function progressForTask(task, allTasks = []) {
+  const explicitProgress = boundedProgress(task?.metadata?.progress ?? task?.progress_percent ?? task?.progress ?? task?.percentage);
+  if (explicitProgress !== null) return explicitProgress;
   const subtasks = allTasks.filter((item) => String(item.parent) === String(task.id));
-  if (!subtasks.length) return isCompleted(task.status) ? 100 : 0;
-  return (subtasks.filter((item) => isCompleted(item.status)).length / subtasks.length) * 100;
+  if (!subtasks.length) return progressFromStatus(task?.status);
+  return subtasks.reduce((sum, item) => sum + progressForTask(item, allTasks), 0) / subtasks.length;
 }
 
 export function findDailyStatus(statuses = [], employeeId, iso) {

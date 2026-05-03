@@ -1,1 +1,1 @@
-"""MainApp management commands."""
+"""MainApp Management Commands."""

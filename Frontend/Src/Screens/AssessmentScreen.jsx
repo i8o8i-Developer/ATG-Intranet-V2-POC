@@ -12,7 +12,20 @@ export function AssessmentScreen({ data, reload }) {
 
   const rows = useMemo(() => {
     const source = data.assessmentRows?.length ? data.assessmentRows : data.assessmentAssignments || [];
-    return source.filter((row) => {
+    return source.map((row) => {
+      const latest = row.assessments?.[0] || {};
+      return {
+        ...row,
+        ...latest,
+        assignment_id: row.assignment_id ?? latest.assignment_id ?? row.id ?? null,
+        employee_name: row.employee_name || row.employee || row.name || "-",
+        assessment_title: row.assessment_title || latest.assessment_title || row.latest_assessment || row.assessment || "-",
+        assessment_sequence_number: row.assessment_sequence_number || latest.sequence_number || row.assessment_number || row.attempts_count || 1,
+        weeks_since_join: row.weeks_since_join ?? latest.weeks_since_join ?? row.week_since_join ?? null,
+        status: row.status || latest.status || row.note || "Assigned",
+        note: row.note || latest.note || "",
+      };
+    }).filter((row) => {
       if (!search) return true;
       const term = `${row.employee_name || ""} ${row.assessment_title || ""} ${row.note || row.status || ""}`.toLowerCase();
       return term.includes(search.toLowerCase());
@@ -20,15 +33,18 @@ export function AssessmentScreen({ data, reload }) {
   }, [data.assessmentRows, data.assessmentAssignments, search]);
 
   const startAssignment = async (id) => {
+    if (!id) return;
     await apiPost(`/Assesment/AssessmentAssignments/${id}/start/`, {});
     reload(["assessmentAssignments", "assessmentLegacy"]);
   };
   const submitAssignment = async (id) => {
+    if (!id) return;
     const url = window.prompt("Provider Submission URL (Optional)");
     await apiPost(`/Assesment/AssessmentAssignments/${id}/submit/`, { provider_url: url || "", score: null });
     reload(["assessmentAssignments", "assessmentLegacy"]);
   };
   const syncAssignment = async (id) => {
+    if (!id) return;
     await apiPost(`/Assesment/AssessmentAssignments/${id}/sync-provider-status/`, {});
     reload(["assessmentAssignments", "assessmentLegacy"]);
   };
@@ -59,21 +75,26 @@ export function AssessmentScreen({ data, reload }) {
             <tbody>
               {rows.map((row, index) => {
                 const status = String(row.status || row.note || "").toLowerCase();
+                const assignmentId = row.assignment_id;
                 return (
-                  <tr key={row.id || index}>
+                  <tr key={assignmentId || row.employee_id || index}>
                     <td><ChevronDown size={15} />{row.employee_name || row.employee || row.name}</td>
                     <td>{row.weeks_since_join || row.week_since_join || "-"} Weeks</td>
                     <td>{row.assessment_title || row.latest_assessment || row.assessment}</td>
                     <td>{row.assessment_sequence_number || row.assessment_number || row.attempts_count || 1}</td>
                     <td><StatusPill tone={isCompleted(row.status || row.note) ? "green" : "gold"}>{row.note || row.status || "Incomplete"}</StatusPill></td>
                     <td className="table-actions">
-                      {!status.includes("progress") && !status.includes("submit") && !status.includes("complete") && (
-                        <button className="soft-button small" onClick={() => startAssignment(row.id)}>Start</button>
+                      {!status.includes("progress") && !status.includes("submit") && !status.includes("complete") && assignmentId && (
+                        <button className="soft-button small" onClick={() => startAssignment(assignmentId)}>Start</button>
                       )}
-                      {!status.includes("submit") && !status.includes("complete") && (
-                        <button className="soft-button small" onClick={() => submitAssignment(row.id)}>Submit</button>
+                      {!status.includes("submit") && !status.includes("complete") && assignmentId && (
+                        <button className="soft-button small" onClick={() => submitAssignment(assignmentId)}>Submit</button>
                       )}
-                      <button className="soft-button small" onClick={() => syncAssignment(row.id)}>Sync</button>
+                      {assignmentId ? (
+                        <button className="soft-button small" onClick={() => syncAssignment(assignmentId)}>Sync</button>
+                      ) : (
+                        <span className="muted-text">No Assignment Id</span>
+                      )}
                     </td>
                   </tr>
                 );

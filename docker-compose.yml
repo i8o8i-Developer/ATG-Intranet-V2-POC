@@ -29,18 +29,60 @@ services:
       timeout: 5s
       retries: 20
 
+  Backend-Init:
+    build:
+      context: .
+      dockerfile: Backend/Dockerfile
+    image: intranet-v2-backend
+    restart: "no"
+    command: >
+      sh -c "python Backend/manage.py migrate &&
+             if python Backend/manage.py shell -c 'import os, sys; from django.contrib.auth import get_user_model; sys.exit(0 if get_user_model().objects.filter(username=os.environ.get(\"BOOTSTRAP_USERNAME\", \"anubhav1608\")).exists() else 1)'; then
+               echo 'Bootstrap User Already Exists, Skipping Bootstrap And Demo Seed.';
+             elif [ \"$${SEED_DEMO_DATA}\" = \"1\" ]; then
+               python Backend/manage.py Seed_Demo_Erp --tenant \"$${BOOTSTRAP_TENANT}\" --workspace \"$${BOOTSTRAP_WORKSPACE}\" --username \"$${BOOTSTRAP_USERNAME}\" --password \"$${BOOTSTRAP_PASSWORD}\" --email \"$${BOOTSTRAP_EMAIL}\";
+             else
+               python Backend/manage.py Bootstrap_Backend --tenant \"$${BOOTSTRAP_TENANT}\" --workspace \"$${BOOTSTRAP_WORKSPACE}\" --username \"$${BOOTSTRAP_USERNAME}\" --password \"$${BOOTSTRAP_PASSWORD}\" --email \"$${BOOTSTRAP_EMAIL}\" --first-name \"$${BOOTSTRAP_FIRST_NAME}\" --last-name \"$${BOOTSTRAP_LAST_NAME}\" --display-name \"$${BOOTSTRAP_DISPLAY_NAME}\" --employee-code \"$${BOOTSTRAP_EMPLOYEE_CODE}\";
+             fi"
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-Rebuild-Development-Only}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend,0.0.0.0}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173,http://localhost:8000,http://127.0.0.1:8000}
+      POSTGRES_DB: ${POSTGRES_DB:-intranet_rebuild}
+      POSTGRES_USER: ${POSTGRES_USER:-intranet}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
+      POSTGRES_HOST: Database
+      POSTGRES_PORT: 5432
+      CELERY_BROKER_URL: redis://Redis:6379/0
+      CELERY_RESULT_BACKEND: redis://Redis:6379/0
+      BOOTSTRAP_TENANT: "${BOOTSTRAP_TENANT:-Banao}"
+      BOOTSTRAP_WORKSPACE: "${BOOTSTRAP_WORKSPACE:-Default Workspace}"
+      BOOTSTRAP_USERNAME: "${BOOTSTRAP_USERNAME:-anubhav1608}"
+      BOOTSTRAP_PASSWORD: "${BOOTSTRAP_PASSWORD:-AnubhavChaurasia}"
+      BOOTSTRAP_EMAIL: "${BOOTSTRAP_EMAIL:-anubhav1608@example.com}"
+      BOOTSTRAP_FIRST_NAME: "${BOOTSTRAP_FIRST_NAME:-Anubhav}"
+      BOOTSTRAP_LAST_NAME: "${BOOTSTRAP_LAST_NAME:-Chaurasia}"
+      BOOTSTRAP_DISPLAY_NAME: "${BOOTSTRAP_DISPLAY_NAME:-Anubhav Chaurasia}"
+      BOOTSTRAP_EMPLOYEE_CODE: "${BOOTSTRAP_EMPLOYEE_CODE:-EMP-001}"
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-1}
+    volumes:
+      - ./Backend:/app/Backend
+      - backend_media:/app/Backend/media
+    depends_on:
+      Database:
+        condition: service_healthy
+      Redis:
+        condition: service_healthy
+
   Backend:
     build:
       context: .
       dockerfile: Backend/Dockerfile
     image: intranet-v2-backend
     restart: unless-stopped
-    command: >
-      sh -c "python Backend/manage.py migrate &&
-             python Backend/manage.py Bootstrap_Backend --tenant Banao --workspace 'Default Workspace' --username anubhav1608 --password AnubhavChaurasia --email anubhav1608@example.com --first-name Anubhav --last-name Chaurasia --display-name 'Anubhav Chaurasia' --employee-code EMP-001 &&
-             python Backend/manage.py Seed_Hrms_Data --tenant Banao --workspace 'Default Workspace' &&
-             python Backend/manage.py Seed_Demo_Erp --username anubhav1608 --password AnubhavChaurasia &&
-             python Backend/manage.py runserver 0.0.0.0:8000"
+    command: python Backend/manage.py runserver 0.0.0.0:8000
     environment:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-Rebuild-Development-Only}
       DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
@@ -64,6 +106,8 @@ services:
         condition: service_healthy
       Redis:
         condition: service_healthy
+      Backend-Init:
+        condition: service_completed_successfully
 
   Celery-Worker:
     build:
@@ -86,8 +130,8 @@ services:
       - ./Backend:/app/Backend
       - backend_media:/app/Backend/media
     depends_on:
-      Backend:
-        condition: service_started
+      Backend-Init:
+        condition: service_completed_successfully
       Redis:
         condition: service_healthy
 
@@ -111,8 +155,8 @@ services:
     volumes:
       - ./Backend:/app/Backend
     depends_on:
-      Backend:
-        condition: service_started
+      Backend-Init:
+        condition: service_completed_successfully
       Redis:
         condition: service_healthy
 

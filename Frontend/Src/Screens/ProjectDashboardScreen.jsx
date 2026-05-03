@@ -27,15 +27,17 @@ import {
   employeeName,
   findById,
   formatDate,
+  isCompleted,
   isoDate,
   money,
   progressForTask,
   projectName,
 } from "./Shared/ScreenUtils.jsx";
 
-export function ProjectDashboardScreen({ data, route, reload, navigate }) {
+export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "project" }) {
   const routeParts = route.split("?")[0].split("/").filter(Boolean);
   const routeProjectId = routeParts[2] && /^\d+$/.test(routeParts[2]) ? routeParts[2] : "";
+  const routeBase = kind === "marketing" ? "/marketing-project/dashboard" : "/project/dashboard";
   const [selectedProjectId, setSelectedProjectId] = useState(routeProjectId || String(data.projects?.[0]?.id || ""));
   const [dashboard, setDashboard] = useState(null);
   const [taskFilter, setTaskFilter] = useState("pending");
@@ -50,7 +52,7 @@ export function ProjectDashboardScreen({ data, route, reload, navigate }) {
   const [milestoneToEdit, setMilestoneToEdit] = useState(null);
   const [eodEmployee, setEodEmployee] = useState(null);
   const [addMilestoneOpen, setAddMilestoneOpen] = useState(false);
-  const [addTaskFor, setAddTaskFor] = useState(null); // { milestoneId } or { parentTaskId }
+  const [addTaskFor, setAddTaskFor] = useState(null); 
   const [addMemberOpen, setAddMemberOpen] = useState(false);
 
   useEffect(() => {
@@ -120,17 +122,16 @@ export function ProjectDashboardScreen({ data, route, reload, navigate }) {
   };
 
   const shareProject = async () => {
-    const url = `${window.location.origin}/project/dashboard/${selectedProjectId}/${encodeURIComponent(project.name || "project")}/`;
+    const url = `${window.location.origin}${routeBase}/${selectedProjectId}/${encodeURIComponent(project.name || "project")}/`;
     if (navigator.clipboard) await navigator.clipboard.writeText(url);
   };
 
-  // ── Group tasks by milestone using metadata.milestone_id; fall back to "Unassigned"
   const tasksByMilestone = useMemo(() => {
     const map = new Map();
     milestones.forEach((m) => map.set(String(m.id), []));
     map.set("__unassigned__", []);
     tasks.forEach((task) => {
-      if (task.parent) return; // subtasks rendered nested
+      if (task.parent) return; 
       const ms = task.metadata?.milestone_id || task.milestone || task.metadata?.milestone;
       const key = ms && map.has(String(ms)) ? String(ms) : "__unassigned__";
       map.get(key).push(task);
@@ -163,7 +164,7 @@ export function ProjectDashboardScreen({ data, route, reload, navigate }) {
             </td>
             <td><Progress value={progressForTask(task, data.tasks)} /></td>
             <td>{avatar(employeeName(data, task.owner || task.owner_id))}</td>
-            <td className={task.due_at ? "danger-text" : ""}>{formatDate(task.due_at)}</td>
+            <td className={task.due_at && !isCompleted(task.status) && new Date(task.due_at) < new Date() ? "danger-text" : ""}>{formatDate(task.due_at)}</td>
             <td><AlertTriangle size={16} /> {task.priority || "Normal"}</td>
             <td>{Math.round(Number(task.bounty || 0))}</td>
             <td>
@@ -192,7 +193,7 @@ export function ProjectDashboardScreen({ data, route, reload, navigate }) {
           <strong>{project.name || "Project"}</strong>
           <StatusPill tone="green">{project.health || "On Track"}</StatusPill>
         </div>
-        <select value={selectedProjectId} onChange={(event) => { setSelectedProjectId(event.target.value); navigate(`/project/dashboard/${event.target.value}/${encodeURIComponent(projectName(data, event.target.value) || "project")}/`); }}>
+        <select value={selectedProjectId} onChange={(event) => { setSelectedProjectId(event.target.value); navigate(`${routeBase}/${event.target.value}/${encodeURIComponent(projectName(data, event.target.value) || "project")}/`); }}>
           {(data.projects || []).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
         </select>
         <div>
@@ -299,7 +300,7 @@ export function ProjectDashboardScreen({ data, route, reload, navigate }) {
       </Disclosure>
 
       {selectedTask && <TaskDetailModal task={selectedTask} data={data} onClose={() => setSelectedTask(null)} reload={refresh} />}
-      {createProjectOpen && <CreateProjectModal data={data} onClose={() => setCreateProjectOpen(false)} reload={(newId) => { refresh(); if (newId) setSelectedProjectId(String(newId)); }} />}
+  {createProjectOpen && <CreateProjectModal defaultProjectType={kind === "marketing" ? "Marketing" : "Development"} data={data} onClose={() => setCreateProjectOpen(false)} reload={(newId, newName) => { refresh(); if (newId) { setSelectedProjectId(String(newId)); navigate(`${routeBase}/${newId}/${encodeURIComponent(newName || "project")}/`); } }} />}
       {editProject && <EditProjectModal project={project} onClose={() => setEditProject(false)} reload={refresh} />}
       {flagOpen && <FlagProjectModal project={project} onClose={() => setFlagOpen(false)} reload={refresh} />}
       {documentOpen && <DocumentModal project={project} onClose={() => setDocumentOpen(false)} reload={refresh} />}
@@ -342,15 +343,15 @@ function MemberRepoIcon({ assignment, repos, data }) {
   );
 }
 
-function CreateProjectModal({ data, onClose, reload }) {
-  const [form, setForm] = useState({ name: "", code: "", project_type: "Development", priority: "P3", status: "Active", health: "OnTrack", starts_on: isoDate(new Date()), ends_on: "" });
+function CreateProjectModal({ data, onClose, reload, defaultProjectType = "Development" }) {
+  const [form, setForm] = useState({ name: "", code: "", project_type: defaultProjectType, priority: "P3", status: "Active", health: "OnTrack", starts_on: isoDate(new Date()), ends_on: "" });
   const [busy, setBusy] = useState(false);
 
   const save = async () => {
     setBusy(true);
     try {
       const response = await apiPost("/Project/ProjectWorkspaces/", form);
-      reload(response?.id);
+      reload(response?.id, response?.name || form.name);
       onClose();
     } finally {
       setBusy(false);

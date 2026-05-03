@@ -125,6 +125,10 @@ class AssessmentAssignmentService:
 
     @staticmethod
     def get_assignment(context, assignment_id):
+        try:
+            assignment_id = int(assignment_id)
+        except (TypeError, ValueError):
+            return None
         assignment = AssessmentAssignment.objects.filter(tenant=context.tenant, id=assignment_id).select_related("assessment", "employee").first()
         if not assignment:
             return None

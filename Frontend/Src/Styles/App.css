@@ -582,6 +582,7 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: #2454d6; b
 .calendar-grid button:hover { background: #eaf1ff; color: #111827; }
 
 @media (max-width: 1200px) {
+  .eod-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .stat-grid.four, .marketing-kpi-grid, .intelligence-kpi-grid, .lms-kpi-grid { grid-template-columns: repeat(2, minmax(180px, 1fr)); }
   .marketing-workspace, .lms-workspace-grid, .finance-screen, .docs-layout { grid-template-columns: 1fr; }
   .campaign-intake, .lms-filter-rail, .finance-screen aside { position: static; }
@@ -623,6 +624,7 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: #2454d6; b
 }
 
 @media (max-width: 640px) {
+  .eod-kpi-grid { grid-template-columns: 1fr; }
   .erp-topbar { padding: 12px 16px; }
   .topbar-actions, .settings-strip { align-items: stretch; flex-direction: column; }
   .topbar-actions input, .settings-strip input { width: 100%; min-width: 0; }
@@ -915,6 +917,45 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: #2454d6; b
 .eod-modal-name { margin: 0 0 3px; font-size: 20px; font-weight: 700; }
 .eod-modal-sub { margin: 0; color: var(--muted); font-size: 13px; }
 .eod-modal-today { margin-left: auto; }
+.eod-kpi-grid {
+  padding: 16px 20px 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+.eod-kpi-card,
+.eod-credential-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: grid;
+  gap: 4px;
+  box-shadow: 0 1px 5px rgba(24,32,47,.05);
+}
+.eod-kpi-card span,
+.eod-credential-card span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+.eod-kpi-card strong,
+.eod-credential-card strong {
+  font-size: 22px;
+  line-height: 1.1;
+  color: #0f172a;
+}
+.eod-kpi-card small,
+.eod-credential-card small {
+  color: #64748b;
+  font-size: 12px;
+}
+.eod-credential-card {
+  background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
+  border-color: #bfdbfe;
+}
 
 /* Calendar */
 .eod-cal-wrap { padding: 18px 20px; display: grid; gap: 14px; }
@@ -949,6 +990,16 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: #2454d6; b
 
 /* Bounties / Summaries tab body */
 .eod-tab-body { padding: 16px 20px; overflow-x: auto; }
+.eod-progress-cell {
+  min-width: 160px;
+  display: inline-grid;
+  gap: 6px;
+}
+.eod-progress-cell small {
+  color: #475467;
+  font-size: 11px;
+  font-weight: 700;
+}
 
 /* EOD summary list */
 .eod-summary-list { display: grid; gap: 10px; }
