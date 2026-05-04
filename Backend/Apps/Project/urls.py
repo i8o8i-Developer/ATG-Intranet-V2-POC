@@ -17,6 +17,7 @@ router.register("DeliveryDocuments", views.DeliveryDocumentViewSet, basename="pr
 router.register("DeliveryAlerts", views.DeliveryAlertViewSet, basename="project-delivery-alerts")
 router.register("ComplianceCampaigns", views.ComplianceCampaignViewSet, basename="project-compliance-campaigns")
 router.register("ComplianceAssignments", views.ComplianceAssignmentViewSet, basename="project-compliance-assignments")
+router.register("ProjectDelays", views.ProjectDelayViewSet, basename="project-delays")
 
 urlpatterns = [
 	path("onboarding/", views.ProjectLegacyActionAPIView.as_view(action_name="onboarding"), name="project-onboarding"),

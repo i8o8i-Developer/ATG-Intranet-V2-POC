@@ -31,6 +31,7 @@ export function HrmsScreen({ data, reload }) {
   const [expanded, setExpanded] = useState(new Set());
   const [eodEmployee, setEodEmployee] = useState(null);
   const [goalEmployee, setGoalEmployee] = useState(null);
+  const [showGoalModal, setShowGoalModal] = useState(false);
 
   const employees   = (data.employees || []).filter((e) =>
     e.display_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -61,6 +62,9 @@ export function HrmsScreen({ data, reload }) {
           <span className="hrms-kicker">Human Resources</span>
           <h1 className="hrms-hero-title">Team Management</h1>
           <p className="hrms-hero-sub">Workforce Overview, EOD Tracking, And Project Health.</p>
+          <button className="primary-button" onClick={() => setShowGoalModal(true)} style={{ marginTop: "12px" }}>
+            <Target size={14} /> Assign Goal
+          </button>
         </div>
         <div className="hrms-kpi-row">
           {[
@@ -161,6 +165,13 @@ export function HrmsScreen({ data, reload }) {
           onClose={() => setGoalEmployee(null)}
         />
       )}
+      {showGoalModal && (
+        <GoalAssignModal
+          data={data}
+          onClose={() => setShowGoalModal(false)}
+          reload={reload}
+        />
+      )}
     </section>
   );
 }
@@ -255,7 +266,7 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
       await apiPatch(`/Users/EmployeeProfiles/${employee.id}/`, {
         profile_payload: { ...employee.profile_payload, remarks: remarkRef.current.value },
       });
-      if (reload) reload();
+      if (reload) reload(["employees", "notifications"]);
     } catch { /* silent */ }
     setSaving(false);
   }, [employee.id, employee.profile_payload, saving, reload]);
@@ -264,7 +275,7 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
     await apiPatch(`/Users/EmployeeProfiles/${employee.id}/`, {
       profile_payload: { ...employee.profile_payload, ...patch },
     });
-    if (reload) reload();
+    if (reload) reload(["employees", "notifications"]);
   };
 
   const savePerformance = async (label) => {
@@ -288,7 +299,7 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
         rating: Math.min(proficiency * 3, 10),
       });
       setShowSkillMenu(false);
-      if (reload) reload();
+      if (reload) reload(["employees", "userSkills", "notifications"]);
     } finally {
       setSaving(false);
     }
@@ -307,7 +318,7 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
         status: "Open",
         metadata: { source: "hrms-action-menu" },
       });
-      if (reload) reload();
+      if (reload) reload(["goals", "employees", "notifications"]);
     } finally {
       setSaving(false);
       setShowMenu(false);
@@ -319,7 +330,7 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
     setSaving(true);
     try {
       await apiPost(`/Users/api/interviewgod/send-interview/${employee.user}/`, { dry_run: false, send_links: true });
-      if (reload) reload();
+      if (reload) reload(["employees"]);
     } finally {
       setSaving(false);
       setShowMenu(false);
@@ -328,9 +339,12 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
 
   const ic = initials(employee.display_name);
   const ac = avatarColor(employee.display_name);
+  const currentPerformance = employee.profile_payload?.performance || "";
+  const perfMatch = PERF_OPTIONS.find((opt) => opt.label === currentPerformance);
+  const perfColor = perfMatch?.color || "transparent";
 
   return (
-    <tr className="hrms-emp-row">
+    <tr className="hrms-emp-row" style={{ borderLeft: perfMatch ? `4px solid ${perfColor}` : "4px solid transparent" }}>
       {/* Name */}
       <td>
         <div className="hrms-name-cell">
@@ -340,6 +354,7 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
               className="hrms-name-btn"
               onClick={() => setShowPerfMenu(!showPerfMenu)}
             >
+              {perfMatch && <span className="hrms-perf-dot" style={{ background: perfMatch.color }} />}
               <strong>{employee.display_name}</strong>
               {showPerfMenu ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
             </button>
@@ -353,12 +368,20 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
                   <X size={13} />
                 </button>
                 {PERF_OPTIONS.map((opt) => (
-                  <button key={opt.label} className="hrms-perf-opt" onClick={() => savePerformance(opt.label)} disabled={saving}>
+                  <button 
+                    key={opt.label} 
+                    className={`hrms-perf-opt ${currentPerformance === opt.label ? "active" : ""}`}
+                    onClick={() => savePerformance(opt.label)} 
+                    disabled={saving}
+                  >
                     <span className="hrms-perf-dot" style={{ background: opt.color }} />
                     {opt.label}
+                    {currentPerformance === opt.label && <CheckCircle size={14} />}
                   </button>
                 ))}
-                <button className="hrms-perf-opt muted" onClick={() => savePerformance("")} disabled={saving}>Unselect</button>
+                <button className="hrms-perf-opt muted" onClick={() => savePerformance("")} disabled={saving}>
+                  {saving ? "Saving..." : "Unselect"}
+                </button>
               </div>
             )}
           </div>
@@ -371,9 +394,15 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
       {/* Skill */}
       <td>
         <div className="hrms-skill-wrap">
-          <button className={`hrms-skill-badge ${profCls}`} onClick={() => setShowSkillMenu(!showSkillMenu)} title={skill?.skill_name || "Assign Skill Level"}>
+          <button 
+            className={`hrms-skill-badge ${profCls} ${saving ? "saving" : ""}`} 
+            onClick={() => !saving && setShowSkillMenu(!showSkillMenu)} 
+            title={skill?.skill_name || "Assign Skill Level"}
+            disabled={saving}
+            style={{ boxShadow: perfMatch ? `0 0 0 2px ${perfColor}33` : "none" }}
+          >
             <AlertTriangle size={11} />
-            {profLabel}
+            {saving ? "Saving..." : profLabel}
             <ChevronDown size={11} />
           </button>
           {showSkillMenu && (
@@ -384,8 +413,14 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
                 [2, "Intermediate"],
                 [3, "Advanced"],
               ].map(([value, label]) => (
-                <button key={value} onClick={() => saveSkillLevel(value)} disabled={saving}>
+                <button 
+                  key={value} 
+                  className={prof === value ? "active" : ""}
+                  onClick={() => saveSkillLevel(value)} 
+                  disabled={saving}
+                >
                   {label}
+                  {prof === value && <CheckCircle size={14} />}
                 </button>
               ))}
               {!skill?.skill && !skillOptions.length && <small>No Skill Exists For This Department.</small>}
@@ -534,6 +569,170 @@ function GoalOverviewModal({ employee, data, onClose }) {
   );
 }
 
+/* ─── GoalAssignModal ────────────────────────────────────────── */
+function GoalAssignModal({ data, onClose, reload }) {
+  const [submitting, setSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    employee: "",
+    title: "",
+    description: "",
+    due_on: "",
+    status: "Open",
+  });
+  const [errors, setErrors] = useState({});
+
+  const employees = data.employees || [];
+  const today = new Date().toISOString().split("T")[0];
+
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+  };
+
+  const validate = () => {
+    const newErrors = {};
+    if (!formData.employee) newErrors.employee = "Please select an employee";
+    if (!formData.title.trim()) newErrors.title = "Please enter a goal title";
+    if (!formData.description.trim()) newErrors.description = "Please enter a goal description";
+    if (!formData.due_on) newErrors.due_on = "Please select a due date";
+    return newErrors;
+  };
+
+  const handleSubmit = async () => {
+    const newErrors = validate();
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await apiPost("/Users/Goals/", {
+        employee: formData.employee,
+        title: formData.title,
+        description: formData.description,
+        due_on: formData.due_on,
+        status: formData.status,
+        metadata: { source: "hrms-goal-modal" },
+      });
+      if (reload) reload(["goals", "employees", "notifications"]);
+      onClose();
+    } catch (error) {
+      setErrors({ submit: error.message || "Failed to create goal" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Modal onClose={onClose} title="Assign Goal">
+      <div style={{ display: "grid", gap: "16px", padding: "8px 0" }}>
+        {/* Employee Selector */}
+        <div>
+          <label className="form-label">
+            Employee <span style={{ color: "var(--danger)" }}>*</span>
+          </label>
+          <select
+            className={`form-input ${errors.employee ? "error" : ""}`}
+            value={formData.employee}
+            onChange={(e) => handleChange("employee", e.target.value)}
+          >
+            <option value="">Select Employee</option>
+            {employees.map((emp) => (
+              <option key={emp.id} value={emp.id}>
+                {emp.display_name} ({emp.department_name || "No Department"})
+              </option>
+            ))}
+          </select>
+          {errors.employee && <small className="error-text">{errors.employee}</small>}
+        </div>
+
+        {/* Goal Title */}
+        <div>
+          <label className="form-label">
+            Goal Title <span style={{ color: "var(--danger)" }}>*</span>
+          </label>
+          <input
+            type="text"
+            className={`form-input ${errors.title ? "error" : ""}`}
+            placeholder="Enter goal title"
+            value={formData.title}
+            onChange={(e) => handleChange("title", e.target.value)}
+          />
+          {errors.title && <small className="error-text">{errors.title}</small>}
+        </div>
+
+        {/* Goal Description */}
+        <div>
+          <label className="form-label">
+            Goal Description <span style={{ color: "var(--danger)" }}>*</span>
+          </label>
+          <textarea
+            className={`form-input ${errors.description ? "error" : ""}`}
+            placeholder="Enter goal description"
+            value={formData.description}
+            onChange={(e) => handleChange("description", e.target.value)}
+            rows={4}
+            style={{ resize: "vertical", minHeight: "80px" }}
+          />
+          {errors.description && <small className="error-text">{errors.description}</small>}
+        </div>
+
+        {/* Due Date and Status Row */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          <div>
+            <label className="form-label">
+              Due Date <span style={{ color: "var(--danger)" }}>*</span>
+            </label>
+            <input
+              type="date"
+              className={`form-input ${errors.due_on ? "error" : ""}`}
+              value={formData.due_on}
+              onChange={(e) => handleChange("due_on", e.target.value)}
+              min={today}
+            />
+            {errors.due_on && <small className="error-text">{errors.due_on}</small>}
+          </div>
+
+          <div>
+            <label className="form-label">Status</label>
+            <select
+              className="form-input"
+              value={formData.status}
+              onChange={(e) => handleChange("status", e.target.value)}
+            >
+              <option value="Open">Open</option>
+              <option value="InProgress">In Progress</option>
+              <option value="Completed">Completed</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Error Message */}
+        {errors.submit && (
+          <div className="error-banner">
+            <AlertTriangle size={14} />
+            <span>{errors.submit}</span>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "8px" }}>
+          <button className="outline-button" onClick={onClose} disabled={submitting}>
+            Cancel
+          </button>
+          <button className="primary-button" onClick={handleSubmit} disabled={submitting}>
+            {submitting ? "Assigning..." : "Assign Goal"}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 /* ─── EodSummaryModal ────────────────────────────────────────── */
 function EodSummaryModal({ employee, data, onClose, reload }) {
   const [tab, setTab]         = useState("calendar");
@@ -571,7 +770,7 @@ function EodSummaryModal({ employee, data, onClose, reload }) {
         summary: eodText.trim(),
       });
       setEodText("");
-      if (reload) reload();
+      if (reload) reload(["dailyStatus"]);
     } catch { /* silent */ }
     setSubmitting(false);
   };

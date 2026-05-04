@@ -158,3 +158,30 @@ class ComplianceAssignment(TenantScopedModel):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["tenant", "campaign", "employee"], name="project_compliance_assignment_once")]
+
+
+class ProjectDelay(TenantScopedModel):
+    """Track delays in projects, tasks, or employee work"""
+    delay_type = models.CharField(max_length=40, db_index=True)  # Project, Task, Employee
+    item_id = models.PositiveIntegerField()  # ID of the delayed item
+    days = models.PositiveIntegerField(default=0)
+    reason = models.TextField()
+    status = models.CharField(max_length=40, default="Active", db_index=True)  # Active, Resolved
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    resolved_by = models.ForeignKey(
+        "auth.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="resolved_delays",
+    )
+
+    class Meta:
+        ordering = ["tenant_id", "-created_at"]
+        indexes = [
+            models.Index(fields=["tenant", "delay_type", "status"]),
+            models.Index(fields=["tenant", "item_id"]),
+        ]
+
+    def __str__(self):
+        return f"{self.delay_type} Delay - {self.days} days"

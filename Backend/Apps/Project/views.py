@@ -1,3 +1,5 @@
+from django.utils import timezone
+
 from Backend.Apps.Project.models import (
     ComplianceAssignment,
     ComplianceCampaign,
@@ -7,6 +9,7 @@ from Backend.Apps.Project.models import (
     DeliveryMilestone,
     MilestoneComponent,
     ProjectContact,
+    ProjectDelay,
     ProjectWorkspace,
     RepositoryLink,
     TeamAssignment,
@@ -20,6 +23,7 @@ from Backend.Apps.Project.serializers import (
     DeliveryMilestoneSerializer,
     MilestoneComponentSerializer,
     ProjectContactSerializer,
+    ProjectDelaySerializer,
     ProjectWorkspaceSerializer,
     RepositoryLinkSerializer,
     TeamAssignmentSerializer,
@@ -170,6 +174,20 @@ class ComplianceAssignmentViewSet(TenantScopedModelViewSet):
     def complete(self, request, pk=None):
         result = ProjectDeliveryService.complete_compliance_assignment(self.get_tenant_context(), pk, score=request.data.get("score", 0), evidence=request.data.get("evidence") or {})
         return self.service_response(result, ComplianceAssignmentSerializer)
+
+
+class ProjectDelayViewSet(TenantScopedModelViewSet):
+    queryset = ProjectDelay.objects.select_related("tenant", "workspace").all()
+    serializer_class = ProjectDelaySerializer
+
+    @action(detail=True, methods=["post"], url_path="resolve")
+    def resolve(self, request, pk=None):
+        delay = self.get_object()
+        delay.status = "Resolved"
+        delay.resolved_at = timezone.now()
+        delay.resolved_by = request.user
+        delay.save()
+        return Response(ProjectDelaySerializer(delay).data)
 
 
 class ProjectLegacyMixin:

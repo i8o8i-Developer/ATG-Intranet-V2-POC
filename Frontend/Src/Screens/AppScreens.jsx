@@ -5,6 +5,7 @@ import { AdminChangePasswordScreen } from "./AdminChangePasswordScreen.jsx";
 import { BankDetailsScreen } from "./BankDetailsScreen.jsx";
 import { ConnectedSummaryScreen } from "./ConnectedSummaryScreen.jsx";
 import { DeactivateEmployeeScreen } from "./DeactivateEmployeeScreen.jsx";
+import { DelayManagementScreen } from "./DelayManagementScreen.jsx";
 import { DocsDetailScreen, DocsScreen } from "./DocsScreen.jsx";
 import { EmployeeRegistrarScreen } from "./EmployeeRegistrarScreen.jsx";
 import { FinanceScreen } from "./FinanceScreen.jsx";
@@ -27,6 +28,7 @@ export function RouteRenderer(props) {
   if (path.startsWith("/hrms")) return <HrmsScreen {...props} />;
   if (path.startsWith("/employee-registrar")) return <EmployeeRegistrarScreen {...props} />;
   if (path.startsWith("/leave")) return <LeaveApplyScreen {...props} />;
+  if (path.startsWith("/delays")) return <DelayManagementScreen {...props} />;
   if (path.startsWith("/project/dashboard")) return <ProjectDashboardScreen {...props} />;
   if (path.startsWith("/marketing-project")) return <MarketingProjectScreen {...props} />;
   if (path.startsWith("/docs/post-detail")) return <DocsDetailScreen {...props} />;

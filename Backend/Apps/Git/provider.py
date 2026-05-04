@@ -50,8 +50,24 @@ class GitHubProvider:
     def remove_collaborator(self, organization, repository_name, github_username, live=False):
         if not live:
             return {"dry_run": True, "action": "remove_collaborator", "repository": f"{organization}/{repository_name}", "github_username": github_username}
-        repository = self._repo_object(organization, repository_name)
-        repository.remove_from_collaborators(github_username)
+        
+        client = self.get_client()
+        
+        # Different handling for organization vs personal repos
+        if organization in {"", "atg"}:
+            # Personal repository - use remove_from_collaborators
+            repository = client.get_user().get_repo(repository_name)
+            repository.remove_from_collaborators(github_username)
+        else:
+            # Organization repository - use remove_outside_collaborator on org
+            org_object = client.get_organization(organization)
+            try:
+                org_object.remove_outside_collaborator(github_username)
+            except Exception:
+                # Fallback to repository-level removal if org-level fails
+                repository = org_object.get_repo(repository_name)
+                repository.remove_from_collaborators(github_username)
+        
         return {"status": "removed", "repository": f"{organization}/{repository_name}", "github_username": github_username}
 
     def _repo_object(self, organization, repository_name):

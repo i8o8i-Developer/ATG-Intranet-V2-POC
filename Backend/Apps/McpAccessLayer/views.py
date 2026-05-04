@@ -8,9 +8,11 @@ from Backend.Apps.McpAccessLayer.serializers import (
     McpToolDefinitionSerializer,
 )
 from Backend.Apps.McpAccessLayer.services import McpInvocationService, McpPolicyService
+from Backend.Apps.McpAccessLayer.mcp_server import mcp_server
 from Backend.EnterpriseCore.viewsets import TenantScopedModelViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework import status
 
 
 class AgentPrincipalViewSet(TenantScopedModelViewSet):
@@ -63,6 +65,89 @@ class AgentPrincipalViewSet(TenantScopedModelViewSet):
 class McpToolDefinitionViewSet(TenantScopedModelViewSet):
     queryset = McpToolDefinition.objects.select_related("tenant", "workspace").all()
     serializer_class = McpToolDefinitionSerializer
+    
+    @action(detail=False, methods=["get"], url_path="available")
+    def available_tools(self, request):
+        """List all available MCP tools from the server"""
+        tools = mcp_server.list_tools()
+        return Response({"tools": tools})
+    
+    @action(detail=True, methods=["post"], url_path="invoke")
+    def invoke_tool(self, request, pk=None):
+        """
+        Invoke a specific MCP tool with parameters
+        
+        Body:
+        {
+            "params": {...},
+            "agent_id": <optional agent principal ID for permission checking>
+        }
+        """
+        tool_definition = self.get_object()
+        params = request.data.get("params", {})
+        agent_id = request.data.get("agent_id")
+        
+        # Check permissions if agent specified
+        if agent_id:
+            agent = AgentPrincipal.objects.filter(
+                tenant=self.get_tenant_context().tenant,
+                id=agent_id
+            ).first()
+            
+            if not agent:
+                return Response(
+                    {"error": "Agent principal not found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Check if agent has permission to invoke this tool
+            allowed = McpPolicyService.can_invoke(
+                self.get_tenant_context(),
+                agent,
+                tool=tool_definition
+            )
+            
+            if not allowed:
+                # Record denied invocation
+                McpInvocationService.record_invocation(
+                    self.get_tenant_context(),
+                    agent,
+                    "Invoke",
+                    "Denied",
+                    tool=tool_definition,
+                    input_payload=params,
+                    reason="Permission denied"
+                )
+                
+                return Response(
+                    {"error": "Permission denied"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        
+        # Invoke the tool
+        result = mcp_server.invoke_tool(
+            self.get_tenant_context(),
+            tool_definition.slug,
+            params
+        )
+        
+        # Record invocation
+        if agent_id:
+            McpInvocationService.record_invocation(
+                self.get_tenant_context(),
+                agent,
+                "Invoke",
+                "Allowed" if result.ok else "Failed",
+                tool=tool_definition,
+                input_payload=params,
+                output_payload=result.data if result.ok else result.errors,
+                reason=result.errors.get("error", "") if not result.ok else ""
+            )
+        
+        if result.ok:
+            return Response(result.data, status=status.HTTP_200_OK)
+        else:
+            return Response(result.errors, status=result.status_code or status.HTTP_400_BAD_REQUEST)
 
 
 class McpResourceDefinitionViewSet(TenantScopedModelViewSet):

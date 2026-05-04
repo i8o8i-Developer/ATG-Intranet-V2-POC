@@ -19,8 +19,15 @@ def env_list(name, default=""):
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "backend-development-only")
-DEBUG = env_bool("DJANGO_DEBUG", True)
+# Security Settings
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    if env_bool("DJANGO_DEBUG", False):
+        SECRET_KEY = "backend-development-only-not-for-production"
+    else:
+        raise ValueError("DJANGO_SECRET_KEY environment variable must be set in production")
+
+DEBUG = env_bool("DJANGO_DEBUG", False)
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "*")
 
 INSTALLED_APPS = [
@@ -153,3 +160,23 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.BasicAuthentication",
     ],
 }
+
+# Email Configuration
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
+EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.zoho.com")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
+EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", False)
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
+
+# L3 Team (Campus Hiring) Email Configuration
+EMAIL_HOST_L3 = os.getenv("EMAIL_HOST_L3", EMAIL_HOST)
+EMAIL_PORT_L3 = int(os.getenv("EMAIL_PORT_L3", EMAIL_PORT))
+EMAIL_USE_TLS_L3 = env_bool("EMAIL_USE_TLS_L3", True)
+EMAIL_HOST_USER_L3 = os.getenv("EMAIL_HOST_USER_L3", "")
+EMAIL_HOST_PASSWORD_L3 = os.getenv("EMAIL_HOST_PASSWORD_L3", "")
+
+# GitHub Integration Configuration
+GITHUB_ACCESS_TOKEN = os.getenv("GITHUB_ACCESS_TOKEN", "")

@@ -325,6 +325,23 @@ class UserSkillViewSet(TenantScopedModelViewSet):
 class GoalViewSet(TenantScopedModelViewSet):
     queryset = Goal.objects.select_related("tenant", "workspace", "employee").all()
     serializer_class = GoalSerializer
+    
+    def perform_create(self, serializer):
+        from Backend.Apps.MainApp.services import NotificationService
+        goal = serializer.save()
+        
+        # Create notification for employee
+        if goal.employee and goal.employee.user:
+            NotificationService.notify(
+                self.get_tenant_context(),
+                recipient=goal.employee.user,
+                title=f"New Goal Assigned: {goal.title}",
+                message=f"You have been assigned a new goal: {goal.title}. Due on {goal.due_on}.",
+                category="hrms",
+                resource_type="goal",
+                resource_id=str(goal.id),
+                metadata={"employee_id": str(goal.employee.id), "goal_id": str(goal.id), "status": goal.status}
+            )
 
 
 class GoalFeedbackViewSet(TenantScopedModelViewSet):

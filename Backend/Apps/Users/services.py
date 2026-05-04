@@ -27,6 +27,7 @@ from Backend.Apps.Users.models import (
     UserStatusSnapshot,
 )
 from Backend.EnterpriseCore.services import OutboxService, ServiceResult
+from Backend.Apps.MainApp.services import NotificationService
 
 
 class EmployeeLifecycleService:
@@ -118,6 +119,21 @@ class EmployeeLifecycleService:
             skill=skill,
             defaults={"proficiency": proficiency, "rating": rating, "assigned_from_department": assigned_from_department, "updated_by": context.actor},
         )
+        
+        # Create notification for employee
+        if employee.user and not assigned_from_department:
+            proficiency_label = {1: "Basic", 2: "Intermediate", 3: "Advanced"}.get(proficiency, "Basic")
+            NotificationService.notify(
+                context,
+                recipient=employee.user,
+                title=f"Skill Updated: {skill.name}",
+                message=f"Your skill level for {skill.name} has been updated to {proficiency_label}.",
+                category="hrms",
+                resource_type="skill",
+                resource_id=str(link.id),
+                metadata={"employee_id": str(employee.id), "skill_id": str(skill.id), "proficiency": proficiency}
+            )
+        
         return ServiceResult.success(link)
 
     @staticmethod

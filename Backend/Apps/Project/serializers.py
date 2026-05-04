@@ -9,6 +9,7 @@ from Backend.Apps.Project.models import (
     DeliveryMilestone,
     MilestoneComponent,
     ProjectContact,
+    ProjectDelay,
     ProjectWorkspace,
     RepositoryLink,
     TeamAssignment,
@@ -78,4 +79,10 @@ class ComplianceCampaignSerializer(serializers.ModelSerializer):
 class ComplianceAssignmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = ComplianceAssignment
+        fields = "__all__"
+
+
+class ProjectDelaySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProjectDelay
         fields = "__all__"

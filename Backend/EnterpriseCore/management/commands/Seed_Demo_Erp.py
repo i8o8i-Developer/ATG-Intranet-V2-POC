@@ -18,7 +18,7 @@ from Backend.Apps.LegacyBridge.models import LegacyApplicationMap, LegacyMigrati
 from Backend.Apps.Lms.models import LeadQueueSnapshot, LearningAssignment, LearningModule, LearningPath, RevenuePerformanceSnapshot
 from Backend.Apps.MainApp.models import CredentialShareGrant, CredentialVaultItem, ExternalIssueReference, LeaveRequest, ManagerScope, NotificationItem, OnboardingOffer
 from Backend.Apps.McpAccessLayer.models import AgentPrincipal, DraftAgentAction, McpAccessGrant, McpInvocationAudit, McpResourceDefinition, McpToolDefinition
-from Backend.Apps.Project.models import ComplianceAssignment, ComplianceCampaign, DefaultCheckpoint, DeliveryAlert, DeliveryDocument, DeliveryMilestone, MilestoneComponent, ProjectContact, ProjectWorkspace, RepositoryLink, TeamAssignment
+from Backend.Apps.Project.models import ComplianceAssignment, ComplianceCampaign, DefaultCheckpoint, DeliveryAlert, DeliveryDocument, DeliveryMilestone, MilestoneComponent, ProjectContact, ProjectDelay, ProjectWorkspace, RepositoryLink, TeamAssignment
 from Backend.Apps.TasksDashboard.models import ClickUpProjectMapping, DailyStatusEntry, ExternalWorkMapping, ManagerAbbreviation, SlackDeliveryMessage, SlackDeliveryThread, TaskActivity, WorkEntry, WorkItem
 from Backend.Apps.Users.models import BenchPeriod, Department, DepartmentMembership, Domain, EmployeeBankAccount, EmployeeCertificate, EmployeeFeedback, EmployeePaymentSnapshot, EmployeeProfile, EmployeeRating, Goal, GoalFeedback, InterviewProgress, LeaveBalance, LeavePolicy, LeaveTransaction, PayProfile, Position, ResignationRequest, Skill, SubDepartment, UserEffortReport, UserSkill, UserStatusSnapshot
 from Backend.Apps.WorkflowIntelligence.models import BusinessWorkflowMap, RouteUsageAggregate, WorkflowReport
@@ -68,6 +68,7 @@ class Command(BaseCommand):
 
         employees = self.seed_people()
         projects = self.seed_projects(employees)
+        self.seed_delays(employees, projects)
         self.seed_people_ops(employees)
         self.seed_tasks(employees, projects)
         leads = self.seed_revenue(employees)
@@ -236,6 +237,10 @@ class Command(BaseCommand):
         self.upsert(LeaveRequest, {"tenant": self.tenant, "employee": employees["EMP002"], "starts_on": self.today + timezone.timedelta(days=3)}, {"leave_type": "Casual", "ends_on": self.today + timezone.timedelta(days=4), "status": "Submitted", "requested_days": Decimal("2"), "reason": "Family function"})
         self.upsert(OnboardingOffer, {"tenant": self.tenant, "candidate_email": "new.dev@example.com"}, {"candidate_name": "New Dev Candidate", "company_name": "Banao", "position_title": "React Developer", "offer_type": "Intern", "token": "demo-offer-token", "status": "Issued", "issued_at": self.now})
         self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP001"].user, "title": "Project Dashboard Review Due"}, {"message": "Review Delayed Milestones And Repo Access", "category": "Project", "resource_type": "ProjectWorkspace", "resource_id": "demo", "delivered_at": self.now})
+        self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP002"].user, "title": "New Pull Request Opened"}, {"message": "PR #345: Add user authentication flow - Ready for review", "category": "github", "resource_type": "pull_request", "resource_id": "345", "is_read": False, "metadata": {"repo": "intranet-v2", "author": "faraz-dev", "branch": "feature/auth"}})
+        self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP003"].user, "title": "Code Review Requested"}, {"message": "Your review is requested on PR #345 - Authentication flow", "category": "github", "resource_type": "pull_request", "resource_id": "345", "is_read": False, "metadata": {"repo": "intranet-v2"}})
+        self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP001"].user, "title": "Skill Updated: React"}, {"message": "Your skill level for React has been updated to Advanced.", "category": "hrms", "resource_type": "skill", "resource_id": "1", "is_read": True, "metadata": {"proficiency": 3}})
+        self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP002"].user, "title": "New Goal Assigned"}, {"message": "Complete Intranet Module Redesign - Due in 14 days", "category": "hrms", "resource_type": "goal", "resource_id": "1", "is_read": False})
         credential = self.upsert(CredentialVaultItem, {"tenant": self.tenant, "name": "Demo GitHub Token", "system_name": "GitHub"}, {"owner": self.admin_user, "secret_reference": "secret://demo/github", "status": "Active", "rotation_due_at": self.now + timezone.timedelta(days=30)})
         self.upsert(CredentialShareGrant, {"tenant": self.tenant, "credential": credential, "grantee": employees["EMP001"].user}, {"permission": "Read", "expires_at": self.now + timezone.timedelta(days=14), "reason": "Project access"})
         self.upsert(ExternalIssueReference, {"tenant": self.tenant, "provider": "Mantis", "title": "Demo blocker on old dashboard"}, {"issue_type": "Bug", "priority": "P2", "status": "Open", "assigned_to": employees["EMP007"].user})
@@ -268,6 +273,61 @@ class Command(BaseCommand):
         campaign = self.upsert(ComplianceCampaign, {"tenant": self.tenant, "name": "Weekly Anti Phishing Demo"}, {"project": project_a, "campaign_type": "AntiPhishing", "status": "Scheduled", "scheduled_for": self.now + timezone.timedelta(days=2)})
         self.upsert(ComplianceAssignment, {"tenant": self.tenant, "campaign": campaign, "employee": employees["EMP002"]}, {"token": "demo-phishing-token", "status": "Assigned", "score": Decimal("0")})
         return {"project_a": project_a, "project_b": project_b}
+
+    def seed_delays(self, employees, projects):
+        """Seed realistic delay data for projects, tasks, and employees"""
+        # Project Delays
+        self.upsert(
+            ProjectDelay,
+            {"tenant": self.tenant, "delay_type": "Project", "item_id": projects["project_a"].id},
+            {
+                "days": 2,
+                "reason": "Client feedback delayed - waiting for SOW approval",
+                "status": "Active",
+            }
+        )
+        self.upsert(
+            ProjectDelay,
+            {"tenant": self.tenant, "delay_type": "Project", "item_id": projects["project_b"].id},
+            {
+                "days": 1,
+                "reason": "Marketing campaign dependencies not ready",
+                "status": "Resolved",
+                "resolved_at": self.now - timezone.timedelta(days=3),
+                "resolved_by": self.admin_user,
+            }
+        )
+        
+        # Employee Delays
+        self.upsert(
+            ProjectDelay,
+            {"tenant": self.tenant, "delay_type": "Employee", "item_id": employees["EMP002"].id},
+            {
+                "days": 1,
+                "reason": "On sick leave - medical emergency",
+                "status": "Active",
+            }
+        )
+        self.upsert(
+            ProjectDelay,
+            {"tenant": self.tenant, "delay_type": "Employee", "item_id": employees["EMP005"].id},
+            {
+                "days": 3,
+                "reason": "Training session - Python advanced course",
+                "status": "Resolved",
+                "resolved_at": self.now - timezone.timedelta(days=1),
+                "resolved_by": self.admin_user,
+            }
+        )
+        self.upsert(
+            ProjectDelay,
+            {"tenant": self.tenant, "delay_type": "Employee", "item_id": employees["EMP007"].id},
+            {
+                "days": 2,
+                "reason": "Hardware issues - laptop repair in progress",
+                "status": "Active",
+            }
+        )
 
     def seed_tasks(self, employees, projects):
         thread = self.upsert(SlackDeliveryThread, {"tenant": self.tenant, "thread_key": "demo-eod-thread", "thread_date": self.today}, {"channel_name": "#eod-python", "channel_id": "C-DEMO", "status": "Open"})

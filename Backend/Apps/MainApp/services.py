@@ -4,8 +4,21 @@ from django.db.models import Count, Q
 from django.utils import timezone
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
 
 from django.utils.crypto import get_random_string
+
+from io import BytesIO
+import base64
+import os
+
+try:
+    from xhtml2pdf import pisa
+    from bs4 import BeautifulSoup
+except ImportError:
+    pisa = None
+    BeautifulSoup = None
 
 from Backend.Apps.MainApp.models import CredentialShareGrant, CredentialVaultItem, ExternalIssueReference, LeaveRequest, ManagerScope, NotificationItem, NotificationSnoozeRecord, OnboardingOffer
 from Backend.Apps.MainApp.utils import PartyRemoteAutomationError, PartyRemoteAutomationProvider
@@ -483,24 +496,225 @@ class MainAppLegacyService:
         return ServiceResult.success({"status": "synced" if imported else "queued", "imported": len(imported), "issue_ids": imported, "job_id": job.data.id if job.ok else None}, status_code=201)
 
     @staticmethod
-    def send_pdf_offer(context, offer_id):
+    def send_pdf_offer(context, offer_id, email, html_template, email_subject, email_template, macro_values=None):
+        """
+        Generate and send PDF offer letter with full email support.
+        
+        Args:
+            context: Service context
+            offer_id: ID of the onboarding offer
+            email: Recipient email address
+            html_template: HTML template string for PDF generation
+            email_subject: Subject line for email
+            email_template: HTML template string for email body
+            macro_values: Dict of macro values to replace in templates
+        """
+        from django.conf import settings
+        from django.template import Template, Context
+        from django.utils.safestring import mark_safe
+        
         offer = OnboardingOffer.objects.filter(tenant=context.tenant, id=offer_id).first()
         if not offer:
             return ServiceResult.failure({"offer": "Onboarding Offer Not Found."}, status_code=404)
+        
         if offer.status == "Draft":
             issued = OfferLifecycleService.issue_offer(context, offer.id)
             if not issued.ok:
                 return issued
             offer = issued.data
-        return ServiceResult.success({"offer_id": offer.id, "token": offer.token, "filename": f"offer-{offer.id}.pdf", "candidate_email": offer.candidate_email})
+        
+        # Check if PDF generation dependencies are available
+        if not pisa or not BeautifulSoup:
+            return ServiceResult.failure({"error": "PDF generation dependencies not installed (xhtml2pdf, beautifulsoup4)"}, status_code=500)
+        
+        try:
+            # Prepare context for template rendering
+            template_context = macro_values or {}
+            template_context.update({
+                'offer_id': offer.id,
+                'candidate_name': offer.candidate_name,
+                'candidate_email': offer.candidate_email,
+                'position': offer.position_title,
+            })
+            
+            # Render HTML template
+            template = Template(html_template)
+            html_content = template.render(Context(template_context))
+            
+            # Generate PDF from HTML
+            bsobj = BeautifulSoup(html_content, 'html.parser')
+            result = BytesIO()
+            pdf_status = pisa.pisaDocument(BytesIO(bsobj.encode("ISO-8859-1")), result, language='en-US')
+            
+            if pdf_status.err:
+                return ServiceResult.failure({"error": "PDF generation failed"}, status_code=500)
+            
+            # Render email template
+            email_tmpl = Template(email_template)
+            email_content = email_tmpl.render(Context(template_context))
+            
+            # Send email with PDF attachment
+            from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "") or getattr(settings, "EMAIL_HOST_USER", "") or "admin@atg.world"
+            
+            msg = EmailMultiAlternatives(
+                subject=email_subject,
+                body="",
+                from_email=from_email,
+                to=[email]
+            )
+            msg.attach('Offer Letter.pdf', result.getvalue(), 'application/pdf')
+            msg.attach_alternative(email_content, 'text/html')
+            msg.send(fail_silently=False)
+            
+            return ServiceResult.success({
+                "offer_id": offer.id,
+                "token": offer.token,
+                "filename": f"offer-{offer.id}.pdf",
+                "candidate_email": email,
+                "email_sent": True
+            })
+        except Exception as e:
+            return ServiceResult.failure({"error": f"Failed to send offer: {str(e)}"}, status_code=500)
 
     @staticmethod
-    def send_certificate(context, recipient_id, title="Certificate issued"):
+    def send_certificate(context, recipient_id, joining_date, completion_date, position, responsibility="", title="Certificate issued"):
+        """
+        Generate and send completion certificate with full PDF and email support.
+        
+        Args:
+            context: Service context
+            recipient_id: ID of the employee receiving certificate
+            joining_date: Start date of employment/internship
+            completion_date: End date of employment/internship
+            position: Job title/position
+            responsibility: Optional description of responsibilities
+            title: Certificate title
+        """
+        from django.conf import settings
+        from django.utils.safestring import mark_safe
+        
         user_model = get_user_model()
         recipient = user_model.objects.filter(id=recipient_id).first()
         if not recipient:
             return ServiceResult.failure({"recipient": "Recipient User Not Found."}, status_code=404)
-        return NotificationService.notify(context, recipient, title, message="Certificate Has Been Generated.", category="Certificate")
+        
+        # Check if PDF generation dependencies are available
+        if not pisa or not BeautifulSoup:
+            return ServiceResult.failure({"error": "PDF generation dependencies not installed (xhtml2pdf, beautifulsoup4)"}, status_code=500)
+        
+        try:
+            # Helper function to load images as data URIs
+            def load_image_data_uri(path_parts, mime_type):
+                from django.conf import settings
+                base_dir = settings.BASE_DIR
+                image_path = os.path.join(base_dir, *path_parts)
+                if not os.path.exists(image_path):
+                    return ""
+                
+                with open(image_path, 'rb') as image_file:
+                    encoded_img = base64.b64encode(image_file.read()).decode('utf-8')
+                return mark_safe(f"data:{mime_type};base64,{encoded_img}")
+            
+            # Determine pronouns based on gender (if available)
+            gender = getattr(getattr(recipient, 'profile', None), 'gender', None)
+            if gender == 1:  # Male
+                title_prefix = 'Mr.'
+                pronoun = 'his'
+                pronoun2 = 'him'
+                pronoun3 = 'he'
+            elif gender == 2:  # Female
+                title_prefix = 'Ms./Mrs.'
+                pronoun = 'her'
+                pronoun2 = 'her'
+                pronoun3 = 'she'
+            else:
+                title_prefix = 'Mr./Ms.'
+                pronoun = 'his/her'
+                pronoun2 = 'his/her'
+                pronoun3 = 'he/she'
+            
+            # Prepare certificate context
+            cert_context = {
+                'joining_date': joining_date,
+                'completion_date': completion_date,
+                'position': position,
+                'name': recipient.get_full_name(),
+                'title': title_prefix,
+                'pronoun': pronoun,
+                'pronoun2': pronoun2,
+                'pronoun3': pronoun3,
+            }
+            
+            # Try to load images
+            try:
+                cert_context['certificate_logo'] = load_image_data_uri(
+                    ('Apps', 'Banao', 'static', 'banao', 'images', 'logo.png'),
+                    'image/png',
+                )
+                cert_context['signature_image'] = load_image_data_uri(
+                    ('Apps', 'MainApp', 'static', 'images', 'signature-1.jpg'),
+                    'image/jpeg',
+                )
+            except:
+                pass  # Images optional
+            
+            if responsibility:
+                cert_context['responsibility'] = responsibility
+            
+            # Generate certificate PDF
+            html_content = render_to_string('mainapp/certificates/certificate.html', cert_context)
+            bsobj = BeautifulSoup(html_content, 'html.parser')
+            result = BytesIO()
+            pdf_status = pisa.pisaDocument(BytesIO(bsobj.encode("ISO-8859-1")), result, language='en-US')
+            
+            if pdf_status.err:
+                return ServiceResult.failure({"error": "Certificate PDF generation failed"}, status_code=500)
+            
+            # Generate email content
+            email_content = render_to_string('mainapp/certificates/certificate_email.html', {'name': recipient.get_full_name()})
+            
+            # Send certificate email
+            if recipient.email and recipient.email != '':
+                from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "") or getattr(settings, "EMAIL_HOST_USER", "") or "admin@atg.world"
+                
+                certificate_email = EmailMultiAlternatives(
+                    'Across The Globe (ATG) : Internship Completion Certificate',
+                    "",
+                    from_email,
+                    [recipient.email]
+                )
+                certificate_email.attach('Certificate.pdf', result.getvalue(), 'application/pdf')
+                certificate_email.attach_alternative(email_content, 'text/html')
+                certificate_email.send(fail_silently=False)
+                
+                # Create certificate record (if model exists)
+                try:
+                    from Backend.Apps.Users.models import EmployeeCertificate
+                    EmployeeCertificate.objects.create(
+                        tenant=context.tenant,
+                        manager=context.actor,
+                        employee=recipient,
+                        position_title=position,
+                        issued_on=timezone.now().date(),
+                        created_by=context.actor,
+                        updated_by=context.actor,
+                    )
+                except:
+                    pass  # Model may not exist in all setups
+                
+                # Also send notification
+                NotificationService.notify(context, recipient, title, message="Certificate Has Been Generated and Sent via Email.", category="Certificate")
+                
+                return ServiceResult.success({
+                    "recipient_id": recipient.id,
+                    "recipient_email": recipient.email,
+                    "certificate_sent": True
+                })
+            else:
+                return ServiceResult.failure({"email": "Recipient email not available"}, status_code=400)
+        
+        except Exception as e:
+            return ServiceResult.failure({"error": f"Failed to send certificate: {str(e)}"}, status_code=500)
 
     @staticmethod
     def search_username(context, query):

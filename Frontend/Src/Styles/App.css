@@ -803,8 +803,10 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: #2454d6; b
   padding: 7px 10px; border-radius: 6px; font-size: 13px; color: #1f2937;
 }
 .hrms-perf-opt:hover { background: #f1f5f9; }
+.hrms-perf-opt.active { background: #eff6ff; border: 1px solid #3b82f6; }
 .hrms-perf-opt.muted { color: var(--muted); font-style: italic; }
 .hrms-perf-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.hrms-name-btn .hrms-perf-dot { margin-right: 6px; }
 
 /* ── Skill badge ── */
 .hrms-skill-badge {
@@ -824,9 +826,11 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: #2454d6; b
   padding: 8px; display: grid; gap: 4px;
 }
 .hrms-skill-menu strong { font-size: 12px; color: #111827; padding: 3px 6px; }
-.hrms-skill-menu button { border: 0; background: transparent; text-align: left; padding: 8px; border-radius: 6px; color: #1f2937; }
+.hrms-skill-menu button { border: 0; background: transparent; text-align: left; padding: 8px; border-radius: 6px; color: #1f2937; display: flex; align-items: center; gap: 8px; }
 .hrms-skill-menu button:hover { background: #f1f5f9; }
+.hrms-skill-menu button.active { background: #eff6ff; border: 1px solid #3b82f6; font-weight: 600; }
 .hrms-skill-menu small { padding: 6px; }
+.hrms-skill-badge.saving { opacity: 0.6; cursor: not-allowed; }
 
 /* ── Project stack ── */
 .hrms-proj-stack { display: grid; gap: 3px; }
@@ -988,7 +992,7 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: #2454d6; b
 .eod-already-submitted strong { display: block; margin-bottom: 4px; }
 .eod-already-submitted p { margin: 0; font-size: 13px; }
 
-/* Bounties / Summaries tab body */
+/* Bounties / Summaries Tab Body */
 .eod-tab-body { padding: 16px 20px; overflow-x: auto; }
 .eod-progress-cell {
   min-width: 160px;
@@ -1001,7 +1005,7 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: #2454d6; b
   font-weight: 700;
 }
 
-/* EOD summary list */
+/* EOD Summary List */
 .eod-summary-list { display: grid; gap: 10px; }
 .eod-summary-row {
   display: grid; grid-template-columns: 100px minmax(0,1fr) 100px;
@@ -1104,3 +1108,60 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: #2454d6; b
 .project-title-bar { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; flex-wrap: wrap; }
 .project-title-bar > div { display: inline-flex; align-items: center; gap: 8px; }
 .project-title-bar > div:last-child { margin-left: auto; gap: 6px; }
+
+/* ─── Form Elements ─────────────────────────────────────────── */
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  color: #111827;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-input.error {
+  border-color: #ef4444;
+}
+
+.form-input.error:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.form-input::placeholder {
+  color: #9ca3af;
+}
+
+.error-text {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #ef4444;
+}
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 13px;
+}

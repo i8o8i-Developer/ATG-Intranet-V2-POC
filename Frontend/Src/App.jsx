@@ -45,6 +45,7 @@ const navItems = [
   { label: "Send Offer", path: "/Onboard/Send_Offer", icon: Send },
   { label: "Send Certificate", path: "/send-certificate", icon: ShieldCheck },
   { label: "Deactivate Employee", path: "/deactivate-multiple-employee/", icon: AlertTriangle },
+  { label: "Delay Management", path: "/delays/", icon: AlertTriangle },
 ];
 
 const endpointMap = [
@@ -134,6 +135,7 @@ const endpointMap = [
   ["milestoneComponents", "/Project/MilestoneComponents/", "list"],
   ["complianceCampaigns", "/Project/ComplianceCampaigns/", "list"],
   ["complianceAssignments", "/Project/ComplianceAssignments/", "list"],
+  ["delays", "/Project/ProjectDelays/", "list"],
 
   ["slackThreads", "/TasksDashboard/SlackDeliveryThreads/", "list"],
   ["slackMessages", "/TasksDashboard/SlackDeliveryMessages/", "list"],
@@ -229,7 +231,7 @@ function App() {
       const currentEmployee =
         data.me?.employees?.[0]?.id ||
         (data.employees || []).find((item) => String(item.user) === String(data.me?.user?.id))?.id;
-      setSelectedEmployeeId(String(currentEmployee || data.employees[0].id));
+      setSelectedEmployeeId(String(currentEmployee || data.employees?.[0]?.id || ""));
     }
   }, [data.employees, data.me, selectedEmployeeId]);
 
