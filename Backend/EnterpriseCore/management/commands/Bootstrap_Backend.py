@@ -28,12 +28,12 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--tenant", default="Banao")
         parser.add_argument("--workspace", default="Default Workspace")
-        parser.add_argument("--username", default="admin")
-        parser.add_argument("--password", default="admin")
-        parser.add_argument("--email", default="admin@example.com")
-        parser.add_argument("--first-name", default="Admin")
-        parser.add_argument("--last-name", default="User")
-        parser.add_argument("--display-name", default="")
+        parser.add_argument("--username", default="anubhav1608")
+        parser.add_argument("--password", default="AnubhavChaurasia")
+        parser.add_argument("--email", default="anubhav1608@example.com")
+        parser.add_argument("--first-name", default="Anubhav")
+        parser.add_argument("--last-name", default="Chaurasia")
+        parser.add_argument("--display-name", default="Anubhav Chaurasia")
         parser.add_argument("--employee-code", default="EMP-001")
 
     def handle(self, *args, **options):

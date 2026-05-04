@@ -62,9 +62,14 @@ export function HrmsScreen({ data, reload }) {
           <span className="hrms-kicker">Human Resources</span>
           <h1 className="hrms-hero-title">Team Management</h1>
           <p className="hrms-hero-sub">Workforce Overview, EOD Tracking, And Project Health.</p>
-          <button className="primary-button" onClick={() => setShowGoalModal(true)} style={{ marginTop: "12px" }}>
-            <Target size={14} /> Assign Goal
-          </button>
+          <div className="hrms-hero-actions">
+            <button className="primary-button" onClick={() => setTab("goals")} style={{ marginTop: "12px" }}>
+              <Target size={14} /> Goals Workspace
+            </button>
+            <button className="outline-button" onClick={() => setShowGoalModal(true)} style={{ marginTop: "12px" }}>
+              <Target size={14} /> Quick Assign Goal
+            </button>
+          </div>
         </div>
         <div className="hrms-kpi-row">
           {[
@@ -86,7 +91,7 @@ export function HrmsScreen({ data, reload }) {
         <Tabs
           value={tab}
           onChange={setTab}
-          items={[["team", "Team"], ["sanity", "Project Sanity"], ["finance", "Project Finance"]]}
+          items={[["team", "Team"], ["goals", "Goals"], ["sanity", "Project Sanity"], ["finance", "Project Finance"]]}
         />
       </div>
 
@@ -147,6 +152,7 @@ export function HrmsScreen({ data, reload }) {
         </div>
       )}
 
+  {tab === "goals"   && <HrmsGoalsWorkspace data={data} setGoalEmployee={setGoalEmployee} reload={reload} />}
       {tab === "sanity"  && <ProjectSanity  data={data} />}
       {tab === "finance" && <ProjectFinance data={data} />}
 
@@ -219,15 +225,57 @@ const PERF_OPTIONS = [
   { label: "On Bench",         color: "#94a3b8" },
 ];
 
+function createGoalDraft(employee = "") {
+  const due = new Date();
+  due.setDate(due.getDate() + 14);
+  return {
+    employee,
+    title: "",
+    description: "",
+    due_on: isoDate(due),
+    status: "Open",
+  };
+}
+
+function validateGoalDraft(formData) {
+  const errors = {};
+  if (!formData.employee) errors.employee = "Please select an employee";
+  if (!formData.title.trim()) errors.title = "Please enter a goal title";
+  if (!formData.description.trim()) errors.description = "Please enter a goal description";
+  if (!formData.due_on) errors.due_on = "Please select a due date";
+  return errors;
+}
+
+function goalStatusMeta(status = "") {
+  const normalized = String(status || "").toLowerCase();
+  if (isCompleted(normalized)) return { label: "Completed", tone: "green", progress: 100 };
+  if (normalized.includes("progress") || normalized.includes("review")) return { label: "In Progress", tone: "blue", progress: 68 };
+  if (normalized.includes("cancel")) return { label: "Cancelled", tone: "slate", progress: 0 };
+  return { label: status || "Open", tone: "gold", progress: 18 };
+}
+
+function isGoalOverdue(goal) {
+  if (!goal?.due_on || isCompleted(goal?.status)) return false;
+  const dueDate = new Date(goal.due_on);
+  if (Number.isNaN(dueDate.getTime())) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return dueDate < today;
+}
+
 function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }) {
   const [showPerfMenu, setShowPerfMenu] = useState(false);
   const [showSkillMenu, setShowSkillMenu] = useState(false);
   const [showMenu,     setShowMenu]     = useState(false);
   const [eodPopover,   setEodPopover]   = useState(null); // iso date string or null
   const [saving,       setSaving]       = useState(false);
+  const [profilePayload, setProfilePayload] = useState(employee.profile_payload || {});
+  const [optimisticSkill, setOptimisticSkill] = useState(null);
+  const [updatedField, setUpdatedField] = useState("");
   const menuRef   = useRef(null);
   const perfRef   = useRef(null);
   const remarkRef = useRef(null);
+  const flashTimerRef = useRef(null);
 
   const days       = lastDays(7);
   const projectMap = indexById(data.projects);
@@ -240,14 +288,33 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
   const skills = (data.userSkills || []).filter(
     (s) => String(s.employee) === String(employee.id),
   );
+  const serverSkill = skills[0] || null;
   const empProjects = assignments
     .map((a) => projectMap.get(String(a.project))?.name)
     .filter(Boolean);
 
-  const skill     = skills[0];
+  const skill     = optimisticSkill || serverSkill;
   const prof      = skill?.proficiency ?? 1;
   const profLabel = prof >= 3 ? "Advanced" : prof >= 2 ? "Intermediate" : "Basic";
   const profCls   = prof >= 3 ? "adv" : prof >= 2 ? "mid" : "bas";
+  const skillLabel = skill?.skill_name || skillOptions[0]?.name || "Department Skill";
+
+  useEffect(() => {
+    setProfilePayload(employee.profile_payload || {});
+  }, [employee.profile_payload]);
+
+  useEffect(() => {
+    setOptimisticSkill(
+      serverSkill
+        ? {
+            skill: serverSkill.skill,
+            skill_name: serverSkill.skill_name,
+            proficiency: serverSkill.proficiency,
+            rating: serverSkill.rating,
+          }
+        : null,
+    );
+  }, [serverSkill?.skill, serverSkill?.skill_name, serverSkill?.proficiency, serverSkill?.rating]);
 
   useEffect(() => {
     const handler = (e) => {
@@ -259,30 +326,53 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  useEffect(() => () => {
+    if (flashTimerRef.current) window.clearTimeout(flashTimerRef.current);
+  }, []);
+
+  const markUpdated = (field) => {
+    setUpdatedField(field);
+    if (flashTimerRef.current) window.clearTimeout(flashTimerRef.current);
+    flashTimerRef.current = window.setTimeout(() => setUpdatedField(""), 1200);
+  };
+
   const saveRemark = useCallback(async () => {
     if (!remarkRef.current || saving) return;
     setSaving(true);
+    const previousPayload = profilePayload;
+    const nextPayload = { ...previousPayload, remarks: remarkRef.current.value };
+    setProfilePayload(nextPayload);
     try {
       await apiPatch(`/Users/EmployeeProfiles/${employee.id}/`, {
-        profile_payload: { ...employee.profile_payload, remarks: remarkRef.current.value },
+        profile_payload: nextPayload,
       });
       if (reload) reload(["employees", "notifications"]);
-    } catch { /* silent */ }
+    } catch {
+      setProfilePayload(previousPayload);
+    }
     setSaving(false);
-  }, [employee.id, employee.profile_payload, saving, reload]);
+  }, [employee.id, profilePayload, saving, reload]);
 
   const patchProfilePayload = async (patch) => {
-    await apiPatch(`/Users/EmployeeProfiles/${employee.id}/`, {
-      profile_payload: { ...employee.profile_payload, ...patch },
+    const previousPayload = profilePayload;
+    const nextPayload = { ...previousPayload, ...patch };
+    setProfilePayload(nextPayload);
+    const response = await apiPatch(`/Users/EmployeeProfiles/${employee.id}/`, {
+      profile_payload: nextPayload,
     });
+    setProfilePayload(response?.profile_payload || nextPayload);
     if (reload) reload(["employees", "notifications"]);
+    return { previousPayload, nextPayload };
   };
 
   const savePerformance = async (label) => {
     setSaving(true);
     try {
+      markUpdated("performance");
       await patchProfilePayload({ performance: label || "" });
       setShowPerfMenu(false);
+    } catch {
+      setProfilePayload(employee.profile_payload || {});
     } finally {
       setSaving(false);
     }
@@ -292,14 +382,26 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
     const skillId = skill?.skill || skillOptions[0]?.id;
     if (!skillId || saving) return;
     setSaving(true);
+    const previousSkill = optimisticSkill;
+    const nextSkill = {
+      skill: skillId,
+      skill_name: skillLabel,
+      proficiency,
+      rating: Math.min(proficiency * 3, 10),
+    };
+    setOptimisticSkill(nextSkill);
+    markUpdated("skill");
     try {
-      await apiPost(`/Users/EmployeeProfiles/${employee.id}/assign-skill/`, {
+      const response = await apiPost(`/Users/EmployeeProfiles/${employee.id}/assign-skill/`, {
         skill: skillId,
         proficiency,
         rating: Math.min(proficiency * 3, 10),
       });
+      setOptimisticSkill(response || nextSkill);
       setShowSkillMenu(false);
       if (reload) reload(["employees", "userSkills", "notifications"]);
+    } catch {
+      setOptimisticSkill(previousSkill);
     } finally {
       setSaving(false);
     }
@@ -339,12 +441,12 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
 
   const ic = initials(employee.display_name);
   const ac = avatarColor(employee.display_name);
-  const currentPerformance = employee.profile_payload?.performance || "";
+  const currentPerformance = profilePayload?.performance || "";
   const perfMatch = PERF_OPTIONS.find((opt) => opt.label === currentPerformance);
   const perfColor = perfMatch?.color || "transparent";
 
   return (
-    <tr className="hrms-emp-row" style={{ borderLeft: perfMatch ? `4px solid ${perfColor}` : "4px solid transparent" }}>
+    <tr className={`hrms-emp-row${updatedField ? ` hrms-emp-row-updated hrms-emp-row-updated-${updatedField}` : ""}`} style={{ borderLeft: perfMatch ? `4px solid ${perfColor}` : "4px solid transparent" }}>
       {/* Name */}
       <td>
         <div className="hrms-name-cell">
@@ -359,6 +461,9 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
               {showPerfMenu ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
             </button>
             <small className="hrms-join-date">Joined: {formatDate(employee.joined_on)}</small>
+            <span className={`hrms-performance-chip${currentPerformance ? "" : " empty"}${updatedField === "performance" ? " is-updated" : ""}`}>
+              {currentPerformance || "No Performance Tag"}
+            </span>
             {showPerfMenu && (
               <div className="hrms-perf-menu">
                 <button
@@ -395,9 +500,9 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
       <td>
         <div className="hrms-skill-wrap">
           <button 
-            className={`hrms-skill-badge ${profCls} ${saving ? "saving" : ""}`} 
+            className={`hrms-skill-badge ${profCls} ${saving ? "saving" : ""}${updatedField === "skill" ? " is-updated" : ""}`} 
             onClick={() => !saving && setShowSkillMenu(!showSkillMenu)} 
-            title={skill?.skill_name || "Assign Skill Level"}
+            title={skillLabel}
             disabled={saving}
             style={{ boxShadow: perfMatch ? `0 0 0 2px ${perfColor}33` : "none" }}
           >
@@ -405,9 +510,10 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
             {saving ? "Saving..." : profLabel}
             <ChevronDown size={11} />
           </button>
+          <small className="hrms-skill-caption">{skillLabel}</small>
           {showSkillMenu && (
             <div className="hrms-skill-menu">
-              <strong>{skill?.skill_name || skillOptions[0]?.name || "Department Skill"}</strong>
+              <strong>{skillLabel}</strong>
               {[
                 [1, "Basic"],
                 [2, "Intermediate"],
@@ -544,6 +650,177 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
   );
 }
 
+function HrmsGoalsWorkspace({ data, setGoalEmployee, reload }) {
+  const employees = data.employees || [];
+  const employeeMap = indexById(employees);
+  const feedback = data.goalFeedback || [];
+  const [query, setQuery] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [formData, setFormData] = useState(() => createGoalDraft());
+  const [errors, setErrors] = useState({});
+  const [goalRows, setGoalRows] = useState(data.goals || []);
+
+  useEffect(() => {
+    setGoalRows(data.goals || []);
+  }, [data.goals]);
+
+  const filteredGoals = goalRows.filter((goal) => {
+    const employeeName = employeeMap.get(String(goal.employee))?.display_name || "";
+    const haystack = `${goal.title || ""} ${goal.description || ""} ${goal.status || ""} ${employeeName}`.toLowerCase();
+    return haystack.includes(query.toLowerCase());
+  });
+  const totalGoals = goalRows.length;
+  const inProgressGoals = goalRows.filter((goal) => String(goal.status || "").toLowerCase().includes("progress") || String(goal.status || "").toLowerCase().includes("review")).length;
+  const completedGoals = goalRows.filter((goal) => isCompleted(goal.status)).length;
+  const overdueGoals = goalRows.filter(isGoalOverdue).length;
+
+  const handleChange = (field, value) => {
+    setFormData((current) => ({ ...current, [field]: value }));
+    if (errors[field]) {
+      setErrors((current) => ({ ...current, [field]: "" }));
+    }
+  };
+
+  const handleSubmit = async () => {
+    const nextErrors = validateGoalDraft(formData);
+    if (Object.keys(nextErrors).length) {
+      setErrors(nextErrors);
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const createdGoal = await apiPost("/Users/Goals/", {
+        employee: formData.employee,
+        title: formData.title,
+        description: formData.description,
+        due_on: formData.due_on,
+        status: formData.status,
+        metadata: { source: "hrms-goals-workspace" },
+      });
+      setGoalRows((current) => [createdGoal, ...current.filter((goal) => String(goal.id) !== String(createdGoal?.id))]);
+      setFormData(createGoalDraft(formData.employee));
+      setErrors({});
+      if (reload) reload(["goals", "goalFeedback", "employees", "notifications"]);
+    } catch (error) {
+      setErrors({ submit: error.message || "Failed to create goal" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="hrms-body">
+      <div className="hrms-goal-kpis">
+        {[
+          { label: "Total Goals", value: totalGoals, tone: "blue" },
+          { label: "In Progress", value: inProgressGoals, tone: "gold" },
+          { label: "Completed", value: completedGoals, tone: "green" },
+          { label: "Overdue", value: overdueGoals, tone: overdueGoals ? "red" : "slate" },
+        ].map((item) => (
+          <article key={item.label} className={`hrms-goal-kpi ${item.tone}`}>
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+          </article>
+        ))}
+      </div>
+
+      <div className="hrms-goals-grid">
+        <Panel title="Create And Assign Goal">
+          <div className="hrms-goal-form">
+            <label>
+              <span>Employee</span>
+              <select className={`form-input ${errors.employee ? "error" : ""}`} value={formData.employee} onChange={(event) => handleChange("employee", event.target.value)}>
+                <option value="">Select Employee</option>
+                {employees.map((emp) => (
+                  <option key={emp.id} value={emp.id}>{emp.display_name} ({emp.department_name || "No Department"})</option>
+                ))}
+              </select>
+              {errors.employee && <small className="error-text">{errors.employee}</small>}
+            </label>
+            <label>
+              <span>Goal Title</span>
+              <input className={`form-input ${errors.title ? "error" : ""}`} value={formData.title} onChange={(event) => handleChange("title", event.target.value)} placeholder="Enter goal title" />
+              {errors.title && <small className="error-text">{errors.title}</small>}
+            </label>
+            <label>
+              <span>Description</span>
+              <textarea className={`form-input ${errors.description ? "error" : ""}`} value={formData.description} onChange={(event) => handleChange("description", event.target.value)} rows={5} placeholder="Describe the goal, expected output, and follow-up notes" />
+              {errors.description && <small className="error-text">{errors.description}</small>}
+            </label>
+            <div className="hrms-goal-form-row">
+              <label>
+                <span>Due Date</span>
+                <input type="date" className={`form-input ${errors.due_on ? "error" : ""}`} value={formData.due_on} onChange={(event) => handleChange("due_on", event.target.value)} min={isoDate(new Date())} />
+                {errors.due_on && <small className="error-text">{errors.due_on}</small>}
+              </label>
+              <label>
+                <span>Status</span>
+                <select className="form-input" value={formData.status} onChange={(event) => handleChange("status", event.target.value)}>
+                  <option value="Open">Open</option>
+                  <option value="InProgress">In Progress</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Cancelled">Cancelled</option>
+                </select>
+              </label>
+            </div>
+            {errors.submit && (
+              <div className="error-banner">
+                <AlertTriangle size={14} />
+                <span>{errors.submit}</span>
+              </div>
+            )}
+            <div className="hrms-goal-actions-row">
+              <button className="outline-button" onClick={() => { setFormData(createGoalDraft()); setErrors({}); }} disabled={submitting}>Reset</button>
+              <button className="primary-button" onClick={handleSubmit} disabled={submitting}>{submitting ? "Assigning..." : "Assign Goal"}</button>
+            </div>
+          </div>
+        </Panel>
+
+        <Panel
+          title="Assigned Goals"
+          right={
+            <div className="hrms-goal-toolbar">
+              <div className="hrms-search hrms-goal-search">
+                <Search size={16} />
+                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by goal, employee, or status" />
+              </div>
+            </div>
+          }
+        >
+          {filteredGoals.length ? (
+            <SimpleTable
+              columns={["Goal", "Employee", "Status", "Progress", "Due", "Feedback", "Action"]}
+              rows={filteredGoals.map((goal) => {
+                const employee = employeeMap.get(String(goal.employee));
+                const meta = goalStatusMeta(goal.status);
+                const overdue = isGoalOverdue(goal);
+                const feedbackCount = feedback.filter((item) => String(item.goal) === String(goal.id)).length;
+                return [
+                  <div key={`goal-${goal.id}`} className="hrms-goal-summary">
+                    <strong>{goal.title}</strong>
+                    <small>{goal.description || "No description provided."}</small>
+                  </div>,
+                  employee?.display_name || "—",
+                  <span key={`status-${goal.id}`} className={`hrms-goal-status ${overdue ? "red" : meta.tone}`}>{overdue ? "Overdue" : meta.label}</span>,
+                  <span key={`progress-${goal.id}`} className="hrms-goal-progress"><Progress value={overdue ? Math.max(meta.progress - 10, 5) : meta.progress} /><small>{overdue ? Math.max(meta.progress - 10, 5) : meta.progress}%</small></span>,
+                  formatDate(goal.due_on),
+                  feedbackCount,
+                  <span key={`action-${goal.id}`} className="table-actions">
+                    <button className="soft-button small" onClick={() => employee && setGoalEmployee(employee)}>View Employee</button>
+                  </span>,
+                ];
+              })}
+            />
+          ) : (
+            <EmptyState label="No Goals Match The Current Search." />
+          )}
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
 function GoalOverviewModal({ employee, data, onClose }) {
   const goals = (data.goals || []).filter((goal) => String(goal.employee) === String(employee.id));
   const feedback = data.goalFeedback || [];
@@ -572,17 +849,11 @@ function GoalOverviewModal({ employee, data, onClose }) {
 /* ─── GoalAssignModal ────────────────────────────────────────── */
 function GoalAssignModal({ data, onClose, reload }) {
   const [submitting, setSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
-    employee: "",
-    title: "",
-    description: "",
-    due_on: "",
-    status: "Open",
-  });
+  const [formData, setFormData] = useState(() => createGoalDraft());
   const [errors, setErrors] = useState({});
 
   const employees = data.employees || [];
-  const today = new Date().toISOString().split("T")[0];
+  const today = isoDate(new Date());
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -592,12 +863,7 @@ function GoalAssignModal({ data, onClose, reload }) {
   };
 
   const validate = () => {
-    const newErrors = {};
-    if (!formData.employee) newErrors.employee = "Please select an employee";
-    if (!formData.title.trim()) newErrors.title = "Please enter a goal title";
-    if (!formData.description.trim()) newErrors.description = "Please enter a goal description";
-    if (!formData.due_on) newErrors.due_on = "Please select a due date";
-    return newErrors;
+    return validateGoalDraft(formData);
   };
 
   const handleSubmit = async () => {
