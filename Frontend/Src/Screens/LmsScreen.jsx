@@ -175,6 +175,7 @@ export function LmsScreen({ data, reload, navigate, route }) {
   const [selected, setSelected] = useState(new Set());
   const [assignOpen, setAssignOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [addLeadOpen, setAddLeadOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const activeLeadId = routeLeadId(route);
 
@@ -278,6 +279,23 @@ export function LmsScreen({ data, reload, navigate, route }) {
       setSelected(new Set());
       refresh();
       setMoreOpen(false);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const addLead = async (formData) => {
+    if (!formData.company_name?.trim()) {
+      alert("Company name is required");
+      return;
+    }
+    setBusy(true);
+    try {
+      await apiPost("/Banao/LeadAccounts/capture/", formData);
+      refresh();
+      setAddLeadOpen(false);
+    } catch (error) {
+      alert(error?.data?.detail || error?.message || "Unable to create lead.");
     } finally {
       setBusy(false);
     }
@@ -411,6 +429,7 @@ export function LmsScreen({ data, reload, navigate, route }) {
         </header>
 
         <div className="lead-tools">
+          <button className="icon-action" title="Add Lead" onClick={() => setAddLeadOpen(true)}><Plus size={16} /></button>
           <button className="icon-action" title="Bulk Move Stage" onClick={() => setMoreOpen(true)} disabled={!selected.size}><MoreHorizontal size={16} /></button>
           <button className="icon-action" title="Clear Selection" onClick={() => setSelected(new Set())} disabled={!selected.size}><Trash2 size={16} /></button>
           <button className="icon-action" title="Assign Selected" onClick={() => setAssignOpen(true)} disabled={!selected.size}><Users size={16} /></button>
@@ -512,6 +531,7 @@ export function LmsScreen({ data, reload, navigate, route }) {
         </div>
       </section>
 
+      {addLeadOpen && <AddLeadModal data={data} sources={sourceCards} busy={busy} onClose={() => setAddLeadOpen(false)} onSubmit={addLead} />}
       {assignOpen && <AssignLeadModal data={data} count={selected.size} busy={busy} onClose={() => setAssignOpen(false)} onSubmit={assignSelected} />}
       {moreOpen && <BulkStageModal count={selected.size} busy={busy} options={stageOptions} onClose={() => setMoreOpen(false)} onSubmit={bulkMoveStage} />}
     </section>
@@ -765,6 +785,89 @@ function LeadDetailWorkspace({ data, lead, navigate, refresh, stageOptions }) {
         </div>
       </section>
     </section>
+  );
+}
+
+function AddLeadModal({ data, sources, busy, onClose, onSubmit }) {
+  const [formData, setFormData] = useState({
+    company_name: "",
+    contact_name: "",
+    contact_email: "",
+    contact_phone: "",
+    source: "",
+    priority: "Normal",
+    owner: "",
+    estimated_value: "",
+    currency: "INR",
+    metadata: {},
+  });
+
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = () => {
+    if (!formData.source.trim()) {
+      alert("Origin is required");
+      return;
+    }
+    const payload = {
+      company_name: formData.company_name.trim(),
+      source: formData.source.trim(),
+      priority: formData.priority || "Normal",
+      currency: formData.currency || "INR",
+    };
+    if (formData.contact_name.trim()) payload.contact_name = formData.contact_name.trim();
+    if (formData.contact_email.trim()) payload.contact_email = formData.contact_email.trim();
+    if (formData.contact_phone.trim()) payload.contact_phone = formData.contact_phone.trim();
+    if (formData.owner) payload.owner = Number(formData.owner);
+    if (formData.estimated_value) payload.estimated_value = Number(formData.estimated_value);
+    onSubmit(payload);
+  };
+
+  return (
+    <Modal title="Add New Lead" onClose={onClose}>
+      <div className="form-grid">
+        <label>Company Name *
+          <input type="text" value={formData.company_name} onChange={(e) => handleChange("company_name", e.target.value)} placeholder="Enter company name" />
+        </label>
+        <label>Priority
+          <select value={formData.priority} onChange={(e) => handleChange("priority", e.target.value)}>
+            <option value="Low">Low</option>
+            <option value="Normal">Normal</option>
+            <option value="High">High</option>
+          </select>
+        </label>
+        <label>Contact Name
+          <input type="text" value={formData.contact_name} onChange={(e) => handleChange("contact_name", e.target.value)} placeholder="Enter contact name" />
+        </label>
+        <label>Origin *
+          <select value={formData.source} onChange={(e) => handleChange("source", e.target.value)}>
+            <option value="">Select Origin</option>
+            {(sources || []).map((src) => <option key={src.label} value={src.label}>{src.label}</option>)}
+          </select>
+        </label>
+        <label>Email
+          <input type="email" value={formData.contact_email} onChange={(e) => handleChange("contact_email", e.target.value)} placeholder="Enter email" />
+        </label>
+        <label>Assigned To
+          <select value={formData.owner} onChange={(e) => handleChange("owner", e.target.value)}>
+            <option value="">Select Owner</option>
+            {(data.employees || []).map((emp) => <option key={emp.id} value={emp.id}>{emp.display_name}</option>)}
+          </select>
+        </label>
+        <label>Phone
+          <input type="tel" value={formData.contact_phone} onChange={(e) => handleChange("contact_phone", e.target.value)} placeholder="Enter phone number" />
+        </label>
+        <label>Estimated Value
+          <input type="number" step="0.01" value={formData.estimated_value} onChange={(e) => handleChange("estimated_value", e.target.value)} placeholder="0.00" />
+        </label>
+      </div>
+      <div className="modal-actions">
+        <button className="outline-button" onClick={onClose}>Cancel</button>
+        <button className="primary-button" disabled={busy || !formData.company_name.trim() || !formData.source.trim()} onClick={handleSubmit}>{busy ? "Creating..." : "Create Lead"}</button>
+      </div>
+    </Modal>
   );
 }
 
