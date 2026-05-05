@@ -3,6 +3,8 @@ import { AlertTriangle, Bell, LogOut } from "lucide-react";
 import { apiGet, apiPost, clearApiAuth, getApiSettings, unpackList } from "./Api/Client.js";
 import { LoginScreen, ProfileScreen } from "./Screens/AuthScreens.jsx";
 import { RouteRenderer } from "./Screens/AppScreens.jsx";
+import OfferAcceptanceScreen from "./Screens/OfferAcceptanceScreen.jsx";
+import { resolveActiveEmployee } from "./Screens/Shared/ScreenUtils.jsx"; // Forced reload
 import {
   ATGLogo,
   IconHome,
