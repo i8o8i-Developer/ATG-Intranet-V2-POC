@@ -358,6 +358,7 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (isPublicOfferRoute) return;
     const currentEmployee = resolveActiveEmployee(data);
     const nextEmployeeId = currentEmployee?.id ? String(currentEmployee.id) : "";
     if (nextEmployeeId && nextEmployeeId !== String(selectedEmployeeId || "")) {
@@ -366,7 +367,7 @@ function App() {
     if (!nextEmployeeId && selectedEmployeeId) {
       setSelectedEmployeeId("");
     }
-  }, [data.employees, data.me, selectedEmployeeId]);
+  }, [data.employees, data.me, selectedEmployeeId, isPublicOfferRoute]);
 
   useEffect(() => {
     if (!hasAuth || isLoginRoute) return;
@@ -381,6 +382,9 @@ function App() {
 
   const login = () => { setSettings(getApiSettings()); setReloadKey((v) => v + 1); navigate("/home/"); };
   const logout = () => { clearApiAuth(); setSettings(getApiSettings()); setReloadKey((v) => v + 1); navigate("/login/"); };
+
+  // Public offer acceptance — bypass auth, AppShell, and resolveActiveEmployee entirely
+  if (isPublicOfferRoute) return <OfferAcceptanceScreen />;
 
   if (!hasAuth || path.startsWith("/login")) return <LoginScreen settings={settings} onLogin={login} />;
 
