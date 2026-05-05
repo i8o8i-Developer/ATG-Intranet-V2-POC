@@ -339,9 +339,12 @@ function App() {
   const [reloadKey, setReloadKey] = useState(0);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
   const path = route.split("?")[0];
+
   const isLoginRoute = path.startsWith("/login");
+  // Public offer acceptance route — no auth needed
+  const isPublicOfferRoute = path.startsWith("/offer/accept/");
   const hasAuth = Boolean(settings.basicAuth?.username && settings.basicAuth?.password);
-  const { data, loading, errors, apiOnline, reload } = useIntranetData(reloadKey, hasAuth && !isLoginRoute);
+  const { data, loading, errors, apiOnline, reload } = useIntranetData(reloadKey, hasAuth && !isLoginRoute && !isPublicOfferRoute);
 
   useEffect(() => {
     const onPop = () => setRoute(window.location.pathname + window.location.search);
