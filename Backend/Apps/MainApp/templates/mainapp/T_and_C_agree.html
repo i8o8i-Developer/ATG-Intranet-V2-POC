@@ -1,0 +1,16 @@
+<style>
+    #offer-agree-btn {
+        border: 1px solid black;
+        border-radius: 5px;
+        background-color: green;
+        color: white;
+        line-height: 30px;
+    }
+</style>
+
+<form action="{% url 'nda' %}" method="POST">
+    {% csrf_token %}
+    <input type="checkbox" name="terms" id="terms" required> I {{username}}, accept the offer.
+    <br><br>
+    <button type="submit" name="submit" id="offer-agree-btn" value="I Agree offer">&nbsp;&nbsp; I Agree &nbsp;&nbsp;</button>
+</form>

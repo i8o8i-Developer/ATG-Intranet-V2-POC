@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { AlertTriangle, Edit3, Eye, EyeOff, LogIn, LogOut, ShieldCheck, UserRound } from "lucide-react";
 import { apiGet, apiPatch, clearApiAuth, saveApiSettings } from "../Api/Client.js";
 import { Modal } from "./Shared/ScreenComponents.jsx";
+import { resolveActiveEmployee } from "./Shared/ScreenUtils.jsx";
 
 export function LoginScreen({ settings, onLogin }) {
   const [form, setForm] = useState({
@@ -36,13 +37,19 @@ export function LoginScreen({ settings, onLogin }) {
     setSubmitting(true);
     setError("");
     try {
-      saveApiSettings({
+      const loginSettings = {
         apiBase: form.apiBase,
         tenantId: form.tenantId,
         workspaceId: form.workspaceId,
         basicAuth: { username: form.username, password: form.password },
+      };
+      saveApiSettings(loginSettings);
+      const currentUser = await apiGet("/Users/Auth/Me/");
+      saveApiSettings({
+        ...loginSettings,
+        tenantId: currentUser?.activeTenant?.id || form.tenantId,
+        workspaceId: currentUser?.activeWorkspace?.id || form.workspaceId,
       });
-      await apiGet("/Users/Auth/Me/");
       onLogin();
     } catch (loginError) {
       clearApiAuth();
@@ -92,7 +99,7 @@ export function LoginScreen({ settings, onLogin }) {
 export function ProfileScreen({ data, onLogout, reload }) {
   const [editOpen, setEditOpen] = useState(false);
   const user = data.me?.user || data.me?.account || data.me || {};
-  const employee = data.me?.employees?.[0] || (data.employees || []).find((item) => String(item.user) === String(user.id)) || (data.employees || [])[0] || {};
+  const employee = resolveActiveEmployee(data) || {};
   const fullName = employee.display_name || employee.displayName || user.fullName || user.full_name || user.username || "User";
   const initials = String(fullName).split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase() || "U";
   const employeeTasks = (data.tasks || []).filter((task) => String(task.owner || task.owner_id || task.assignee) === String(employee.id));
@@ -135,8 +142,8 @@ export function ProfileScreen({ data, onLogout, reload }) {
         <article className="profile-card">
           <header><ShieldCheck size={18} /><h2>Workspace Access</h2></header>
           <dl>
-            <div><dt>Tenant</dt><dd>{data.me?.tenant?.name || data.me?.tenant || "Default Tenant"}</dd></div>
-            <div><dt>Workspace</dt><dd>{data.me?.workspace?.name || data.me?.workspace || "Default Workspace"}</dd></div>
+            <div><dt>Tenant</dt><dd>{data.me?.activeTenant?.name || data.me?.tenant?.name || data.me?.tenant || "Default Tenant"}</dd></div>
+            <div><dt>Workspace</dt><dd>{data.me?.activeWorkspace?.name || data.me?.workspace?.name || data.me?.workspace || "Default Workspace"}</dd></div>
             <div><dt>Backend Session</dt><dd>Active</dd></div>
           </dl>
         </article>

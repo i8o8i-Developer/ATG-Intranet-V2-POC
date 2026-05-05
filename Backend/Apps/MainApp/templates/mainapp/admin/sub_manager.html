@@ -1,0 +1,10 @@
+{% extends 'admin/change_list.html' %}
+{% block object-tools %}
+    <h1>Instruction for creating Sub department Manager:-</h1>
+    <ul>
+        <li>By creating Sub manager the user will be automatically added in l3 marketing manager group</li>
+        <li>Same is applicable to l3 caller as well, just add sub department in caller profile in workin's section</li>
+    </ul>
+    
+    {{ block.super }}
+{% endblock object-tools %}

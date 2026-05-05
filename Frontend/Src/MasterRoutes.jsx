@@ -72,6 +72,7 @@ const McpScreen = lazy(() => import('./Screens/McpScreen'));
 const AdminChangePasswordScreen = lazy(() => import('./Screens/AdminChangePasswordScreen'));
 const AuthScreens = lazy(() => import('./Screens/AuthScreens'));
 const ConnectedSummaryScreen = lazy(() => import('./Screens/ConnectedSummaryScreen'));
+const OfferAcceptanceScreen = lazy(() => import('./Screens/OfferAcceptanceScreen'));
 
 // ============================================================================
 // PROTECTED ROUTE WRAPPER
@@ -107,6 +108,7 @@ const MasterRoutes = () => {
           <Route path="/login" element={<AuthScreens />} />
           <Route path="/register" element={<AuthScreens />} />
           <Route path="/forgot-password" element={<AuthScreens />} />
+          <Route path="/offer/accept/:token" element={<OfferAcceptanceScreen />} />
 
           {/* ========================================== */}
           {/* HOME / DASHBOARD */}

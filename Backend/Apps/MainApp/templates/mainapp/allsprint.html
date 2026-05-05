@@ -1,0 +1,22 @@
+{% extends "mainapp/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+{% load sortable_column %}
+{% block title %}
+Track
+{% endblock %}
+
+{% block content %}
+{% for i in all_departments.items %}
+   {{i}}
+      {% for kkey, kvalue in det.items %}
+         {% if kkey.department == i.1.0.0 %}
+         {% if kkey.sprint_name == i.1.0.1 %}
+            {{kvalue}}
+         {% endif %}
+         {% endif %}
+      {% endfor %}
+   <a href="{% url 'sprintdetail' i.1.0.0 i.1.0.1 %}">view detail</a>
+   <br><br><br>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,83 @@
+{% load static %}
+<html>
+    <head>
+        <title>Payslip for {{ paymentdata.payslip_month }}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+    </head>
+    <body>
+        <div class="verify container text-center">
+            <p class="text-left"><b>Date: {{ date }}</b></p>
+            {% if user_domain_name == "ATG" %}
+                <img src="https://i.postimg.cc/yxzRJPc4/ATG-logo-full-black.png" alt="Domain1 Logo" class="img-fluid" style="margin:10px">
+            {% elif user_domain_name == "Banao" %}
+                <img src="https://i.postimg.cc/TPgYyX91/logo-2-0-05.png" alt="Domain2 Logo" class="img-fluid" style="margin:10px; width: 411px; height: 150px; margin-bottom: -15px; margin-top:-20px;">
+            {% elif user_domain_name == "Bunny" %}
+                <img src="https://i.postimg.cc/9F0xcXmd/bunny-logo.jpg" alt="Domain3 Logo" class="img-fluid" style="margin:10px; width: 266px; height: 150px; margin-bottom: -15px; margin-top:-20px;">
+            {% else %}
+                <img src="{% static 'images/Logo.png' %}" alt="Default Logo">
+            {% endif %}
+            <br>
+            <br>
+            <div class="text-left">
+                <p style="float: left;">
+                    <b>{{ name }}</b><br>
+                    {{ position }}<br>
+                    {{ contact }}<br>
+                </p>
+                <p style="float: right;">
+                    <b>ATGWorld Networks Pvt. Ltd.</b><br>
+                    175 & 176, Dollars Colony Phase 4,<br>
+                    JP Nagar, Bannerghatta Road,<br>
+                    Bengaluru, KA, India - 560076<br>
+                </p>
+            </div>
+            <div style="clear: both;"></div>
+            <hr>
+            <h2><u>Payslip for {{ paymentdata.payslip_month }}</u></h2>
+            <br>
+            <div class="row justify-content-center">
+                <div class="col-auto">
+                    <table class="table table-borderless">
+                        <tbody>
+                            <tr>
+                                <th>Payment Month</th>
+                                <td>{{ paymentdata.payslip_month }}</td>
+                            </tr>
+                                {% if fixed_pay_bool %}
+
+                                {% else %}
+                                    <tr>
+                                        <th>Total Bugs</th>
+                                        <td>{{ paymentdata.task_count }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Bounty</th>
+                                        <td>{{ paymentdata.bounty }}</td>
+                                    </tr>
+                                {% endif %}
+                            <tr>
+                                <th>Calculated Pay</th>
+                                <td>{{ paymentdata.normal_pay }}</td>
+                            </tr>
+                            {% if paymentdata.bonus != 0 %}
+                                <tr>
+                                    <th>Bonus</th>
+                                    <td>{{ paymentdata.bonus }}</td>
+                                </tr>
+                            {% endif %}
+                            <tr>
+                                <th>Tax</th>
+                                <td>0</td>
+                            </tr>
+                            <tr>
+                                <th>Total Pay</th>
+                                <td>{{ paymentdata.total_pay }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

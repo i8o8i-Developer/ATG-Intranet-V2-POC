@@ -14,5 +14,6 @@ urlpatterns = [
 	path("api/content-templates/create-template/", views.ContentTemplateCreateLegacyAPIView.as_view(), name="html-create-template"),
 	path("api/content-templates/<int:pk>/render/", views.ContentTemplateRenderLegacyAPIView.as_view(), name="html-render-content-template"),
 	path("api/generic-html-templates/sync-gtm-template/", views.GenericHtmlTemplateSyncLegacyAPIView.as_view(), name="html-sync-gtm-template"),
+	path("api/generic-html-templates/sync-legacy-library/", views.GenericHtmlTemplateSyncLegacyLibraryAPIView.as_view(), name="html-sync-legacy-library"),
 	path("api/generic-html-templates/<int:pk>/render/", views.GenericHtmlTemplateRenderLegacyAPIView.as_view(), name="html-render-generic-template"),
 ] + router.urls

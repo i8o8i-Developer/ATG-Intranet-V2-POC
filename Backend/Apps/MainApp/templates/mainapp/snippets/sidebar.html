@@ -1,0 +1,948 @@
+{% load static %}
+{% load is_department_manager %}
+{% load query_transform %}
+<div class="sidebar">
+    <div class="company-name">
+        {% if request.user.is_authenticated %}
+        <div class="company-logo">
+            {% if user_domain_name == "ATG" %}
+                <img src="{% static 'images/atg_logo.png' %}" alt="Domain1 Logo">
+            {% elif user_domain_name == "Banao" %}
+                <img src="{% static 'images/banao_logo.png' %}" alt="Domain2 Logo">
+            {% elif user_domain_name == "Bunny" %}
+                <img src="{% static 'images/bunny_logo.png' %}" alt="Domain3 Logo">
+            {% else %}
+                <img src="{% static 'images/Logo.png' %}" alt="Default Logo">
+            {% endif %}
+        </div>
+        <div class="title">Intranet</div>
+        <a href="#!" class="profile-image" onclick="toggleUserProfileModal()">
+            {{ user.username|first|upper }}
+            </a>
+        </span>
+        <div id="userProfileModal" class="user-profile-relative-modal">
+            <ul>
+              
+                <li><a href="{% url 'profile' %}"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M4.49981 5.99975C6.15424 5.99975 7.49969 4.65431 7.49969 2.99988C7.49969 1.34544 6.15424 0 4.49981 0C2.84538 0 1.49994 1.34544 1.49994 2.99988C1.49994 4.65431 2.84538 5.99975 4.49981 5.99975ZM4.49981 0.999958C5.60277 0.999958 6.49973 1.89692 6.49973 2.99988C6.49973 4.10283 5.60277 4.99979 4.49981 4.99979C3.39686 4.99979 2.4999 4.10283 2.4999 2.99988C2.4999 1.89692 3.39686 0.999958 4.49981 0.999958ZM5.37478 8.10966C5.09079 8.03666 4.7963 7.99967 4.49981 7.99967C2.56989 7.99967 0.999958 9.5696 0.999958 11.4995C0.999958 11.7755 0.775968 11.9995 0.499979 11.9995C0.223991 11.9995 0 11.7755 0 11.4995C0 9.01862 2.01892 6.99971 4.49981 6.99971C4.8808 6.99971 5.25928 7.04721 5.62477 7.1417C5.89225 7.2107 6.05275 7.48319 5.98425 7.75068C5.91575 8.01817 5.64427 8.17866 5.37528 8.11016L5.37478 8.10966ZM11.56 5.93925C10.993 5.37228 10.0051 5.37228 9.43861 5.93925L6.08525 9.29261C5.70776 9.6701 5.49927 10.1726 5.49927 10.7071V11.5C5.49927 11.776 5.72326 12 5.99925 12H6.79222C7.32669 12 7.82867 11.7915 8.20616 11.414L11.5595 8.06066C11.843 7.77718 11.999 7.40069 11.999 6.99971C11.999 6.59872 11.843 6.22224 11.56 5.93925ZM10.8525 7.35319L7.49869 10.7066C7.3102 10.8955 7.05921 10.9995 6.79172 10.9995H6.49873V10.7066C6.49873 10.4396 6.60272 10.1886 6.79172 9.99958L10.1456 6.64622C10.3341 6.45723 10.6636 6.45723 10.8525 6.64622C10.947 6.74022 10.999 6.86571 10.999 6.99971C10.999 7.1337 10.947 7.2587 10.8525 7.35319Z"
+                                fill="#6D747A" />
+                        </svg>
+                        Profile</a></li>
+                <li><a href="{% url 'password_change' %}"><svg width="14" height="12" viewBox="0 0 14 12" fill="none"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M6.28571 6.85714C6.28571 7.17314 6.02971 7.42857 5.71429 7.42857H2.85714C1.28171 7.42857 0 6.14686 0 4.57143V2.85714C0 1.28171 1.28171 0 2.85714 0H10.8571C12.4326 0 13.7143 1.28171 13.7143 2.85714C13.7143 3.17314 13.4589 3.42857 13.1429 3.42857C12.8269 3.42857 12.5714 3.17314 12.5714 2.85714C12.5714 1.912 11.8023 1.14286 10.8571 1.14286H2.85714C1.912 1.14286 1.14286 1.912 1.14286 2.85714V4.57143C1.14286 5.51657 1.912 6.28571 2.85714 6.28571H5.71429C6.02971 6.28571 6.28571 6.54114 6.28571 6.85714ZM4.97543 2.45314C4.752 2.22971 4.39086 2.22971 4.16743 2.45314L3.71429 2.90629L3.26114 2.45314C3.03771 2.22971 2.67657 2.22971 2.45314 2.45314C2.22971 2.67657 2.22971 3.03771 2.45314 3.26114L2.90629 3.71429L2.45314 4.16743C2.22971 4.39086 2.22971 4.752 2.45314 4.97543C2.56457 5.08686 2.71086 5.14286 2.85714 5.14286C3.00343 5.14286 3.14971 5.08686 3.26114 4.97543L3.71429 4.52229L4.16743 4.97543C4.27886 5.08686 4.42514 5.14286 4.57143 5.14286C4.71771 5.14286 4.864 5.08686 4.97543 4.97543C5.19886 4.752 5.19886 4.39086 4.97543 4.16743L4.52229 3.71429L4.97543 3.26114C5.19886 3.03771 5.19886 2.67657 4.97543 2.45314ZM8.404 3.26114C8.62743 3.03771 8.62743 2.67657 8.404 2.45314C8.18057 2.22971 7.81943 2.22971 7.596 2.45314L7.14286 2.90629L6.68971 2.45314C6.46629 2.22971 6.10514 2.22971 5.88171 2.45314C5.65829 2.67657 5.65829 3.03771 5.88171 3.26114L6.33486 3.71429L5.88171 4.16743C5.65829 4.39086 5.65829 4.752 5.88171 4.97543C5.99314 5.08686 6.13943 5.14286 6.28571 5.14286C6.432 5.14286 6.57829 5.08686 6.68971 4.97543L8.404 3.26114ZM13.7143 8.57143V9.71429C13.7143 10.9749 12.6891 12 11.4286 12H9.14286C7.88229 12 6.85714 10.9749 6.85714 9.71429V8.57143C6.85714 7.72914 7.32 7 8 6.60343V5.71429C8 4.45371 9.02514 3.42857 10.2857 3.42857C11.5463 3.42857 12.5714 4.45371 12.5714 5.71429V6.60343C13.2514 7 13.7143 7.72914 13.7143 8.57143ZM9.14286 6.28571H11.4286V5.71429C11.4286 5.084 10.916 4.57143 10.2857 4.57143C9.65543 4.57143 9.14286 5.084 9.14286 5.71429V6.28571ZM12.5714 8.57143C12.5714 7.94114 12.0589 7.42857 11.4286 7.42857H9.14286C8.51257 7.42857 8 7.94114 8 8.57143V9.71429C8 10.3446 8.51257 10.8571 9.14286 10.8571H11.4286C12.0589 10.8571 12.5714 10.3446 12.5714 9.71429V8.57143ZM10.2857 8.28572C9.81257 8.28572 9.42857 8.66971 9.42857 9.14286C9.42857 9.616 9.81257 10 10.2857 10C10.7589 10 11.1429 9.616 11.1429 9.14286C11.1429 8.66971 10.7589 8.28572 10.2857 8.28572Z"
+                                fill="#6D747A" />
+                        </svg>
+                        Change Password</a></li>
+                <div style="border-top: 1px solid #EBEDF0;"></div>
+                <li>
+                    <a href="{% url 'logout' %}"><svg width="12" height="11" viewBox="0 0 12 11" fill="none"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M6.00033 9.66732C5.72418 9.66732 5.50033 9.89117 5.50033 10.1673C5.50033 10.4435 5.72418 10.6673 6.00033 10.6673H10.0003C10.6447 10.6673 11.167 10.145 11.167 9.50065V1.50065C11.167 0.856319 10.6447 0.333984 10.0003 0.333984H6.00033C5.72418 0.333984 5.50033 0.557843 5.50033 0.833985C5.50033 1.11013 5.72418 1.33398 6.00033 1.33398L10.0003 1.33398C10.0924 1.33398 10.167 1.4086 10.167 1.50065V9.50065C10.167 9.5927 10.0924 9.66732 10.0003 9.66732H6.00033Z"
+                                fill="#CC0000" />
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                d="M7.66904 7.07746C8.12928 7.07746 8.50238 6.70437 8.50238 6.24413V4.75045C8.50238 4.29022 8.12928 3.91712 7.66904 3.91712L4.59398 3.91712C4.58963 3.86817 4.58508 3.81923 4.58032 3.77031L4.5443 3.39972C4.48935 2.83431 3.88895 2.4957 3.37667 2.74121C2.28718 3.26334 1.30089 3.97784 0.465229 4.85034L0.399096 4.91939C0.0896243 5.24251 0.0896243 5.75207 0.399095 6.07518L0.465229 6.14423C1.30089 7.01673 2.28718 7.73123 3.37667 8.25336C3.88895 8.49887 4.48935 8.16026 4.5443 7.59486L4.58032 7.22427C4.58508 7.17535 4.58963 7.12641 4.59398 7.07746H7.66904ZM4.1304 6.07746C3.95282 6.07746 3.79583 6.17032 3.70705 6.3113C3.66381 6.37996 3.63675 6.46003 3.63137 6.54634C3.61927 6.74026 3.60382 6.93402 3.58501 7.12753L3.57456 7.23509C2.88386 6.87914 2.24243 6.43587 1.66591 5.91659C1.51634 5.78187 1.37114 5.64204 1.23058 5.49729C1.91294 4.79458 2.70467 4.20778 3.57456 3.75948L3.58501 3.86704C3.60382 4.06056 3.61927 4.25432 3.63137 4.44824C3.6478 4.71179 3.86634 4.91712 4.1304 4.91712H7.50238V6.07746H4.1304Z"
+                                fill="#CC0000" />
+                        </svg>
+                        Logout</a>
+                </li>
+                <li>
+                    <a href="{% url 'resign' %}" class="logout" style=" color: #DD1D43;;"><svg width="16" height="17" viewBox="0 0 16 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M7.5 15C11.0899 15 14 12.0899 14 8.5C14 4.91015 11.0899 2 7.5 2C3.91015 2 1 4.91015 1 8.5C1 12.0899 3.91015 15 7.5 15Z" stroke="#DD1D43" stroke-width="1.23" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M7.66797 4.66797V8.66797L10.3346 10.0013" stroke="#DD1D43" stroke-width="1.23" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>Resign</a>
+                </li>
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+    <div class="sidebar-element">
+        {% if request.user.is_authenticated %}
+
+    <a href="{% url 'homepage' %}" class="{% if Home %}active{% endif %}">
+        <div class="menu-home">
+            <!-- <img src="./assets/home.png" alt="homeicon"> -->
+           
+                <!-- Use SVG or Image as per your design -->
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M2 6.00065L8 1.33398L14 6.00065V13.334C14 13.6876 13.8595 14.0267 13.6095 14.2768C13.3594 14.5268 13.0203 14.6673 12.6667 14.6673H3.33333C2.97971 14.6673 2.64057 14.5268 2.39052 14.2768C2.14048 14.0267 2 13.6876 2 13.334V6.00065Z"
+                        stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M6 14.6667V8H10V14.6667" stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+                
+                <a href="{% url 'homepage' %}" class="menu-home-text">Home</a>     
+           
+        </div>
+    </a>
+    {% if 'workflow_intelligence:dashboard'|namespace_exists %}
+    <a href="{% url 'workflow_intelligence:dashboard' %}" class="{% if WorkflowIntelligence %}active{% endif %}">
+        <div class="menu-home">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2 13.3333H14" stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M3.33301 10.6667L6.22231 7.77734L8.44412 9.99915L12.6663 5.33301" stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M10.667 5.33301H12.667V7.33301" stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Workflow Intelligence</span>
+        </div>
+    </a>
+    {% endif %}
+    {% if is_user_spm or is_user_fulltime %}
+    <a href="{% url 'hrms' %}" class="{% if HRMS %}active{% endif %}">
+        <div class="menu-home">
+            <!-- <img src="./assets/home.png" alt="homeicon"> -->
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g clip-path="url(#clip0_4262_3187)">
+                <path d="M14 1.42858V2.91667C14 3.56125 13.4779 4.08333 12.8333 4.08333H11.0833C10.4387 4.08333 9.91667 3.56125 9.91667 2.91667V1.16667C9.91667 0.522083 10.4387 0 11.0833 0H12.8333C13.0987 0 13.3402 0.0921667 13.5362 0.2415L11.9922 1.82467L11.3447 1.12758L10.5356 1.96817L11.4987 2.99833C11.7641 3.27717 12.208 3.27892 12.4752 3.00242L14 1.42858ZM11.4992 7.95667L10.5362 6.9265L11.3452 6.08592L11.9927 6.783L13.5368 5.19983C13.3408 5.0505 13.0987 4.95833 12.8339 4.95833H11.0839C10.4393 4.95833 9.91725 5.48042 9.91725 6.125V7.875C9.91725 8.51958 10.4393 9.04167 11.0839 9.04167H12.8339C13.4785 9.04167 14.0006 8.51958 14.0006 7.875V6.38692L12.4763 7.96075C12.2086 8.23725 11.7647 8.2355 11.4998 7.95667H11.4992ZM11.4992 12.915L10.5362 11.8848L11.3452 11.0442L11.9927 11.7413L13.5368 10.1582C13.3408 10.0088 13.0987 9.91667 12.8339 9.91667H11.0839C10.4393 9.91667 9.91725 10.4387 9.91725 11.0833V12.8333C9.91725 13.4779 10.4393 14 11.0839 14H12.8339C13.4785 14 14.0006 13.4779 14.0006 12.8333V11.3452L12.4763 12.9191C12.2086 13.1956 11.7647 13.1938 11.4998 12.915H11.4992ZM2.625 2.91667C3.43058 2.91667 4.08333 2.26392 4.08333 1.45833C4.08333 0.65275 3.43058 0 2.625 0C1.81942 0 1.16667 0.65275 1.16667 1.45833C1.16667 2.26392 1.81942 2.91667 2.625 2.91667ZM5.25 5.25V9.91667H4.08333V14H2.91667V9.91667H2.33333V14H1.16667V9.91667H0V5.25C0 4.28517 0.785167 3.5 1.75 3.5H3.5C4.46483 3.5 5.25 4.28517 5.25 5.25ZM4.08333 5.25C4.08333 4.928 3.82142 4.66667 3.5 4.66667H1.75C1.42858 4.66667 1.16667 4.928 1.16667 5.25V8.75H4.08333V5.25ZM6.41667 2.625V11.375C6.41667 12.1794 7.07117 12.8333 7.875 12.8333H8.75V11.6667H7.875C7.714 11.6667 7.58333 11.5354 7.58333 11.375V7.58333H8.75V6.41667H7.58333V2.625C7.58333 2.46458 7.714 2.33333 7.875 2.33333H8.75V1.16667H7.875C7.07117 1.16667 6.41667 1.82058 6.41667 2.625Z" fill="#6D747A"/>
+                </g>
+                <defs>
+                <clipPath id="clip0_4262_3187">
+                <rect width="14" height="14" fill="white"/>
+                </clipPath>
+                </defs>
+                </svg>
+                
+            <span>HRMS</span>
+        </div>
+    </a>
+{% endif %}
+    {% if is_user_spm or is_user_fulltime %}
+    <a href="{% url 'pass-management' %}" class="{% if HRMS %}active{% endif %}">
+        <div class="menu-home">
+            <!-- <img src="./assets/home.png" alt="homeicon"> -->
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g clip-path="url(#clip0_4262_3187)">
+                <path d="M14 1.42858V2.91667C14 3.56125 13.4779 4.08333 12.8333 4.08333H11.0833C10.4387 4.08333 9.91667 3.56125 9.91667 2.91667V1.16667C9.91667 0.522083 10.4387 0 11.0833 0H12.8333C13.0987 0 13.3402 0.0921667 13.5362 0.2415L11.9922 1.82467L11.3447 1.12758L10.5356 1.96817L11.4987 2.99833C11.7641 3.27717 12.208 3.27892 12.4752 3.00242L14 1.42858ZM11.4992 7.95667L10.5362 6.9265L11.3452 6.08592L11.9927 6.783L13.5368 5.19983C13.3408 5.0505 13.0987 4.95833 12.8339 4.95833H11.0839C10.4393 4.95833 9.91725 5.48042 9.91725 6.125V7.875C9.91725 8.51958 10.4393 9.04167 11.0839 9.04167H12.8339C13.4785 9.04167 14.0006 8.51958 14.0006 7.875V6.38692L12.4763 7.96075C12.2086 8.23725 11.7647 8.2355 11.4998 7.95667H11.4992ZM11.4992 12.915L10.5362 11.8848L11.3452 11.0442L11.9927 11.7413L13.5368 10.1582C13.3408 10.0088 13.0987 9.91667 12.8339 9.91667H11.0839C10.4393 9.91667 9.91725 10.4387 9.91725 11.0833V12.8333C9.91725 13.4779 10.4393 14 11.0839 14H12.8339C13.4785 14 14.0006 13.4779 14.0006 12.8333V11.3452L12.4763 12.9191C12.2086 13.1956 11.7647 13.1938 11.4998 12.915H11.4992ZM2.625 2.91667C3.43058 2.91667 4.08333 2.26392 4.08333 1.45833C4.08333 0.65275 3.43058 0 2.625 0C1.81942 0 1.16667 0.65275 1.16667 1.45833C1.16667 2.26392 1.81942 2.91667 2.625 2.91667ZM5.25 5.25V9.91667H4.08333V14H2.91667V9.91667H2.33333V14H1.16667V9.91667H0V5.25C0 4.28517 0.785167 3.5 1.75 3.5H3.5C4.46483 3.5 5.25 4.28517 5.25 5.25ZM4.08333 5.25C4.08333 4.928 3.82142 4.66667 3.5 4.66667H1.75C1.42858 4.66667 1.16667 4.928 1.16667 5.25V8.75H4.08333V5.25ZM6.41667 2.625V11.375C6.41667 12.1794 7.07117 12.8333 7.875 12.8333H8.75V11.6667H7.875C7.714 11.6667 7.58333 11.5354 7.58333 11.375V7.58333H8.75V6.41667H7.58333V2.625C7.58333 2.46458 7.714 2.33333 7.875 2.33333H8.75V1.16667H7.875C7.07117 1.16667 6.41667 1.82058 6.41667 2.625Z" fill="#6D747A"/>
+                </g>
+                <defs>
+                <clipPath id="clip0_4262_3187">
+                <rect width="14" height="14" fill="white"/>
+                </clipPath>
+                </defs>
+                </svg>
+                
+            <span>Password management</span>
+        </div>
+    </a>
+{% endif %}
+
+    {% if is_lms_manager %}
+    <a href="{% url 'lms' %}" >
+        <div class="menu-home">
+            <!-- <img src="./assets/home.png" alt="homeicon"> -->
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g clip-path="url(#clip0_4262_3187)">
+                <path d="M14 1.42858V2.91667C14 3.56125 13.4779 4.08333 12.8333 4.08333H11.0833C10.4387 4.08333 9.91667 3.56125 9.91667 2.91667V1.16667C9.91667 0.522083 10.4387 0 11.0833 0H12.8333C13.0987 0 13.3402 0.0921667 13.5362 0.2415L11.9922 1.82467L11.3447 1.12758L10.5356 1.96817L11.4987 2.99833C11.7641 3.27717 12.208 3.27892 12.4752 3.00242L14 1.42858ZM11.4992 7.95667L10.5362 6.9265L11.3452 6.08592L11.9927 6.783L13.5368 5.19983C13.3408 5.0505 13.0987 4.95833 12.8339 4.95833H11.0839C10.4393 4.95833 9.91725 5.48042 9.91725 6.125V7.875C9.91725 8.51958 10.4393 9.04167 11.0839 9.04167H12.8339C13.4785 9.04167 14.0006 8.51958 14.0006 7.875V6.38692L12.4763 7.96075C12.2086 8.23725 11.7647 8.2355 11.4998 7.95667H11.4992ZM11.4992 12.915L10.5362 11.8848L11.3452 11.0442L11.9927 11.7413L13.5368 10.1582C13.3408 10.0088 13.0987 9.91667 12.8339 9.91667H11.0839C10.4393 9.91667 9.91725 10.4387 9.91725 11.0833V12.8333C9.91725 13.4779 10.4393 14 11.0839 14H12.8339C13.4785 14 14.0006 13.4779 14.0006 12.8333V11.3452L12.4763 12.9191C12.2086 13.1956 11.7647 13.1938 11.4998 12.915H11.4992ZM2.625 2.91667C3.43058 2.91667 4.08333 2.26392 4.08333 1.45833C4.08333 0.65275 3.43058 0 2.625 0C1.81942 0 1.16667 0.65275 1.16667 1.45833C1.16667 2.26392 1.81942 2.91667 2.625 2.91667ZM5.25 5.25V9.91667H4.08333V14H2.91667V9.91667H2.33333V14H1.16667V9.91667H0V5.25C0 4.28517 0.785167 3.5 1.75 3.5H3.5C4.46483 3.5 5.25 4.28517 5.25 5.25ZM4.08333 5.25C4.08333 4.928 3.82142 4.66667 3.5 4.66667H1.75C1.42858 4.66667 1.16667 4.928 1.16667 5.25V8.75H4.08333V5.25ZM6.41667 2.625V11.375C6.41667 12.1794 7.07117 12.8333 7.875 12.8333H8.75V11.6667H7.875C7.714 11.6667 7.58333 11.5354 7.58333 11.375V7.58333H8.75V6.41667H7.58333V2.625C7.58333 2.46458 7.714 2.33333 7.875 2.33333H8.75V1.16667H7.875C7.07117 1.16667 6.41667 1.82058 6.41667 2.625Z" fill="#6D747A"/>
+                </g>
+                <defs>
+                <clipPath id="clip0_4262_3187">
+                <rect width="14" height="14" fill="white"/>
+                </clipPath>
+                </defs>
+                </svg>
+                
+            <span>LMS</span>
+        </div>
+    </a>
+{% endif %}
+
+
+        <div class="menu-development">
+            <svg width="16" height="25" viewBox="0 0 16 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g clip-path="url(#clip0_2378_1023)">
+                    <path
+                        d="M4.66667 4.66667V2H2.33333C1.04667 2 0 3.04667 0 4.33333V15.6667C0 16.9533 1.04667 18 2.33333 18H16V4.66667H4.66667ZM1.33333 4.33333C1.33333 3.782 1.782 3.33333 2.33333 3.33333H3.33333V13.3333H2.33333C1.976 13.3333 1.63667 13.4147 1.33333 13.5587V4.33333ZM14.6667 16.6667H2.33333C1.782 16.6667 1.33333 16.218 1.33333 15.6667C1.33333 15.1153 1.782 14.6667 2.33333 14.6667H4.66667V6H14.6667V16.6667ZM13.3333 14.6667H6V7.33333H7.33333V13.3333H9.33333V10.6667H10.6667V13.3333H12V8.66667H9.33333V7.33333H13.3333V14.6667Z"
+                        fill="#6D747A" />
+                </g>
+                <defs>
+                    <clipPath id="clip0_2378_1023">
+                        <rect width="16" height="16" fill="white" transform="translate(0 2)" />
+                    </clipPath>
+                </defs>
+            </svg>
+            
+            <span id="development-project" {% if is_user_spm or is_user_business_analyst or is_user_fulltime %}onclick="toggle('SPM')"{% else %}onclick="toggle('PM')"{% endif %}>Development Project
+
+                <svg id="development-project-arrow" width="12" height="12" viewBox="0 0 10 7" fill="none"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 1.5L5 5.5L9 1.5" stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+
+            </span>
+
+        </div>
+            
+        
+        <!-- Product Manager Developemnt -->
+        <div id="pm-development" style="display: none;">
+            <div class="menu-development-dropdown pm-dropdown">
+                {% if is_user_manager %}
+                <a href="{% url 'project:project-onboarding' %}?type=development"  data-page="projectDashboard.html">
+                
+                <div class="menu-development-addProject">
+
+                    <svg width="10" height="11" viewBox="0 0 10 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M9.66634 6.16732H5.66634V10.1673H4.33301V6.16732H0.333008V4.83398H4.33301V0.833984H5.66634V4.83398H9.66634V6.16732Z"
+                            fill="#6D747A" />
+                    </svg>
+
+
+                    <span> Add
+                            New
+                            Projects</span>
+                </div>
+                
+                </a>
+            {% endif %}
+                {% if is_user_manager %}
+                <div class="pm-project-list" style="display: flex; padding-left:10px;  justify-content: space-between; width: 100%;">
+                    {% if pm_projects.dev_projects %}
+                        {% for proj in pm_projects.dev_projects %}
+                        <div><a href="{% url 'project:project-dashboard' pk=proj.id name=proj.project_name %}" style="color:#6D747A;" data-page="projectDashboard.html">{{ proj.project_name }}</a></div>
+                        {% endfor %}
+                    {% else %}
+                        <div> No Dev Projects </div>
+                    {% endif %}
+                
+                </div>
+                {% else %}
+                <div class="pm-project-list" style="display: flex; padding-left:10px;  justify-content: space-between; width: 100%;">
+                    {% if user_projects.dev_projects %}
+                        {% for proj in user_projects.dev_projects %}
+                        <div><a href="{% url 'project:project-dashboard' pk=proj.id name=proj.project_name%}" style="color:#6D747A;" data-page="projectDashboard.html">{{ proj.project_name }}</a></div>
+                        {% endfor %}
+                    {% else %}
+                        <div> No Dev Projects </div>
+                    {% endif %}
+                         
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <!-- Product Manager Developemnt  -->
+
+
+        <!-- Senior Product Manager Development-->
+
+        <div id="spm-development" style="display: none;">
+            <div class="menu-development-dropdown spm-dropdown">
+                <a href="{% url 'project:project-onboarding' %}?type=development"  data-page="projectDashboard.html">
+                    <div class="menu-development-addProject">
+
+                        <svg width="10" height="11" viewBox="0 0 10 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M9.66634 6.16732H5.66634V10.1673H4.33301V6.16732H0.333008V4.83398H4.33301V0.833984H5.66634V4.83398H9.66634V6.16732Z"
+                                fill="#6D747A" />
+                        </svg>
+
+
+                        <span> Add
+                                New
+                                Projects </span>
+                    </div>
+                 </a>
+                <div class="project-hierarchy" style="display: flex; padding-left:10px; justify-content: space-between; width: 100%;">
+                    {% if spm_projects.dev_projects_by_manager%}
+                    <div class="person" >
+                        {% for proj in spm_projects.dev_projects_by_manager %}
+                        <div class="person-header" style="align-items: center; justify-content: space-between;"><a href="{% url 'project:project-dashboard' pk=proj.id name=proj.project_name%}" style="color:#6D747A;" data-page="projectDashboard.html">{{ proj.project_name }}</a></div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class = "person"> <div class="person-header" style="align-items: center; justify-content: space-between;"> <span> No Dev Projects </span> </div> </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Senior Product Manager  Developemnt -->
+
+        <!-- Marketing -->
+       
+        <div class="menu-marketing">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g clip-path="url(#clip0_2396_1179)">
+                    <path
+                        d="M16 12.666V2.33268C16 1.41402 15.252 0.666016 14.3333 0.666016H1.66667C0.748 0.666016 0 1.41402 0 2.33268V12.666H7.33333V13.9993H4V15.3327H12V13.9993H8.66667V12.666H16ZM1.33333 2.33268C1.33333 2.14868 1.48267 1.99935 1.66667 1.99935H14.3333C14.5173 1.99935 14.6667 2.14868 14.6667 2.33268V11.3327H1.33333V2.33268ZM13.3333 4.33268V7.31802H12V5.60935L8.564 9.04535L6.564 7.04535L3.71467 9.89468L2.772 8.95202L6.564 5.16002L8.564 7.16002L11.0573 4.66668H9.34867V3.33335H12.334C12.8853 3.33335 13.334 3.78202 13.334 4.33335L13.3333 4.33268Z"
+                        fill="#6D747A" />
+                </g>
+                <defs>
+                    <clipPath id="clip0_2396_1179">
+                        <rect width="16" height="16" fill="white" />
+                    </clipPath>
+                </defs>
+            </svg>
+            
+            <span id="marketing-project" {% if is_user_spm or is_user_business_analyst %}onclick="toggleMarketing('SPM')"{% else %}onclick="toggleMarketing('PM')"{% endif %}> Marketing Project
+
+                <svg id="marketing-project-arrow" width="12" height="12" viewBox="0 0 10 7" fill="none"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 1.5L5 5.5L9 1.5" stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+
+            </span>
+
+        </div>
+     
+        <!-- Product Manager Developemnt -->
+        <div id="pm-marketing" style="display: none;">
+            <div class="menu-marketing-dropdown pm-dropdown-marketing">
+                {% if is_user_manager %}
+                <a href="{% url 'project:project-onboarding' %}?type=marketing"  data-page="projectDashboard.html">
+                <div class="menu-marketing-addProject">
+
+                    <svg width="10" height="11" viewBox="0 0 10 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M9.66634 6.16732H5.66634V10.1673H4.33301V6.16732H0.333008V4.83398H4.33301V0.833984H5.66634V4.83398H9.66634V6.16732Z"
+                            fill="#6D747A" />
+                    </svg>
+
+
+                    <span> Add
+                            New
+                            Projects </span>
+                </div>
+            </a>
+            {% endif %}
+                
+                {% if is_user_manager %}
+                <div class="pm-project-list-marketing" style="display: flex; padding-left:10px; justify-content: space-between; width: 100%;">
+                    {% if pm_projects.marketing_projects %}
+                        {% for proj in pm_projects.marketing_projects %}
+                            <div><a href="{% url 'project:project-dashboard' pk=proj.id name=proj.project_name%}" style="color:#6D747A;" data-page="projectDashboard.html">{{ proj.project_name }}</a></div>
+                        {% endfor %}
+                    {% else %}
+                        <div>No marketing projects.</div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="pm-project-list-marketing" style="display: flex; padding-left:10px; justify-content: space-between; width: 100%;">
+                    {% if user_projects.marketing_projects %}
+                        {% for proj in user_projects.marketing_projects %}
+                            <div><a href="{% url 'project:project-dashboard' pk=proj.id name=proj.project_name%}" style="color:#6D747A;" data-page="projectDashboard.html">{{ proj.project_name }}</a></div>
+                        {% endfor %}
+                    {% else %}
+                        <div>No marketing projects.</div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <!-- Product Manager Developemnt  -->
+
+
+        <!-- Senior Product Manager Development-->
+
+        <div id="spm-marketing" style="display: none;">
+            <div class="menu-marketing-dropdown spm-dropdown-marketing">
+                <a href="{% url 'project:project-onboarding' %}?type=marketing"  data-page="projectDashboard.html">
+                    <div class="menu-marketing-addProject">
+
+                        <svg width="10" height="11" viewBox="0 0 10 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M9.66634 6.16732H5.66634V10.1673H4.33301V6.16732H0.333008V4.83398H4.33301V0.833984H5.66634V4.83398H9.66634V6.16732Z"
+                                fill="#6D747A" />
+                        </svg>
+
+
+                        <span> Add
+                                New
+                                Projects </span>
+                    </div>
+                 </a>
+
+                <div class="project-hierarchy-marketing" style="display: flex; padding-left:10px;  justify-content: space-between; width: 100%;">
+                    {% if spm_projects.marketing_projects_by_manager%}
+                    <div class="person" >
+                        {% for proj in spm_projects.marketing_projects_by_manager %}
+                        <div class="person-header" style="align-items: center; justify-content: space-between;"><a href="{% url 'project:project-dashboard' pk=proj.id name=proj.project_name%}" style="color:#6D747A;" data-page="projectDashboard.html">{{ proj.project_name }}</a></div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class = "person"> <div class="person-header" style="align-items: center; justify-content: space-between;"> <span> No Marketing Projects </span> </div> </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Senior Product Manager  Developemnt -->
+
+
+
+        <!-- <div class="menu-marketing-dropdown">
+           
+            <svg width="10" height="11" viewBox="0 0 10 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9.66634 6.16732H5.66634V10.1673H4.33301V6.16732H0.333008V4.83398H4.33301V0.833984H5.66634V4.83398H9.66634V6.16732Z" fill="#6D747A"/>
+                </svg>
+                
+                
+                
+                <span> Add New Projects</span>
+        </div>
+        <div class="menu-marketing-dropdown">
+           
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g clip-path="url(#clip0_2378_1038)">
+                <path d="M14.9897 7.31571L7.99968 11.5104L1.00967 7.31571C0.858059 7.22474 0.676516 7.19773 0.504982 7.24061C0.333449 7.28349 0.185977 7.39276 0.0950075 7.54438C0.00403825 7.69599 -0.0229762 7.87754 0.0199072 8.04907C0.0627905 8.2206 0.172059 8.36807 0.323674 8.45904L7.65701 12.859C7.7607 12.9213 7.87938 12.9543 8.00034 12.9543C8.1213 12.9543 8.23999 12.9213 8.34368 12.859L15.677 8.45904C15.8286 8.36807 15.9379 8.2206 15.9808 8.04907C16.0237 7.87754 15.9966 7.69599 15.9057 7.54438C15.8147 7.39276 15.6672 7.28349 15.4957 7.24061C15.3242 7.19773 15.1426 7.22474 14.991 7.31571H14.9897Z" fill="#6D747A"/>
+                <path d="M14.9897 10.3626L7.99967 14.5566L1.00967 10.3626C0.9346 10.3175 0.851391 10.2877 0.764795 10.2748C0.6782 10.262 0.589915 10.2663 0.50498 10.2875C0.420046 10.3087 0.340125 10.3465 0.269781 10.3986C0.199438 10.4507 0.140049 10.5162 0.0950055 10.5913C0.0499621 10.6663 0.0201464 10.7495 0.00726063 10.8361C-0.00562511 10.9227 -0.00132848 11.011 0.0199052 11.0959C0.0627885 11.2675 0.172057 11.4149 0.323672 11.5059L7.65701 15.9059C7.76069 15.9682 7.87938 16.0011 8.00034 16.0011C8.1213 16.0011 8.23998 15.9682 8.34367 15.9059L15.677 11.5059C15.8286 11.4149 15.9379 11.2675 15.9808 11.0959C16.0237 10.9244 15.9966 10.7429 15.9057 10.5913C15.8147 10.4396 15.6672 10.3304 15.4957 10.2875C15.3242 10.2446 15.1426 10.2716 14.991 10.3626H14.9897Z" fill="#6D747A"/>
+                <path d="M7.99979 9.84935C7.64018 9.84916 7.28738 9.75122 6.97912 9.56602L0.323122 5.57202C0.224554 5.51275 0.142996 5.42899 0.0863762 5.32888C0.0297562 5.22876 0 5.1157 0 5.00069C0 4.88567 0.0297562 4.77261 0.0863762 4.6725C0.142996 4.57239 0.224554 4.48862 0.323122 4.42936L6.97912 0.435355C7.28737 0.250174 7.64019 0.152344 7.99979 0.152344C8.35939 0.152344 8.71221 0.250174 9.02046 0.435355L15.6765 4.42936C15.775 4.48862 15.8566 4.57239 15.9132 4.6725C15.9698 4.77261 15.9996 4.88567 15.9996 5.00069C15.9996 5.1157 15.9698 5.22876 15.9132 5.32888C15.8566 5.42899 15.775 5.51275 15.6765 5.57202L9.02046 9.56602C8.7122 9.75122 8.3594 9.84916 7.99979 9.84935ZM1.96246 5.00069L7.66646 8.42269C7.7672 8.48295 7.8824 8.51478 7.99979 8.51478C8.11718 8.51478 8.23238 8.48295 8.33312 8.42269L14.0371 5.00069L8.33312 1.57869C8.23238 1.51843 8.11718 1.4866 7.99979 1.4866C7.8824 1.4866 7.7672 1.51843 7.66646 1.57869L1.96246 5.00069Z" fill="#6D747A"/>
+                </g>
+                <defs>
+                <clipPath id="clip0_2378_1038">
+                <rect width="16" height="16" fill="white"/>
+                </clipPath>
+                </defs>
+                </svg>
+                <span> All Projects</span>
+        </div>
+        <div class="menu-marketing-dropdown">
+           
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M2.25 3.75C2.25 2.92157 2.92157 2.25 3.75 2.25H14.25C15.0785 2.25 15.75 2.92157 15.75 3.75V14.25C15.75 15.0785 15.0785 15.75 14.25 15.75H3.75C2.92157 15.75 2.25 15.0785 2.25 14.25V3.75ZM14.25 3.75H3.75V6H14.25V3.75ZM3.75 14.25V7.5H6.75V14.25H3.75ZM8.25 14.25H14.25V7.5H8.25V14.25Z" fill="#6D747A"/>
+                </svg>
+                
+                <span> Project Dashboard</span>
+        </div> -->
+        <a href="{% url 'docs_home' %}" target ="_blank">
+        <div class="menu-documents">
+
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                    d="M9.33366 1.33398H4.00033C3.6467 1.33398 3.30756 1.47446 3.05752 1.72451C2.80747 1.97456 2.66699 2.3137 2.66699 2.66732V13.334C2.66699 13.6876 2.80747 14.0267 3.05752 14.2768C3.30756 14.5268 3.6467 14.6673 4.00033 14.6673H12.0003C12.3539 14.6673 12.6931 14.5268 12.9431 14.2768C13.1932 14.0267 13.3337 13.6876 13.3337 13.334V5.33398L9.33366 1.33398Z"
+                    stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M9.33301 1.33398V5.33398H13.333" stroke="#6D747A" stroke-width="1.33333"
+                    stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M10.6663 8.66602H5.33301" stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                <path d="M10.6663 11.334H5.33301" stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                <path d="M6.66634 6H5.99967H5.33301" stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round"
+                    stroke-linejoin="round" />
+            </svg>
+
+            <span> Documents</span>
+        </div>
+        </a>
+        <a href="{% url 'feedback_page' %}">
+            <div class="menu-documents">
+    
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M9.33366 1.33398H4.00033C3.6467 1.33398 3.30756 1.47446 3.05752 1.72451C2.80747 1.97456 2.66699 2.3137 2.66699 2.66732V13.334C2.66699 13.6876 2.80747 14.0267 3.05752 14.2768C3.30756 14.5268 3.6467 14.6673 4.00033 14.6673H12.0003C12.3539 14.6673 12.6931 14.5268 12.9431 14.2768C13.1932 14.0267 13.3337 13.6876 13.3337 13.334V5.33398L9.33366 1.33398Z"
+                        stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M9.33301 1.33398V5.33398H13.333" stroke="#6D747A" stroke-width="1.33333"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M10.6663 8.66602H5.33301" stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    <path d="M10.6663 11.334H5.33301" stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    <path d="M6.66634 6H5.99967H5.33301" stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+    
+                <span> Provide Feedback</span>
+            </div>
+            </a>
+        <a href="{% url 'Leave' %}" class="{% if Leave %}active{% endif %}">
+        <div class="menu-leaves">
+
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                    d="M12.6667 2.66602H3.33333C2.59695 2.66602 2 3.26297 2 3.99935V13.3327C2 14.0691 2.59695 14.666 3.33333 14.666H12.6667C13.403 14.666 14 14.0691 14 13.3327V3.99935C14 3.26297 13.403 2.66602 12.6667 2.66602Z"
+                    stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M10.667 1.33398V4.00065" stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                <path d="M5.33301 1.33398V4.00065" stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                <path d="M2 6.66602H14" stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round"
+                    stroke-linejoin="round" />
+            </svg>
+
+            <span> Leaves</span>
+        </div>
+    </a>
+    <a href="{% url 'Payroll' %}" class="{% if Payslips %}active{% endif %}">
+        <div class="menu-payslips">
+
+            <svg width="16" height="22" viewBox="0 0 16 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                    d="M14.4167 14.6667C14.4167 15.6315 13.6315 16.4167 12.6667 16.4167V17H11.5V16.4167C10.5352 16.4167 9.75 15.6315 9.75 14.6667H10.9167C10.9167 14.9881 11.178 15.25 11.5 15.25H12.6667C12.9887 15.25 13.25 14.9881 13.25 14.6667C13.25 14.4462 13.0919 14.2595 12.8743 14.2233L11.1004 13.9276C10.3176 13.7975 9.75 13.1267 9.75 12.3333C9.75 11.3685 10.5352 10.5833 11.5 10.5833V10H12.6667V10.5833C13.6315 10.5833 14.4167 11.3685 14.4167 12.3333H13.25C13.25 12.0119 12.9887 11.75 12.6667 11.75H11.5C11.178 11.75 10.9167 12.0119 10.9167 12.3333C10.9167 12.5538 11.0747 12.7405 11.2923 12.7767L13.0662 13.0724C13.8491 13.2025 14.4167 13.8733 14.4167 14.6667ZM8.64225 11.75C8.73092 11.3166 8.92342 10.924 9.18125 10.5833H3.33333V14.6667H8.58333V13.5H4.5V11.75H8.64225ZM3.33333 9.41667H6.25V8.25H3.33333V9.41667ZM6.25 5.91667H3.33333V7.08333H6.25V5.91667ZM9.76808 17H1V4.75C1 3.78517 1.78517 3 2.75 3H8.2415L12.6667 7.42517V8.83333H11.5V8.25H7.41667V4.16667H2.75C2.42858 4.16667 2.16667 4.42858 2.16667 4.75V15.8333H8.83067C9.036 16.3006 9.36325 16.6984 9.76808 17ZM8.58333 7.08333H10.6752L8.58333 4.9915V7.08333Z"
+                    fill="#6D747A" />
+            </svg>
+
+            <span> Pay Slips</span>
+        </div>
+    </a>
+    <a href="{% url 'Bankdetails' %}" class="{% if Bankdetails %}active{% endif %}">
+        <div class="menu-bankDetails">
+
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9.33366 1.33203H4.00033C3.6467 1.33203 3.30756 1.47251 3.05752 1.72256C2.80747 1.9726 2.66699 2.31174 2.66699 2.66536V13.332C2.66699 13.6857 2.80747 14.0248 3.05752 14.2748C3.30756 14.5249 3.6467 14.6654 4.00033 14.6654H12.0003C12.3539 14.6654 12.6931 14.5249 12.9431 14.2748C13.1932 14.0248 13.3337 13.6857 13.3337 13.332V5.33203L9.33366 1.33203Z" stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M9.33301 1.33203V5.33203H13.333" stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M10.6663 8.66797H5.33301" stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M10.6663 11.332H5.33301" stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M6.66634 6H5.99967H5.33301" stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                
+
+            <span>Bank Details</span>
+        </div>
+    </a>
+    {% if is_user_hr  or is_user_fulltime  or is_user_manager %}
+        <div class="menu-employee">
+
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 8C9 9.47067 10.196 10.6667 11.6667 10.6667C13.1373 10.6667 14.3333 9.47067 14.3333 8C14.3333 6.52933 13.1373 5.33333 11.6667 5.33333C10.196 5.33333 9 6.52933 9 8ZM11.6667 6.66667C12.402 6.66667 13 7.26467 13 8C13 8.73533 12.402 9.33333 11.6667 9.33333C10.9313 9.33333 10.3333 8.73533 10.3333 8C10.3333 7.26467 10.9313 6.66667 11.6667 6.66667ZM8 5.33333C9.47067 5.33333 10.6667 4.13733 10.6667 2.66667C10.6667 1.196 9.47067 0 8 0C6.52933 0 5.33333 1.196 5.33333 2.66667C5.33333 4.13733 6.52933 5.33333 8 5.33333ZM8 1.33333C8.73533 1.33333 9.33333 1.93133 9.33333 2.66667C9.33333 3.402 8.73533 4 8 4C7.26467 4 6.66667 3.402 6.66667 2.66667C6.66667 1.93133 7.26467 1.33333 8 1.33333ZM4.33333 10.6667C5.804 10.6667 7 9.47067 7 8C7 6.52933 5.804 5.33333 4.33333 5.33333C2.86267 5.33333 1.66667 6.52933 1.66667 8C1.66667 9.47067 2.86267 10.6667 4.33333 10.6667ZM4.33333 6.66667C5.06867 6.66667 5.66667 7.26467 5.66667 8C5.66667 8.73533 5.06867 9.33333 4.33333 9.33333C3.598 9.33333 3 8.73533 3 8C3 7.26467 3.598 6.66667 4.33333 6.66667ZM16 14V16H14.6667V14C14.6667 13.3747 14.2427 12.8553 13.6593 12.7107L11.6707 15.0153L9.65533 12.7173C9.08267 12.8687 8.66667 13.3853 8.66667 13.9993V15.9993H7.33333V13.9993C7.33333 13.374 6.90933 12.8547 6.32667 12.71L4.33733 15.0147L2.322 12.7167C1.74933 12.868 1.33333 13.3847 1.33333 13.9987V15.9987H0V13.9987C0 12.5667 1.124 11.3993 2.55933 11.3407L2.878 11.3273L4.33 12.9827L5.75733 11.3287L6.07333 11.3373C6.85067 11.3587 7.53067 11.7087 8.002 12.2453C8.46667 11.718 9.13333 11.3707 9.89267 11.34L10.2113 11.3267L11.6633 12.982L13.0907 11.328L13.4067 11.3367C14.8613 11.3767 16.0007 12.5453 16.0007 13.9973L16 14Z" fill="#6D747A"/>
+                </svg>
+                
+
+            <div class="employee" onclick="toggleEmployeeDropdown()">Employee
+                <svg id="employee-arrow" width="12" height="12" viewBox="0 0 10 7" fill="none"
+                xmlns="http://www.w3.org/2000/svg">
+                <path d="M1 1.5L5 5.5L9 1.5" stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round"
+                    stroke-linejoin="round" />
+            </svg>
+            </div>
+            
+        </div>
+    {%endif%}
+        <div class="employeeDropdown" style="display: none; flex-direction: column;">
+            {% if is_user_hr or is_user_fulltime %}
+            <a href="{% url 'Send_Offer' %}" class="{% if send_Offer %}active{% endif %}">
+                <div class="sendOffer-menu"> <svg width="15" height="18" viewBox="0 0 15 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g clip-path="url(#clip0_3698_6176)">
+                    <path d="M14.231 5.83938L13.1254 4.78063V1.875C13.1254 0.84125 12.2841 0 11.2504 0H3.75035C2.7166 0 1.87535 0.84125 1.87535 1.875V4.78188L0.771601 5.83875C0.282227 6.30813 0.000976562 6.96625 0.000976562 7.64437V15H15.0004V7.64437C15.0004 6.96562 14.7204 6.3075 14.231 5.83875V5.83938ZM3.75035 1.25H11.2504C11.5954 1.25 11.8754 1.53062 11.8754 1.875V7.65125L8.82598 10.7006C8.11785 11.4088 6.88285 11.4088 6.1741 10.7006L3.12535 7.65125V1.875C3.12535 1.53062 3.40598 1.25 3.75035 1.25ZM13.7504 13.75H1.25035V7.64437C1.25098 7.6125 1.25285 7.58063 1.25535 7.54875L5.29035 11.5844C5.88098 12.1744 6.66535 12.4994 7.50035 12.4994C8.33535 12.4994 9.11973 12.1744 9.70973 11.5844L13.746 7.5475C13.7485 7.57938 13.7504 7.61187 13.7504 7.64375V13.75ZM10.6254 4.375H4.37535V3.125H10.6254V4.375ZM9.37535 6.875H4.37535V5.625H9.37535V6.875Z" fill="#6D747A"/>
+                    </g>
+                    <defs>
+                    <clipPath id="clip0_3698_6176">
+                    <rect width="15" height="15" fill="white"/>
+                    </clipPath>
+                    </defs>
+                    </svg>
+                    Send Offer</div>
+            </a>
+            <a href="{% url 'send_certificate' %}" class="{% if send_Certificate %}active{% endif %}">
+                <div class="sendCertificate-menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g clip-path="url(#clip0_3698_6235)">
+                    <path d="M10.8047 5.74616L8.276 8.27482C8.024 8.52682 7.68933 8.66549 7.33333 8.66549C6.97733 8.66549 6.64267 8.52682 6.39067 8.27482L4.862 6.74616L5.80467 5.80349L7.33333 7.33216L9.862 4.80349L10.8047 5.74616ZM16 12.6895H12.6667V16.0228L9.80067 13.1568C9.61733 13.3568 9.414 13.5375 9.16667 13.6748C8.80467 13.8755 8.39867 13.9762 7.99267 13.9762C7.58667 13.9762 7.18067 13.8762 6.81867 13.6748C6.574 13.5395 6.372 13.3615 6.19067 13.1648L3.33333 16.0222V12.6888H0L2.33933 10.3495C2.322 10.1088 2.33667 9.86949 2.39 9.63349C2.43867 9.41816 2.336 9.18682 2.13467 9.05616C1.788 8.83216 1.508 8.52949 1.30133 8.15549C1.104 7.80016 1.00067 7.39016 1.00267 6.97149C1.00067 6.55816 1.104 6.14816 1.302 5.79216C1.50867 5.41949 1.78867 5.11682 2.13533 4.89282C2.33733 4.76216 2.44 4.53082 2.39133 4.31549C2.298 3.90482 2.312 3.48416 2.43267 3.06349C2.66067 2.26816 3.29667 1.63216 4.09267 1.40349C4.514 1.28349 4.934 1.26949 5.34333 1.36282C5.55867 1.41349 5.79067 1.30882 5.92067 1.10749C6.14333 0.76149 6.446 0.48149 6.82 0.274156C7.544 -0.127844 8.444 -0.127844 9.16733 0.274156C9.54133 0.48149 9.84333 0.76149 10.0667 1.10749C10.1973 1.30949 10.4307 1.41349 10.644 1.36349C11.0547 1.26949 11.4747 1.28349 11.8947 1.40416C12.6907 1.63216 13.3267 2.26816 13.5553 3.06349C13.676 3.48482 13.69 3.90616 13.5967 4.31616C13.548 4.53016 13.6507 4.76216 13.8527 4.89282C14.1987 5.11616 14.4787 5.41882 14.686 5.79282C14.8833 6.14949 14.9867 6.55882 14.9847 6.97749C14.9867 7.39016 14.8833 7.79949 14.686 8.15616C14.4787 8.53082 14.1987 8.83349 13.8527 9.05616C13.6507 9.18682 13.548 9.41882 13.5967 9.63349C13.6493 9.86482 13.664 10.0995 13.6487 10.3355L16.002 12.6888L16 12.6895ZM10.938 11.2862C11.1267 11.3295 11.3253 11.3222 11.526 11.2635C11.878 11.1628 12.1713 10.8702 12.2727 10.5182C12.33 10.3162 12.338 10.1182 12.2947 9.93016C12.1227 9.17016 12.4573 8.36949 13.128 7.93682C13.2867 7.83416 13.4187 7.69082 13.518 7.51082C13.6047 7.35349 13.6507 7.16882 13.65 6.97816C13.6507 6.78149 13.6053 6.59749 13.518 6.43949C13.4187 6.25949 13.2867 6.11682 13.128 6.01349C12.458 5.58149 12.1227 4.78016 12.2947 4.02149C12.3373 3.83216 12.33 3.63416 12.272 3.43216C12.1713 3.08082 11.878 2.78816 11.526 2.68682C11.324 2.62949 11.1267 2.62149 10.9373 2.66416C10.18 2.83549 9.378 2.50216 8.94467 1.83082C8.842 1.67216 8.69867 1.54016 8.51867 1.44082C8.19933 1.26282 7.78467 1.26282 7.464 1.44082C7.284 1.54016 7.14133 1.67149 7.03867 1.83082C6.60533 2.50149 5.80467 2.83549 5.046 2.66416C4.85733 2.62082 4.66 2.62882 4.45667 2.68682C4.10533 2.78749 3.81267 3.08016 3.712 3.43216C3.654 3.63416 3.64667 3.83282 3.68933 4.02149C3.862 4.78016 3.52733 5.58082 2.856 6.01416C2.69667 6.11682 2.56533 6.26016 2.46667 6.43949C2.37933 6.59682 2.33333 6.78149 2.33467 6.97282C2.334 7.17016 2.37933 7.35416 2.46667 7.51149C2.566 7.69149 2.69733 7.83416 2.85667 7.93749C3.52733 8.37016 3.862 9.17082 3.68933 9.93016C3.64667 10.1188 3.654 10.3168 3.712 10.5188C3.81267 10.8702 4.10533 11.1628 4.45733 11.2642C4.66 11.3222 4.858 11.3295 5.046 11.2868C5.17867 11.2568 5.31333 11.2422 5.44667 11.2422C6.074 11.2422 6.68133 11.5668 7.03867 12.1202C7.14133 12.2795 7.28467 12.4108 7.464 12.5102C7.784 12.6882 8.19867 12.6882 8.51867 12.5102C8.698 12.4108 8.84133 12.2788 8.94467 12.1195C9.37733 11.4488 10.1787 11.1148 10.9373 11.2868L10.938 11.2862Z" fill="#6D747A"/>
+                    </g>
+                    <defs>
+                    <clipPath id="clip0_3698_6235">
+                    <rect width="16" height="16" fill="white"/>
+                    </clipPath>
+                    </defs>
+                    </svg>
+                    Send Certificate</div>
+            </a>
+            {% endif %}
+            <a href="{% url 'deactivate-multiple-employee' %}" class="{% if deactivate_Employees %}active{% endif %}">
+
+                <div class="deactivateEmp-menu"><svg width="16" height="24" viewBox="0 0 16 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1.66667 3.66667C1.66667 2.746 2.41267 2 3.33333 2C4.254 2 5 2.746 5 3.66667C5 4.58733 4.254 5.33333 3.33333 5.33333C2.41267 5.33333 1.66667 4.58733 1.66667 3.66667ZM5.33333 12.9753V17.3333C5.33333 17.702 5.03467 18 4.66667 18C4.29867 18 4 17.702 4 17.3333V13.3333H2.66667V17.3333C2.66667 17.702 2.368 18 2 18C1.632 18 1.33333 17.702 1.33333 17.3333V12.9753C0.536667 12.5133 0 11.652 0 10.6667V8.66667C0 7.196 1.196 6 2.66667 6H4C5.47067 6 6.66667 7.196 6.66667 8.66667V10.6667C6.66667 11.652 6.13 12.514 5.33333 12.9753ZM5.33333 8.66667C5.33333 7.93133 4.73533 7.33333 4 7.33333H2.66667C1.93133 7.33333 1.33333 7.93133 1.33333 8.66667V10.6667C1.33333 11.402 1.93133 12 2.66667 12H4C4.73533 12 5.33333 11.402 5.33333 10.6667V8.66667ZM13 12.6667H9.66667C9.29867 12.6667 9 12.9647 9 13.3333C9 13.702 9.29867 14 9.66667 14H13C13.368 14 13.6667 13.702 13.6667 13.3333C13.6667 12.9647 13.368 12.6667 13 12.6667ZM16 13.3333C16 15.906 13.9067 18 11.3333 18C8.76 18 6.66667 15.906 6.66667 13.3333C6.66667 10.7607 8.76 8.66667 11.3333 8.66667C13.9067 8.66667 16 10.7607 16 13.3333ZM14.6667 13.3333C14.6667 11.4953 13.1713 10 11.3333 10C9.49533 10 8 11.4953 8 13.3333C8 15.1713 9.49533 16.6667 11.3333 16.6667C13.1713 16.6667 14.6667 15.1713 14.6667 13.3333Z" fill="#6D747A"/>
+                    </svg>
+                Deactivate Employee</div>
+                </a>
+        </div>
+        {%if is_user_spm %}
+        <a href="{% url 'assesment:assessment' %}" >
+
+                <div class="menu-assessment">
+
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g clip-path="url(#clip0_2396_1243)">
+                            <path
+                                d="M6.80867 5.23133L5.334 4.41067V4.00067H7.26667L7.78933 2.00067H8.22133L8.744 4.00067H10.666V4.408L9.20133 5.25667L9.79067 7.04733L9.45467 7.28L8.006 6.16L6.55067 7.28467L6.23067 7.04333L6.81 5.232L6.80867 5.23133ZM11.562 5.04267L11.882 5.284L13.3373 4.15933L14.786 5.27933L15.1227 5.04667L14.5333 3.256L15.998 2.40733V2H14.076L13.5533 0H13.1213L12.5987 2H10.666V2.41L12.1407 3.23067L11.5613 5.042L11.562 5.04267ZM0.895333 9.04267L1.21533 9.284L2.67067 8.15933L4.11933 9.27933L4.456 9.04667L3.86667 7.256L5.33133 6.40733V6H3.40933L2.88667 4H2.45467L1.932 6H0V6.41L1.47467 7.23067L0.895333 9.042V9.04267ZM16 9V16H0V13C0 12.0813 0.747333 11.3333 1.66667 11.3333H4.33333C4.44733 11.3333 4.55867 11.3447 4.66667 11.3667V11C4.66667 10.0813 5.414 9.33333 6.33333 9.33333H9C9.114 9.33333 9.22533 9.34467 9.33333 9.36667V9C9.33333 8.08133 10.0807 7.33333 11 7.33333H14.3333C15.2527 7.33333 16 8.08133 16 9ZM6 14.6667H9.33333V11C9.33333 10.816 9.18333 10.6667 9 10.6667H6.33333C6.15 10.6667 6 10.816 6 11V14.6667ZM1.33333 14.6667H4.66667V13C4.66667 12.816 4.51667 12.6667 4.33333 12.6667H1.66667C1.48333 12.6667 1.33333 12.816 1.33333 13V14.6667ZM14.6667 9C14.6667 8.816 14.5167 8.66667 14.3333 8.66667H11C10.8167 8.66667 10.6667 8.816 10.6667 9V14.6667H14.6667V9Z"
+                                fill="#6D747A" />
+                        </g>
+                        <defs>
+                            <clipPath id="clip0_2396_1243">
+                                <rect width="16" height="16" fill="white" />
+                            </clipPath>
+                        </defs>
+                    </svg>
+
+                    <span>  Assessments  </span>
+                </div>
+            </a>
+        {%endif%}
+
+        {% if request.user.is_authenticated and is_user_finance_manager %}
+            <a href="{% url 'payments' %}" class="{% if New_Finance_Department %}active{% endif %}">
+
+                <div class="menu-finance">  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g clip-path="url(#clip0_2396_1237)">
+                        <path
+                            d="M9.33333 7.33398H11.4033C11.2733 7.43065 11.142 7.52598 11.024 7.64398L10.0007 8.66732H9.334V7.33398H9.33333ZM8 9.33398C8 8.42732 7.35067 7.66065 6.45667 7.51198L4.42933 7.17398C4.18067 7.13265 4 6.91932 4 6.66732C4 6.29998 4.29867 6.00065 4.66667 6.00065H6C6.368 6.00065 6.66667 6.29998 6.66667 6.66732H8C8 5.56465 7.10267 4.66732 6 4.66732V4.00065H4.66667V4.66732C3.564 4.66732 2.66667 5.56465 2.66667 6.66732C2.66667 7.57398 3.316 8.34065 4.21 8.48932L6.23733 8.82732C6.486 8.86865 6.66667 9.08198 6.66667 9.33398C6.66667 9.70132 6.368 10.0007 6 10.0007H4.66667C4.29867 10.0007 4 9.70132 4 9.33398H2.66667C2.66667 10.4367 3.564 11.334 4.66667 11.334V12.0007H6V11.334C7.10267 11.334 8 10.4367 8 9.33398ZM14 1.33398H2C0.897333 1.33398 0 2.23132 0 3.33398V14.6673H6V13.334H1.33333V3.33398C1.33333 2.96665 1.632 2.66732 2 2.66732H14C14.368 2.66732 14.6667 2.96665 14.6667 3.33398V6.07198C15.1427 6.16865 15.5953 6.37998 16 6.68598V3.33398C16 2.23132 15.1027 1.33398 14 1.33398ZM13.3333 4.66732H9.33333V6.00065H13.3333V4.66732ZM15.414 7.91998C15.7913 8.29732 16 8.79998 16 9.33398C16 9.86798 15.7913 10.3707 15.414 10.7487L10.1613 16.0007H7.33333V13.172L12.586 7.91998C13.366 7.13998 14.634 7.13998 15.414 7.91998ZM14.6667 9.33398C14.6667 9.15598 14.5973 8.98865 14.4713 8.86265C14.2107 8.60198 13.7893 8.60265 13.5287 8.86265L8.66667 13.724V14.6673H9.60933L14.4713 9.80532C14.5973 9.67932 14.6667 9.51198 14.6667 9.33398Z"
+                            fill="#6D747A" />
+                    </g>
+                    <defs>
+                        <clipPath id="clip0_2396_1237">
+                            <rect width="16" height="16" fill="white" />
+                        </clipPath>
+                    </defs>
+                </svg>
+                <span> Finance Dept </span> </div>
+            </a>
+        {%endif%}
+
+        
+        <!-- {% if is_user_manager  or is_user_spm%} -->
+        <!-- <a href="{% url 'tasks' type='development' %}" class="{% if Dashboard_clickup %}active{% endif %}">
+            <div class="menu-clickup-task">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9.236 5.17533L12.7133 8.62333L11.3047 10.044L9.00933 7.76733V16H7.00933V7.76733L4.71333 10.044L3.30533 8.62333L6.786 5.172C7.43467 4.52333 8.58 4.51933 9.236 5.17533ZM8 0C3.58867 0 0 3.58867 0 8H2C2 4.69133 4.692 2 8 2C11.308 2 14 4.69133 14 8H16C16 3.58867 12.4113 0 8 0Z" fill="#6D747A"/>
+                </svg>
+                <span>Clickup Tasks Dashboard</span>
+            </div>
+        </a> -->
+        <!-- <a href="{% url 'tasks' type='marketing'  %}" class="{% if Marketing_clickup %}active{% endif %}">
+        <div class="menu-clickup-marketing-task">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9.236 5.17533L12.7133 8.62333L11.3047 10.044L9.00933 7.76733V16H7.00933V7.76733L4.71333 10.044L3.30533 8.62333L6.786 5.172C7.43467 4.52333 8.58 4.51933 9.236 5.17533ZM8 0C3.58867 0 0 3.58867 0 8H2C2 4.69133 4.692 2 8 2C11.308 2 14 4.69133 14 8H16C16 3.58867 12.4113 0 8 0Z" fill="#6D747A"/>
+            </svg>    
+            <span>Clickup Marketing Tasks Dashboard</span>
+        </div>
+        </a> -->
+        <!-- {% endif %} -->
+       
+    
+    {% if request.user.is_authenticated and is_user_manager %}
+    <a href="{% url 'employee-register' %}" class="{% if emp_Register %}active{% endif %}">
+        <div class="menu-employee-register">
+
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 8C9 9.47067 10.196 10.6667 11.6667 10.6667C13.1373 10.6667 14.3333 9.47067 14.3333 8C14.3333 6.52933 13.1373 5.33333 11.6667 5.33333C10.196 5.33333 9 6.52933 9 8ZM11.6667 6.66667C12.402 6.66667 13 7.26467 13 8C13 8.73533 12.402 9.33333 11.6667 9.33333C10.9313 9.33333 10.3333 8.73533 10.3333 8C10.3333 7.26467 10.9313 6.66667 11.6667 6.66667ZM8 5.33333C9.47067 5.33333 10.6667 4.13733 10.6667 2.66667C10.6667 1.196 9.47067 0 8 0C6.52933 0 5.33333 1.196 5.33333 2.66667C5.33333 4.13733 6.52933 5.33333 8 5.33333ZM8 1.33333C8.73533 1.33333 9.33333 1.93133 9.33333 2.66667C9.33333 3.402 8.73533 4 8 4C7.26467 4 6.66667 3.402 6.66667 2.66667C6.66667 1.93133 7.26467 1.33333 8 1.33333ZM4.33333 10.6667C5.804 10.6667 7 9.47067 7 8C7 6.52933 5.804 5.33333 4.33333 5.33333C2.86267 5.33333 1.66667 6.52933 1.66667 8C1.66667 9.47067 2.86267 10.6667 4.33333 10.6667ZM4.33333 6.66667C5.06867 6.66667 5.66667 7.26467 5.66667 8C5.66667 8.73533 5.06867 9.33333 4.33333 9.33333C3.598 9.33333 3 8.73533 3 8C3 7.26467 3.598 6.66667 4.33333 6.66667ZM16 14V16H14.6667V14C14.6667 13.3747 14.2427 12.8553 13.6593 12.7107L11.6707 15.0153L9.65533 12.7173C9.08267 12.8687 8.66667 13.3853 8.66667 13.9993V15.9993H7.33333V13.9993C7.33333 13.374 6.90933 12.8547 6.32667 12.71L4.33733 15.0147L2.322 12.7167C1.74933 12.868 1.33333 13.3847 1.33333 13.9987V15.9987H0V13.9987C0 12.5667 1.124 11.3993 2.55933 11.3407L2.878 11.3273L4.33 12.9827L5.75733 11.3287L6.07333 11.3373C6.85067 11.3587 7.53067 11.7087 8.002 12.2453C8.46667 11.718 9.13333 11.3707 9.89267 11.34L10.2113 11.3267L11.6633 12.982L13.0907 11.328L13.4067 11.3367C14.8613 11.3767 16.0007 12.5453 16.0007 13.9973L16 14Z" fill="#6D747A"/>
+                </svg>
+
+            <span>Employee Register</span>
+        </div>
+    </a>
+    {%endif%}
+    {% else %}
+    <a href="{% url 'login' %}" class="{% if Login %}active{% endif %}"> Login </a>
+{%endif%}
+    </div>
+    
+
+</div>
+
+<script>
+    function toggleUserProfileModal() {
+        const modal = document.getElementById("userProfileModal");
+        if (modal.style.display === "block") {
+            modal.style.display = "none";
+        } else {
+            modal.style.display = "block";
+        }
+
+    }
+    document.addEventListener('click', function (event) {
+        const modal = document.getElementById("userProfileModal");
+        const profileImage = document.querySelector('.profile-image');
+
+
+        if (modal.style.display === "block" && !modal.contains(event.target) && !profileImage.contains(event.target)) {
+            modal.style.display = "none";
+        }
+    });
+    function toggleSidebar(userType,type) {
+        var  pmSidebar = document.getElementById('pm-development');;
+        var spmSidebar = document.getElementById('spm-development');;
+        if (type=="dev"){
+            pmSidebar = document.getElementById('pm-development');
+            spmSidebar = document.getElementById('spm-development');}
+        else{
+            pmSidebar = document.getElementById('pm-marketing');
+            console.log(pmSidebar);
+            spmSidebar = document.getElementById('spm-marketing');
+            console.log(spmSidebar);
+        }
+
+
+        // pmSidebar.style.display = 'none';
+        // spmSidebar.style.display = 'none';
+
+        // show the sidebar based on user typ
+        if (userType === 'PM') {
+            pmSidebar.style.display = 'flex';
+        } else if (userType === 'SPM') {
+            spmSidebar.style.display = 'flex';
+        }
+    }
+
+
+    // toggleSidebar('PM');
+    // toggleSidebar('SPM');
+    function toggle(userType) {
+        console.log('Toggled!');
+        const pmDropdown = document.querySelector('.pm-dropdown');
+        const spmDropdown = document.querySelector('.spm-dropdown');
+        const arrow = document.getElementById('development-project-arrow');
+        const arrowPath = arrow.querySelector('path');
+
+        if (userType === 'PM') {
+            if (pmDropdown.style.display === 'none' || pmDropdown.style.display === '') {
+                pmDropdown.style.display = 'flex';
+                arrowPath.setAttribute('d', 'M1 5.5L5 1.5L9 5.5');
+            } else {
+                pmDropdown.style.display = 'none';
+                arrowPath.setAttribute('d', 'M1 1.5L5 5.5L9 1.5');
+            }
+        } else if (userType === 'SPM') {
+            if (spmDropdown.style.display === 'none' || spmDropdown.style.display === '') {
+                spmDropdown.style.display = 'flex';
+                arrowPath.setAttribute('d', 'M1 5.5L5 1.5L9 5.5');
+            } else {
+                spmDropdown.style.display = 'none';
+                arrowPath.setAttribute('d', 'M1 1.5L5 5.5L9 1.5');
+            }
+        }
+        toggleSidebar(userType,"dev")
+    }
+    function toggleMarketing(userType) {
+        console.log('Toggled!');
+        const pmDropdown = document.querySelector('.pm-dropdown-marketing');
+        const spmDropdown = document.querySelector('.spm-dropdown-marketing');
+        const arrow = document.getElementById('marketing-project-arrow');
+        const arrowPath = arrow.querySelector('path');
+
+        if (userType === 'PM') {
+            if (pmDropdown.style.display === 'none' || pmDropdown.style.display === '') {
+                pmDropdown.style.display = 'flex';
+                arrowPath.setAttribute('d', 'M1 5.5L5 1.5L9 5.5');
+            } else {
+                pmDropdown.style.display = 'none';
+                arrowPath.setAttribute('d', 'M1 1.5L5 5.5L9 1.5');
+            }
+        } else if (userType === 'SPM') {
+            if (spmDropdown.style.display === 'none' || spmDropdown.style.display === '') {
+                spmDropdown.style.display = 'flex';
+                arrowPath.setAttribute('d', 'M1 5.5L5 1.5L9 5.5');
+            } else {
+                spmDropdown.style.display = 'none';
+                arrowPath.setAttribute('d', 'M1 1.5L5 5.5L9 1.5');
+            }
+        }
+        toggleSidebar(userType,"marketing")
+    }
+
+
+
+
+    function toggleDevProject() {
+        const dropdown = document.querySelector('.pm-project-list');
+        if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+            dropdown.style.display = 'flex';
+        } else {
+            dropdown.style.display = 'none';
+        }
+    }
+
+    function toggleMarketingProject() {
+        console.log('Toggled!');
+        const dropdown = document.querySelector('.pm-project-list-marketing');
+        const arrow = document.getElementById('marketing-all-project-arrow');
+        const arrowPath = arrow.querySelector('path');
+
+
+        if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+            dropdown.style.display = 'flex';
+
+            arrowPath.setAttribute('d', 'M1 5.5L5 1.5L9 5.5');
+        } else {
+            dropdown.style.display = 'none';
+
+            arrowPath.setAttribute('d', 'M1 1.5L5 5.5L9 1.5');
+        }
+    }
+
+
+
+
+    function toggleEmployeeDropdown() {
+        console.log('Toggled!');
+        const dropdown = document.querySelector('.employeeDropdown');
+        const arrow = document.getElementById('employee-arrow');
+        const arrowPath = arrow.querySelector('path');
+
+
+        if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+            dropdown.style.display = 'flex';
+
+            arrowPath.setAttribute('d', 'M1 5.5L5 1.5L9 5.5');
+        } else {
+            dropdown.style.display = 'none';
+
+            arrowPath.setAttribute('d', 'M1 1.5L5 5.5L9 1.5');
+        }
+    }
+
+    function toggleFinanceDropdown() {
+        console.log('Toggled!');
+        const dropdown = document.querySelector('.financeDropdown');
+        const arrow = document.getElementById('finance-arrow');
+        const arrowPath = arrow.querySelector('path');
+
+
+        if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+            dropdown.style.display = 'flex';
+
+            arrowPath.setAttribute('d', 'M1 5.5L5 1.5L9 5.5');
+        } else {
+            dropdown.style.display = 'none';
+
+            arrowPath.setAttribute('d', 'M1 1.5L5 5.5L9 1.5');
+        }
+    }
+
+
+
+
+    
+    // to reset arrows when sidebar collapse
+    function resetArrows() {
+        const devProjectArrow = document.getElementById('development-project-arrow');
+        const devProjectArrowPath = devProjectArrow.querySelector('path');
+        
+        const marketingProjectArrow = document.getElementById('marketing-project-arrow');
+        const marketingProjectArrowPath = marketingProjectArrow.querySelector('path');
+
+
+        const employeeArrow = document.getElementById('employee-arrow');
+        const employeeArrowPath = employeeArrow.querySelector('path');
+
+        const financeArrow = document.getElementById('finance-arrow');
+        const financeArrowPath = financeArrow.querySelector('path');
+
+
+
+        devProjectArrowPath.setAttribute('d', 'M1 1.5L5 5.5L9 1.5');
+        marketingProjectArrowPath.setAttribute('d', 'M1 1.5L5 5.5L9 1.5');
+        employeeArrowPath.setAttribute('d', 'M1 1.5L5 5.5L9 1.5');
+        financeArrowPath.setAttribute('d', 'M1 1.5L5 5.5L9 1.5');
+
+    }
+
+
+
+    document.querySelector('.sidebar').addEventListener('mouseleave', function () {
+        //hide all development dropdown
+          document.querySelectorAll('.menu-development-dropdown').forEach(dropdown => {
+            dropdown.style.display = 'none';
+        });
+        document.querySelectorAll('.menu-development-dropdown').forEach(dropdown => {
+            dropdown.style.display = 'none';
+        });
+
+
+        //hode allmarketing dropdown
+        document.querySelectorAll('.menu-marketing-dropdown').forEach(dropdown => {
+            dropdown.style.display = 'none';
+        });
+
+        //hide logout dropdownn
+        const modal = document.getElementById("userProfileModal");
+        if (modal.style.display === "block") {
+            modal.style.display = "none";}
+
+
+        // hide all employee dropdown
+        document.querySelectorAll('.employeeDropdown').forEach(dropdown => {
+            dropdown.style.display = 'none';
+        });
+
+        //hide all finance dropdown
+        document.querySelectorAll('.financeDropdown').forEach(dropdown => {
+    
+            dropdown.style.display = 'none';
+        });
+        //hide development sidebar
+        const spmDevelopment = document.getElementById('spm-development');
+        const pmDevelopment = document.getElementById('pm-development');
+        const spmMarketing = document.getElementById('spm-marketing');
+        const pmMarketing = document.getElementById('pm-marketing');
+
+        if (spmDevelopment) {
+            spmDevelopment.style.display = 'none';
+        }
+        if (pmDevelopment) {
+            pmDevelopment.style.display = 'none';
+        }
+        if (pmMarketing) {
+            pmMarketing.style.display = 'none';
+        }
+        if (spmMarketing) {
+            spmMarketing.style.display = 'none';
+        }
+
+        
+
+    
+        resetArrows();
+    });
+
+
+
+
+    function toggleAllProjects() {
+        const projectHierarchy = document.querySelector('.project-hierarchy');
+        const arrow = document.getElementById('development-all-project-arrow');
+        const arrowPath = arrow.querySelector('path');
+
+        if (projectHierarchy.style.display === 'none' || projectHierarchy.style.display === '') {
+            projectHierarchy.style.display = 'flex';
+            arrowPath.setAttribute('d', 'M1 5.5L5 1.5L9 5.5');
+        } else {
+            projectHierarchy.style.display = 'none';
+            arrowPath.setAttribute('d', 'M1 1.5L5 5.5L9 1.5');
+        }
+    }
+    function toggleMarketingAllProjects() {
+        const projectHierarchy = document.querySelector('.project-hierarchy-marketing');
+        const arrow = document.getElementById('marketing-all-project-arrow');
+        const arrowPath = arrow.querySelector('path');
+
+        if (projectHierarchy.style.display === 'none' || projectHierarchy.style.display === '') {
+            projectHierarchy.style.display = 'flex';
+            arrowPath.setAttribute('d', 'M1 5.5L5 1.5L9 5.5');
+        } else {
+            projectHierarchy.style.display = 'none';
+            arrowPath.setAttribute('d', 'M1 1.5L5 5.5L9 1.5');
+        }
+    }
+
+
+    function togglePersonProjects(personHeader) {
+        const projects = personHeader.nextElementSibling;
+        const toggleIcon = personHeader.querySelector('.toggle-icon');
+
+        if (projects.style.display === 'none' || projects.style.display === '') {
+            projects.style.display = 'flex';
+            toggleIcon.innerHTML = `<svg width="12" height="12" viewBox="0 0 10 7" fill="none"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path d="M1 5.5L5 1.5L9 5.5" stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg>`;
+        } else {
+            projects.style.display = 'none';
+            toggleIcon.innerHTML = `<svg width="12" height="12" viewBox="0 0 10 7" fill="none"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path d="M1 1.5L5 5.5L9 1.5" stroke="#6D747A" stroke-width="1.33333" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg>`;
+        }
+    }
+
+
+
+
+
+</script>

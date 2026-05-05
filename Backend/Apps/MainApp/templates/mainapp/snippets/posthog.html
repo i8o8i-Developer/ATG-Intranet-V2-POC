@@ -1,0 +1,17 @@
+{% load static %}
+{% if posthog_enabled %}
+<script>
+  window.ATG_POSTHOG_CONFIG = {
+    key: "{{ posthog_key|escapejs }}",
+    host: "{{ posthog_host|escapejs }}",
+    user: {% if request.user.is_authenticated %}{
+      id: "user-{{ request.user.pk|escapejs }}",
+      username: "{{ request.user.username|escapejs }}",
+      email: "{{ request.user.email|default:''|escapejs }}",
+      full_name: "{{ request.user.get_full_name|default:request.user.username|escapejs }}"
+    }{% else %}null{% endif %}
+  };
+</script>
+<script src="{{ posthog_host|escape }}/static/array.js"></script>
+<script src="{% static 'mainapp/js/posthog.js' %}"></script>
+{% endif %}

@@ -1,0 +1,582 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Offer</title>
+	<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+
+<!-- jQuery library -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+<!-- Popper JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+
+<!-- Latest compiled JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+	<script>
+ function disableSubmit() {
+  document.getElementById("submit").disabled = true;
+ }
+
+  function activateButton(element) {
+
+      if(element.checked) {
+        document.getElementById("submit").disabled = false;
+       }
+       else  {
+        document.getElementById("submit").disabled = true;
+      }
+
+  }
+
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.debug.js" integrity="sha384-NaWTHo/8YCBYJ59830LTz/P4aQZK1sS0SneOgAvhsIl3zBu8r9RevNg5lHCHAuQ/" crossorigin="anonymous">
+
+    </script>
+    <script src="https://unpkg.com/jspdf@latest/dist/jspdf.min.js"></script>
+
+    <script
+src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js">
+  </script>
+  <script>
+        $(document).ready(function(){
+            $('#create_pdf').click(function(){
+                var elementHandler = {
+                                      '#ignorePDF': function (element, renderer) {
+                                        return true;
+                                      }
+                                    };
+                var x = $('#content').text();
+                var doc = new jsPDF();
+
+                doc.fromHTML(
+                            x,
+                            15,
+                            15,
+                            {
+                              'width': 180,'elementHandlers': elementHandler
+                            });
+                doc.save('Offer_Letter.pdf');
+
+
+            });
+        });
+    </script>
+<style>
+	.body{
+    font-family:cursive;
+  }
+  .verify{
+    width:100%;
+    margin-top: 30px;
+    margin-left: 500px;
+
+  }
+  .verify #sub{
+    background:none;
+    border:1px solid blue;
+    font-size: 30px;
+    font-weight: 600;
+}
+
+	</style>
+
+<style type="text/css">@import url('https://themes.googleusercontent.com/fonts/css?kit=fpjTOVmNbO4Lz34iLyptLTi9jKYd1gJzj5O2gWsEpXoyck2WCYPEMNySjZN0CHed_kmCvy597kDopqFAXvpeaA');.lst-kix_mnwhh7zfkmdq-8>li:before{content:"" counter(lst-ctn-kix_mnwhh7zfkmdq-8,lower-roman) ". "}.lst-kix_mnwhh7zfkmdq-7>li:before{content:"" counter(lst-ctn-kix_mnwhh7zfkmdq-7,lower-latin) ". "}.lst-kix_mnwhh7zfkmdq-3>li:before{content:"" counter(lst-ctn-kix_mnwhh7zfkmdq-3,decimal) ". "}.lst-kix_list_1-1>li{counter-increment:lst-ctn-kix_list_1-1}.lst-kix_mnwhh7zfkmdq-2>li:before{content:"" counter(lst-ctn-kix_mnwhh7zfkmdq-2,lower-roman) ". "}.lst-kix_oz8v8u4pd1db-5>li{counter-increment:lst-ctn-kix_oz8v8u4pd1db-5}ol.lst-kix_9homsd1hzovf-6.start{counter-reset:lst-ctn-kix_9homsd1hzovf-6 0}ol.lst-kix_oz8v8u4pd1db-8.start{counter-reset:lst-ctn-kix_oz8v8u4pd1db-8 0}ol.lst-kix_list_1-8.start{counter-reset:lst-ctn-kix_list_1-8 0}.lst-kix_mnwhh7zfkmdq-4>li:before{content:"" counter(lst-ctn-kix_mnwhh7zfkmdq-4,lower-latin) ". "}ol.lst-kix_9homsd1hzovf-0.start{counter-reset:lst-ctn-kix_9homsd1hzovf-0 0}.lst-kix_mnwhh7zfkmdq-5>li:before{content:"" counter(lst-ctn-kix_mnwhh7zfkmdq-5,lower-roman) ". "}ol.lst-kix_9homsd1hzovf-3.start{counter-reset:lst-ctn-kix_9homsd1hzovf-3 0}.lst-kix_mnwhh7zfkmdq-6>li:before{content:"" counter(lst-ctn-kix_mnwhh7zfkmdq-6,decimal) ". "}.lst-kix_oz8v8u4pd1db-2>li:before{content:"" counter(lst-ctn-kix_oz8v8u4pd1db-2,lower-roman) ". "}ol.lst-kix_list_1-5.start{counter-reset:lst-ctn-kix_list_1-5 0}.lst-kix_oz8v8u4pd1db-1>li:before{content:"" counter(lst-ctn-kix_oz8v8u4pd1db-1,lower-latin) ". "}.lst-kix_oz8v8u4pd1db-4>li{counter-increment:lst-ctn-kix_oz8v8u4pd1db-4}.lst-kix_mnwhh7zfkmdq-7>li{counter-increment:lst-ctn-kix_mnwhh7zfkmdq-7}ol.lst-kix_mnwhh7zfkmdq-4.start{counter-reset:lst-ctn-kix_mnwhh7zfkmdq-4 0}ol.lst-kix_oz8v8u4pd1db-0.start{counter-reset:lst-ctn-kix_oz8v8u4pd1db-0 0}.lst-kix_oz8v8u4pd1db-3>li:before{content:"" counter(lst-ctn-kix_oz8v8u4pd1db-3,decimal) ". "}.lst-kix_oz8v8u4pd1db-3>li{counter-increment:lst-ctn-kix_oz8v8u4pd1db-3}.lst-kix_oz8v8u4pd1db-4>li:before{content:"" counter(lst-ctn-kix_oz8v8u4pd1db-4,lower-latin) ". "}.lst-kix_oz8v8u4pd1db-6>li:before{content:"" counter(lst-ctn-kix_oz8v8u4pd1db-6,decimal) ". "}.lst-kix_9homsd1hzovf-8>li{counter-increment:lst-ctn-kix_9homsd1hzovf-8}.lst-kix_oz8v8u4pd1db-5>li:before{content:"" counter(lst-ctn-kix_oz8v8u4pd1db-5,lower-roman) ". "}ol.lst-kix_oz8v8u4pd1db-3.start{counter-reset:lst-ctn-kix_oz8v8u4pd1db-3 0}.lst-kix_oz8v8u4pd1db-8>li:before{content:"" counter(lst-ctn-kix_oz8v8u4pd1db-8,lower-roman) ". "}.lst-kix_list_1-2>li{counter-increment:lst-ctn-kix_list_1-2}.lst-kix_oz8v8u4pd1db-7>li:before{content:"" counter(lst-ctn-kix_oz8v8u4pd1db-7,lower-latin) ". "}.lst-kix_oz8v8u4pd1db-6>li{counter-increment:lst-ctn-kix_oz8v8u4pd1db-6}ol.lst-kix_mnwhh7zfkmdq-1.start{counter-reset:lst-ctn-kix_mnwhh7zfkmdq-1 0}ol.lst-kix_9homsd1hzovf-8.start{counter-reset:lst-ctn-kix_9homsd1hzovf-8 0}ol.lst-kix_oz8v8u4pd1db-6.start{counter-reset:lst-ctn-kix_oz8v8u4pd1db-6 0}.lst-kix_list_1-4>li{counter-increment:lst-ctn-kix_list_1-4}ol.lst-kix_list_1-6.start{counter-reset:lst-ctn-kix_list_1-6 0}ol.lst-kix_9homsd1hzovf-1.start{counter-reset:lst-ctn-kix_9homsd1hzovf-1 0}ol.lst-kix_mnwhh7zfkmdq-3.start{counter-reset:lst-ctn-kix_mnwhh7zfkmdq-3 0}ol.lst-kix_oz8v8u4pd1db-2.start{counter-reset:lst-ctn-kix_oz8v8u4pd1db-2 0}.lst-kix_oz8v8u4pd1db-7>li{counter-increment:lst-ctn-kix_oz8v8u4pd1db-7}ol.lst-kix_oz8v8u4pd1db-1{list-style-type:none}ol.lst-kix_oz8v8u4pd1db-0{list-style-type:none}.lst-kix_9homsd1hzovf-1>li{counter-increment:lst-ctn-kix_9homsd1hzovf-1}ol.lst-kix_oz8v8u4pd1db-7{list-style-type:none}ol.lst-kix_oz8v8u4pd1db-6{list-style-type:none}ol.lst-kix_oz8v8u4pd1db-8{list-style-type:none}.lst-kix_oz8v8u4pd1db-1>li{counter-increment:lst-ctn-kix_oz8v8u4pd1db-1}ol.lst-kix_oz8v8u4pd1db-3{list-style-type:none}ol.lst-kix_oz8v8u4pd1db-2{list-style-type:none}ol.lst-kix_oz8v8u4pd1db-5{list-style-type:none}.lst-kix_9homsd1hzovf-7>li{counter-increment:lst-ctn-kix_9homsd1hzovf-7}ol.lst-kix_oz8v8u4pd1db-4{list-style-type:none}.lst-kix_oz8v8u4pd1db-0>li:before{content:"" counter(lst-ctn-kix_oz8v8u4pd1db-0,decimal) ". "}ol.lst-kix_list_1-0.start{counter-reset:lst-ctn-kix_list_1-0 0}ol.lst-kix_9homsd1hzovf-2.start{counter-reset:lst-ctn-kix_9homsd1hzovf-2 0}ol.lst-kix_oz8v8u4pd1db-7.start{counter-reset:lst-ctn-kix_oz8v8u4pd1db-7 0}.lst-kix_mnwhh7zfkmdq-0>li:before{content:"" counter(lst-ctn-kix_mnwhh7zfkmdq-0,decimal) ". "}.lst-kix_mnwhh7zfkmdq-1>li:before{content:"" counter(lst-ctn-kix_mnwhh7zfkmdq-1,lower-latin) ". "}.lst-kix_mnwhh7zfkmdq-5>li{counter-increment:lst-ctn-kix_mnwhh7zfkmdq-5}.lst-kix_mnwhh7zfkmdq-2>li{counter-increment:lst-ctn-kix_mnwhh7zfkmdq-2}.lst-kix_mnwhh7zfkmdq-8>li{counter-increment:lst-ctn-kix_mnwhh7zfkmdq-8}ol.lst-kix_oz8v8u4pd1db-1.start{counter-reset:lst-ctn-kix_oz8v8u4pd1db-1 0}ol.lst-kix_list_1-3{list-style-type:none}ol.lst-kix_mnwhh7zfkmdq-5.start{counter-reset:lst-ctn-kix_mnwhh7zfkmdq-5 0}ol.lst-kix_list_1-4{list-style-type:none}ol.lst-kix_list_1-5{list-style-type:none}ol.lst-kix_list_1-6{list-style-type:none}.lst-kix_9homsd1hzovf-1>li:before{content:"" counter(lst-ctn-kix_9homsd1hzovf-1,lower-latin) ". "}.lst-kix_9homsd1hzovf-3>li:before{content:"" counter(lst-ctn-kix_9homsd1hzovf-3,decimal) ". "}ol.lst-kix_list_1-0{list-style-type:none}ol.lst-kix_oz8v8u4pd1db-4.start{counter-reset:lst-ctn-kix_oz8v8u4pd1db-4 0}ol.lst-kix_list_1-1{list-style-type:none}ol.lst-kix_list_1-2{list-style-type:none}.lst-kix_9homsd1hzovf-2>li:before{content:"" counter(lst-ctn-kix_9homsd1hzovf-2,lower-roman) ". "}.lst-kix_9homsd1hzovf-6>li:before{content:"" counter(lst-ctn-kix_9homsd1hzovf-6,decimal) ". "}.lst-kix_9homsd1hzovf-7>li:before{content:"" counter(lst-ctn-kix_9homsd1hzovf-7,lower-latin) ". "}.lst-kix_9homsd1hzovf-3>li{counter-increment:lst-ctn-kix_9homsd1hzovf-3}.lst-kix_9homsd1hzovf-0>li:before{content:"" counter(lst-ctn-kix_9homsd1hzovf-0,decimal) ". "}.lst-kix_9homsd1hzovf-8>li:before{content:"" counter(lst-ctn-kix_9homsd1hzovf-8,lower-roman) ". "}ol.lst-kix_mnwhh7zfkmdq-8.start{counter-reset:lst-ctn-kix_mnwhh7zfkmdq-8 0}ol.lst-kix_mnwhh7zfkmdq-2.start{counter-reset:lst-ctn-kix_mnwhh7zfkmdq-2 0}.lst-kix_mnwhh7zfkmdq-3>li{counter-increment:lst-ctn-kix_mnwhh7zfkmdq-3}.lst-kix_9homsd1hzovf-5>li:before{content:"" counter(lst-ctn-kix_9homsd1hzovf-5,lower-roman) ". "}ol.lst-kix_list_1-7{list-style-type:none}.lst-kix_9homsd1hzovf-4>li{counter-increment:lst-ctn-kix_9homsd1hzovf-4}.lst-kix_list_1-7>li{counter-increment:lst-ctn-kix_list_1-7}ol.lst-kix_list_1-8{list-style-type:none}.lst-kix_9homsd1hzovf-4>li:before{content:"" counter(lst-ctn-kix_9homsd1hzovf-4,lower-latin) ". "}.lst-kix_9homsd1hzovf-2>li{counter-increment:lst-ctn-kix_9homsd1hzovf-2}.lst-kix_mnwhh7zfkmdq-1>li{counter-increment:lst-ctn-kix_mnwhh7zfkmdq-1}.lst-kix_9homsd1hzovf-5>li{counter-increment:lst-ctn-kix_9homsd1hzovf-5}ol.lst-kix_9homsd1hzovf-7.start{counter-reset:lst-ctn-kix_9homsd1hzovf-7 0}.lst-kix_mnwhh7zfkmdq-4>li{counter-increment:lst-ctn-kix_mnwhh7zfkmdq-4}.lst-kix_oz8v8u4pd1db-0>li{counter-increment:lst-ctn-kix_oz8v8u4pd1db-0}ol.lst-kix_list_1-7.start{counter-reset:lst-ctn-kix_list_1-7 0}.lst-kix_list_1-5>li{counter-increment:lst-ctn-kix_list_1-5}.lst-kix_list_1-8>li{counter-increment:lst-ctn-kix_list_1-8}ol.lst-kix_list_1-4.start{counter-reset:lst-ctn-kix_list_1-4 0}ol.lst-kix_list_1-1.start{counter-reset:lst-ctn-kix_list_1-1 0}ol.lst-kix_9homsd1hzovf-4.start{counter-reset:lst-ctn-kix_9homsd1hzovf-4 0}ol.lst-kix_mnwhh7zfkmdq-0{list-style-type:none}ol.lst-kix_mnwhh7zfkmdq-2{list-style-type:none}.lst-kix_oz8v8u4pd1db-2>li{counter-increment:lst-ctn-kix_oz8v8u4pd1db-2}ol.lst-kix_mnwhh7zfkmdq-1{list-style-type:none}ol.lst-kix_mnwhh7zfkmdq-4{list-style-type:none}.lst-kix_9homsd1hzovf-6>li{counter-increment:lst-ctn-kix_9homsd1hzovf-6}ol.lst-kix_mnwhh7zfkmdq-3{list-style-type:none}ol.lst-kix_mnwhh7zfkmdq-6{list-style-type:none}ol.lst-kix_mnwhh7zfkmdq-5{list-style-type:none}.lst-kix_9homsd1hzovf-0>li{counter-increment:lst-ctn-kix_9homsd1hzovf-0}ol.lst-kix_mnwhh7zfkmdq-7.start{counter-reset:lst-ctn-kix_mnwhh7zfkmdq-7 0}ol.lst-kix_mnwhh7zfkmdq-8{list-style-type:none}ol.lst-kix_mnwhh7zfkmdq-7{list-style-type:none}.lst-kix_oz8v8u4pd1db-8>li{counter-increment:lst-ctn-kix_oz8v8u4pd1db-8}ol.lst-kix_9homsd1hzovf-5.start{counter-reset:lst-ctn-kix_9homsd1hzovf-5 0}ol.lst-kix_list_1-3.start{counter-reset:lst-ctn-kix_list_1-3 0}ol.lst-kix_list_1-2.start{counter-reset:lst-ctn-kix_list_1-2 0}.lst-kix_mnwhh7zfkmdq-6>li{counter-increment:lst-ctn-kix_mnwhh7zfkmdq-6}ol.lst-kix_mnwhh7zfkmdq-0.start{counter-reset:lst-ctn-kix_mnwhh7zfkmdq-0 0}.lst-kix_mnwhh7zfkmdq-0>li{counter-increment:lst-ctn-kix_mnwhh7zfkmdq-0}.lst-kix_list_1-0>li:before{content:"" counter(lst-ctn-kix_list_1-0,decimal) ". "}.lst-kix_list_1-1>li:before{content:"" counter(lst-ctn-kix_list_1-1,lower-latin) ". "}.lst-kix_list_1-2>li:before{content:"" counter(lst-ctn-kix_list_1-2,lower-roman) ". "}ol.lst-kix_oz8v8u4pd1db-5.start{counter-reset:lst-ctn-kix_oz8v8u4pd1db-5 0}.lst-kix_list_1-3>li:before{content:"" counter(lst-ctn-kix_list_1-3,decimal) ". "}.lst-kix_list_1-4>li:before{content:"" counter(lst-ctn-kix_list_1-4,lower-latin) ". "}.lst-kix_list_1-0>li{counter-increment:lst-ctn-kix_list_1-0}ol.lst-kix_9homsd1hzovf-8{list-style-type:none}ol.lst-kix_9homsd1hzovf-7{list-style-type:none}ol.lst-kix_9homsd1hzovf-6{list-style-type:none}ol.lst-kix_9homsd1hzovf-5{list-style-type:none}ol.lst-kix_9homsd1hzovf-4{list-style-type:none}.lst-kix_list_1-6>li{counter-increment:lst-ctn-kix_list_1-6}.lst-kix_list_1-7>li:before{content:"" counter(lst-ctn-kix_list_1-7,lower-latin) ". "}ol.lst-kix_9homsd1hzovf-3{list-style-type:none}ol.lst-kix_9homsd1hzovf-2{list-style-type:none}ol.lst-kix_9homsd1hzovf-1{list-style-type:none}ol.lst-kix_9homsd1hzovf-0{list-style-type:none}.lst-kix_list_1-3>li{counter-increment:lst-ctn-kix_list_1-3}.lst-kix_list_1-5>li:before{content:"" counter(lst-ctn-kix_list_1-5,lower-roman) ". "}.lst-kix_list_1-6>li:before{content:"" counter(lst-ctn-kix_list_1-6,decimal) ". "}.lst-kix_list_1-8>li:before{content:"" counter(lst-ctn-kix_list_1-8,lower-roman) ". "}ol.lst-kix_mnwhh7zfkmdq-6.start{counter-reset:lst-ctn-kix_mnwhh7zfkmdq-6 0}ol{margin:0;padding:0}table td,table th{padding:0}.c5{border-right-style:solid;padding:5pt 5pt 5pt 5pt;border-bottom-color:#000000;border-top-width:1pt;border-right-width:1pt;border-left-color:#000000;vertical-align:top;border-right-color:#000000;border-left-width:1pt;border-top-style:solid;background-color:#efefef;border-left-style:solid;border-bottom-width:1pt;width:150pt;border-top-color:#000000;border-bottom-style:solid}.c14{border-right-style:solid;padding:5pt 5pt 5pt 5pt;border-bottom-color:#000000;border-top-width:1pt;border-right-width:1pt;border-left-color:#000000;vertical-align:top;border-right-color:#000000;border-left-width:1pt;border-top-style:solid;background-color:#efefef;border-left-style:solid;border-bottom-width:1pt;width:248.2pt;border-top-color:#000000;border-bottom-style:solid}.c35{border-right-style:solid;padding:5pt 5pt 5pt 5pt;border-bottom-color:#000000;border-top-width:1pt;border-right-width:1pt;border-left-color:#000000;vertical-align:top;border-right-color:#000000;border-left-width:1pt;border-top-style:solid;background-color:#efefef;border-left-style:solid;border-bottom-width:1pt;width:45.8pt;border-top-color:#000000;border-bottom-style:solid}.c42{border-right-style:solid;padding:5pt 5pt 5pt 5pt;border-bottom-color:#000000;border-top-width:0pt;border-right-width:0pt;border-left-color:#000000;vertical-align:top;border-right-color:#000000;border-left-width:0pt;border-top-style:solid;border-left-style:solid;border-bottom-width:0pt;width:270pt;border-top-color:#000000;border-bottom-style:solid}.c41{border-right-style:solid;padding:5pt 5pt 5pt 5pt;border-bottom-color:#000000;border-top-width:0pt;border-right-width:0pt;border-left-color:#000000;vertical-align:top;border-right-color:#000000;border-left-width:0pt;border-top-style:solid;border-left-style:solid;border-bottom-width:0pt;width:193.5pt;border-top-color:#000000;border-bottom-style:solid}.c18{-webkit-text-decoration-skip:none;color:#000000;font-weight:700;text-decoration:underline;vertical-align:baseline;text-decoration-skip-ink:none;font-size:16pt;font-family:"Calibri";font-style:normal}.c17{-webkit-text-decoration-skip:none;color:#000000;font-weight:700;text-decoration:underline;vertical-align:baseline;text-decoration-skip-ink:none;font-size:14pt;font-family:"Calibri";font-style:normal}.c15{margin-left:36pt;padding-top:0pt;text-indent:-18pt;padding-bottom:12pt;line-height:1.15;orphans:2;widows:2;text-align:justify}.c8{color:#000000;font-weight:700;text-decoration:none;vertical-align:baseline;font-size:11pt;font-family:"Arial";font-style:normal}.c24{color:#000000;font-weight:400;text-decoration:none;vertical-align:baseline;font-size:12pt;font-family:"Calibri";font-style:normal}.c3{margin-left:-4.5pt;padding-top:0pt;padding-bottom:12pt;line-height:1.15;orphans:2;widows:2;text-align:justify}.c25{color:#000000;font-weight:700;text-decoration:none;vertical-align:baseline;font-size:14pt;font-family:"Calibri";font-style:normal}.c6{color:#000000;font-weight:400;text-decoration:none;vertical-align:baseline;font-size:14pt;font-family:"Calibri";font-style:normal}.c1{margin-left:-4.5pt;padding-top:0pt;padding-bottom:12pt;line-height:1.15;orphans:2;widows:2;text-align:center}.c7{margin-left:-4.5pt;padding-top:0pt;padding-bottom:10pt;line-height:1.15;orphans:2;widows:2;text-align:justify}.c2{padding-top:0pt;padding-bottom:0pt;line-height:1.15;orphans:2;widows:2;text-align:center}.c39{padding-top:0pt;padding-bottom:12pt;line-height:1.15;orphans:2;widows:2;text-align:center}.c47{padding-top:10pt;padding-bottom:10pt;line-height:1.15;orphans:2;widows:2;text-align:justify}.c12{padding-top:0pt;padding-bottom:12pt;line-height:1.0;orphans:2;widows:2;text-align:justify}.c26{padding-top:0pt;padding-bottom:0pt;line-height:1.15;orphans:2;widows:2;text-align:left}.c23{padding-top:0pt;padding-bottom:0pt;line-height:1.0;orphans:2;widows:2;text-align:center}.c38{padding-top:0pt;padding-bottom:0pt;line-height:1.0;orphans:2;widows:2;text-align:left}.c31{padding-top:0pt;padding-bottom:0pt;line-height:1.0;orphans:2;widows:2;text-align:right}.c40{padding-top:0pt;padding-bottom:12pt;line-height:1.15;orphans:2;widows:2;text-align:left}.c4{padding-top:0pt;padding-bottom:0pt;line-height:1.15;orphans:2;widows:2;text-align:justify}.c22{padding-top:0pt;padding-bottom:12pt;line-height:1.15;orphans:2;widows:2;text-align:justify}.c51{color:#000000;text-decoration:none;vertical-align:baseline;font-style:italic}.c30{color:#000000;text-decoration:none;vertical-align:baseline;font-style:normal}.c27{border-spacing:0;border-collapse:collapse;margin-right:auto}.c45{font-size:11pt;font-family:"Calibri";font-weight:400}.c44{font-weight:400;font-size:11pt;font-family:"Arial"}.c50{font-size:14pt;font-family:"Calibri";font-weight:700}.c9{font-size:14pt;font-family:"Calibri";font-weight:400}.c0{font-size:7pt;font-family:"Calibri";font-weight:400}.c33{color:#000000;text-decoration:none;font-style:normal}.c29{background-color:#ffffff;max-width:461.1pt;padding:72pt 67pt 72pt 67pt}.c36{font-weight:400;font-size:12pt;font-family:"Cambria"}.c46{font-weight:400;font-size:11pt;font-family:"Cambria"}.c10{margin-left:36pt;padding-left:0pt}.c28{padding:0;margin:0}.c16{margin-left:54pt;text-indent:-18pt}.c52{font-weight:400;font-family:"Calibri"}.c11{margin-left:-4.5pt}.c49{font-size:11pt}.c20{height:26.5pt}.c37{height:29.5pt}.c13{height:12pt}.c21{height:27.2pt}.c43{height:28.8pt}.c19{vertical-align:super}.c48{margin-left:-22.5pt}.c32{height:43.8pt}.c34{height:44.5pt}.title{padding-top:24pt;color:#000000;font-weight:700;font-size:36pt;padding-bottom:6pt;font-family:"Cambria";line-height:1.0;page-break-after:avoid;orphans:2;widows:2;text-align:left}.subtitle{padding-top:18pt;color:#666666;font-size:24pt;padding-bottom:4pt;font-family:"Georgia";line-height:1.0;page-break-after:avoid;font-style:italic;orphans:2;widows:2;text-align:left}li{color:#000000;font-size:12pt;font-family:"Cambria"}p{margin:0;color:#000000;font-size:12pt;font-family:"Cambria"}h1{padding-top:24pt;color:#000000;font-weight:700;font-size:24pt;padding-bottom:6pt;font-family:"Cambria";line-height:1.0;page-break-after:avoid;orphans:2;widows:2;text-align:left}h2{padding-top:18pt;color:#000000;font-weight:700;font-size:18pt;padding-bottom:4pt;font-family:"Cambria";line-height:1.0;page-break-after:avoid;orphans:2;widows:2;text-align:left}h3{padding-top:14pt;color:#000000;font-weight:700;font-size:14pt;padding-bottom:4pt;font-family:"Cambria";line-height:1.0;page-break-after:avoid;orphans:2;widows:2;text-align:left}h4{padding-top:12pt;color:#000000;font-weight:700;font-size:12pt;padding-bottom:2pt;font-family:"Cambria";line-height:1.0;page-break-after:avoid;orphans:2;widows:2;text-align:left}h5{padding-top:11pt;color:#000000;font-weight:700;font-size:11pt;padding-bottom:2pt;font-family:"Cambria";line-height:1.0;page-break-after:avoid;orphans:2;widows:2;text-align:left}h6{padding-top:10pt;color:#000000;font-weight:700;font-size:10pt;padding-bottom:2pt;font-family:"Cambria";line-height:1.0;page-break-after:avoid;orphans:2;widows:2;text-align:left} body{text-align:center}</style>
+</head>
+<body onload="disableSubmit()" style="max-width: 700px; margin-left: 20px; margin-right: 30px;">
+	<div id="content" style="display:flex;justify-content:space-between;align-items:flex-start;flex-direction:column;margin-left:px;">
+    <div style="margin:auto">
+      <p class="c38">
+        <span class="c30 c36">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+      </p>
+      <p class="c38">
+        <span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+        <span style="overflow: hidden; display: inline-block; margin: 0.00px 0.00px; border: 0.00px solid #000000; transform: rotate(0.00rad) translateZ(0px); -webkit-transform: rotate(0.00rad) translateZ(0px); width: 240.83px; height: 32.50px;">
+          <center>
+            <div style="max-width: 750px; max-height: 120px">
+              <img src="https://i.postimg.cc/kgHvKMLz/employed-India-Logo.png" height="125px" width="704px">
+            </div>
+          </center>
+        </span>
+      </p>
+      <p class="c26 c13">
+        <span class="c8" style="margin:auto"></span>
+      </p>
+    </div>
+    <p class="c4">
+      <span class="c17">&nbsp; </span>
+    </p>
+    <p class="c2" style="margin:auto;">
+      <span class="c17">
+        {% if not actual_offer %}
+          PROVISIONAL
+        {% endif %}
+        OFFER LETTER
+      </span>
+    </p>
+    <p class="c2" style="margin:auto;">
+      {% if not actual_offer %}
+        <b>This is a provisional offer letter. This is NOT an actual offer letter which will be sent after successful first month completion.</b>
+      {% endif %}
+    </p>
+    <p class="c4">
+      <span class="c24">&nbsp;</span>
+    </p>
+    <p class="c4">
+      <span class="c24">&nbsp;</span>
+    </p>
+    <p class="c4">
+      <span class="c6">Dear Mr./Ms. {{user}},</span>
+    </p>
+    <p class="c4">
+      <span class="c24">&nbsp;</span>
+    </p>
+    <p class="c4">
+      <span class="c9">We are pleased to inform you that you have been appointed for the position of an intern at </span>
+      <span class="c50">Employed India (EI)</span>
+      <span class="c6">. We are delighted to make you the following job offer based on the terms and conditions mentioned below.</span>
+    </p>
+    <p class="c4">
+      <span class="c6">&nbsp;</span>
+    </p>
+    <table class="c27" style="margin:auto;">
+      <tbody >
+        <tr class="c43">
+          <td class="c41" colspan="1" rowspan="1">
+            <p class="c4 c16">
+              <span class="c9">1.</span>
+              <span class="c0">&nbsp; &nbsp; </span>
+              <span class="c25">Designation: </span>
+            </p>
+          </td>
+          <td class="c42" colspan="1" rowspan="1">
+            <p class="c4">
+              <span class="c6">Marketing Intern</span>
+            </p>
+          </td>
+        </tr>
+        <tr class="c43">
+          <td class="c41" colspan="1" rowspan="1">
+            <p class="c4 c16">
+              <span class="c9">2.</span>
+              <span class="c0">&nbsp; &nbsp; </span>
+              <span class="c25">Date of Joining:</span>
+            </p>
+          </td>
+          <td class="c42" colspan="1" rowspan="1">
+            <p class="c4">
+              <span class="c6">{{ present_date }}</span>
+            </p>
+          </td>
+        </tr>
+        <tr class="c37">
+          <td class="c41" colspan="1" rowspan="1">
+            <p class="c4 c16">
+              <span class="c9">3.</span>
+              <span class="c0">&nbsp; &nbsp; </span>
+              <span class="c25">Location of Work:</span>
+            </p>
+          </td>
+          <td class="c42" colspan="1" rowspan="1">
+            <p class="c4"><span class="c6">Work From Home</span>
+            </p>
+          </td>
+        </tr>
+        <tr class="c20">
+          <td class="c41" colspan="1" rowspan="1">
+            <p class="c4 c16">
+              <span class="c9">4.</span>
+              <span class="c0">&nbsp; &nbsp; </span>
+              <span class="c25">Compensation</span>
+            </p>
+          </td>
+          <td class="c42" colspan="1" rowspan="1">
+            <p class="c4">
+              <span class="c6">See table below</span>
+            </p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="c4">
+      <span class="c24">&nbsp;</span>
+    </p>
+    <table class="c27" style="margin:auto;margin-bottom:80px;">
+      <tbody >
+        <tr class="c32">
+          <td class="c14" colspan="1" rowspan="1">
+            <p class="c4">
+              <span class="c25">Salary Components</span>
+            </p>
+          </td>
+          <td class="c5" colspan="1" rowspan="1">
+            <p class="c4">
+              <span class="c25">Pay Details</span>
+            </p>
+          </td>
+        </tr>
+        <tr class="c32">
+          <td class="c14" colspan="1" rowspan="1">
+            <p class="c4">
+              <span class="c6">Performance based pay (minimum target per month)</span>
+            </p>
+          </td>
+          <td class="c5" colspan="1" rowspan="1">
+            <p class="c4">
+              <span class="c6">Rs. 1000 <sup>1*</sup></span>
+            </p>
+          </td>
+        </tr>
+        <tr class="c21">
+          <td class="c14" colspan="1" rowspan="1">
+            <p class="c4">
+              <span class="c6">Web signup / App download (Digital Marketing)</span>
+            </p>
+          </td>
+          <td class="c5" colspan="1" rowspan="1">
+            <p class="c4">
+              <span class="c6">Rs. 6.66</span>
+            </p>
+          </td>
+        </tr>
+        <tr class="c21">
+          <td class="c14" colspan="1" rowspan="1">
+            <p class="c4">
+              <span class="c6">Download + post</span>
+            </p>
+          </td>
+          <td class="c5" colspan="1" rowspan="1">
+            <p class="c4">
+              <span class="c9">Rs. 10 </span>
+            </p>
+          </td>
+        </tr>
+        <tr class="c32">
+          <td class="c14" colspan="1" rowspan="1">
+            <p class="c4">
+              <span class="c6">Business Development + Affiliate Marketing</span>
+            </p>
+          </td>
+          <td class="c5" colspan="1" rowspan="1">
+            <p class="c4">
+              <span class="c6">10% (or Rs.1000)</span>
+            </p>
+          </td>
+        </tr>
+        <tr class="c32">
+          <td class="c14" colspan="1" rowspan="1">
+            <p class="c4">
+              <span class="c6">Celebrity signup (50K+ f) + social media share</span>
+            </p>
+          </td>
+          <td class="c5" colspan="1" rowspan="1">
+            <p class="c4">
+              <span class="c6">Rs. 500 (every 50K followers)</span>
+            </p>
+          </td>
+        </tr>
+        <tr class="c21">
+          <td class="c14" colspan="1" rowspan="1">
+            <p class="c4">
+              <span class="c6">Internship Referral bonus (more CAs)</span>
+            </p>
+          </td>
+          <td class="c5" colspan="1" rowspan="1">
+            <p class="c4">
+              <span class="c9">Rs. 100 </span>
+              <sup>2*</sup>
+            </p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="c4">
+      <span class="c24">&nbsp;</span>
+    </p>
+    <p class="c4">
+      <span class="c6">This is a single offer for all the marketing modules at Employed India.
+        <span class="c6">We expect our interns to practise all 3 during the tenure and learn as much as possible, however accepting 2 roles is mandatory.</span>
+      </p>
+      <p class="c4">
+        <span class="c6">&nbsp;</span>
+      </p>
+      <p class="c4">
+        <span class="c17">TERMS AND CONDITIONS</span>
+      </p>
+      <p class="c15">
+        <span class="c9">1</span>
+        <span class="c45">.</span>
+        <span class="c0">&nbsp; &nbsp;</span>
+        <span class="c45"><sup>1*</sup> - </span>
+        <span class="c6">Intern has to drive a minimum of 150 app downloads (using digital marketing) OR 100 internships posted by companies (300 phone calls at 30% conversion or 200 calls at 50% conversion).</span>
+      </p>
+      <p class="c15">
+        <span class="c6">&nbsp; &nbsp; &nbsp;If the intern doesn&rsquo;t work properly and minimum work is not completed, management reserves the right to continue/terminate the internship with/without pay for the work done as per the decision taken by the management.</span>
+      </p>
+      <p class="c15">
+        <span class="c9">2. </span>
+        <span class="c0">&nbsp; &nbsp;</span>
+        <sup>2*</sup>
+        <span class="c6">&nbsp;Once the referral gets their first pay, you will get your referral bonus. </span>
+      </p>
+      <p class="c15">
+        <span class="c9">
+          <span class="c6">3. &nbsp;The internship is for {{intern_duration}} months. There is one month notice period during which the intern has to find two CAs in their college as replacement and train them for the work during this month.</span>
+        </p>
+        <p class="c22">
+          <span class="c6">All entitlements given above are applicable after you have joined EI. The entitlements are subject to company policies/procedures/ guidelines that may be issued/modified from time to time. </span>
+        </p>
+        <p class="c22">
+          <span class="c6">This Offer of Appointment is valid for 72 hours from the date of this email. You are requested to confirm your acceptance by replying to our email with an acknowledgment (YES, I, (NAME) accept the offer). In case you fail to communicate your acceptance in writing within 72 days of the date of this email, the Offer shall stand revoked. </span>
+        </p>
+        <p class="c22">
+          <span class="c6">By accepting this Offer of Appointment you are accepting all the Terms and Conditions set forth herein and as attached to this Offer of Appointment in various Annexures (Annexed herewith as Annexures 1A and 1B). </span>
+        </p>
+        <p class="c22">
+          <span class="c6">We are confident that you will be able to make a significant contribution to the success of our organization. We welcome you on-board and look forward to working with you.</span>
+        </p>
+        <p class="c22">
+          <span style="overflow: hidden; display: inline-block; margin: 0.00px 0.00px; border: 0.00px solid #000000; transform: rotate(0.00rad) translateZ(0px); -webkit-transform: rotate(0.00rad) translateZ(0px); width: 83.50px; height: 86.06px;">
+            <img src="https://atg-storage-s3.s3.ap-south-1.amazonaws.com/assets/Frontend/img/bassi_signature.jpeg" alt="" style="height: 100px; width: 100px;">
+          </span>
+        </p>
+        <p class="c22">
+          <span class="c6">Yours sincerely,</span>
+        </p>
+        <p class="c12">
+          <span class="c6">Saurabh Bassi (Co-Founder / COO )</span>
+        </p>
+        <p class="c12">
+          <span class="c6">Employed India (www.employedindia.in)</span>
+        </p>
+        <p class="c4 c13">
+          <span class="c24"></span>
+        </p><p class="c22 c13">
+          <span class="c18"></span>
+        </p>
+        <p class="c22 c13">
+          <span class="c18"></span>
+        </p>
+        <p class="c40 c13">
+          <span class="c18"></span>
+        </p>
+        <p class="c13 c39">
+          <span class="c18"></span>
+        </p>
+        <p class="c39 c13">
+          <span class="c18"></span>
+        </p>
+        <p class="c39 c13">
+          <span class="c18"></span>
+        </p>
+        <p class="c39 c13">
+          <span class="c18"></span>
+        </p>
+        <p class="c13 c40">
+          <span class="c18"></span>
+        </p>
+<div style="margin-left: 10px">
+<p class="c39" style="margin:auto" >
+  <span class="c18">ANNEXURE &ndash; 1A</span>
+</p>
+<p class="c22 c4">
+  <span class="c17">TERMS AND CONDITIONS OF EMPLOYMENT</span>
+</p>
+<p class="c3">
+  <span class="c9">1.</span>
+  <span class="c0">&nbsp; &nbsp; </span>
+  <span class="c25">REPORTING / JOINING </span>
+</p>
+<p class="c3">
+  <span class="c6">Your Appointment shall be effective from your Date of Joining. </span>
+</p>
+<p class="c4 c11">
+  <span class="c9">2.</span>
+  <span class="c0">&nbsp; &nbsp; </span>
+  <span class="c25">PROBATIONARY PERIOD</span>
+</p>
+<p class="c4 c11 c13">
+  <span class="c25"></span>
+</p>
+<p class="c3">
+  <span class="c6">Your appointment will be subject to a probationary period of 1 (One) month from the date of joining. However, the probationary period can be extended further at the sole discretion of the Company in case of unsatisfactory performance or conduct. An official confirmation of your appointment will be notified to you in writing.</span>
+</p>
+<p class="c3">
+  <span class="c9">3.</span>
+  <span class="c0">&nbsp; &nbsp; </span>
+  <span class="c25">LOCATION OF WORK </span>
+</p>
+<p class="c4 c11">
+  <span class="c6">Your location of work will be as mentioned in the Offer of Appointment. However, your services are transferable to any place within the country or abroad or to any of the EI&rsquo;s associate/sister concern or its subsidiary, whether are or as may be established or acquired later on, at the sole discretion of the company. In case you are transferred to any other location, you will be governed by the terms and conditions of service applicable to the new place of posting/assignment including compensation, leave and holidays, working hours and other related policies. However, if your Offer of Appointment is for internship and place of work is Work From Home, there shall be no change in location of work.</span>
+</p>
+<p class="c4 c11 c13">
+  <span class="c6"></span>
+</p>
+<p class="c4 c11">
+  <span class="c52">&nbsp;</span>
+  <span class="c9">4.</span>
+  <span class="c0">&nbsp; &nbsp; </span>
+  <span class="c25">DATA PRIVACY </span>
+</p>
+<p class="c7">
+  <span class="c6">The Company requires that you shall observe Data Privacy as per Company&#39;s regulations/ policy, regarding the processing and protection of any personal information and/or data to which you may have access to in the course of your duties, and shall report any infringement relating to the manner in which personal information or other data is processed to the Company immediately. In the event of any breach of the said undertaking, the Company shall be entitled to take such action against you as per the Company Rules and/or applicable law. </span>
+</p>
+<p class="c3">
+  <span class="c9">5.</span>
+  <span class="c0">&nbsp; &nbsp; </span>
+  <span class="c25">NON DISCLOSURE </span>
+</p>
+<p class="c4 c11">
+  <span class="c6">Unless authorized in writing by the Company, you shall not divulge, communicate or pass on any &ldquo;confidential&rdquo; information in any form, related to any aspect of the Company to anyone outside the Company. </span>
+</p>
+<p class="c11 c47">
+  <span class="c6">You acknowledge that the Company owns trade secrets and confidential and proprietary information that are very important to the success of the Company&rsquo;s business. In addition, the Company has confidential information and assets belonging to other persons (whether individuals, firms, corporations or other entities) that the Company is obligated to keep confidential. </span>
+</p>
+<p class="c7">
+  <span class="c6">The expression &ldquo;Confidential Information&rdquo; refers to all and / or any of the trade secrets and confidential and proprietary information owned by or in the custody of the Company. </span>
+</p>
+<p class="c4 c11">
+  <span class="c6">You agree that all Confidential Information is the exclusive property of the Company and you will be responsible and will take steps necessary to protect the Confidential Information. You agree that, during your employment and after your employment ends, whatever the reason of such termination, you will not use, reproduce, or disclose any of the confidential information, except in the normal course of your job for the Company, or unless an authorized officer or the Company gives you written permission in advance. You agree to return any Confidential Information (and all copies) in your possession on cessation of your employment with the Company. </span>
+</p>
+<p class="c4 c11 c13">
+  <span class="c6"></span>
+</p>
+<p class="c12 c11">
+  <span class="c9">6.</span>
+  <span class="c0">&nbsp; &nbsp; </span>
+  <span class="c25">PROFESSIONAL ETHICS </span>
+</p>
+<p class="c3">
+  <span class="c6">You shall not conduct yourself in any manner amounting to breach of confidence reposed in you or inconsistent with the position of responsibility occupied by you. Please deal with the Company&rsquo;s money, material and documents with utmost honesty, moral and professional ethics. &nbsp;</span>
+</p>
+<p class="c11 c12">
+  <span class="c9">7.</span>
+  <span class="c0">&nbsp; &nbsp; </span>
+  <span class="c25">RESIGNATION / TERMINATION </span>
+</p>
+<p class="c3">
+  <span class="c9">You shall give a One Month prior notice to the Company before you can be officially relieved from your work. For Interns whose location is Work For Home, the period is One Week.</span>
+  <span class="c18">&nbsp;</span>
+</p>
+<p class="c1" style="margin:auto;margin-top:50px;">
+  <span class="c18">ANNEXURE &ndash; 1B</span>
+</p>
+<p class="c3">
+  <span class="c6">This is a summary of working hours, leave and holidays, retiral benefits as may be applicable from time to time including some of the benefits &amp; entitlements. These are subject to change as per applicable laws and/or at Company&rsquo;s discretion. In case of any clarification please contact Human Resources at your location. </span>
+</p>
+<p class="c12 c11">
+  <span class="c9">1.</span>
+  <span class="c0">&nbsp; &nbsp; </span>
+  <span class="c25">WORKING HOURS </span>
+</p>
+<p class="c4 c11">
+  <span class="c6">Your working hours will be as follows:</span>
+</p>
+<p class="c4 c11">
+  <span class="c9">Monday &ndash; Friday: 8.00 a.m to 5.00 p.m </span>
+  <span class="c9 c51">(Lunch Break: 30 minutes)</span>
+</p>
+<p class="c4 c11">
+  <span class="c6">You may be required to work in different shifts including night shift depending upon the business requirements &amp; emergencies. You may be deputed to any other office or project site in which case the shift timings prevalent at such places will apply for you. You will be required to sign a consent form at the time of joining.</span>
+</p>
+<p class="c4 c11">
+  <span class="c24">&nbsp;</span>
+</p>
+<p class="c12 c11">
+  <span class="c9">2.</span>
+  <span class="c0">&nbsp; &nbsp; </span>
+  <span class="c25">LEAVE AND HOLIDAYS </span>
+</p>
+<p class="c4 c11">
+  <span class="c6">As per the Company&rsquo;s policy you will be entitled to 12 days of Casual Leave &amp; 25 days of Privilege/ Earned Leaves. These will be pro-rated in case you join any time during the year. The Company also provides 12 festival / public holidays including national holidays, which are announced in advance every year. The holidays vary depending on the location of your job assignment. There will be no leaves &amp; holidays during the probationary period.</span>
+</p>
+<p class="c4 c11 c13">
+  <span class="c24"></span>
+</p><p class="c12 c11">
+  <span class="c9">3.</span>
+  <span class="c0">&nbsp; &nbsp; </span>
+  <span class="c25">PAYMENT MODE</span>
+</p><p class="c3">
+  <span class="c6">Payment shall be made to your Bank Account through Online transfer. You are required to submit your complete bank details to the hiring HR at the time of joining.</span>
+</p>
+<p class="c1" style="margin:auto;margin-top:50px;">
+  <span class="c18">ANNEXURE &ndash; 1C</span>
+</p>
+<p class="c4 c11">
+  <span class="c6">1. Internship can be extended to beyond 6 months. Please discuss with your manager.</span>
+</p>
+<p class="c4 c11">
+  <span class="c24">&nbsp;</span>
+</p>
+<p class="c4 c11">
+  <span class="c6">2. Full time offers may be rolled out depending on the management decision (after the internship is over). Please discuss with your manager.</span>
+</p>
+<p class="c4 c11">
+  <span class="c24">&nbsp;</span>
+</p>
+<p class="c4 c11">
+  <span class="c6">3. 1 month notice period to be given to your manager before you wish to end the internship. Without a one month notice period, the internship will not be ended even if you have reached the end of 6 months term. It is intern's responsibility to notify the manager at end of the 5th month in case he/she wants to be relieved after 6 months timeframe completion.</span>
+</p>
+<p class="c4 c11 c13">
+  <span class="c24"></span>
+</p>
+<p class="c3">
+  <span class="c6">4. Leaves required due to upcoming exams must be informed to your manager atleast 1 week in advance. Leaves taken during the internship will extend the term by similar duration.</span>
+</p>
+<p class="c3 c13">
+  <span class="c6"></span>
+</p>
+<p class="c3 c13">
+  <span class="c6"></span>
+</p>
+<div>
+  <p class="c13 c31">
+    <span class="c30 c36"></span>
+  </p>
+</div>
+
+
+{% if not actual_offer %}
+</div>
+	<div class="verify" style="margin:auto">
+ <input type="checkbox" name="terms" id="terms" onchange="activateButton(this)">  I {{user}}, Agree to the offer.
+<br><br>
+  <form action="/nda" method='POST'>
+		{% csrf_token %}
+		<button type="submit" class="btn border border-dark" name="submit" id="submit" value="I Agree dummy"  target="_blank">I Agree</button>
+
+	</form>
+</div>
+{% endif %}
+
+<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.3/jspdf.min.js"></script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.js"></script>
+
+<!--<script>
+    function generate(){
+    	var doc = new jsPDF();
+
+    	 var elementHandler = {
+    '#ignorePDF': function (element, renderer) {
+    return true;
+    }
+    };
+ var x=document.getElementById("content").innerHTML;
+doc.fromHTML(
+        x,
+        10,
+        10,
+        {
+        'width': 170,'elementHandlers': elementHandler
+        });
+
+doc.setFont("times")
+doc.setFontSize(30);
+doc.save('Offer_Letter.pdf');
+    }
+</script>-->
+    </div>
+</body>
+</html>

@@ -1,0 +1,74 @@
+{% extends "mainapp/submenu_base.html" %}
+{% load crispy_forms_tags %}
+{% block title %}
+Create Mantis
+{% endblock %}
+{% block styling %}
+.form1{
+  width:100%;
+
+}
+.form1 input{
+  width:90%;
+  margin-top:10px;
+  border-radius:5px;
+  border:1px solid black;
+  padding-left: 20px;
+
+}
+.form1 input:hover{
+  border:1px solid blue;
+}
+.form1 select{
+  margin-top:10px;
+  border-radius:5px;
+  padding-left:20px;
+}
+.form1 label{
+  display:inline-block;
+  width:250px;
+}
+{% endblock styling %}
+
+{% block content %}
+<div class="main">
+<p> Create Mantis Account</p>
+<div class="form1">
+
+  <form method="POST" action="#">
+    {% csrf_token %}
+    <input type="text" placeholder="Username" name="username" required>
+    <input type="name" placeholder="Name" name="name" required>
+    <input type="email" placeholder="Email" name="email" required>
+    <input type="password" placeholder="Password" name="password" required>
+    <label>Access Level</label>
+    <select name='opt'>
+      <option value="developer">Developer</option>
+      <option value="manager">Manager</option>
+      <option value="reporter">Reporter</option>
+      <option value="updater">Updater</option>
+      <option value="viewer">Viewer</option>
+      <option value="administrator">Administrator</option>
+    </select><br>
+    <label>Enable</label>
+    <select name='enable'>
+      <option value="true">True</option>
+      <option value="false">False</option>
+    </select><br>
+    <label>Protected</label>
+    <select name='protected'>
+      <option value="false">False</option>
+      <option value="true">True</option>
+
+    </select>
+    <input type="submit" value="Create">
+
+
+
+  </form>
+  </div>
+</div>
+<div style="margin-left:300px;">
+  {{msg}}
+</div>
+{% endblock %}

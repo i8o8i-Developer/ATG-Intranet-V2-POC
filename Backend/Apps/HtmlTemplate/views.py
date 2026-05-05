@@ -78,6 +78,15 @@ class GenericHtmlTemplateViewSet(TenantScopedModelViewSet):
         )
         return Response(result.data if result.ok else result.errors, status=result.status_code)
 
+    @action(detail=False, methods=["post"], url_path="sync-legacy-library")
+    def sync_legacy_library(self, request):
+        result = TemplateRenderService.sync_legacy_offer_library(
+            self.get_tenant_context(),
+            offers_dir=request.data.get("offers_dir", ""),
+            domains=request.data.get("domains") or None,
+        )
+        return Response(result.data if result.ok else result.errors, status=result.status_code)
+
     @action(detail=True, methods=["post"], url_path="render")
     def render(self, request, pk=None):
         serializer = TemplateRenderSerializer(data=request.data)
@@ -156,6 +165,19 @@ class GenericHtmlTemplateSyncLegacyAPIView(HtmlTemplateLegacyMixin, APIView):
             position=data.get("position", "Business Analyst"),
             domains=data.get("domains") or ["ATG", "EI"],
             html_content=request.data.get("html_content", ""),
+        )
+        return Response(result.data if result.ok else result.errors, status=result.status_code)
+
+
+class GenericHtmlTemplateSyncLegacyLibraryAPIView(HtmlTemplateLegacyMixin, APIView):
+    def post(self, request):
+        context, error_response = self.with_context(request)
+        if error_response:
+            return error_response
+        result = TemplateRenderService.sync_legacy_offer_library(
+            context,
+            offers_dir=request.data.get("offers_dir", ""),
+            domains=request.data.get("domains") or None,
         )
         return Response(result.data if result.ok else result.errors, status=result.status_code)
 

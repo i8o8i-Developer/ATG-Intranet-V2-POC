@@ -1,0 +1,69 @@
+{% extends "mainapp/base.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% block title %}
+Automated API Testing
+{% endblock %}
+
+{% block content %}
+
+<div class="main">
+    <div class="form1">
+        <form method="POST" action="">
+            {% csrf_token %}
+            <div class="form-row">
+                <div class="form-group col-3">
+
+                </div>
+                <div class="form-group col-md-5 col-sm-12 px-3">
+                    <div class="form-row text-center text-primary py-1">
+                        <div class="form-group col-12">
+                            <h2>Automated API Testing</h2>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col">
+                            <div id="div_id_branchName" class="form-group">
+                                <label for="id_branchName">Enter Branch Name:</label>
+                                <div>
+                                    <input type="text" name="branchName" required class="textinput textInput form-control" id="id_branchName">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row pt-2">
+                        <div class="form-group col text-center">
+                            <button class="btn btn-outline-info" id="button" type="submit">Run API Automation</button>
+                        </div>
+                    </div>
+                    <div class="text-muted text-left">
+                        <p>
+                            Note: <br>
+                            1. Enter correct branch name, the name's are case sensitive. <br>
+                            2. Remember to mention on #general on slack: 'Using Party for {bugid}'. <br>
+                            3. The API automation may take upto 2-3 mins to run, have patience. <br>
+                        </p>
+                    </div>
+                    <div class="text-center">
+                        {% if n != -1 %}
+                            <hr>
+                            {% if n == 0 %}
+                                <h3>Result: All APIs Passed</h3>
+                            {% else %}
+                                <h3>Result: {{ n }} APIs Failed!</h3>
+                                {% for api in failedAPI %}
+                                    <div style="border: 1px solid black;">
+                                        <span style="white-space: pre-line;">{{ api }}</span>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+{% endblock %}

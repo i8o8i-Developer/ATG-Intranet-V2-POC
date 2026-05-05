@@ -23,6 +23,8 @@ import {
 import { apiGet, apiPost, clearApiAuth, getApiSettings, unpackList } from "./Api/Client.js";
 import { LoginScreen, ProfileScreen } from "./Screens/AuthScreens.jsx";
 import { RouteRenderer } from "./Screens/AppScreens.jsx";
+import OfferAcceptanceScreen from "./Screens/OfferAcceptanceScreen.jsx";
+import { resolveActiveEmployee } from "./Screens/Shared/ScreenUtils.jsx";
 
 const navItems = [
   { label: "Home", path: "/home/", icon: Home },
@@ -227,11 +229,13 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!selectedEmployeeId && data.employees?.length) {
-      const currentEmployee =
-        data.me?.employees?.[0]?.id ||
-        (data.employees || []).find((item) => String(item.user) === String(data.me?.user?.id))?.id;
-      setSelectedEmployeeId(String(currentEmployee || data.employees?.[0]?.id || ""));
+    const currentEmployee = resolveActiveEmployee(data);
+    const nextEmployeeId = currentEmployee?.id ? String(currentEmployee.id) : "";
+    if (nextEmployeeId && nextEmployeeId !== String(selectedEmployeeId || "")) {
+      setSelectedEmployeeId(nextEmployeeId);
+    }
+    if (!nextEmployeeId && selectedEmployeeId) {
+      setSelectedEmployeeId("");
     }
   }, [data.employees, data.me, selectedEmployeeId]);
 
@@ -258,6 +262,11 @@ function App() {
     setReloadKey((value) => value + 1);
     navigate("/login/");
   };
+
+  const isOfferAcceptanceRoute = path.startsWith("/offer/accept/");
+  if (isOfferAcceptanceRoute) {
+    return <OfferAcceptanceScreen />;
+  }
 
   if (!hasAuth || path.startsWith("/login")) {
     return <LoginScreen settings={settings} onLogin={login} />;
@@ -351,7 +360,7 @@ function AppShell({ children, route, navigate, data, apiOnline, loading, logout,
   const activeItem = navItems.find((item) => activePath === item.path || (item.path !== "/home/" && activePath.startsWith(item.path.replace(/\/$/, ""))));
   const pageTitle = activePath.startsWith("/profile") ? "Profile" : activeItem?.label || "Home";
   const user = data.me?.user || data.me?.account || data.me || {};
-  const employee = data.me?.employees?.[0] || (data.employees || []).find((item) => String(item.user) === String(user.id)) || {};
+  const employee = resolveActiveEmployee(data) || {};
   const displayName = employee.display_name || employee.displayName || user.fullName || user.full_name || user.username || "Profile";
   const initials = String(displayName).split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase() || "U";
   const visibleErrors = errors.filter((item) => item.status && item.status !== 401).slice(0, 1);

@@ -288,11 +288,26 @@ class MainAppLegacyActionAPIView(MainAppLegacyMixin, APIView):
         elif action == "execute":
             result = MainAppLegacyService.execute_issue_sync(context, issues=request.data.get("issues") or [], provider=request.data.get("provider", "Mantis"), page=request.data.get("page", 0), page_size=request.data.get("page_size", 0))
         elif action == "send_pdf_offer":
-            result = MainAppLegacyService.send_pdf_offer(context, request.data.get("offer_id"))
+            result = MainAppLegacyService.send_pdf_offer(
+                context,
+                request.data.get("offer_id"),
+                email=request.data.get("email") or request.data.get("candidate_email"),
+                html_template=request.data.get("html_template"),
+                email_subject=request.data.get("email_subject"),
+                email_template=request.data.get("email_template"),
+                macro_values=request.data.get("macro_values") or request.data.get("metadata") or {},
+            )
         elif action == "send_certificate":
-            result = MainAppLegacyService.send_certificate(context, request.data.get("recipient") or request.data.get("user_id"), title=request.data.get("title", "Certificate issued"))
-            if result.ok:
-                result = ServiceResult.success({"notification_id": result.data.id, "title": result.data.title, "recipient": result.data.recipient_id}, status_code=result.status_code)
+            metadata = request.data.get("metadata") or {}
+            result = MainAppLegacyService.send_certificate(
+                context,
+                request.data.get("recipient") or request.data.get("user_id"),
+                joining_date=metadata.get("joined_on") or request.data.get("joining_date") or request.data.get("joined_on"),
+                completion_date=metadata.get("completion_date") or request.data.get("completion_date"),
+                position=metadata.get("position") or request.data.get("position"),
+                responsibility=metadata.get("responsibilities") or request.data.get("responsibility") or request.data.get("responsibilities", ""),
+                title=request.data.get("title", "Certificate issued"),
+            )
         elif action == "search_username":
             result = MainAppLegacyService.search_username(context, request.data.get("q") or request.query_params.get("q", ""))
         elif action == "get_joining_date":

@@ -1,0 +1,380 @@
+{% extends "mainapp/base.html" %}
+
+{% load static %}
+
+{% block title %}
+Leaves
+{% endblock %}
+
+{% block jscss %}
+
+<link rel="stylesheet" href="{% static 'mainapp/css/leaves/list.css' %}">
+
+{% endblock jscss %}
+
+{% block content %}
+
+<!-- Store manager globally -->
+{% with is_manager=request.user.work_emp_name.exists %}
+
+<div class="row">
+  {% if is_manager %}
+    <div class="col-md-9">
+      <div role="tablist" class="switch-tabs nav nav-tabs">
+        <a class="active" id="my-leaves-tab" data-toggle="tab" href="#my-leaves" role="tab" aria-controls="my-leaves" aria-selected="true">My Leaves</a><a id="emp-leaves-tab" data-toggle="tab" href="#emp-leaves" role="tab" aria-controls="emp-leaves" aria-selected="false">Employee Leaves</a><a href="/emp-cal" role="button" aria-selected="false">Employee leave Calender</a>
+      </div>
+    </div>
+  {% endif %}
+  <div class="{% if is_manager %}tab-content{% endif %} col-md-12">
+    <div class="row flex-column-reverse flex-md-row tab-pane fade show active" id="my-leaves" role="tabpanel" aria-labelledby="my-leaves-tab">
+      <div class="col-md-9">
+        <div class="leave_list table-responsive">
+          <table class="table mb-0 pb-0 first-table">
+            <thead>
+              <tr role="tablist" class="nav nav-tabs">
+                <th class="active" id="upcoming-my-leaves-tab" data-toggle="tab" href="#upcoming-my-leaves" role="tab" aria-controls="upcoming-my-leaves" aria-selected="true">
+                  Upcoming Leaves
+                  <span class="leave-count">{{ upcoming_leaves|length }}</span>
+                </th>
+                <th id="past-my-leaves-tab" data-toggle="tab" href="#past-my-leaves" role="tab" aria-controls="past-my-leaves" aria-selected="false">
+                  Past Leaves
+                  <span class="leave-count">{{ past_leaves|length }}</span>
+                </th>
+              </tr>
+            </thead>
+          </table>
+          <table class="table table-striped tab-content">
+            <tbody class="tab-pane fade show active" id="upcoming-my-leaves" role="tabpanel" aria-labelledby="upcoming-my-leaves-tab">
+              {% for object in upcoming_leaves %}
+                <tr>
+                  <th scope="row">{{ forloop.counter }}.</th>
+                  <td>
+                    <a href="#!" data-toggle="modal" data-target="#exampleModal">
+                      {{ object.subject|truncatewords:3 }}
+                    </a>
+                  </td>
+                  <td>
+                    <span>{{ object.date_from|date:"d/m/Y" }}</span><span class="mid-connector">&mdash;</span><span>{{ object.date_to|date:"d/m/Y" }}</span>
+                  </td>
+                  <td>
+                    <span>
+                      <span class="days-count">{{ object.days }}</span> &nbsp; Day{{ object.days|pluralize }}
+                    </span>
+                  </td>
+                </tr>
+                <div class="custom modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                  <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">{{ object.subject }}</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      <div class="modal-body">
+                        <div class="date-info">
+                          <div class="row text">
+                            <div class="col-md-4">
+                              <h6>From</h6>
+                            </div>
+                            <div class="col-md-4">
+                              <h6>To</h6>
+                            </div>
+                          </div>
+                          <div class="row info">
+                            <div class="col-md-4 pr-0 mr-0">
+                              <div class="from">
+                                {{ object.date_from|date:"d/m/Y" }}
+                              </div>
+                            </div>
+                            <div class="col-connector">&mdash;</div>
+                            <div class="col-md-4 pl-0 ml-0">
+                              <div class="to">
+                                {{ object.date_to|date:"d/m/Y" }}
+                              </div>
+                            </div>
+                            <div class="col-md-3">
+                              <div class="days-count">
+                                <span>{{ object.days }}</span> &nbsp; Day{{ object.days|pluralize }}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="reason">
+                          <h6>Reason</h6>
+                          <p>{{ object.reason }}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {% empty %}
+                <tr>
+                  <th colspan="3">You have no Upcoming leaves.</th>
+                </tr>
+              {% endfor %}
+            </tbody>
+            <tbody class="tab-pane fade" id="past-my-leaves" role="tabpanel" aria-labelledby="past-my-leaves-tab">
+              {% for object in past_leaves %}
+                <tr>
+                  <th scope="row">{{ forloop.counter }}.</th>
+                  <td>
+                    <a href="#!" data-toggle="modal" data-target="#leaveModal_{{ object.id }}">
+                      {{ object.subject|truncatewords:3 }}
+                    </a>
+                  </td>
+                  <td>
+                    <span>{{ object.date_from|date:"d/m/Y" }}</span><span class="mid-connector">&mdash;</span><span>{{ object.date_to|date:"d/m/Y" }}</span>
+                  </td>
+                  <td>
+                    <span>
+                      <span class="days-count">{{ object.days }}</span> &nbsp; Day{{ object.days|pluralize }}
+                    </span>
+                  </td>
+                </tr>
+                <div class="custom modal fade" id="leaveModal_{{ object.id }}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                  <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">{{ object.subject }}</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      <div class="modal-body">
+                        <div class="date-info">
+                          <div class="row text">
+                            <div class="col-md-4">
+                              <h6>From</h6>
+                            </div>
+                            <div class="col-md-4">
+                              <h6>To</h6>
+                            </div>
+                          </div>
+                          <div class="row info">
+                            <div class="col-md-4 pr-0 mr-0">
+                              <div class="from">
+                                {{ object.date_from|date:"d/m/Y" }}
+                              </div>
+                            </div>
+                            <div class="col-connector">&mdash;</div>
+                            <div class="col-md-4 pl-0 ml-0">
+                              <div class="to">
+                                {{ object.date_to|date:"d/m/Y" }}
+                              </div>
+                            </div>
+                            <div class="col-md-3">
+                              <div class="days-count">
+                                <span>{{ object.days }}</span> &nbsp; Day{{ object.days|pluralize }}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="reason">
+                          <h6>Reason</h6>
+                          <p>{{ object.reason }}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {% empty %}
+                <tr>
+                  <th colspan="3">You have no past leaves.</th>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="col-md-2 ml-lg-3 mb-4">
+        <div>
+          <a href="{% url 'apply-leave' %}" class="btn btn-custom-primary">Apply Leave</a>
+        </div>
+      </div>
+    </div>
+    <div class="row flex-column-reverse flex-md-row tab-pane fade" id="emp-leaves" role="tabpanel" aria-labelledby="emp-leaves-tab">
+      <div class="col-md-9">
+        <div class="leave_list table-responsive">
+          <table class="table mb-0 pb-0 first-table">
+            <thead>
+              <tr role="tablist" class="nav nav-tabs">
+                <th class="active" id="upcoming-emp-leaves-tab" data-toggle="tab" href="#upcoming-emp-leaves" role="tab" aria-controls="upcoming-emp-leaves" aria-selected="true">
+                  Upcoming Leaves
+                  <span class="leave-count">{{ emp_upcoming_leaves|length }}</span>
+                </th>
+                <th id="past-emp-leaves-tab" data-toggle="tab" href="#past-emp-leaves" role="tab" aria-controls="past-emp-leaves" aria-selected="false">
+                  Past Leaves
+                  <span class="leave-count">{{ emp_past_leaves|length }}</span>
+                </th>
+              </tr>
+            </thead>
+          </table>
+          <table class="table table-striped tab-content">
+            <tbody class="tab-pane fade show active" id="upcoming-emp-leaves" role="tabpanel" aria-labelledby="upcoming-emp-leaves-tab">
+              {% for object in emp_upcoming_leaves %}
+                <tr>
+                  <th scope="row">{{ forloop.counter }}.</th>
+                  <td>
+                    <a href="#!" data-toggle="modal" data-target="#leaveModal_{{ object.id }}">
+                      {{ object.employee.get_full_name }}
+                    </a>
+                  </td>
+                  <td>
+                    <span>{{ object.date_from|date:"d/m/Y" }}</span><span class="mid-connector">&mdash;</span><span>{{ object.date_to|date:"d/m/Y" }}</span>
+                  </td>
+                  <td>
+                    <span>
+                      <span class="days-count">{{ object.days }}</span> &nbsp; Day{{ object.days|pluralize }}
+                    </span>
+                  </td>
+                </tr>
+                <div class="custom modal fade" id="leaveModal_{{ object.id }}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                  <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">{{ object.subject }}</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      <div class="modal-body">
+                        <div class="date-info">
+                          <div class="row text">
+                            <div class="col-md-4">
+                              <h6>From</h6>
+                            </div>
+                            <div class="col-md-4">
+                              <h6>To</h6>
+                            </div>
+                          </div>
+                          <div class="row info">
+                            <div class="col-md-4 pr-0 mr-0">
+                              <div class="from">
+                                {{ object.date_from|date:"d/m/Y" }}
+                              </div>
+                            </div>
+                            <div class="col-connector">&mdash;</div>
+                            <div class="col-md-4 pl-0 ml-0">
+                              <div class="to">
+                                {{ object.date_to|date:"d/m/Y" }}
+                              </div>
+                            </div>
+                            <div class="col-md-3">
+                              <div class="days-count">
+                                <span>{{ object.days }}</span> &nbsp; Day{{ object.days|pluralize }}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="reason">
+                          <h6>Reason</h6>
+                          <p>{{ object.reason }}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {% empty %}
+                <tr>
+                  <th colspan="3">No Upcoming leaves in your department{{ request.user.work_emp_name|length|pluralize }}.</th>
+                </tr>
+              {% endfor %}
+            </tbody>
+            <tbody class="tab-pane fade" id="past-emp-leaves" role="tabpanel" aria-labelledby="past-emp-leaves-tab">
+              {% for object in emp_past_leaves %}
+                <tr>
+                  <th scope="row">{{ forloop.counter }}.</th>
+                  <td>
+                    <a href="#!" data-toggle="modal" data-target="#leaveModal_{{ object.id }}">
+                      {{ object.employee.get_full_name }}
+                    </a>
+                  </td>
+                  <td>
+                    <span>{{ object.date_from|date:"d/m/Y" }}</span><span class="mid-connector">&mdash;</span><span>{{ object.date_to|date:"d/m/Y" }}</span>
+                  </td>
+                  <td>
+                    <span>
+                      <span class="days-count">{{ object.days }}</span> &nbsp; Day{{ object.days|pluralize }}
+                    </span>
+                  </td>
+                </tr>
+                <div class="custom modal fade" id="leaveModal_{{ object.id }}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                  <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">{{ object.subject }}</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      <div class="modal-body">
+                        <div class="date-info">
+                          <div class="row emp">
+                            <div class="col-md-12">
+                              <h6>Employee</h6>
+                              <div class="info">
+                                {{ object.employee.get_full_name }}
+                              </div>
+                            </div>
+                          </div>
+                          <div class="row text">
+                            <div class="col-md-4">
+                              <h6>From</h6>
+                            </div>
+                            <div class="col-md-4">
+                              <h6>To</h6>
+                            </div>
+                          </div>
+                          <div class="row info">
+                            <div class="col-md-4 pr-0 mr-0">
+                              <div class="from">
+                                {{ object.date_from|date:"d/m/Y" }}
+                              </div>
+                            </div>
+                            <div class="col-connector">&mdash;</div>
+                            <div class="col-md-4 pl-0 ml-0">
+                              <div class="to">
+                                {{ object.date_to|date:"d/m/Y" }}
+                              </div>
+                            </div>
+                            <div class="col-md-3">
+                              <div class="days-count">
+                                <span>{{ object.days }}</span> &nbsp; Day{{ object.days|pluralize }}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="reason">
+                          <h6>Reason</h6>
+                          <p>{{ object.reason }}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {% empty %}
+                <tr>
+                  <th colspan="3">No Past leaves in your department{{ request.user.work_emp_name|length|pluralize }}.</th>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="col-md-2 ml-lg-3 mb-4">
+        {% if is_manager %}
+          <div class="">
+            <a href="{% url 'issue-leave' %}?logged_by=manager" class="btn btn-custom-primary">
+              Issue Leave
+            </a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endwith %}
+
+{% endblock %}

@@ -12,6 +12,7 @@ from Backend.Apps.FinanceAndPayroll.models import ApprovalDecision, BankAccount,
 from Backend.Apps.Git.models import GitActivitySnapshot, GitRepositorySnapshot, RepositoryUtilityRequest
 from Backend.Apps.GithubExtension.models import BranchReviewerAssignment, BranchTestingAssignment, GitHubRepository, RepositoryBranchStatus
 from Backend.Apps.HtmlTemplate.models import ContentTemplate, GenericHtmlTemplate, OfferMacro, OfferTemplate, TemplateVariable
+from Backend.Apps.HtmlTemplate.services import TemplateRenderService
 from Backend.Apps.IntegrationHub.models import IntegrationAttempt, IntegrationConnection, IntegrationProvider, IntegrationSyncJob, WebhookInboxEvent
 from Backend.Apps.L3.models import CandidateProfile, CollegeAssignment, CollegeContact, CollegeEmailTemplate, CollegePipelineRecord, TalentAssignment, TalentEmail, TalentPerformanceSnapshot
 from Backend.Apps.LegacyBridge.models import LegacyApplicationMap, LegacyMigrationIssue, LegacyModelCrosswalk, MigrationRun
@@ -23,6 +24,7 @@ from Backend.Apps.TasksDashboard.models import ClickUpProjectMapping, DailyStatu
 from Backend.Apps.Users.models import BenchPeriod, Department, DepartmentMembership, Domain, EmployeeBankAccount, EmployeeCertificate, EmployeeFeedback, EmployeePaymentSnapshot, EmployeeProfile, EmployeeRating, Goal, GoalFeedback, InterviewProgress, LeaveBalance, LeavePolicy, LeaveTransaction, PayProfile, Position, ResignationRequest, Skill, SubDepartment, UserEffortReport, UserSkill, UserStatusSnapshot
 from Backend.Apps.WorkflowIntelligence.models import BusinessWorkflowMap, RouteUsageAggregate, WorkflowReport
 from Backend.EnterpriseCore.models import AccessAuditLog, BusinessUnit, Capability, IdempotencyKey, Organization, OutboxEvent, ResourcePolicy, Role, RoleAssignment, RoleCapability, Tenant, Workspace
+from Backend.EnterpriseCore.services import TenantContext
 
 
 EMPLOYEE_DEMO_PASSWORD = "demo1234"
@@ -282,7 +284,7 @@ class Command(BaseCommand):
             {"tenant": self.tenant, "delay_type": "Project", "item_id": projects["project_a"].id},
             {
                 "days": 2,
-                "reason": "Client feedback delayed - waiting for SOW approval",
+                "reason": "Client Feedback Delayed - Waiting For SOW Approval",
                 "status": "Active",
             }
         )
@@ -291,7 +293,7 @@ class Command(BaseCommand):
             {"tenant": self.tenant, "delay_type": "Project", "item_id": projects["project_b"].id},
             {
                 "days": 1,
-                "reason": "Marketing campaign dependencies not ready",
+                "reason": "Marketing Campaign Dependencies Not Ready",
                 "status": "Resolved",
                 "resolved_at": self.now - timezone.timedelta(days=3),
                 "resolved_by": self.admin_user,
@@ -304,7 +306,7 @@ class Command(BaseCommand):
             {"tenant": self.tenant, "delay_type": "Employee", "item_id": employees["EMP002"].id},
             {
                 "days": 1,
-                "reason": "On sick leave - medical emergency",
+                "reason": "On Sick Leave - Medical Emergency",
                 "status": "Active",
             }
         )
@@ -313,7 +315,7 @@ class Command(BaseCommand):
             {"tenant": self.tenant, "delay_type": "Employee", "item_id": employees["EMP005"].id},
             {
                 "days": 3,
-                "reason": "Training session - Python advanced course",
+                "reason": "Training Session - Python Advanced Course",
                 "status": "Resolved",
                 "resolved_at": self.now - timezone.timedelta(days=1),
                 "resolved_by": self.admin_user,
@@ -324,7 +326,7 @@ class Command(BaseCommand):
             {"tenant": self.tenant, "delay_type": "Employee", "item_id": employees["EMP007"].id},
             {
                 "days": 2,
-                "reason": "Hardware issues - laptop repair in progress",
+                "reason": "Hardware Issues - Laptop Repair In Progress",
                 "status": "Active",
             }
         )
@@ -444,6 +446,7 @@ class Command(BaseCommand):
         template.macros.set([macro])
         self.upsert(OfferTemplate, {"tenant": self.tenant, "template": template, "position_title": "React Developer"}, {"compensation_payload": {"base": 25000}, "policy_payload": {"probation": "3 months"}})
         self.upsert(GenericHtmlTemplate, {"tenant": self.tenant, "offer_domain": "Banao", "offer_type": "Intern", "position": "Developer"}, {"template": template, "category": "Offer", "offer_html_template": "<h1>Offer</h1>", "render_settings": {"paper": "A4"}})
+        TemplateRenderService.sync_legacy_offer_library(TenantContext(tenant=self.tenant, workspace=self.workspace, actor=self.admin_user, source="SeedDemoErp"))
 
     def seed_integrations(self):
         for name, provider_type, url, auth_type in [

@@ -1,0 +1,42 @@
+{% extends "mainapp/base.html" %}
+{% load static%}
+{% load crispy_forms_tags %}
+{% block title %}
+Bug
+{% endblock %}
+
+{% block styling %}
+.form1{
+  width:100%;
+
+}
+.form1 input{
+  width:90%;
+  margin-top:10px;
+  border-radius:5px;
+  border:1px solid black;
+  padding-left: 20px;
+
+}
+.form1 input:hover{
+  border:1px solid blue;
+}
+{% endblock styling %}
+
+{% block content %}
+<div class="main">
+<p> Bug Details</p>
+<div class="form1">
+
+  <form method="POST" action="#">
+ {% csrf_token %}
+    <input type="text" placeholder="Bug Id" name="Bug_ID" required>
+
+    <input type="submit" value="Submit">
+  </form>
+  </div>
+</div>
+<div>
+  {{msg}}
+  </div>
+{% endblock %}

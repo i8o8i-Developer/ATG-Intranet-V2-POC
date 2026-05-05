@@ -1,0 +1,616 @@
+{% extends "mainapp/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+{% load sortable_column %}
+{% block title %}
+Track
+{% endblock %}
+{% block jscss %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.2/css/uikit.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/1.10.20/css/dataTables.uikit.min.css">
+
+<script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/fixedheader/3.1.6/js/dataTables.fixedHeader.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+{% endblock jscss %}
+{% block styling%}
+.paginate_button{
+    padding:3px;
+    width:4px;
+    border-radius:2px;
+    margin-bottom:4px;
+}
+.paginate_button:hover{
+    background-color:#DCDCDC;
+}
+.dataTables_filter input{
+    border-radius: 5px;
+    padding: 5px;
+}
+
+table#selected th {
+    border-bottom: 1px solid #dddddd;
+    text-align: left;
+    padding: 8px;
+    width: 10%;
+}
+
+#button_table {
+    background: None;
+    width: 100%;
+    border: none;
+}
+
+button {
+    float: right;
+}
+
+tbody tr:hover {
+    background-color: #dddddd;
+}
+
+th{
+    border-bottom: 1px solid #ddd;
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+
+table tr:nth-child(even){
+    background-color: rgb(241, 241, 241);
+}
+
+table tr:nth-child(even):hover{
+    background-color: #ddd;
+}
+
+
+.dataTables_length select{
+    border-radius: 5px;
+    padding: 5px;
+}
+
+.team_box{
+    display: None;
+    background: #F8F9FA;
+    border: 1px solid #CED4DA;
+    box-sizing: border-box;
+    border-radius: 4px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+.team_card{
+    display: inline-block;
+    text-align: center;
+    width: 198px;
+    height: 184px;
+    border: 1px solid #CED4DA;
+    border-radius: 4px;
+    margin: 24px;
+    margin-right: 0px;
+    vertical-align: top;
+}
+.team_card_type{
+    display: inline-block;
+    background: #FFFFFF;
+    border-radius: 27px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    padding-left: 8px;
+    padding-right: 8px;
+    font-size: 14px;
+    color: #2F6CE5;
+    margin: 8px;
+}
+.entire_team_div{
+    margin-top: 24px;
+}
+.task_box{
+    display: None;
+    background: #F8F9FA;
+    border: 1px solid #CED4DA;
+    box-sizing: border-box;
+    border-radius: 4px;
+}
+.table_cell{
+    width: 200px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    padding-left: 24px;
+    padding-right: 25px;
+    background: #F8F9FA;
+}
+.table_row{
+    border: 1px solid #CED4DA;
+}
+.path{
+    width: 50ch;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.main-th {
+    margin: 5px;
+    padding: 5px;
+}
+.sprint-btn {
+    float: right;
+    color: #2F6CE5;
+    background: #F0F5FF;
+    border: 1px solid #2F6CE5;
+    border-radius: 15px;
+}
+
+{%endblock%}
+
+{% block content %}
+
+<div class="main">
+    <div class="form1 border-bottom mb-4">
+        <fieldset class="form-group" style='display: inline;'>
+            <legend class='path'>{{ path }}</legend>
+        </fieldset>
+        <form style='float: right;' class="form-inline my-2 my-lg-0" id='search_form'>
+            <input class="form-control mr-sm-2" name ="search" id="search" type="search" placeholder="Search" aria-label="Search">
+        </form>
+    </div>
+</div>
+
+<!--The '.entire_team_div' element contains everything about the team - the name, the employee cards and the tasks-->
+<!--The '.card' element contains the name-->
+<!--The '.team_box' element contains the employee cards-->
+<!--The '.task_box' element contains the tasks for the team-->
+
+{% for dep, users in all_departments.items %}
+    <div class="entire_team_div">
+        <div class="card" style="border-color: #EBEDF0;">
+            <div class="card-body" style="padding: 10px; background-color: #EBEDF0;">
+                <p class="card-text" style="float: left; font-size: 20px; margin-top: 2px; margin-bottom: 2px;">{{ dep.name }}</p>
+                <button id="show_team" class="btn btn-primary" style="float: right; background-color: #EBEDF0; border-color: #EBEDF0;">
+                    <svg id="plus" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="black" class="bi bi-plus" viewBox="0 0 16 16">
+                        <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+                    </svg>
+                    <svg id="minus" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="black" class="bi bi-dash" viewBox="0 0 16 16" style="display: None;">
+                        <path d="M4 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 4 8z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="team_box">
+            <div class="team_card" style="background: #FCF6E6; -webkit-box-shadow: 5px 5px 15px 0px rgba(0,0,0,0.82); box-shadow: 5px 5px 15px 0px rgba(0,0,0,0.82);" onclick="filter(this)">
+                <div class="team_card_type">Team</div>
+                <br>
+                <b style="margin: 0px; font-size: 14px;">{{ dep.name }}</b>
+                {% for manager in dep.work_on_dept.all %}
+                    <p style="margin: 0px; font-size: 13px; color: #6D747A;">{{ manager.employee.username }}</p>
+                {% endfor %}
+            </div>
+
+            {% for manager in dep.work_on_dept.all %}
+                <div class="team_card" style="background: #F0F5FF;" onclick="filter(this)">
+                    <div class="team_card_type">Manager</div>
+                    <br>
+                    <b style="margin: 0px; font-size: 14px;">{{ manager.employee.first_name }}</b>
+                    <p style="margin: 0px; font-size: 13px; color: #6D747A;">{{ manager.employee.emp_name.position_name }}</p>
+                    <p style="margin: 0px; font-size: 13px; color: #6D747A;">{{ manager.employee.username }}</p>
+                </div>
+            {% endfor %}
+
+            {% for user, tasks in users.items %}
+                {% if user.1 %}
+                    <div class="team_card" style="background: #EBEDF0;" onclick="filter(this)">
+                        <div class="team_card_type">Employee</div>
+                        <br>
+                        <b style="margin: 0px; font-size: 14px;">{{ user.0.first_name }}</b>
+                        <p style="margin: 0px; font-size: 13px; color: #6D747A;">{{ user.0.emp_name }}</p>
+                        <p style="margin: 0px; font-size: 13px; color: #6D747A;">{{ user.0.username }}</p>
+                        {% if user.0.work_emp_name.all.count > 0 %}
+                            <a href="{% url 'my_reportee' user.0.id %}" style="margin-top: 50px;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="blue" class="bi bi-eye-fill" viewBox="0 0 16 16">
+                                    <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
+                                    <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
+                                </svg>
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+        <p>sprint</p>
+        {% comment %} -----------------------------------sprint (make a box according to figma)----------------------------- {% endcomment %}
+        {% for i in sprint_list %}
+            {% for j in i%}
+                {% if j.department == dep.name %}
+                    <p>{{j.sprint_name}}  {{j.start_date}}  {{j.end_date}}</P>
+
+                        <h5 class="modal-title" id="exampleModalLabel">Complete Sprint:{{j.sprint_name}}--{{j.department}}</h5>
+
+                        {% comment %} ______________________________________________________________________________________________________ {% endcomment %}
+                        <!-- Button trigger modal -->
+                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#sptcom{{j.id}}">
+                        Complete Sprint {{ j.sprint_name }}--{{ j.department }}
+                        </button>
+
+                        <!-- Modal -->
+                        <div class="modal fade" id="sptcom{{j.id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Complete Sprint:{{ j.sprint_name }}</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                ... kuch bhi
+                            
+
+                            <button class="btn btn-secondary dropdown-toggle" type="button" id="moveto" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Move to
+                            </button>
+                            <div class="dropdown-menu" aria-labelledby="moveto">
+                                            <a class="dropdown-item" href="{% url 'sprintmove' j.id 0 %}">backlog</a>
+                                {% for m in sprint_list %}
+                                    {% for k in m %}
+                                        {% if k.department == dep.name %}
+                                        {% if k.sprint_name != j.sprint_name %}
+                                            <a class="dropdown-item" href="{% url 'sprintmove' j.id k.id %}">{{k.sprint_name}}--{{j.id}}->->->{{k.id}}</a>
+                                        {% endif %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                            </div>
+
+
+
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-primary">Save changes</button>
+                            </div>
+                            </div>
+                        </div>
+                        </div>
+                        {% comment %} ______________________________________________________________________________________________________ {% endcomment %}
+
+                        <a class="btn btn-primary" href="{% url 'sprintdetail' j.department j.sprint_name %}" role="button">Link</a>
+
+
+                        {% for depKey, depValue in sptcontext.items %}
+                            {% for sptnamekey, sptnamevalue in depValue.items %}
+                                {% if sptnamekey == j.sprint_name %}
+                                {% if depKey == dep.name %}
+                                        {% for bugskey, bugsvalue in sptnamevalue.items %}
+                                            <br>{{bugskey}}-----------{{bugsvalue}}
+                                        {% endfor %}
+                                {% endif %}
+                                {% endif %}
+                            {% endfor%}
+                        {% endfor %}
+
+                {% endif %}
+            {% endfor %}
+        {% endfor %}
+
+        <table class="task_box" value="team">
+            <tr class="table_row">
+                <td class='top-td table_cell'>
+                    <h3><b>Backlog</b></h3>
+                </td>
+                <td class="table_cell"></td>
+                <td class="table_cell"></td>
+                <td class="table_cell"></td>
+                <td class="table_cell"></td>
+                <td class="table_cell"></td>
+                <td class='top-td table_cell' style="width: 550px;">
+                    <button type="button" onclick="createSprint('{{dep.name}}')" class='sprint-btn'>Create sprint</button>
+                </td>
+            </tr>
+
+            <tr class="table_row">
+                <th class="table_cell" style="font-size: 14px;">Priority</th>
+                <th class="table_cell" style="font-size: 14px;">Bug ID</th>
+                <th class="table_cell" style="font-size: 14px;">Assigned</th>
+                <th class="table_cell" style="font-size: 14px;">Summary</th>
+                <th class="table_cell" style="font-size: 14px;">ETA</th>
+                <th class="table_cell" style="font-size: 14px;">Bounty</th>
+                <th class="table_cell" style="font-size: 14px;">Status</th>
+            </tr>
+
+            {% for user, tasks in users.items %}
+                {% for num, task in tasks.items %}
+                    <tr class="table_row">
+                        <td class="table_cell">
+                            <select style="height: 48px; background: #EBEDF0; border-radius: 4px; width: 130px; padding: 12px; border-color: #EBEDF0;" class="prio" onchange="changePriority(this, {{ task.1 }})">
+                                <option value="urgent">Urgent</option>
+                                <option value="normal">Normal</option>
+                                <option value="high">High</option>
+                                <option value="immediate">Immediate</option>
+                            </select>
+                        </td>
+                        <td class="table_cell">{{ task.1 }}</td>
+                        <td class="table_cell">
+                            <select style="height: 48px; background: #EBEDF0; border-radius: 4px; width: 130px; padding: 12px; border-color: #EBEDF0;" class="assignee" onchange="changeAssignee(this, {{ task.1 }})">
+                                {% for user, tasks in users.items %}
+                                    <option value="{{ user.0.first_name }}">{{ user.0.first_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td class="table_cell">{{ task.3 }}</td>
+                        <td class="table_cell">
+                            <input type="date" style="background: #F8F9FA; border: 1px solid #CED4DA; border-radius: 4px; height: 48px; padding: 12px;" value="{{ task.4 }}" onchange="changeETA(this, {{ task.1 }})">
+                        </td>
+                        <td class="table_cell">
+                            <input type="number" style="background: #F8F9FA; border: 1px solid #CED4DA; border-radius: 4px; height: 48px; padding: 12px; width: 50px;" value="{{ task.5 }}" onchange="changeBounty(this, {{ task.1 }})">
+                        </td>
+                        <td class="table_cell">{{ task.6 }}</td>
+                        <td>
+                            <div class="dropdown">
+                            <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Dropdown button
+                            </button>
+                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                {% for i in sprint_list %}
+                                    {% for j in i%}
+                                        {% if j.department == dep.name %}
+                                            <a class="dropdown-item" href="{% url 'assignsprint' j.department j.sprint_name task.1 %}">{{j.sprint_name}}</a>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor%}
+            {% endfor%}
+        </table>
+    </div>
+{% endfor %}
+
+<!--A function for the create sprint button-->
+<script>
+    function createSprint(deprt) {
+    window.open(href="/sprint/"+deprt ,windowname="Create_Sprint",'width=600,height=600 left=350,scrollbars=yes');
+    }
+</script>
+
+<!--A function to expand the team details-->
+<script>
+    // get all the '+' buttons to expand teams
+    let showTeamButtons = document.querySelectorAll('#show_team');
+
+    // iterate through the buttons
+    for(let i = 0; i < showTeamButtons.length; i++){
+        // get the current button
+        let btn = showTeamButtons[i];
+
+        // when the button is clicked
+        btn.addEventListener('click', function(){
+            // get the div that contains the employee cards
+            let team_details = btn.parentElement.parentElement.parentElement.querySelector('.team_box');
+
+            // hide or show the team details
+            if(team_details.style.display == ''){
+                team_details.style.display = 'block';
+                btn.querySelector('#plus').style.display = 'None';
+                btn.querySelector('#minus').style.display = 'block';
+            }
+            else{
+                team_details.style.display = '';
+                btn.querySelector('#plus').style.display = 'block';
+                btn.querySelector('#minus').style.display = 'None';
+            }
+
+            // make the team tasks visible or invisible depending on if the button is clicked
+            team_details.parentElement.querySelector('.task_box').style.display = team_details.style.display;
+
+            // change the current path of Track my reportee
+            if(document.querySelector('legend').textContent == "{{ path }}"){
+                document.querySelector('legend').textContent = "{{ path }} / " + team_details.querySelector('.team_card').querySelector('b').textContent;
+            }
+            else{
+                document.querySelector('legend').textContent = "{{ path }}";
+            }
+        });
+    }
+</script>
+
+<!--A function to filter the tasks-->
+<script>
+    var all_rows_dict = {};
+    for(let x = 0; x < document.querySelectorAll('tbody').length; x++){
+        let curr_table = document.querySelectorAll('tbody')[x].parentElement.parentElement.querySelector('.team_card').querySelector('b').textContent;
+        all_rows_dict[curr_table] = document.querySelectorAll('tbody')[x].querySelectorAll('tr');
+    }
+    var table = '';
+
+    function filter(team_card, team_card_2){
+        // get the employee/team name
+        let txt = '';
+        if(team_card=='search'){
+            txt = document.querySelector('#search').value;
+        }
+        else{
+            txt = team_card.querySelector('b').textContent;
+            // apply the employee name
+            document.querySelector('legend').textContent = "{{ path }} / " + txt;
+        }
+
+        // empty the task table
+        if(team_card != 'search'){
+            all_rows = all_rows_dict[team_card.parentElement.querySelector('.team_card').querySelector('b').textContent];
+            table = team_card.parentElement.parentElement.querySelector('tbody');
+            table.innerHTML = '';
+        }
+        else{
+            all_rows = all_rows_dict[team_card_2.parentElement.querySelector('.team_card').querySelector('b').textContent];
+            table = team_card_2.parentElement.parentElement.querySelector('tbody');
+            table.innerHTML = '';
+        }
+
+        // add the needed rows
+        for(let j = 0; j < all_rows.length; j++){
+            if(j == 0 || j == 1){
+                // add the header row
+                table.appendChild(all_rows[0]);
+            }
+            else{
+                // add every other row with the assignee
+                let curr_element = all_rows[j];
+
+                // check if the assignee is the one that's clicked
+                if(curr_element.children[2].querySelector('select').value.includes(txt) || curr_element.children[1].textContent.includes(txt)){
+                    table.appendChild(curr_element);
+                }
+                if(team_card != 'search' && txt == team_card.parentElement.querySelector('.team_card').querySelector('b').textContent){
+                    table.appendChild(curr_element);
+                }
+            }
+        }
+
+        // change box shadow
+        if(team_card != 'search'){
+            for(let n = 0; n < document.querySelectorAll('.team_card').length; n++){
+                let color = document.querySelectorAll('.team_card')[n].style.background;
+                document.querySelectorAll('.team_card')[n].style = "background: " + color + ";";
+            }
+            let color_curr = team_card.style.background;
+            team_card.style = "background:" + color_curr + "; -webkit-box-shadow: 5px 5px 15px 0px rgba(0,0,0,0.82); box-shadow: 5px 5px 15px 0px rgba(0,0,0,0.82);";
+        }
+    }
+</script>
+
+<!--Initialize variables-->
+<script>
+    let current_dep = '';
+    let task_counter = '';
+    let current_dept = '';
+    let task_c = '';
+</script>
+
+<!--A script to set the task priorities values-->
+<script>
+    {% for dep, users in all_departments.items %}
+        current_dep = document.querySelectorAll('.entire_team_div')[{{ forloop.counter0 }}];
+        task_counter = 0;
+
+        {% for user, tasks in users.items %}
+            {% for num, task in tasks.items %}
+                current_dep.querySelectorAll('.prio')[task_counter].value = "{{ task.0 }}";
+                task_counter ++;
+            {% endfor %}
+        {% endfor %}
+    {% endfor %}
+</script>
+
+<!--A script to set the assignee values-->
+<script>
+    {% for dep, users in all_departments.items %}
+        current_dept = document.querySelectorAll('.entire_team_div')[{{ forloop.counter0 }}];
+        task_c = 0;
+
+        {% for user, tasks in users.items %}
+            {% for num, task in tasks.items %}
+                current_dept.querySelectorAll('.assignee')[task_c].value = "{{ task.2 }}";
+                task_c ++;
+            {% endfor %}
+        {% endfor %}
+    {% endfor %}
+</script>
+
+<!--A script to change the priority of the task in the backend-->
+<script>
+    function changePriority(select, bug_id){
+        $.ajax({
+            type: 'GET',
+            url: "/update_reportee/" + bug_id.toString(),
+            data: {"new_priority": select.value},
+            success: function (response) {
+                console.log(response);
+            },
+            error: function (response) {
+                console.log(response);
+            }
+        })
+    }
+</script>
+
+<!--A script to change the bounty of the task in the backend-->
+<script>
+    function changeBounty(input, bug_id){
+        $.ajax({
+            type: 'GET',
+            url: "/update_reportee/" + bug_id.toString(),
+            data: {"new_bounty": input.value},
+            success: function (response) {
+                console.log(response);
+            },
+            error: function (response) {
+                console.log(response);
+            }
+        })
+    }
+</script>
+
+<!--A script to change the eta of the task in the backend-->
+<script>
+    function changeETA(input, bug_id){
+        $.ajax({
+            type: 'GET',
+            url: "/update_reportee/" + bug_id.toString(),
+            data: {"new_eta": 'True'},
+            success: function (response) {
+                console.log(response);
+            },
+            error: function (response) {
+                console.log(response);
+            }
+        })
+    }
+</script>
+
+<!--A script to change the assignee of the task in the backend-->
+<script>
+    function changeAssignee(select, bug_id){
+        for(let counter = 0; counter < document.querySelectorAll('.team_card').length; counter++){
+            console.log(document.querySelectorAll('.team_card'));
+            if(document.querySelectorAll('.team_card')[counter].querySelector('b').textContent == select.value){
+                var new_handler = document.querySelectorAll('.team_card')[counter].querySelectorAll('p')[1].textContent;
+            }
+        }
+
+        $.ajax({
+            type: 'GET',
+            url: "/update_reportee/" + bug_id.toString(),
+            data: {"new_handler": new_handler},
+            success: function (response) {
+                console.log(response);
+            },
+            error: function (response) {
+                console.log(response);
+            }
+        })
+    }
+</script>
+
+<!--Check if the user is searching-->
+<script>
+    inputId = document.getElementById('search');
+    inputId.addEventListener('keyup', function onEvent(e) {
+        if (e.keyCode === 13) {
+            for(let i = 0; i < document.querySelectorAll('.entire_team_div').length; i++){
+                filter('search', document.querySelectorAll('.entire_team_div')[i].querySelector('.team_card'));
+            }
+        }
+    });
+</script>
+
+<!--Prevent search form from refreshing the page-->
+<script>
+    $("#search_form").submit(function(e) {
+        e.preventDefault();
+    });
+</script>
+
+{% endblock %}

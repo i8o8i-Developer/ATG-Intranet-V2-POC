@@ -17,11 +17,12 @@ import {
   lastDays,
   money,
   projectName,
+  resolveActiveEmployee,
 } from "./Shared/ScreenUtils.jsx";
 
 export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
   const user = data.me?.user || data.me?.account || data.me || {};
-  const linkedEmployee = data.me?.employees?.[0] || (data.employees || []).find((item) => String(item.user) === String(user.id));
+  const linkedEmployee = resolveActiveEmployee(data);
   const employee = findById(data.employees, linkedEmployee?.id || selectedEmployeeId) || linkedEmployee || data.employees?.[0];
   const useWorkspaceScope = !linkedEmployee?.id;
   const employeeTasks = useWorkspaceScope ? data.tasks || [] : filterForEmployee(data.tasks, employee?.id);
@@ -33,7 +34,7 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
   const projectMap = useMemo(() => indexById(data.projects), [data.projects]);
   const days = useMemo(() => lastDays(15), []);
   const expandedTask = pendingTasks.find((task) => String(task.id) === String(expandedTaskId));
-  const greetingName = linkedEmployee?.display_name || user.username || employee?.display_name || "Intranet";
+  const greetingName = linkedEmployee?.display_name || linkedEmployee?.displayName || employee?.display_name || user.fullName || user.username || "Intranet";
   const headingTag = linkedEmployee ? "Employee Home" : "Live Workspace Overview";
   const attendanceSubtitle = useWorkspaceScope ? `Snapshot For ${employee?.display_name || "Connected Employee"}` : "Last 15 Days";
   const taskSubtitle = useWorkspaceScope ? "Showing Live Tasks From The Connected Backend." : `Showing Work For ${employee?.display_name || "Connected Employee"}`;

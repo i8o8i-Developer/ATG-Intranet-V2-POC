@@ -39,22 +39,24 @@ function buildCertificateHtml({ typeId, body, vars, accent }) {
   const type = CERTIFICATE_TYPES.find((item) => item.id === typeId) || CERTIFICATE_TYPES[0];
   const accentColor = accent || type.color;
   return `<!doctype html><html><head><meta charset='utf-8'><style>
-    body{font-family:Georgia,serif;background:#f5f3ec;margin:0;padding:32px}
-    .cert{max-width:820px;margin:0 auto;background:#fffdf6;border:8px double ${accentColor};padding:48px 64px;text-align:center;box-shadow:0 14px 30px rgba(0,0,0,0.08)}
-    h1{font-size:34px;letter-spacing:6px;color:${accentColor};margin:0 0 4px}
-    h2{font-size:14px;letter-spacing:3px;color:#9b8045;margin:0 0 24px}
-    p{color:#3f3520;line-height:1.7;font-size:15px}
-    .name{font-size:32px;color:#1f2937;margin:18px 0 6px;font-weight:700}
-    hr{border:none;border-top:1px solid #cdb98a;margin:24px auto;width:60%}
-    .foot{margin-top:36px;display:flex;justify-content:space-between;color:#6b5e3b;font-size:13px}
-  </style></head><body><div class='cert'>
-    <h1>CERTIFICATE</h1>
-    <h2>${type.subtitle || (typeId || "").toUpperCase()}</h2>
-    <p>This Is To Certify That</p>
-    <div class='name'>${vars.name}</div>
-    <hr/>
-    ${body}
-    <div class='foot'><span>Issued ${new Date().toLocaleDateString()}</span><span>${vars.issuer || "Banao HR"}</span></div>
+    body{margin:0;padding:28px;background:#ffffff;color:#111827;font-family:Georgia,'Times New Roman',serif}
+    .certificate-shell{max-width:860px;margin:0 auto;border:2px solid ${accentColor};padding:34px 42px 48px;background:#fff}
+    .certificate-logo{text-align:center;margin-bottom:18px;font-size:30px;font-weight:700;color:${accentColor};letter-spacing:2px}
+    .certificate-date{text-align:right;font-size:14px;margin-bottom:18px}
+    .certificate-heading{text-align:center;font-size:24px;font-weight:700;text-decoration:underline;margin-bottom:24px}
+    .certificate-type{text-align:center;font-size:13px;letter-spacing:2px;color:${accentColor};margin:-12px 0 22px}
+    .certificate-copy{font-size:15px;line-height:1.8;text-align:justify;color:#111827}
+    .certificate-copy p{margin:0 0 14px}
+    .certificate-signature{margin-top:26px;font-size:15px;line-height:1.7}
+    .certificate-footer{text-align:center;font-size:10px;margin-top:34px;color:#475467}
+  </style></head><body><div class='certificate-shell'>
+    <div class='certificate-logo'>ATG</div>
+    <div class='certificate-date'><strong>${new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })}</strong></div>
+    <div class='certificate-heading'>TO WHOMSOEVER IT MAY CONCERN</div>
+    <div class='certificate-type'>${type.subtitle || (typeId || "").toUpperCase()}</div>
+    <div class='certificate-copy'>${body}</div>
+    <div class='certificate-signature'>${vars.issuer || "Saurabh Bassi"}<br/>Across The Globe (ATG)</div>
+    <div class='certificate-footer'>Across The Globe (ATG)<br/>ATGWorld Networks Pvt. Ltd.<br/>809/1, Ferns Paradise, Doddanekundi, Bengaluru, KA, India - 560048</div>
   </div></body></html>`;
 }
 

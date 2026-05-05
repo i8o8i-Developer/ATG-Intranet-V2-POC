@@ -4,12 +4,12 @@ import { ChevronDown, ChevronRight, X } from "lucide-react";
 import { isCompleted } from "./ScreenUtils.jsx";
 
 export function Panel({ title, subtitle, right, children }) {
-  return <section className="panel"><header><div><h2>{title}</h2>{subtitle && <p>{subtitle}</p>}</div>{right}</header><div>{children}</div></section>;
+  return <section className="panel glass fade-in"><header><div><h2>{title}</h2>{subtitle && <p>{subtitle}</p>}</div>{right}</header><div>{children}</div></section>;
 }
 
 export function Disclosure({ title, subtitle, children, defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen);
-  return <section className="panel disclosure"><header onClick={() => setOpen(!open)}><div><h2>{title}</h2>{subtitle && <p>{subtitle}</p>}</div>{open ? <ChevronDown /> : <ChevronRight />}</header>{open && <div>{children}</div>}</section>;
+  return <section className="panel disclosure glass fade-in"><header onClick={() => setOpen(!open)}><div><h2>{title}</h2>{subtitle && <p>{subtitle}</p>}</div>{open ? <ChevronDown /> : <ChevronRight />}</header>{open && <div>{children}</div>}</section>;
 }
 
 export function Tabs({ value, onChange, items }) {

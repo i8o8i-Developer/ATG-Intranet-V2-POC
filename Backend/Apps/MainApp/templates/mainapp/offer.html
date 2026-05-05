@@ -1,0 +1,375 @@
+{% extends "mainapp/base.html" %} {% load static %} {% load crispy_forms_tags %} {% block title %} Offer {% endblock %} {% block content %}
+<style>
+    .form-check-inline .form-check-input {
+        position: static;
+        margin-top: 0;
+        margin-right: 0.3125rem;
+        margin-left: 0.3125rem;
+    }
+</style>
+<div class="main">
+    {% if success_message %}
+    <div style="margin-left:300px;">
+        {{success_message}}
+    </div>
+    {% endif %}
+    <hr />
+    <div class="form1" id="form1" style="display:block">
+        {% if form.errors %} {% for field in form %} {% for error in field.errors %}
+        <div class="alert alert-danger">
+            <strong>{{ error|escape }}</strong>
+        </div>
+        {% endfor %} {% endfor %} {% for error in form.non_field_errors %}
+        <div class="alert alert-danger">
+            <strong>{{ error|escape }}</strong>
+        </div>
+        {% endfor %} {% endif %}
+
+        <form method="POST" action="">
+            {% csrf_token %}
+            <div class="form-row">
+                <div class="form-group col-3">
+
+                </div>
+                <div class="form-group col-md-5 col-sm-12 px-3">
+                    <div class="form-row">
+                        <div class="form-group col-6 radio-group">
+                            <label for="{{ form.domain_name.id_for_label }}" class="requiredField">{{ form.domain_name.label_tag }}</label>
+                            <div class="form-check-inline">
+                                {% for choice in form.domain_name %}
+                                <label class="form-check-inline">
+                                    {{ choice.tag }}
+                                    {{ choice.choice_label }}
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>             
+                    <div class="form-row text-center text-secondary py-1">
+                        <div class="form-group col-12">
+                            CREATE AN OFFER
+                        </div>
+                    </div>
+                    <div class="form-row text-center text-primary py-1">
+                        <div class="form-group col-12">
+                            ---------Profile Info----------
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="from-group col">
+                            {{ form.email|as_crispy_field }}
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            {{ form.department_name|as_crispy_field }}
+                        </div>
+                        <div class="form-group col-6">
+                            {{ form.position_name|as_crispy_field }}
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-12">
+                            {{ form.sub_departments|as_crispy_field }}
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-12">
+                            {{ form.title|as_crispy_field }}
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            {{ form.name|as_crispy_field }}
+                        </div>
+                        <div class="form-group col-6">
+                            {{ form.username|as_crispy_field }}
+                        </div>
+                    </div>
+                    <!-- <div class="form-row">
+            <div class="form-group col-12 text-center text-primary">
+              ----------Professional info-----------
+            </div>
+          </div> -->
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            {{ form.emp_type|as_crispy_field }}
+                        </div>
+                        <div class="form-group col-6">
+                            {{ form.pay_type|as_crispy_field }}
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            {{ form.base_pay|as_crispy_field }}
+                        </div>
+                        <div class="form-group col-6">
+                            {{ form.pay_per_task|as_crispy_field }}
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-12">
+                            {{ form.offer_date|as_crispy_field }}
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-12">
+                            {{ form.intern_duration|as_crispy_field }}
+                        </div>
+                    </div>
+                    <div class="form-row" id="show_whatsapp" style="display:none">
+                        <div class="form-group col-12">
+                            {{ form.whatsapp_link|as_crispy_field }}
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-4">
+                            {{ form.whatsapp|as_crispy_field }}
+                        </div>
+                        <div class="form-group col-4">
+                            {{ form.slack|as_crispy_field }}
+                        </div>
+                    </div>
+                </div>
+                <div class="from-group col-md-3 col-sm-12">
+                    <div class="form-row pt-2">
+                        <div class="form-group col-6 text-right">
+                            <input type="submit" class="btn btn-outline-secondary" onclick="myFunction()" id="previewButton" value="Preview" name="preview" />
+                        </div>
+                        <div class="form-group col-6 text-left">
+                            <button class="btn btn-outline-info" onclick="myFunctionSend()" id="button" type="submit">Send Offer</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script type="text/javascript">
+    function myFunction() {
+        $('input, select').prop('disabled', false);
+        document.getElementById("previewButton").formAction = "{% url 'Send_Offer' %}";
+        document.getElementById("previewButton").formTarget = "_blank";
+    }
+</script>
+<script type="text/javascript">
+    function myFunctionSend() {
+        $('input, select').prop('disabled', false);
+        document.getElementById("button").formAction = "{% url 'Send_Offer' %}";
+    }
+</script>
+<script type="text/javascript">
+    window.onbeforeunload = function() {
+        var inputs = document.getElementsByTagName("button");
+        for (var i = 0; i < inputs.length; i++) {
+            if (inputs[i].type == "button" || inputs[i].type == "submit") {
+                inputs[i].disabled = true;
+            }
+        }
+    };
+</script>
+<script>
+    $(document).ready(function() {
+        $('input[name="domain_name"]').on('change', function() {
+            var selectedDomain = $('input[name="domain_name"]:checked').val();
+            console.log(selectedDomain);
+            loadDepartments(selectedDomain);
+            // loadSubDepartments(selectedDomain);
+        });
+        function loadDepartments(domainName) {
+        var url = '/get-department-choices/?domain_name=' + domainName;
+        $.ajax({
+            url: url,
+            success: function (data) {
+                var departmentSelect = $('#id_department_name');
+                departmentSelect.empty();
+                $.each(data.department_choices, function (key, value) {
+                    console.log(value[0], value[1])
+                    departmentSelect.append('<option value="' + value[1] + '"">' + value[1] + '</option>');
+                });
+            }
+        });
+    }
+        var para = document.createElement('p');
+        var i;
+        var str = "Available :        ";
+        var node = document.getElementById('div_id_username');
+        $(document).on('blur', 'input[name="name"]', function() {
+            
+            var name = document.getElementById('id_name').value;
+            var url = '/checkname?name=' + name;
+            var req = new XMLHttpRequest();
+            req.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    var username = req.responseText;
+                    var obj = JSON.parse(username);
+                    if (obj.length != 0) {
+                        if (obj.length == 1) {
+                            str = " ";
+                        } else {
+                            str = "Available :";
+                        }
+                        document.getElementById('id_username').value = obj[0];
+                        for (i = 1; i < obj.length; i++) {
+                            str = str + obj[i];
+                            str = str + "    , ";
+                        }
+                        para.textContent = str;
+                        node.appendChild(para);
+                        str = "Available :";
+                    } else {
+                        document.getElementById('id_username').value = "";
+                        str = "Username Not available Create it Manually!! "
+                        para.textContent = str;
+                        node.appendChild(para);
+                        str = "Available :";
+
+                    }
+                }
+            };
+            req.open("GET", url, true);
+            req.send();
+
+        })
+        $('#id_department_name').change(function() {
+            var dep_name = document.getElementById('id_department_name').value;
+            console.log(dep_name);
+            var domain_name = $('input[name="domain_name"]:checked').val();
+            var url = '/dep_valid?domain_name=' + domain_name + '&dep_name=' + dep_name;
+            var req = new XMLHttpRequest();
+            req.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    var details = JSON.parse(req.responseText);
+                    //New Field
+                    document.getElementById('id_base_pay').value = details[0];
+                    document.getElementById('id_position_name').value = details[4];
+                    document.getElementById('id_pay_per_task').value = details[5];
+                    document.getElementById('id_whatsapp_link').value = details[6];
+                    if (details[1] == 'true') {
+                        $("input[name='whatsapp']").attr('checked', true)
+                        whatsapp_link = document.querySelector("#show_whatsapp")
+                        whatsapp_link.style.display = 'block';
+                    } else {
+                        $("input[name='whatsapp']").attr('checked', false)
+                    }
+                    if (details[2] == 'true') {
+                        $("input[name='slack']").attr('checked', true)
+                    } else {
+                        $("input[name='slack']").attr('checked', false)
+                    }
+                    
+
+                }
+            };
+            req.open("GET", url, true);
+            req.send();
+            var url = "/load-sub-dept";
+            document.getElementById("id_sub_departments").removeAttribute("disabled");
+            var dept_name = $(this).val(); // get the selected country ID from the HTML input
+            $.ajax({ // initialize an AJAX request
+                url: url, // set the url of the request (= localhost:8000/hr/ajax/load-cities/)
+                data: {
+                    'dept_name': dept_name // add the country id to the GET parameters
+                },
+                success: function(data) { // `data` is the return of the `load_cities` view function
+                    $("#id_sub_departments").html(data); // replace the contents of the city input with the data that came from the server
+                }
+            });
+
+        })
+        $('#id_emp_type').change(function() {
+            var emp_type = $(this).val();
+            if (emp_type == "Full-Time") {
+                document.getElementById('id_pay_type').value = 'Fixed'
+                $('#id_pay_type').prop('disabled', true);
+                document.querySelector("#id_pay_per_task").style.display = 'none';
+                document.querySelector("label[for='id_pay_per_task']").style.display = 'none';
+                document.querySelector("#id_base_pay").parentElement.parentElement.parentElement.className = 'form-group col-12';
+            } else {
+                $('#id_pay_type').prop('disabled', false);
+                document.getElementById('id_pay_type').value = "Performance Based";
+                document.querySelector("#id_pay_per_task").style.display = 'block';
+                document.querySelector("label[for='id_pay_per_task']").style.display = 'block';
+                document.querySelector("#id_base_pay").parentElement.parentElement.parentElement.className = 'form-group col-6';
+            }
+        });
+        $("#id_pay_type").change(function() {
+            value = document.getElementById('id_pay_type').value;
+            if (value == "Pay Per Bug") {
+                document.getElementById('id_base_pay').setAttribute("readonly", true);
+                document.getElementById('div_id_task_detail').style.display = 'none';
+            } else if (value == "Pay Per Task") {
+                document.getElementById('id_base_pay').removeAttribute("readonly");
+                document.getElementById('div_id_task_detail').style.display = 'block';
+            } else {
+                document.getElementById('div_id_task_detail').style.display = 'none';
+                document.getElementById('id_base_pay').removeAttribute("readonly");
+            }
+        })
+        // form1 = document.getElementById("form1");
+        // form2 = document.getElementById("form_banao");
+        // check = document.getElementById("atg").checked;
+        // if (check) {
+        //     form2.style.display = 'none';
+        //     form1.style.display = 'block';
+        // } else {
+        //     form2.style.display = 'block';
+        //     form1.style.display = 'none';
+        // }
+    })
+
+    function text_detail() {
+        var taskDetailElement = document.getElementById('div_id_task_detail');
+        var basePayElement = document.getElementById('id_base_pay');
+        
+        if (taskDetailElement) {
+            taskDetailElement.style.display = 'none';
+        }
+        
+    }
+    
+    window.onload = function() {
+        text_detail();
+    };
+
+</script>
+
+<script type="text/javascript">
+    const pay_type_select = document.querySelector("#id_pay_type");
+    const pay_per_task = document.querySelector("#id_pay_per_task");
+    const pay_per_task_label = document.querySelector("label[for='id_pay_per_task']");
+    const base_pay = document.querySelector("#id_base_pay");
+    const base_pay_container = base_pay.parentElement.parentElement.parentElement;
+
+    pay_type_select.addEventListener('change', function(e) {
+        const pay_type = e.target.value
+        if (pay_type !== 'Performance Based') {
+            pay_per_task.style.display = 'none';
+            pay_per_task_label.style.display = 'none';
+            base_pay_container.className = 'form-group col-12';
+
+        } else {
+            $('#id_pay_type').prop('disabled', false);
+            pay_per_task.style.display = 'block';
+            pay_per_task_label.style.display = 'block';
+            base_pay_container.className = 'form-group col-6';
+        }
+    })
+</script>
+
+<script type="text/javascript">
+    checkbox = document.querySelector("#id_whatsapp");
+    whatsapp_link = document.querySelector("#show_whatsapp");
+    checkbox.addEventListener("change", Whatsapp);
+
+    function Whatsapp(e) {
+        const state = e.target.checked
+        if (state) {
+            whatsapp_link.style.display = 'block';
+        } else {
+            whatsapp_link.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

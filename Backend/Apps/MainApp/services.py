@@ -5,13 +5,49 @@ from django.utils import timezone
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django.core.mail import EmailMultiAlternatives
+from django.template import Context, Template
 from django.template.loader import render_to_string
 
 from django.utils.crypto import get_random_string
 
 from io import BytesIO
 import base64
+from html import escape
 import os
+import re
+
+
+_LINK_TAG_RE = re.compile(r"<link\b[^>]*>", re.IGNORECASE)
+_SCRIPT_TAG_RE = re.compile(r"<script\b[^>]*>.*?</script>", re.IGNORECASE | re.DOTALL)
+_FOCUS_VISIBLE_RULE_RE = re.compile(
+    r"[^{}]*:(?:focus-visible|is\(|where\(|has\()[^{}]*\{[^{}]*\}",
+    re.IGNORECASE,
+)
+_AT_IMPORT_RE = re.compile(r"@import\s+url\([^)]*\)\s*;?", re.IGNORECASE)
+_ALL_IMG_RE = re.compile(r'<img\b[^>]*>', re.IGNORECASE)
+
+
+def _sanitize_html_for_pisa(html: str) -> str:
+    """Strip CSS/JS/remote refs that xhtml2pdf cannot handle without internet or that crash its parser."""
+    if not html:
+        return html
+    cleaned = _LINK_TAG_RE.sub("", html)
+    cleaned = _SCRIPT_TAG_RE.sub("", cleaned)
+    cleaned = _FOCUS_VISIBLE_RULE_RE.sub("", cleaned)
+    cleaned = _AT_IMPORT_RE.sub("", cleaned)
+    # Drop all images to prevent xhtml2pdf PmlKeepInFrame row height calculation crashes in legacy tables
+    cleaned = _ALL_IMG_RE.sub("", cleaned)
+    return cleaned
+
+
+def _pisa_link_callback(uri, rel):
+    """Make pisa ignore any remote URL it stumbles upon instead of raising HTTPError."""
+    if not uri:
+        return uri
+    lowered = uri.lower()
+    if lowered.startswith(("http://", "https://", "//")):
+        return None
+    return uri
 
 try:
     from xhtml2pdf import pisa
@@ -121,16 +157,158 @@ class OfferLifecycleService:
 
     @staticmethod
     def accept_offer(context, token, payload=None):
+        from django.conf import settings
+
         offer = OnboardingOffer.objects.filter(tenant=context.tenant, token=token).first()
         if not offer:
             return ServiceResult.failure({"offer": "Offer Token Not Found."}, status_code=404)
+
         offer.status = "Accepted"
         offer.accepted_at = timezone.now()
         offer.offer_payload = {**offer.offer_payload, "acceptance": payload or {}}
         offer.updated_by = context.actor
         offer.save(update_fields=["status", "accepted_at", "offer_payload", "updated_by", "updated_at"])
         OutboxService.publish(context, "OnboardingOffer", offer.id, "OfferAccepted", {"candidateEmail": offer.candidate_email})
+
+        # ── AUTO ONBOARDING ──────────────────────────────────────────────────
+        # Exactly like the old intranet: when candidate accepts the offer + NDA,
+        # automatically create their intranet account and email them credentials.
+        op = offer.offer_payload or {}
+        profile_data = op.get("acceptance", {}).get("profile_data") or {}
+        username = (op.get("username") or "").strip() or (offer.candidate_email or "").split("@")[0]
+        password = get_random_string(10)
+
+        user_model = get_user_model()
+        auto_user = None
+        auto_employee = None
+        provision_error = None
+        try:
+            if not user_model.objects.filter(username__iexact=username).exists():
+                auto_user = user_model.objects.create_user(
+                    username=username,
+                    email=offer.candidate_email or "",
+                    password=password,
+                    first_name=(offer.candidate_name or "").split(" ")[0][:30],
+                    last_name=(" ".join((offer.candidate_name or "").split(" ")[1:]))[:150],
+                )
+                # Generate sequential employee code
+                emp_count = EmployeeProfile.objects.filter(tenant=context.tenant).count() + 1
+                employee_code = f"EMP-{emp_count:04d}"
+                while EmployeeProfile.objects.filter(tenant=context.tenant, employee_code=employee_code).exists():
+                    emp_count += 1
+                    employee_code = f"EMP-{emp_count:04d}"
+
+                auto_employee = EmployeeProfile.objects.create(
+                    tenant=context.tenant,
+                    workspace=context.workspace,
+                    user=auto_user,
+                    employee_code=employee_code,
+                    display_name=offer.candidate_name or username,
+                    contact_number=profile_data.get("phone", ""),
+                    employment_type=op.get("employment_type", "Intern"),
+                    status=EmployeeProfile.STATUS_ACTIVE,
+                    joined_on=timezone.localdate(),
+                    onboarding_completed=False,
+                    profile_payload={
+                        "registered_via": "offer_acceptance",
+                        "offer_id": offer.id,
+                        "offer_token": token,
+                        "position_title": offer.position_title,
+                        "department_name": op.get("department_name", ""),
+                        "city": profile_data.get("city", ""),
+                        "emergency_contact": profile_data.get("emergency_contact", ""),
+                    },
+                    created_by=context.actor,
+                    updated_by=context.actor,
+                )
+            else:
+                # User already exists — retrieve their password isn't possible, generate new one
+                auto_user = user_model.objects.filter(username__iexact=username).first()
+                auto_user.set_password(password)
+                auto_user.save(update_fields=["password"])
+        except Exception as exc:
+            provision_error = str(exc)
+
+        # Send credentials email
+        try:
+            base_url = str(getattr(settings, "PUBLIC_BASE_URL", "http://localhost:5173") or "http://localhost:5173").rstrip("/")
+            intranet_url = base_url
+            from_email = (
+                getattr(settings, "DEFAULT_FROM_EMAIL", "")
+                or getattr(settings, "EMAIL_HOST_USER", "")
+                or "admin@atg.world"
+            )
+            candidate_name = offer.candidate_name or username
+            position = offer.position_title or "Intern"
+            creds_html = f"""<!doctype html>
+<html>
+<head><meta charset="utf-8" /></head>
+<body style="margin:0;padding:0;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:40px 0;">
+  <tr><td align="center">
+    <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+      <tr><td style="background:linear-gradient(135deg,#1e3a5f,#2563eb);padding:32px 40px;text-align:center;">
+        <div style="font-size:28px;font-weight:900;color:#fff;letter-spacing:2px;">ATG</div>
+        <div style="color:#93c5fd;font-size:14px;margin-top:4px;">Across The Globe — Onboarding</div>
+      </td></tr>
+      <tr><td style="padding:40px;">
+        <h2 style="color:#1e3a5f;margin:0 0 8px;">Welcome aboard, {escape(candidate_name)}! 🎉</h2>
+        <p style="color:#475569;margin:0 0 28px;">Your offer has been accepted and your ATG Intranet account is ready. Here are your login credentials:</p>
+        <div style="background:#f1f5f9;border-radius:12px;padding:24px;margin-bottom:28px;">
+          <div style="margin-bottom:16px;">
+            <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#64748b;margin-bottom:4px;">Intranet Username</div>
+            <div style="font-size:20px;font-weight:700;color:#1e293b;font-family:monospace;">{escape(username)}</div>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#64748b;margin-bottom:4px;">Temporary Password</div>
+            <div style="font-size:20px;font-weight:700;color:#1e293b;font-family:monospace;">{escape(password)}</div>
+          </div>
+        </div>
+        <div style="margin-bottom:28px;">
+          <div style="font-size:13px;color:#64748b;margin-bottom:8px;">Your role: <strong style="color:#1e293b;">{escape(position)}</strong></div>
+          <div style="font-size:13px;color:#64748b;">Please change your password after first login.</div>
+        </div>
+        <a href="{escape(intranet_url)}" style="display:inline-block;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;">
+          Access ATG Intranet →
+        </a>
+        <p style="margin:28px 0 0;color:#94a3b8;font-size:13px;">
+          Questions? Contact HR at <a href="mailto:{escape(from_email)}" style="color:#2563eb;">{escape(from_email)}</a>
+        </p>
+      </td></tr>
+      <tr><td style="background:#f8fafc;padding:20px 40px;text-align:center;border-top:1px solid #e2e8f0;">
+        <p style="margin:0;color:#94a3b8;font-size:12px;">© Across The Globe (ATG). All Rights Reserved.</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>"""
+            msg = EmailMultiAlternatives(
+                subject=f"Welcome to ATG! Your Intranet Credentials — {candidate_name}",
+                body=f"Welcome {candidate_name}!\nYour ATG Intranet Username: {username}\nTemporary Password: {password}\nLogin at: {intranet_url}",
+                from_email=from_email,
+                to=[offer.candidate_email],
+            )
+            msg.attach_alternative(creds_html, "text/html")
+            msg.send(fail_silently=True)
+        except Exception:
+            pass
+
+        # Store provisioning result back in offer payload
+        offer.offer_payload = {
+            **offer.offer_payload,
+            "onboarding": {
+                "username": username,
+                "employee_id": auto_employee.id if auto_employee else None,
+                "user_id": auto_user.id if auto_user else None,
+                "provisioned": auto_user is not None,
+                "provision_error": provision_error,
+            },
+        }
+        offer.save(update_fields=["offer_payload", "updated_at"])
+
         return ServiceResult.success(offer)
+
 
     @staticmethod
     def queue_offer_reminders(context, now=None):
@@ -428,6 +606,155 @@ class MainAppLegacyService:
         return ServiceResult.success(offer, status_code=201)
 
     @staticmethod
+    def offer_template_context(offer, overrides=None):
+        payload = offer.offer_payload or {}
+        issued_on = offer.issued_at or timezone.now()
+        joining_value = payload.get("joining_date") or payload.get("joined_on")
+        if hasattr(joining_value, "strftime"):
+            joining_date = joining_value.strftime("%d/%m/%Y")
+        elif joining_value:
+            joining_date = str(joining_value)
+        else:
+            joining_date = issued_on.strftime("%d/%m/%Y")
+        actual_offer = offer.status == "Issued"
+        candidate_name = offer.candidate_name or "Candidate"
+        position_title = offer.position_title or payload.get("title") or payload.get("position_title") or "Intern"
+        company_name = offer.company_name or "ATG"
+        username = payload.get("username") or "-"
+        pay_type = payload.get("pay_type") or "Performance Based"
+        
+        payment_data_1 = payload.get("payment_data_1") or [
+            "Salary Components",
+            "INR",
+        ]
+        payment_data_2 = payload.get("payment_data_2") or [
+            pay_type,
+            payload.get("amount") or payload.get("fixed") or "As per discussion",
+        ]
+        intern_duration = payload.get("intern_duration") or payload.get("duration") or "6"
+        task = payload.get("task") or payload.get("min_tasks") or "5"
+        fixed = payload.get("fixed") or payload.get("amount") or "1000"
+        performance_based_pay_type = payload.get("performance_based_pay_type") or "task"
+        context_data = {
+            "candidate_name": candidate_name,
+            "company_name": company_name,
+            "position_title": position_title,
+            "offer_type": offer.offer_type or payload.get("offer_type") or "Internship",
+            "department_name": payload.get("department_name") or payload.get("department") or "General",
+            "sub_department_name": payload.get("sub_department_name") or payload.get("sub_department") or "-",
+            "username": username,
+            "employment_type": payload.get("employment_type") or "Internship",
+            "pay_type": pay_type,
+            "issued_date": issued_on.strftime("%d/%m/%Y"),
+            "joining_date": joining_date,
+            "actual_offer": actual_offer,
+            "offer_heading": "OFFER LETTER" if actual_offer else "PROVISIONAL OFFER LETTER",
+            "offer_disclaimer": "" if actual_offer else "<p style='text-align:center;margin:8px 0 22px;font-size:13px;font-weight:700;'>This is a provisional offer letter. This is NOT an actual offer letter which will be sent after successful first month completion.</p>",
+            "candidate_email": offer.candidate_email or "",
+            # 
+            "user": candidate_name,
+            "name": candidate_name,
+            "title": position_title,
+            "position_name": position_title,
+            "position": position_title,
+            "present_date": joining_date,
+            "intern_duration": intern_duration,
+            "task": task,
+            "fixed": fixed,
+            "Fixed": fixed,
+            "performance_based_pay_type": performance_based_pay_type,
+            "payment_data_1": payment_data_1,
+            "payment_data_2": payment_data_2,
+            "payment_data_1_html": "".join(f"<th>{item}</th>" for item in payment_data_1),
+            "payment_data_2_html": "".join(f"<th>{item}</th>" for item in payment_data_2),
+        }
+        if overrides:
+            for key, value in overrides.items():
+                if value not in (None, ""):
+                    context_data[key] = value
+        return context_data
+
+    @staticmethod
+    def build_legacy_offer_html(offer, overrides=None):
+        details = MainAppLegacyService.offer_template_context(offer, overrides)
+        heading = "OFFER LETTER" if details["actual_offer"] else "PROVISIONAL OFFER LETTER"
+        disclaimer = "" if details["actual_offer"] else "<p style='text-align:center;margin:8px 0 22px;font-size:13px;font-weight:700;'>This is a provisional offer letter. This is NOT an actual offer letter which will be sent after successful first month completion.</p>"
+        return f"""<!doctype html>
+<html>
+    <head>
+        <meta charset='utf-8' />
+        <style>
+            body {{ margin: 0; padding: 28px; background: #ffffff; color: #111827; font-family: Georgia, 'Times New Roman', serif; }}
+            .offer-shell {{ max-width: 860px; margin: 0 auto; border: 2px solid #111827; padding: 36px 42px 48px; }}
+            .offer-logo {{ text-align: center; margin-bottom: 18px; }}
+            .offer-logo img {{ width: 100%; max-width: 520px; height: auto; }}
+            .offer-title {{ text-align: center; font-size: 27px; font-weight: 700; letter-spacing: 1.4px; margin: 6px 0 0; }}
+            .offer-date {{ text-align: right; margin: 18px 0 22px; font-size: 15px; }}
+            .offer-copy {{ font-size: 15px; line-height: 1.7; margin: 0 0 14px; text-align: justify; }}
+            .offer-table {{ width: 100%; border-collapse: collapse; margin: 20px 0 24px; }}
+            .offer-table td, .offer-table th {{ border: 1px solid #111827; padding: 10px 12px; vertical-align: top; }}
+            .offer-table th {{ background: #efefef; text-align: left; }}
+            .offer-signoff {{ margin-top: 28px; font-size: 15px; line-height: 1.8; }}
+        </style>
+    </head>
+    <body>
+        <div class='offer-shell'>
+            <div class='offer-logo'>
+                <img src='https://i.postimg.cc/kgHvKMLz/employed-India-Logo.png' alt='ATG Offer Letter' />
+            </div>
+            <div class='offer-title'>{escape(heading)}</div>
+            {disclaimer}
+            <div class='offer-date'><strong>{escape(details['joining_date'])}</strong></div>
+            <p class='offer-copy'>Dear Mr./Ms. {escape(details['candidate_name'])},</p>
+            <p class='offer-copy'>We are pleased to offer you the position of <strong>{escape(details['position_title'])}</strong> with <strong>{escape(details['company_name'])}</strong>. This letter follows the legacy intranet offer format and records the core terms of your engagement.</p>
+            <table class='offer-table'>
+                <tbody>
+                    <tr><th style='width:34%'>Designation</th><td>{escape(details['position_title'])}</td></tr>
+                    <tr><th>Date of Joining / Issue</th><td>{escape(details['joining_date'])}</td></tr>
+                    <tr><th>Department</th><td>{escape(details['department_name'])}</td></tr>
+                    <tr><th>Sub Department</th><td>{escape(str(details['sub_department_name']))}</td></tr>
+                    <tr><th>Employment Type</th><td>{escape(details['employment_type'])}</td></tr>
+                    <tr><th>Compensation</th><td>{escape(details['pay_type'])}</td></tr>
+                    <tr><th>System Username</th><td>{escape(details['username'])}</td></tr>
+                    <tr><th>Candidate Email</th><td>{escape(details['candidate_email'])}</td></tr>
+                </tbody>
+            </table>
+            <p class='offer-copy'>This offer is subject to the company policies, code of conduct, and any onboarding formalities communicated by the HR or hiring team. Please retain this document for your records.</p>
+            <div class='offer-signoff'>
+                Regards,<br />
+                <strong>Team Across The Globe (ATG)</strong>
+            </div>
+        </div>
+    </body>
+</html>"""
+
+    @staticmethod
+    def build_offer_email_html(offer, offer_url, overrides=None):
+        details = MainAppLegacyService.offer_template_context(offer, overrides)
+        safe_name = escape(details["candidate_name"])
+        safe_position = escape(details["position_title"])
+        safe_link = escape(offer_url)
+        return f"""<!doctype html>
+<html>
+    <body>
+        <div style='background:#F5F5F5;font-size:18px;font-family:Helvetica,Arial,sans-serif;text-align:center;border:0.5px solid black;border-radius:20px;padding:50px 20px'>
+            <div><img src='https://i.postimg.cc/kgHvKMLz/employed-India-Logo.png' alt='ATG' style='max-width:320px;width:100%;height:auto' /></div>
+            <h4>Hi {safe_name},</h4>
+            <div>Across The Globe (ATG) is pleased to extend you an offer for {safe_position}. Kindly click on this link to view, download and accept your offer.</div>
+            <br />
+            <a href='{safe_link}' target='_blank' style='background-color:#4CAF50;border:none;color:white;padding:15px 32px;text-align:center;text-decoration:none;display:inline-block;font-size:16px;border-radius:8px;'>CLICK HERE</a>
+            <br /><br />
+            <span>Should you have any doubts related to the offer or onboarding, kindly consult your Hiring Manager.</span>
+            <br />
+            <span>Congratulations!</span>
+            <br />
+            <span>Team ATG.</span>
+            <p style='color:#ff0000d6; text-align:left;'>PS: In case 'Click Here' doesn't work copy &amp; paste the following link in your address bar <span style='color:blue; word-break:break-word;'>{safe_link}</span></p>
+        </div>
+    </body>
+</html>"""
+
+    @staticmethod
     def check_name(context, email="", username=""):
         user_model = get_user_model()
         exists = False
@@ -496,82 +823,167 @@ class MainAppLegacyService:
         return ServiceResult.success({"status": "synced" if imported else "queued", "imported": len(imported), "issue_ids": imported, "job_id": job.data.id if job.ok else None}, status_code=201)
 
     @staticmethod
-    def send_pdf_offer(context, offer_id, email, html_template, email_subject, email_template, macro_values=None):
+    def send_pdf_offer(context, offer_id, email=None, html_template=None, email_subject=None, email_template=None, macro_values=None):
         """
         Generate and send PDF offer letter with full email support.
-        
-        Args:
-            context: Service context
-            offer_id: ID of the onboarding offer
-            email: Recipient email address
-            html_template: HTML template string for PDF generation
-            email_subject: Subject line for email
-            email_template: HTML template string for email body
-            macro_values: Dict of macro values to replace in templates
+        Builds a clean, xhtml2pdf-safe PDF from offer data directly.
+        The rich branded HTML is sent only in the email body — not fed to xhtml2pdf.
         """
         from django.conf import settings
         from django.template import Template, Context
-        from django.utils.safestring import mark_safe
-        
+
         offer = OnboardingOffer.objects.filter(tenant=context.tenant, id=offer_id).first()
         if not offer:
             return ServiceResult.failure({"offer": "Onboarding Offer Not Found."}, status_code=404)
-        
+
         if offer.status == "Draft":
             issued = OfferLifecycleService.issue_offer(context, offer.id)
             if not issued.ok:
                 return issued
             offer = issued.data
-        
-        # Check if PDF generation dependencies are available
-        if not pisa or not BeautifulSoup:
-            return ServiceResult.failure({"error": "PDF generation dependencies not installed (xhtml2pdf, beautifulsoup4)"}, status_code=500)
-        
+
+        if not pisa:
+            return ServiceResult.failure({"error": "PDF generation dependencies not installed (xhtml2pdf)"}, status_code=500)
+
         try:
-            # Prepare context for template rendering
-            template_context = macro_values or {}
+            template_context = MainAppLegacyService.offer_template_context(offer, macro_values or {})
+            base_url = str(getattr(settings, "PUBLIC_BASE_URL", "http://localhost:8000") or "http://localhost:8000").rstrip("/")
+            offer_url = f"{base_url}/offer/accept/{offer.token or ''}"
             template_context.update({
-                'offer_id': offer.id,
-                'candidate_name': offer.candidate_name,
-                'candidate_email': offer.candidate_email,
-                'position': offer.position_title,
+                "offer_id": offer.id,
+                "candidate_name": offer.candidate_name,
+                "candidate_email": offer.candidate_email,
+                "position": offer.position_title,
+                "offer_url": offer_url,
             })
-            
-            # Render HTML template
-            template = Template(html_template)
-            html_content = template.render(Context(template_context))
-            
-            # Generate PDF from HTML
-            bsobj = BeautifulSoup(html_content, 'html.parser')
-            result = BytesIO()
-            pdf_status = pisa.pisaDocument(BytesIO(bsobj.encode("ISO-8859-1")), result, language='en-US')
-            
+            email = email or offer.candidate_email
+            if not email:
+                return ServiceResult.failure({"email": "Candidate email not available"}, status_code=400)
+
+            # ----------------------------------------------------------------
+            # PDF: Build a purpose-built, xhtml2pdf-safe document from offer
+            # data. We deliberately skip all legacy .html template files here
+            # because they contain rowspan/colspan, Django template tags, and
+            # remote images that crash xhtml2pdf's layout engine. The clean
+            # data-table approach below is 100% compatible with xhtml2pdf.
+            # ----------------------------------------------------------------
+            d = template_context
+            heading = "OFFER LETTER" if d.get("actual_offer") else "PROVISIONAL OFFER LETTER"
+            disclaimer = (
+                ""
+                if d.get("actual_offer")
+                else "<p style='text-align:center;font-weight:700;font-size:11px;margin:0 0 16px;color:#b91c1c;'>"
+                     "This is a provisional offer letter and NOT a final offer letter.</p>"
+            )
+            # Simple two-column table — no rowspan/colspan — xhtml2pdf-safe
+            def row(label, value):
+                return (
+                    f"<tr>"
+                    f"<td style='border:1px solid #111827;padding:8px 11px;background:#f3f4f6;font-weight:700;width:36%;font-size:13px;'>{escape(label)}</td>"
+                    f"<td style='border:1px solid #111827;padding:8px 11px;font-size:13px;'>{escape(str(value or ''))}</td>"
+                    f"</tr>"
+                )
+            rows_html = "".join([
+                row("Candidate Name",   d.get("candidate_name", "")),
+                row("Designation",      d.get("position_title", "")),
+                row("Date of Joining",  d.get("joining_date", "")),
+                row("Employment Type",  d.get("employment_type", "")),
+                row("Department",       d.get("department_name", "")),
+                row("Sub Department",   d.get("sub_department_name", "")),
+                row("Compensation",     d.get("pay_type", "")),
+                row("System Username",  d.get("username", "")),
+                row("Candidate Email",  d.get("candidate_email", "")),
+            ])
+            pdf_html = f"""<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+body {{ margin:0; padding:28px; background:#fff; color:#111827; font-family:Arial,Helvetica,sans-serif; font-size:14px; line-height:1.6; }}
+.shell {{ max-width:800px; margin:0 auto; border:2px solid #111827; padding:32px 38px; }}
+.title {{ text-align:center; font-size:20px; font-weight:700; letter-spacing:1px; margin:0 0 3px; }}
+.company {{ text-align:center; font-size:12px; color:#475467; margin:0 0 18px; }}
+.date-right {{ text-align:right; font-size:13px; margin:0 0 18px; }}
+.body-p {{ margin:0 0 14px; text-align:justify; font-size:14px; }}
+.signoff {{ margin-top:24px; font-size:14px; line-height:1.8; }}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="title">{escape(heading)}</div>
+  <div class="company">Across The Globe (ATG)</div>
+  {disclaimer}
+  <div class="date-right">Date: {escape(str(d.get('joining_date', '')))}</div>
+  <p class="body-p">Dear {escape(str(d.get('candidate_name', '')))},</p>
+  <p class="body-p">We are pleased to offer you the position of <b>{escape(str(d.get('position_title', '')))}</b>
+  with <b>{escape(str(d.get('company_name', 'ATG')))}</b>. This letter confirms the core terms of your engagement.</p>
+  <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+    {rows_html}
+  </table>
+  <p class="body-p">This offer is subject to company policies and onboarding formalities communicated by the HR team.
+  Please retain this document for your records.</p>
+  <p class="body-p">To accept your offer and sign the NDA, visit: {escape(str(offer_url))}</p>
+  <div class="signoff">Regards,<br /><b>Team Across The Globe (ATG)</b></div>
+</div>
+</body>
+</html>"""
+
+            pdf_buf = BytesIO()
+            pdf_status = pisa.pisaDocument(
+                BytesIO(pdf_html.encode("utf-8")),
+                pdf_buf,
+                encoding="utf-8",
+                link_callback=_pisa_link_callback,
+            )
             if pdf_status.err:
                 return ServiceResult.failure({"error": "PDF generation failed"}, status_code=500)
-            
-            # Render email template
-            email_tmpl = Template(email_template)
-            email_content = email_tmpl.render(Context(template_context))
-            
-            # Send email with PDF attachment
-            from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "") or getattr(settings, "EMAIL_HOST_USER", "") or "admin@atg.world"
-            
+
+            # ----------------------------------------------------------------
+            # Email body: rich branded HTML (legacy template or fallback)
+            # ----------------------------------------------------------------
+            # Build rich branded email body.
+            # NOTE: The onboarding_email.html file on disk has hardcoded legacy URLs and wrong
+            # variable names ({{user}}, {{department}}, {{position}} instead of our context keys).
+            # We use build_offer_email_html which correctly injects offer_url = localhost:5173/...
+            if email_template:
+                # Only use a passed-in template string (from ContentTemplate.email_template field)
+                try:
+                    email_content = Template(email_template).render(Context(template_context))
+                except Exception:
+                    email_content = MainAppLegacyService.build_offer_email_html(offer, offer_url, template_context)
+            else:
+                email_content = MainAppLegacyService.build_offer_email_html(offer, offer_url, template_context)
+
+            # Render email_subject — may contain {{ variables }} from stored ContentTemplates
+            raw_subject = email_subject or f"Congratulations! Offer as {{{{ position_title }}}} from Across The Globe (ATG)"
+            try:
+                email_subject = Template(raw_subject).render(Context(template_context))
+            except Exception:
+                email_subject = f"Congratulations! Offer as {offer.position_title or 'Intern'} from Across The Globe (ATG)"
+            if not email_subject or "{{" in email_subject:
+                email_subject = f"Congratulations! Offer as {offer.position_title or 'Intern'} from Across The Globe (ATG)"
+            from_email = (
+                getattr(settings, "DEFAULT_FROM_EMAIL", "")
+                or getattr(settings, "EMAIL_HOST_USER", "")
+                or "admin@atg.world"
+            )
+
             msg = EmailMultiAlternatives(
                 subject=email_subject,
                 body="",
                 from_email=from_email,
-                to=[email]
+                to=[email],
             )
-            msg.attach('Offer Letter.pdf', result.getvalue(), 'application/pdf')
-            msg.attach_alternative(email_content, 'text/html')
+            msg.attach("Offer Letter.pdf", pdf_buf.getvalue(), "application/pdf")
+            msg.attach_alternative(email_content, "text/html")
             msg.send(fail_silently=False)
-            
+
             return ServiceResult.success({
                 "offer_id": offer.id,
                 "token": offer.token,
                 "filename": f"offer-{offer.id}.pdf",
                 "candidate_email": email,
-                "email_sent": True
+                "email_sent": True,
             })
         except Exception as e:
             return ServiceResult.failure({"error": f"Failed to send offer: {str(e)}"}, status_code=500)
@@ -597,10 +1009,14 @@ class MainAppLegacyService:
         recipient = user_model.objects.filter(id=recipient_id).first()
         if not recipient:
             return ServiceResult.failure({"recipient": "Recipient User Not Found."}, status_code=404)
+        recipient_employee = EmployeeProfile.objects.filter(tenant=context.tenant, user=recipient).select_related("position").first()
+        joining_date = joining_date or (recipient_employee.joined_on.isoformat() if recipient_employee and recipient_employee.joined_on else "")
+        completion_date = completion_date or timezone.now().date().isoformat()
+        position = position or (recipient_employee.position.title if recipient_employee and recipient_employee.position else "Team Member")
         
         # Check if PDF generation dependencies are available
-        if not pisa or not BeautifulSoup:
-            return ServiceResult.failure({"error": "PDF generation dependencies not installed (xhtml2pdf, beautifulsoup4)"}, status_code=500)
+        if not pisa:
+            return ServiceResult.failure({"error": "PDF generation dependencies not installed (xhtml2pdf)"}, status_code=500)
         
         try:
             # Helper function to load images as data URIs
@@ -663,9 +1079,14 @@ class MainAppLegacyService:
             
             # Generate certificate PDF
             html_content = render_to_string('mainapp/certificates/certificate.html', cert_context)
-            bsobj = BeautifulSoup(html_content, 'html.parser')
+            pdf_html = _sanitize_html_for_pisa(html_content)
             result = BytesIO()
-            pdf_status = pisa.pisaDocument(BytesIO(bsobj.encode("ISO-8859-1")), result, language='en-US')
+            pdf_status = pisa.pisaDocument(
+                BytesIO(pdf_html.encode("utf-8")),
+                result,
+                encoding="utf-8",
+                link_callback=_pisa_link_callback,
+            )
             
             if pdf_status.err:
                 return ServiceResult.failure({"error": "Certificate PDF generation failed"}, status_code=500)
@@ -693,7 +1114,7 @@ class MainAppLegacyService:
                     EmployeeCertificate.objects.create(
                         tenant=context.tenant,
                         manager=context.actor,
-                        employee=recipient,
+                        employee=recipient_employee,
                         position_title=position,
                         issued_on=timezone.now().date(),
                         created_by=context.actor,
@@ -888,19 +1309,27 @@ class MainAppLegacyService:
             username = email.split("@")[0]
         existing = user_model.objects.filter(Q(username__iexact=username) | (Q(email__iexact=email) if email else Q(pk__in=[]))).first()
         if existing:
-            user = existing
-        else:
-            password = data.get("password") or get_random_string(12)
-            user = user_model.objects.create_user(username=username, email=email or "", password=password)
-            first, _, last = display_name.partition(" ")
-            if first:
-                user.first_name = first[:30]
-            if last:
-                user.last_name = last[:150]
-            user.save(update_fields=["first_name", "last_name"])
+            conflict = {}
+            if username and str(existing.username).lower() == username.lower():
+                conflict["username"] = "Username Already Exists. Use A Different Login ID For The New Employee."
+            if email and str(existing.email or "").lower() == email.lower():
+                conflict["email"] = "Email Already Exists. Use A Different Employee Email For The New Account."
+            linked_employee = EmployeeProfile.objects.filter(user=existing, is_active=True).select_related("tenant", "workspace").order_by("id").first()
+            if linked_employee:
+                workspace_name = linked_employee.workspace.name if linked_employee.workspace_id else (linked_employee.tenant.name if linked_employee.tenant_id else "Current Workspace")
+                conflict["employee"] = f"This login is already mapped to {linked_employee.display_name} ({linked_employee.employee_code}) in {workspace_name}."
+            return ServiceResult.failure(conflict or {"user": "User Already Exists."}, status_code=409)
+        password = data.get("password") or get_random_string(12)
+        user = user_model.objects.create_user(username=username, email=email or "", password=password)
+        first, _, last = display_name.partition(" ")
+        if first:
+            user.first_name = first[:30]
+        if last:
+            user.last_name = last[:150]
+        user.save(update_fields=["first_name", "last_name"])
         if EmployeeProfile.objects.filter(tenant=context.tenant, user=user).exists():
             employee = EmployeeProfile.objects.filter(tenant=context.tenant, user=user).first()
-            return ServiceResult.success(employee, status_code=200)
+            return ServiceResult.failure({"employee": f"User Already Has An Employee Profile In {context.tenant.name}: {employee.display_name} ({employee.employee_code})."}, status_code=409)
         if EmployeeProfile.objects.filter(tenant=context.tenant, employee_code=employee_code).exists():
             return ServiceResult.failure({"employee_code": "Employee Code Already In Use."}, status_code=400)
         department_id = data.get("department") or None

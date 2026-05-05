@@ -1,10 +1,11 @@
-import React, { useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, Globe, Linkedin, MoreHorizontal, RefreshCw, Search, Trash2, Users } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { ArrowDown, ArrowLeft, ArrowUp, Globe, Mail, MoreHorizontal, PhoneCall, Plus, RefreshCw, Save, Search, Star, Trash2, Users } from "lucide-react";
 
 import { apiPatch, apiPost } from "../Api/Client.js";
 import { EmptyState, Modal, StatusPill } from "./Shared/ScreenComponents.jsx";
 import {
   formatDate,
+  formatDateTime,
   getLeadRows,
   leadContactSummary,
   leadOwnerName,
@@ -25,6 +26,21 @@ const SORT_FIELDS = {
   updatedAt: (row) => new Date(row.updatedAt || 0).getTime(),
 };
 
+const CALL_STATUS_OPTIONS = [
+  ["", "Call Status"],
+  ["call_failed", "Call Failed"],
+  ["call_connected", "Call Connected"],
+  ["call_didnot_pickup", "Call Didn't Pickup"],
+];
+
+const NOTE_CHANNELS = [
+  { key: "meeting", label: "Meeting", placeholder: "Meeting recorder link", options: [["", "Meeting recorder link"], ["google_meet", "Google Meet"], ["zoom", "Zoom"], ["microsoft_teams", "Microsoft Teams"], ["other", "Other"]] },
+  { key: "call", label: "Phone call", placeholder: "Call Status", options: CALL_STATUS_OPTIONS },
+  { key: "email", label: "Email", placeholder: "Email Status", options: [["", "Email Status"], ["Email Sent", "Email Sent"], ["Email Delivered", "Email Delivered"], ["Email Opened", "Email Opened"], ["Link Clicked", "Link Clicked"], ["Replied", "Replied"], ["Bounced", "Bounced"], ["Pending", "Pending"]] },
+  { key: "whatsapp", label: "Whatsapp", placeholder: "Whatsapp Status", options: [["", "Whatsapp Status"], ["Message Sent", "Message Sent"], ["Message Delivered", "Message Delivered"], ["Message Read", "Message Read"], ["Lead Replied", "Lead Replied"], ["call initiated(via Whatsapp call)", "Call initiated (via Whatsapp call)"], ["Not Delivered / Blocked", "Not Delivered / Blocked"]] },
+  { key: "linkedin", label: "LinkedIn", placeholder: "LinkedIn Status", options: [["", "LinkedIn Status"], ["Connection Request Sent", "Connection Request Sent"], ["Request Pending", "Request Pending"], ["Connected", "Connected"], ["Message Sent", "Message Sent"], ["Message Seen", "Message Seen"], ["Lead Replied", "Lead Replied"], ["Profile Unavailable / Restricted", "Profile Unavailable / Restricted"], ["Follow-up Scheduled", "Follow-up Scheduled"]] },
+];
+
 function stageTone(value = "") {
   const normalized = String(value || "").toLowerCase();
   if (normalized.includes("won") || normalized.includes("confirmed")) return "green";
@@ -36,7 +52,7 @@ function stageTone(value = "") {
 function sourceLogoNode(label = "") {
   const tone = sourceTone(label);
   if (tone === "client") return <Globe size={16} />;
-  if (tone === "linkedin") return <Linkedin size={16} />;
+  if (tone === "linkedin") return <Users size={16} />;
   if (tone === "instagram") return <span>IG</span>;
   if (tone === "banao") return <span>B</span>;
   return <span>{String(label || "?").slice(0, 2).toUpperCase()}</span>;
@@ -50,7 +66,102 @@ function compareRows(left, right, field, direction) {
   return (leftValue > rightValue ? 1 : -1) * (direction === "asc" ? 1 : -1);
 }
 
-export function LmsScreen({ data, reload, navigate }) {
+function routeLeadId(route = "") {
+  const path = String(route || "").split("?")[0];
+  const match = path.match(/^\/lms\/([^/]+)\/?$/);
+  return match ? match[1] : "";
+}
+
+function toDateInput(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 10);
+}
+
+function toDateTimePayload(value) {
+  return value ? `${value}T00:00:00` : null;
+}
+
+function tagIdsForLead(tags = [], options = []) {
+  const byName = new Map(options.map((item) => [String(item.name), String(item.id)]));
+  return (tags || []).map((item) => {
+    if (item && typeof item === "object" && item.id !== undefined) return String(item.id);
+    const text = String(item);
+    return byName.get(text) || text;
+  });
+}
+
+function payloadIds(values = []) {
+  return values.map((value) => {
+    const number = Number(value);
+    return Number.isNaN(number) ? value : number;
+  });
+}
+
+function parseChecklist(value = "") {
+  return String(value || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line, index) => ({
+      id: `task-${index}-${line}`,
+      done: /^\[(x|X)\]\s*/.test(line),
+      label: line.replace(/^\[(x|X| )\]\s*/, "").trim(),
+    }));
+}
+
+function serializeChecklist(items = []) {
+  return (items || [])
+    .filter((item) => String(item.label || "").trim())
+    .map((item) => `[${item.done ? "x" : " "}] ${String(item.label || "").trim()}`)
+    .join("\n");
+}
+
+function currentEmployeeId(data) {
+  return String(data.me?.employees?.[0]?.id || (data.employees || []).find((item) => String(item.user) === String(data.me?.user?.id))?.id || "");
+}
+
+function leadTypeLabel(lead) {
+  return lead.metadata?.lead_type || lead.metadata?.type || lead.metadata?.service_type || "Not Gathered";
+}
+
+function buildLeadDraft(lead, tagOptions) {
+  return {
+    stageLabel: lead.stageLabel || "New Lead",
+    ownerId: String(lead.ownerId || ""),
+    tagIds: tagIdsForLead(lead.tags || [], tagOptions),
+    nextFollowUpAt: toDateInput(lead.nextFollowUpAt),
+    lastUpdateNote: lead.lastUpdateNote === "-" ? "" : lead.lastUpdateNote,
+    callStatus: lead.callStatus || "",
+    callUpdatedAt: toDateInput(lead.callUpdatedAt),
+    important: Boolean(lead.important),
+    checklist: parseChecklist(lead.actionItem),
+    message: lead.message === "-" ? "" : lead.message,
+    typeLabel: lead.typeLabel || "Not Gathered",
+  };
+}
+
+function buildLeadPayload(lead, draft) {
+  return {
+    owner: draft.ownerId || null,
+    stage: draft.stageLabel || lead.stageLabel || "New Lead",
+    tags: payloadIds(draft.tagIds),
+    next_follow_up_at: toDateTimePayload(draft.nextFollowUpAt),
+    latest_comment: draft.lastUpdateNote || "",
+    action_item: serializeChecklist(draft.checklist),
+    metadata: {
+      ...(lead.metadata || {}),
+      call_status: draft.callStatus || "",
+      call_updated_at: draft.callUpdatedAt || null,
+      is_important: draft.important,
+      source_message: draft.message || "",
+      lead_type: draft.typeLabel || "",
+    },
+  };
+}
+
+export function LmsScreen({ data, reload, navigate, route }) {
   const rawLeads = getLeadRows(data);
   const [search, setSearch] = useState("");
   const [tag, setTag] = useState("all");
@@ -65,6 +176,7 @@ export function LmsScreen({ data, reload, navigate }) {
   const [assignOpen, setAssignOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const activeLeadId = routeLeadId(route);
 
   const refresh = () => reload(["lmsLeads", "leadAccounts", "leadContacts", "leadNotes", "leadProposals", "leadAudits", "leadActivities", "leadTags", "employees", "learningAssignments", "leadQueueSnapshots", "revenueSnapshots"]);
 
@@ -82,16 +194,31 @@ export function LmsScreen({ data, reload, navigate }) {
       if (!notesByLead.has(key)) notesByLead.set(key, []);
       notesByLead.get(key).push(item);
     });
+    const proposalsByLead = new Map();
+    (data.leadProposals || []).forEach((item) => {
+      const key = String(item.lead);
+      if (!proposalsByLead.has(key)) proposalsByLead.set(key, []);
+      proposalsByLead.get(key).push(item);
+    });
+    const auditsByLead = new Map();
+    (data.leadAudits || []).forEach((item) => {
+      const key = String(item.lead);
+      if (!auditsByLead.has(key)) auditsByLead.set(key, []);
+      auditsByLead.get(key).push(item);
+    });
 
     return rawLeads.map((row) => {
       const account = accountMap.get(String(row.id)) || row;
       const contacts = contactsByLead.get(String(row.id)) || [];
       const primaryContact = contacts.find((item) => item.is_primary) || contacts[0] || {};
-      const notes = notesByLead.get(String(row.id)) || [];
+      const notes = [...(notesByLead.get(String(row.id)) || [])].sort((left, right) => new Date(right.created_at || right.updated_at || 0) - new Date(left.created_at || left.updated_at || 0));
       const latestNote = notes[0] || null;
       const tags = account.tags || row.tags || [];
       const sourceLabel = leadSource(account);
       const ownerId = row.owner_id || account.owner || row.owner;
+      const metadata = account.metadata || {};
+      const proposals = proposalsByLead.get(String(row.id)) || [];
+      const audits = auditsByLead.get(String(row.id)) || [];
 
       return {
         id: row.id,
@@ -112,9 +239,23 @@ export function LmsScreen({ data, reload, navigate }) {
         industry: account.industry || "-",
         tagNames: tags.map((item) => String(item.name || item)),
         actionItem: account.action_item || "",
+        tagIds: tagIdsForLead(tags, data.leadTags || []),
+        tags,
+        account,
+        contacts,
+        notes,
+        proposals,
+        audits,
+        metadata,
+        websiteUrl: account.website_url || account.source_page_url || metadata.website_url || "",
+        callStatus: metadata.call_status || "",
+        callUpdatedAt: metadata.call_updated_at || null,
+        important: Boolean(metadata.is_important),
+        typeLabel: leadTypeLabel({ metadata }),
+        message: metadata.source_message || metadata.message || metadata.lead_message || latestNote?.body || "-",
       };
     });
-  }, [rawLeads, data.leadAccounts, data.leadContacts, data.leadNotes, data]);
+  }, [rawLeads, data.leadAccounts, data.leadContacts, data.leadNotes, data.leadProposals, data.leadAudits, data]);
 
   const assignSelected = async (employeeId) => {
     if (!employeeId || !selected.size) return;
@@ -164,6 +305,7 @@ export function LmsScreen({ data, reload, navigate }) {
   const stageOptions = useMemo(() => uniqueOptions(["New Lead", "Contact Attempted", "Discovery / Demo Scheduled", "Discovery / Demo Completed", "Proposal Sent", "Closed - Won", "Closed - Lost", "Nurture / Recycle", ...leads.map((lead) => lead.stageLabel)]), [leads]);
   const selectedVisibleCount = filtered.filter((lead) => selected.has(lead.id)).length;
   const allVisibleSelected = filtered.length > 0 && filtered.every((lead) => selected.has(lead.id));
+  const activeLead = activeLeadId ? leads.find((lead) => String(lead.id) === String(activeLeadId)) : null;
 
   const resetFilters = () => {
     setSearch("");
@@ -201,6 +343,32 @@ export function LmsScreen({ data, reload, navigate }) {
     if (sortField !== field) return null;
     return sortDirection === "asc" ? <ArrowUp size={13} /> : <ArrowDown size={13} />;
   };
+
+  if (activeLeadId && !activeLead) {
+    return (
+      <section className="lms-screen lms-detail-screen">
+        <div className="lms-breadcrumb">
+          <strong>Intranet</strong>
+          <button onClick={() => navigate?.("/home/")}>Home</button>
+          <span>/</span>
+          <button onClick={() => navigate?.("/lms/")}>Banao</button>
+          <span>/</span>
+          <b>{activeLeadId}</b>
+        </div>
+        <section className="lms-detail-shell">
+          <div className="lms-detail-topbar">
+            <button className="outline-button" onClick={() => navigate?.("/lms/")}><ArrowLeft size={16} /> Back To Leads</button>
+            <button className="outline-button" onClick={refresh}><RefreshCw size={16} /> Refresh</button>
+          </div>
+          <EmptyState label="Lead Not Found In The Current Workspace." />
+        </section>
+      </section>
+    );
+  }
+
+  if (activeLead) {
+    return <LeadDetailWorkspace data={data} lead={activeLead} navigate={navigate} refresh={refresh} stageOptions={stageOptions} />;
+  }
 
   return (
     <section className="lms-screen">
@@ -312,7 +480,9 @@ export function LmsScreen({ data, reload, navigate }) {
                   <td><input type="checkbox" checked={selected.has(lead.id)} onChange={() => setSelected(toggleSet(selected, lead.id))} aria-label={`Select ${lead.leadName}`} /></td>
                   <td>
                     <div className="lms-row-name">
-                      <strong>{lead.leadName}</strong>
+                      <button className="lms-lead-open" onClick={() => navigate?.(`/lms/${lead.id}/`)}>
+                        <strong>{lead.leadName}</strong>
+                      </button>
                       <StatusPill tone={priorityTone(lead.priority)}>{lead.priority || "Normal"}</StatusPill>
                     </div>
                   </td>
@@ -344,6 +514,256 @@ export function LmsScreen({ data, reload, navigate }) {
 
       {assignOpen && <AssignLeadModal data={data} count={selected.size} busy={busy} onClose={() => setAssignOpen(false)} onSubmit={assignSelected} />}
       {moreOpen && <BulkStageModal count={selected.size} busy={busy} options={stageOptions} onClose={() => setMoreOpen(false)} onSubmit={bulkMoveStage} />}
+    </section>
+  );
+}
+
+function LeadDetailWorkspace({ data, lead, navigate, refresh, stageOptions }) {
+  const [draft, setDraft] = useState(() => buildLeadDraft(lead, data.leadTags || []));
+  const [checklistInput, setChecklistInput] = useState("");
+  const [note, setNote] = useState(() => ({ title: "", body: "", channelEnabled: { meeting: false, call: false, email: false, whatsapp: false, linkedin: false }, channelStatus: { meeting: "", call: "", email: "", whatsapp: "", linkedin: "" } }));
+  const [saving, setSaving] = useState(false);
+  const [noteBusy, setNoteBusy] = useState(false);
+  const [flash, setFlash] = useState("");
+  const actorId = currentEmployeeId(data);
+
+  useEffect(() => {
+    setDraft(buildLeadDraft(lead, data.leadTags || []));
+    setChecklistInput("");
+    setNote({ title: "", body: "", channelEnabled: { meeting: false, call: false, email: false, whatsapp: false, linkedin: false }, channelStatus: { meeting: "", call: "", email: "", whatsapp: "", linkedin: "" } });
+    setFlash("");
+  }, [lead, data.leadTags]);
+
+  const saveLead = async (nextDraft = draft, successMessage = "Lead updated.") => {
+    setSaving(true);
+    try {
+      await apiPatch(`/Banao/LeadAccounts/${lead.id}/`, buildLeadPayload(lead, nextDraft));
+      setDraft(nextDraft);
+      setFlash(successMessage);
+      refresh();
+    } catch (error) {
+      setFlash(error?.data?.detail || error?.message || "Unable to save lead details.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateChecklist = async (nextChecklist, message) => {
+    const nextDraft = { ...draft, checklist: nextChecklist };
+    setDraft(nextDraft);
+    await saveLead(nextDraft, message);
+  };
+
+  const addChecklistItem = async () => {
+    const label = checklistInput.trim();
+    if (!label) return;
+    const nextChecklist = [...draft.checklist, { id: `task-${Date.now()}`, label, done: false }];
+    setChecklistInput("");
+    await updateChecklist(nextChecklist, "Checklist updated.");
+  };
+
+  const submitNote = async () => {
+    if (!note.body.trim()) {
+      setFlash("Add a note description before saving.");
+      return;
+    }
+    setNoteBusy(true);
+    try {
+      const channelStatus = Object.fromEntries(Object.entries(note.channelStatus).filter(([, value]) => value));
+      const enabledChannels = Object.entries(note.channelEnabled).filter(([, value]) => value).map(([key]) => key);
+      const nextDraft = { ...draft, lastUpdateNote: note.title.trim() ? `${note.title.trim()}: ${note.body.trim()}` : note.body.trim() };
+      await apiPost(`/Banao/LeadAccounts/${lead.id}/add-note/`, {
+        title: note.title.trim() || "General Update",
+        body: note.body.trim(),
+        author: actorId || undefined,
+        metadata: {
+          channels: enabledChannels,
+          channel_status: channelStatus,
+          call_status: draft.callStatus || "",
+          call_updated_at: draft.callUpdatedAt || null,
+          next_follow_up_at: toDateTimePayload(draft.nextFollowUpAt),
+        },
+      });
+      await apiPatch(`/Banao/LeadAccounts/${lead.id}/`, buildLeadPayload(lead, nextDraft));
+      setDraft(nextDraft);
+      setNote({ title: "", body: "", channelEnabled: { meeting: false, call: false, email: false, whatsapp: false, linkedin: false }, channelStatus: { meeting: "", call: "", email: "", whatsapp: "", linkedin: "" } });
+      setFlash("Note added.");
+      refresh();
+    } catch (error) {
+      setFlash(error?.data?.detail || error?.message || "Unable to save note.");
+    } finally {
+      setNoteBusy(false);
+    }
+  };
+
+  const latestProposal = lead.proposals[0];
+  const latestAudit = lead.audits[0];
+
+  return (
+    <section className="lms-screen lms-detail-screen">
+      <div className="lms-breadcrumb">
+        <strong>Intranet</strong>
+        <button onClick={() => navigate?.("/home/")}>Home</button>
+        <span>/</span>
+        <button onClick={() => navigate?.("/lms/")}>Banao</button>
+        <span>/</span>
+        <button onClick={() => navigate?.("/lms/")}>LMS</button>
+        <span>/</span>
+        <b>{lead.id}</b>
+      </div>
+
+      <section className="lms-detail-shell">
+        <div className="lms-detail-topbar">
+          <button className="outline-button" onClick={() => navigate?.("/lms/")}><ArrowLeft size={16} /> Back To Leads</button>
+          <button className="primary-button" disabled={saving} onClick={() => saveLead()}><Save size={16} /> {saving ? "Saving…" : "Save Lead"}</button>
+        </div>
+
+        <header className="lms-detail-header">
+          <div className="lms-detail-profile">
+            <div className="lms-detail-avatar">{String(lead.leadName || lead.companyName || "?").trim().charAt(0).toUpperCase() || "?"}</div>
+            <div>
+              <h1>{lead.leadName}</h1>
+              <p>Origin <span className={`lms-origin-inline ${sourceTone(lead.sourceLabel)}`}>{sourceLogoNode(lead.sourceLabel)}</span> {lead.sourceLabel}</p>
+              <small>Created at : {formatDate(lead.createdAt)} | Updated at : {formatDate(lead.updatedAt)}</small>
+            </div>
+          </div>
+          <div className="lms-detail-actions">
+            <button className={draft.important ? "lms-detail-action active" : "lms-detail-action"} onClick={() => saveLead({ ...draft, important: !draft.important }, draft.important ? "Lead unmarked as important." : "Lead marked as important.")}><Star size={17} /> <span>Mark as Important</span></button>
+            <a className="lms-detail-action" href={lead.email && lead.email !== "-" ? `mailto:${lead.email}` : undefined} onClick={(event) => { if (!lead.email || lead.email === "-") event.preventDefault(); }}><Mail size={17} /> <span>Email</span></a>
+            <a className="lms-detail-action" href={lead.phone && lead.phone !== "-" ? `tel:${String(lead.phone).replace(/\s+/g, "")}` : undefined} onClick={(event) => { if (!lead.phone || lead.phone === "-") event.preventDefault(); }}><PhoneCall size={17} /> <span>Call</span></a>
+          </div>
+        </header>
+
+        <section className="lms-detail-tags-strip">
+          <strong>Tags:</strong>
+          <div className="lms-detail-tags">
+            {draft.tagIds.length ? draft.tagIds.map((id) => <span key={id} className="lms-tag-chip">{(data.leadTags || []).find((item) => String(item.id) === String(id))?.name || id}</span>) : <span className="lms-muted">No tags assigned</span>}
+          </div>
+        </section>
+
+        {flash && <div className="lms-flash">{flash}</div>}
+
+        <div className="lms-detail-form-row">
+          <label className="lms-field-stack">Call Updated at
+            <input type="date" value={draft.callUpdatedAt} onChange={(event) => setDraft({ ...draft, callUpdatedAt: event.target.value })} />
+          </label>
+          <label className="lms-field-stack">Workflow Status
+            <select value={draft.stageLabel} onChange={(event) => setDraft({ ...draft, stageLabel: event.target.value })}>
+              {stageOptions.map((value) => <option key={value} value={value}>{value}</option>)}
+            </select>
+          </label>
+          <label className="lms-field-stack">Call Status
+            <select value={draft.callStatus} onChange={(event) => setDraft({ ...draft, callStatus: event.target.value })}>
+              {CALL_STATUS_OPTIONS.map(([value, label]) => <option key={value || "blank"} value={value}>{label}</option>)}
+            </select>
+          </label>
+          <label className="lms-field-stack">Assigned To
+            <select value={draft.ownerId} onChange={(event) => setDraft({ ...draft, ownerId: event.target.value })}>
+              <option value="">No one assigned</option>
+              {(data.employees || []).map((employee) => <option key={employee.id} value={employee.id}>{employee.display_name}</option>)}
+            </select>
+          </label>
+          <label className="lms-field-stack">Tags
+            <select multiple value={draft.tagIds} onChange={(event) => setDraft({ ...draft, tagIds: Array.from(event.target.selectedOptions).map((option) => option.value) })}>
+              {(data.leadTags || []).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+            </select>
+            <small>press ctrl + click</small>
+          </label>
+        </div>
+
+        <div className="lms-detail-grid">
+          <section className="lms-detail-card lms-detail-main">
+            <h3>Add new note</h3>
+            <div className="lms-note-editor">
+              <input value={note.title} onChange={(event) => setNote({ ...note, title: event.target.value })} placeholder="Note title (Call, Meeting, Objection, Negotiation, General Update)" />
+              <textarea rows={6} value={note.body} onChange={(event) => setNote({ ...note, body: event.target.value })} placeholder="Note description" />
+              <div className="lms-note-channels">
+                {NOTE_CHANNELS.map((channel) => (
+                  <div key={channel.key} className="lms-note-channel">
+                    <label><input type="checkbox" checked={note.channelEnabled[channel.key]} onChange={(event) => setNote({ ...note, channelEnabled: { ...note.channelEnabled, [channel.key]: event.target.checked } })} /> {channel.label}</label>
+                    <select value={note.channelStatus[channel.key]} disabled={!note.channelEnabled[channel.key]} onChange={(event) => setNote({ ...note, channelStatus: { ...note.channelStatus, [channel.key]: event.target.value } })}>
+                      {channel.options.map(([value, label]) => <option key={value || `${channel.key}-blank`} value={value}>{label}</option>)}
+                    </select>
+                  </div>
+                ))}
+              </div>
+              <div className="lms-note-footer">
+                <div className="lms-field-stack compact">Next follow up
+                  <input type="date" value={draft.nextFollowUpAt} onChange={(event) => setDraft({ ...draft, nextFollowUpAt: event.target.value })} />
+                  <small>{draft.nextFollowUpAt ? formatDate(draft.nextFollowUpAt) : "Next follow up date not set"}</small>
+                </div>
+                <button className="primary-button" disabled={noteBusy} onClick={submitNote}>{noteBusy ? "Saving…" : "Add note"}</button>
+              </div>
+            </div>
+
+            <div className="lms-note-stream">
+              {(lead.notes || []).map((item) => (
+                <article key={item.id} className="lms-note-card">
+                  <header>
+                    <strong>{item.title || "General Update"}</strong>
+                    <span>{formatDateTime(item.created_at || item.updated_at)}</span>
+                  </header>
+                  <p>{item.body}</p>
+                </article>
+              ))}
+              {!lead.notes.length && <EmptyState label="No notes on this lead yet." />}
+            </div>
+          </section>
+
+          <aside className="lms-detail-card lms-detail-side">
+            <h3>Lead Information</h3>
+            <div className="lms-info-block">
+              <label>Email</label>
+              <p>{lead.email || "N/A"}</p>
+              <label>Phone No.</label>
+              <p>{lead.phone || "N/A"}</p>
+              <label>URL</label>
+              <p>{lead.websiteUrl ? <a href={lead.websiteUrl} target="_blank" rel="noreferrer">{lead.websiteUrl}</a> : "N/A"}</p>
+            </div>
+
+            <div className="lms-checklist-card">
+              <label>Action Checklist</label>
+              <div className="lms-checklist-list">
+                {draft.checklist.map((item) => (
+                  <div key={item.id} className="lms-checklist-row">
+                    <label><input type="checkbox" checked={item.done} onChange={() => updateChecklist(draft.checklist.map((entry) => entry.id === item.id ? { ...entry, done: !entry.done } : entry), "Checklist updated.")} /> {item.label}</label>
+                    <button className="icon-action" onClick={() => updateChecklist(draft.checklist.filter((entry) => entry.id !== item.id), "Checklist updated.")}><Trash2 size={14} /></button>
+                  </div>
+                ))}
+                {!draft.checklist.length && <p className="lms-muted">No tasks yet.</p>}
+              </div>
+              <div className="lms-checklist-input-row">
+                <input value={checklistInput} onChange={(event) => setChecklistInput(event.target.value)} placeholder="Add new task..." />
+                <button className="primary-button small" onClick={addChecklistItem}><Plus size={14} /></button>
+              </div>
+            </div>
+
+            <label>Messages</label>
+            <textarea rows={4} value={draft.message} onChange={(event) => setDraft({ ...draft, message: event.target.value })} />
+
+            <label>Type</label>
+            <input value={draft.typeLabel} onChange={(event) => setDraft({ ...draft, typeLabel: event.target.value })} />
+
+            <label>Origin</label>
+            <p className="lms-readonly-field">{lead.sourceLabel}</p>
+
+            <label>Company Name</label>
+            <p className="lms-readonly-field">{lead.companyName}</p>
+
+            <label>Industry</label>
+            <p className="lms-readonly-field">{lead.industry}</p>
+
+            <label>Assigned To</label>
+            <p className="lms-readonly-field">{lead.ownerName}</p>
+
+            <label>Latest Proposal</label>
+            <p className="lms-readonly-field">{latestProposal ? `${latestProposal.title || "Proposal"} · ${latestProposal.status || "Draft"}` : "N/A"}</p>
+
+            <label>Latest Audit</label>
+            <p className="lms-readonly-field">{latestAudit ? `${latestAudit.title || "Audit"} · ${latestAudit.status || "Open"}` : "N/A"}</p>
+          </aside>
+        </div>
+      </section>
     </section>
   );
 }

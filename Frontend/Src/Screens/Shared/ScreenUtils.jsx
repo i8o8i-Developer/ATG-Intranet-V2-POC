@@ -18,6 +18,44 @@ export function findById(items = [], id) {
   return items.find((item) => String(item.id) === String(id));
 }
 
+function entityTenantId(entity = {}) {
+  return entity.tenant_id ?? entity.tenantId ?? entity.tenant ?? "";
+}
+
+function entityWorkspaceId(entity = {}) {
+  return entity.workspace_id ?? entity.workspaceId ?? entity.workspace ?? "";
+}
+
+export function resolveActiveEmployee(data = {}) {
+  const allEmployees = data.employees || [];
+  const me = data.me || {};
+  const user = me.user || me.account || me || {};
+  const activeTenantId = me.activeTenant?.id || me.tenant?.id || me.tenant || "";
+  const activeWorkspaceId = me.activeWorkspace?.id || me.workspace?.id || me.workspace || "";
+  const seen = new Set();
+  const scopedEmployees = ((me.employees || []).length ? me.employees : allEmployees.filter((item) => String(item.user) === String(user.id)))
+    .map((item) => findById(allEmployees, item.id) || item)
+    .filter((item) => {
+      if (!item?.id) return false;
+      const key = String(item.id);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+  if (activeWorkspaceId) {
+    const workspaceMatch = scopedEmployees.find((item) => String(entityWorkspaceId(item)) === String(activeWorkspaceId) && (!activeTenantId || String(entityTenantId(item)) === String(activeTenantId)));
+    if (workspaceMatch) return workspaceMatch;
+  }
+
+  if (activeTenantId) {
+    const tenantMatch = scopedEmployees.find((item) => String(entityTenantId(item)) === String(activeTenantId));
+    if (tenantMatch) return tenantMatch;
+  }
+
+  return scopedEmployees[0] || null;
+}
+
 export function filterForEmployee(tasks = [], employeeId) {
   if (!employeeId) return tasks;
   return tasks.filter((task) => String(task.owner) === String(employeeId) || String(task.owner_id) === String(employeeId) || String(task.assignee) === String(employeeId));

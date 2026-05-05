@@ -1,0 +1,186 @@
+{% extends "mainapp/base.html" %}
+{% load crispy_forms_tags static %}
+
+{% block title %}
+  New Leave
+{% endblock %}
+
+{% block jscss %}
+<link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'mainapp/css/leaves/form.css' %}">
+{% endblock jscss %}
+
+{% block content %}
+
+<div class="container my-4">
+  <div class="row">
+    <div class="col-md-10 offset-md-1">
+      <div class="card text-center leave_form">
+        <div class="card-header" style="border-bottom: none;">
+          {% if request.user.work_emp_name.exists and request.GET.logged_by == 'manager' %}
+            <span>Issue a leave</span>
+          {% else %}
+            <span>Apply for a leave</span>
+          {% endif %}
+        </div>
+        <div class="card-body">
+          <form action="" method="post">
+            {% csrf_token %}
+            <div class="second-input-section col-md-auto text-center">
+              {% if request.user.work_emp_name.exists and request.GET.logged_by == 'manager' %}
+                <div class="form-group">
+                  <label for="id_employee" class="input-label">Select an Employee</label>
+                  <select class="form-custom-control" required="" name="employee" id="id_employee">
+                    {% for dept in departments %}
+                      {% for emp in form.employee %}
+                        {% if forloop.counter == dept.1 %}
+                          <optgroup label="{{ dept.0 }}">
+                        {% endif %}
+                        {% if forloop.counter >= dept.1 and forloop.counter < dept.2 %}
+                            {{ emp }}
+                        {% endif %}
+                        {% if forloop.counter == dept.2 %}
+                          </optgroup>
+                        {% endif %}
+                      {% endfor %}
+                    {% endfor %}
+                  </select>
+                  {% if form.employee.errors %}
+                    <div class="text-danger text-left">
+                      {% for error in form.employee.errors %}
+                        <p>{{ error }}</p>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+              {% endif %}
+            </div>
+            <div class="first-input-section col-md-10 offset-md-1 text-center">
+              <div class="row justify-content-md-center">
+                <div class="col-md-3">
+                  <div class="form-group">
+                    <label for="id_date_from" class="input-label">From Date</label>
+                    <input required="" type="date" name="date_from" value="{{ form.date_from.value|default_if_none:'' }}" class="form-control" id="id_date_from">
+                    {% if form.date_from.errors %}
+                      <div class="text-danger text-left">
+                        {% for error in form.date_from.errors %}
+                          <p>{{ error }}</p>
+                        {% endfor %}
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+                <!-- <div class="middle-border"></div> -->
+                <hr class="days-info-border">
+                <div class="col-md-auto days-info">
+                  <div class="info-content">
+                    <span><span class="info-x" id="numDays">0</span> Days</span>
+                  </div>
+                </div>
+                <hr class="days-info-border">
+                <div class="col-md-3">
+                  <div class="form-group">
+                    <label for="id_date_to" class="input-label">To Date</label>
+                    <input required="" type="date" name="date_to" value="{{ form.date_to.value|default_if_none:'' }}" class="form-control" id="id_date_to" onchange="cal()">
+                    {% if form.date_to.errors %}
+                      <div class="text-danger text-left">
+                        {% for error in form.date_to.errors %}
+                          <p>{{ error }}</p>
+                        {% endfor %}
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              <div class="row justify-content-md-center">
+                <div class="col-md-8">
+                  <div class="form-group">
+                    <label for="id_half_day_leave" class="input-label">Is Half Day Leave</label>
+                    <input type="checkbox" name="is_half_day_leave" id="id_half_day_leave" onchange="cal()">
+                  </div>
+                </div>
+            </div>
+            <div class="second-input-section col-md-auto text-center">
+              <div class="form-group">
+                <label for="id_subject" class="input-label">
+                  Subject
+                </label>
+                <input required="" class="form-control" type="text" value="{{ form.subject.value|default_if_none:'' }}" name="subject" id="id_subject">
+                {% if form.subject.errors %}
+                  <div class="text-danger text-left">
+                    {% for error in form.subject.errors %}
+                      <p>{{ error }}</p>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="form-group">
+                <label for="id_reason" class="input-label">
+                  Reason for leave <span>&nbsp;( optional )</span>
+                </label>
+                <textarea placeholder="type here..." class="form-control" name="reason" id="id_reason" rows="10"></textarea>
+                {% if form.reason.errors %}
+                  <div class="text-danger text-left">
+                    {% for error in form.reason.errors %}
+                      <p>{{ error }}</p>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="input-buttons mt-4">
+                <button type="submit" class="btn btn-primary">
+                  {% if request.user.work_emp_name.exists and request.GET.logged_by == 'manager' %}
+                    issue
+                  {% else %}
+                    apply
+                  {% endif %}
+                </button>
+                <a href="{% url 'Leave' %}" class="ml-md-4 btn btn-outline-grey">cancel</a>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock content %}
+
+{% block scripts %}
+
+{% if not is_manager %}
+{% comment %}
+  managers can select previous dates also for creating logs in the past
+{% endcomment %}
+{% endif %}
+<script>
+  var today = new Date().toISOString().split('T')[0];
+  //document.getElementById("id_date_from").setAttribute("min", today);
+  $("#id_date_to").attr("min", $("#id_date_from").val());
+  $("#id_date_from").on("change", function() {
+    $("#id_date_to").attr("min", $(this).val());
+    cal();
+  });
+  function cal(){
+    var halfDayLeaveCheckbox = $("#id_half_day_leave");
+
+    if (halfDayLeaveCheckbox.prop("checked")) {
+      $("#numDays").text("0.5");
+      $("#id_date_to").val($("#id_date_from").val()); // Set date_to value to match date_from
+      $("#id_date_to").attr("readonly", "readonly"); // Set readonly attribute
+    } else {
+      $("#numDays").text(getDays());
+      $("#id_date_to").removeAttr("readonly"); // Remove readonly attribute
+    }
+
+  };
+  function getDays(){
+    var fromDate = new Date($("#id_date_from").val());
+    var toDate = new Date($("#id_date_to").val());
+    var ans = parseInt((toDate - fromDate) / (24 * 3600 * 1000)) + 1;
+    return ans?ans:0;
+  }
+</script>
+
+{% endblock scripts %}

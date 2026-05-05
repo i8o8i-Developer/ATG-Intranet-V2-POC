@@ -1,0 +1,43 @@
+{% extends "mainapp/base.html" %}
+{% load static%}
+{% load crispy_forms_tags %}
+{% block title %}
+Delete
+{% endblock %}
+{% block styling %}
+.form1{
+  width:100%;
+
+}
+.form1 input{
+  width:90%;
+  margin-top:10px;
+  border-radius:5px;
+  border:1px solid black;
+  padding-left: 20px;
+
+}
+.form1 input:hover{
+  border:1px solid blue;
+}
+{% endblock styling %}
+
+{% block content %}
+
+<div class="main">
+<p> Delete User</p>
+<div class="form1">
+  <form method="POST" action="">
+    {% csrf_token %}
+    <input type="text" placeholder="User Id" name="User_ID" required>
+
+    <input type="submit" value="Submit">
+  </form>
+  </div>
+  <div>
+    {% if msg %}
+      {{msg}}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

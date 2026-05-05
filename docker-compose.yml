@@ -8,8 +8,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-intranet_rebuild}
       POSTGRES_USER: ${POSTGRES_USER:-intranet}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -21,8 +19,6 @@ services:
   Redis:
     image: redis:7-alpine
     restart: unless-stopped
-    ports:
-      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -57,6 +53,15 @@ services:
       POSTGRES_PORT: 5432
       CELERY_BROKER_URL: redis://Redis:6379/0
       CELERY_RESULT_BACKEND: redis://Redis:6379/0
+      EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.smtp.EmailBackend}
+      EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-1}
+      EMAIL_USE_SSL: ${EMAIL_USE_SSL:-0}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
       BOOTSTRAP_TENANT: "${BOOTSTRAP_TENANT:-Banao}"
       BOOTSTRAP_WORKSPACE: "${BOOTSTRAP_WORKSPACE:-Default Workspace}"
       BOOTSTRAP_USERNAME: "${BOOTSTRAP_USERNAME:-anubhav1608}"
@@ -96,6 +101,15 @@ services:
       POSTGRES_PORT: 5432
       CELERY_BROKER_URL: redis://Redis:6379/0
       CELERY_RESULT_BACKEND: redis://Redis:6379/0
+      EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.smtp.EmailBackend}
+      EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-1}
+      EMAIL_USE_SSL: ${EMAIL_USE_SSL:-0}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
     ports:
       - "8000:8000"
     volumes:
@@ -126,6 +140,15 @@ services:
       POSTGRES_PORT: 5432
       CELERY_BROKER_URL: redis://Redis:6379/0
       CELERY_RESULT_BACKEND: redis://Redis:6379/0
+      EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.smtp.EmailBackend}
+      EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-1}
+      EMAIL_USE_SSL: ${EMAIL_USE_SSL:-0}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
     volumes:
       - ./Backend:/app/Backend
       - backend_media:/app/Backend/media
@@ -152,6 +175,15 @@ services:
       POSTGRES_PORT: 5432
       CELERY_BROKER_URL: redis://Redis:6379/0
       CELERY_RESULT_BACKEND: redis://Redis:6379/0
+      EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.smtp.EmailBackend}
+      EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-1}
+      EMAIL_USE_SSL: ${EMAIL_USE_SSL:-0}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
     volumes:
       - ./Backend:/app/Backend
     depends_on:
