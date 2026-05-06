@@ -162,6 +162,12 @@ class OfferLifecycleService:
         offer = OnboardingOffer.objects.filter(tenant=context.tenant, token=token).first()
         if not offer:
             return ServiceResult.failure({"offer": "Offer Token Not Found."}, status_code=404)
+        if offer.status == "Accepted":
+            return ServiceResult.failure({"offer": "Offer Already Accepted."}, status_code=409)
+        if offer.status != "Issued":
+            return ServiceResult.failure({"offer": "Offer Is Not Available For Acceptance."}, status_code=409)
+        if offer.expires_at and offer.expires_at < timezone.now():
+            return ServiceResult.failure({"offer": "Offer Token Has Expired."}, status_code=410)
 
         offer.status = "Accepted"
         offer.accepted_at = timezone.now()
@@ -226,6 +232,7 @@ class OfferLifecycleService:
                 auto_user = user_model.objects.filter(username__iexact=username).first()
                 auto_user.set_password(password)
                 auto_user.save(update_fields=["password"])
+                auto_employee = EmployeeProfile.objects.filter(tenant=context.tenant, user=auto_user, is_active=True).first()
         except Exception as exc:
             provision_error = str(exc)
 
@@ -1358,4 +1365,3 @@ body {{ margin:0; padding:28px; background:#fff; color:#111827; font-family:Aria
             updated_by=context.actor,
         )
         return ServiceResult.success(employee, status_code=201)
-
