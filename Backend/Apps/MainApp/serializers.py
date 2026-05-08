@@ -49,3 +49,14 @@ class ManagerScopeSerializer(serializers.ModelSerializer):
     class Meta:
         model = ManagerScope
         fields = "__all__"
+
+
+class CandidateOfferAcceptSerializer(serializers.Serializer):
+    accepted_nda = serializers.BooleanField(required=True)
+    accepted_terms = serializers.BooleanField(required=True)
+    signature_name = serializers.CharField(max_length=180, required=True)
+
+    def validate(self, attrs):
+        if not attrs.get("accepted_nda") or not attrs.get("accepted_terms"):
+            raise serializers.ValidationError("You must explicitly accept the NDA and terms to proceed.")
+        return attrs

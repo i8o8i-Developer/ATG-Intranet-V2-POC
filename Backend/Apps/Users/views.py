@@ -301,9 +301,12 @@ class EmployeeProfileViewSet(TenantScopedModelViewSet):
         result = EmployeeLifecycleService.assign_department_skills(self.get_tenant_context(), self.get_object())
         return self.service_response(result)
 
-    @action(detail=True, methods=["post"], url_path="complete-onboarding")
-    def complete_onboarding(self, request, pk=None):
-        result = EmployeeLifecycleService.complete_onboarding(self.get_tenant_context(), pk)
+    @action(detail=False, methods=["post"], url_path="me/complete-onboarding")
+    def complete_onboarding(self, request):
+        employee = EmployeeProfile.objects.filter(tenant=self.get_tenant_context().tenant, user=request.user, is_active=True).first()
+        if not employee:
+            return Response({"employee": "Employee Not Found."}, status=404)
+        result = EmployeeLifecycleService.complete_onboarding(self.get_tenant_context(), employee.id)
         return self.service_response(result, EmployeeProfileSerializer)
 
     @action(detail=True, methods=["post"], url_path="save-timezone")

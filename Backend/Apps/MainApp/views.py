@@ -368,12 +368,17 @@ class MainAppOfferTokenLegacyAPIView(APIView):
         return Response(OnboardingOfferSerializer(result.data).data, status=result.status_code)
 
     def post(self, request, token):
+        from Backend.Apps.MainApp.serializers import CandidateOfferAcceptSerializer
+        serializer = CandidateOfferAcceptSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=400)
+
         result = MainAppLegacyService.get_offer_by_token(token)
         if not result.ok:
             return Response(result.errors, status=result.status_code)
         offer = result.data
         context = TenantContext(tenant=offer.tenant, workspace=offer.workspace, actor=request.user if request.user.is_authenticated else None, source="MainAppOfferToken")
-        accepted = OfferLifecycleService.accept_offer(context, token, payload=request.data or {})
+        accepted = OfferLifecycleService.accept_offer(context, token, payload=serializer.validated_data)
         if not accepted.ok:
             return Response(accepted.errors, status=accepted.status_code)
         return Response(OnboardingOfferSerializer(accepted.data).data, status=accepted.status_code)
