@@ -301,12 +301,9 @@ class EmployeeProfileViewSet(TenantScopedModelViewSet):
         result = EmployeeLifecycleService.assign_department_skills(self.get_tenant_context(), self.get_object())
         return self.service_response(result)
 
-    @action(detail=False, methods=["post"], url_path="me/complete-onboarding")
-    def complete_onboarding(self, request):
-        employee = EmployeeProfile.objects.filter(tenant=self.get_tenant_context().tenant, user=request.user, is_active=True).first()
-        if not employee:
-            return Response({"employee": "Employee Not Found."}, status=404)
-        result = EmployeeLifecycleService.complete_onboarding(self.get_tenant_context(), employee.id)
+    @action(detail=True, methods=["post"], url_path="complete-onboarding")
+    def complete_onboarding(self, request, pk=None):
+        result = EmployeeLifecycleService.complete_onboarding(self.get_tenant_context(), pk)
         return self.service_response(result, EmployeeProfileSerializer)
 
     @action(detail=True, methods=["post"], url_path="save-timezone")
@@ -333,13 +330,12 @@ class GoalViewSet(TenantScopedModelViewSet):
         from Backend.Apps.MainApp.services import NotificationService
         goal = serializer.save()
         
-        # Create notification for employee
         if goal.employee and goal.employee.user:
             NotificationService.notify(
                 self.get_tenant_context(),
                 recipient=goal.employee.user,
                 title=f"New Goal Assigned: {goal.title}",
-                message=f"You have been assigned a new goal: {goal.title}. Due on {goal.due_on}.",
+                message=f"You Have Been Assigned A New Goal: {goal.title}. Due On {goal.due_on}.",
                 category="hrms",
                 resource_type="goal",
                 resource_id=str(goal.id),

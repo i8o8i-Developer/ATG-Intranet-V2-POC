@@ -1,1 +1,1 @@
-"""Work management and EOD APIs."""
+"""Work Management And EOD APIs."""

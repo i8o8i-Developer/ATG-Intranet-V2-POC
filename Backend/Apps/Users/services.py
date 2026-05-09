@@ -120,14 +120,14 @@ class EmployeeLifecycleService:
             defaults={"proficiency": proficiency, "rating": rating, "assigned_from_department": assigned_from_department, "updated_by": context.actor},
         )
         
-        # Create notification for employee
+        # Create Notification For Employee
         if employee.user and not assigned_from_department:
             proficiency_label = {1: "Basic", 2: "Intermediate", 3: "Advanced"}.get(proficiency, "Basic")
             NotificationService.notify(
                 context,
                 recipient=employee.user,
                 title=f"Skill Updated: {skill.name}",
-                message=f"Your skill level for {skill.name} has been updated to {proficiency_label}.",
+                message=f"Your Skill Level For {skill.name} Has Been Updated To {proficiency_label}.",
                 category="hrms",
                 resource_type="skill",
                 resource_id=str(link.id),
@@ -192,7 +192,7 @@ class LeaveWalletService:
         return policy
 
     @staticmethod
-    def accrue_for_employee(context, employee, policy=None, amount=None, reason="Monthly leave accrual"):
+    def accrue_for_employee(context, employee, policy=None, amount=None, reason="Monthly Leave Accrual"):
         policy = policy or LeaveWalletService.get_or_create_policy(context)
         amount = Decimal(str(amount)) if amount is not None else policy.leaves_per_month
         balance, _created = LeaveBalance.objects.get_or_create(
@@ -310,7 +310,7 @@ class UserWorkflowService:
     def approve_resignation(context, resignation_id, last_working_day=None):
         resignation = ResignationRequest.objects.filter(tenant=context.tenant, id=resignation_id).select_related("employee").first()
         if not resignation:
-            return ServiceResult.failure({"resignation": "Resignation request not found."}, status_code=404)
+            return ServiceResult.failure({"resignation": "Resignation Request Not Found."}, status_code=404)
         resignation.status = "Approved"
         resignation.approved_by = context.actor
         resignation.approved_at = timezone.now()

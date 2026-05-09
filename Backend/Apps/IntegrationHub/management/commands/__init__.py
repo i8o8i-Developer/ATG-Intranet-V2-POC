@@ -1,1 +1,1 @@
-"""IntegrationHub management commands."""
+"""IntegrationHub Management Commands."""

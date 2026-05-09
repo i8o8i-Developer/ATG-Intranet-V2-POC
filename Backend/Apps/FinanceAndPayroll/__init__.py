@@ -1,1 +1,1 @@
-"""Finance, compensation, payroll, and payout APIs."""
+"""Finance, Compensation, Payroll, and Payout APIs."""

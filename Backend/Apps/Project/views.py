@@ -289,7 +289,7 @@ class ProjectLegacyActionAPIView(ProjectLegacyMixin, APIView):
             result = ProjectDeliveryService.add_team_member(context, request.data.get("project") or request.data.get("project_id"), request.data.get("employee") or request.data.get("member_id"), role=request.data.get("role", "Member"), allocation_percent=request.data.get("allocation_percent", 100))
         elif action == "remove_member":
             assignment = TeamAssignment.objects.filter(tenant=context.tenant, project_id=request.data.get("project") or request.data.get("project_id"), employee_id=request.data.get("employee") or request.data.get("member_id")).first()
-            result = ProjectDeliveryService.remove_team_member(context, assignment.id if assignment else None, reason=request.data.get("reason", "")) if assignment else ServiceResult.failure({"assignment": "Team assignment not found."}, status_code=404)
+            result = ProjectDeliveryService.remove_team_member(context, assignment.id if assignment else None, reason=request.data.get("reason", "")) if assignment else ServiceResult.failure({"assignment": "Team Assignment Not Found."}, status_code=404)
         elif action == "add_member_back":
             result = ProjectDeliveryService.add_member_back(context, request.data.get("project") or request.data.get("project_id"), request.data.get("employee") or request.data.get("member_id"))
         elif action == "replace_member":
@@ -398,7 +398,7 @@ class AntiPhishingAssessmentLegacyAPIView(APIView):
     def get(self, request, token):
         assignment = ComplianceAssignment.objects.filter(token=token).select_related("campaign", "campaign__project").first()
         if not assignment:
-            return Response({"assignment": "Compliance assignment not found."}, status=404)
+            return Response({"assignment": "Compliance Assignment Not Found."}, status=404)
         return Response(
             {
                 "token": token,
@@ -413,7 +413,7 @@ class AntiPhishingAssessmentLegacyAPIView(APIView):
     def post(self, request, token):
         assignment = ComplianceAssignment.objects.filter(token=token).select_related("campaign", "campaign__project", "tenant", "workspace").first()
         if not assignment:
-            return Response({"assignment": "Compliance assignment not found."}, status=404)
+            return Response({"assignment": "Compliance Assignment Not Found."}, status=404)
         context = TenantContext(tenant=assignment.tenant, workspace=assignment.workspace, actor=request.user if request.user.is_authenticated else None, source="ProjectAntiPhishingToken")
         result = ProjectDeliveryService.complete_compliance_by_token(context, token, score=request.data.get("score", 0), evidence=request.data.get("evidence") or {})
         if not result.ok:

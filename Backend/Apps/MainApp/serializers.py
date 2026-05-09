@@ -58,5 +58,5 @@ class CandidateOfferAcceptSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         if not attrs.get("accepted_nda") or not attrs.get("accepted_terms"):
-            raise serializers.ValidationError("You must explicitly accept the NDA and terms to proceed.")
+            raise serializers.ValidationError("You Must Explicitly Accept The NDA And Terms To Proceed.")
         return attrs

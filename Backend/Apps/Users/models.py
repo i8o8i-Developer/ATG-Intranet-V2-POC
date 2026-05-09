@@ -67,7 +67,7 @@ class SubDepartment(TenantScopedModel):
 
     def clean(self):
         if self.department_id and self.tenant_id and self.department.tenant_id != self.tenant_id:
-            raise ValidationError("Sub-department must belong to the same tenant as its department.")
+            raise ValidationError("Sub-Department Must Belong To The Same Tenant As Its Department.")
 
     def __str__(self):
         return self.name

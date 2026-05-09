@@ -1,1 +1,1 @@
-"""IntegrationHub management package."""
+"""IntegrationHub Management Package."""

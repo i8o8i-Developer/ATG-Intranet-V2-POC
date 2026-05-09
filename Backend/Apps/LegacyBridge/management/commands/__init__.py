@@ -1,1 +1,1 @@
-"""LegacyBridge management commands."""
+"""LegacyBridge Management Commands."""

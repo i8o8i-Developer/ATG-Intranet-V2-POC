@@ -3,7 +3,7 @@ import {
   AlertTriangle, Briefcase, CheckCircle, ChevronDown, ChevronUp,
   Clock, FileText, Info, Menu, MoreHorizontal, Search, Target,
   TrendingUp, Users, X, Zap,
-} from "lucide-react";
+} from "Lucide-React";
 
 import { EmptyState, MilestoneRail, Modal, Panel, Progress, SimpleTable, Tabs } from "./Shared/ScreenComponents.jsx";
 import { apiPatch, apiPost } from "../Api/Client.js";
@@ -13,7 +13,7 @@ import {
   projectName, toggleSet,
 } from "./Shared/ScreenUtils.jsx";
 
-/* ─── colour helpers ─────────────────────────────────────────── */
+/* ─── ColourHelpers ─────────────────────────────────────────── */
 const AVATAR_COLORS = ["#6366f1","#0ea5e9","#10b981","#f59e0b","#ec4899","#8b5cf6","#14b8a6","#f97316"];
 function avatarColor(name = "") {
   let n = 0;
@@ -55,27 +55,27 @@ export function HrmsScreen({ data, reload }) {
       : setExpanded(new Set(Array.from(departments.keys())));
 
   return (
-    <section className="hrms-v2">
+    <section className="Hrms-V2">
       {/* ── Hero ── */}
-      <div className="hrms-hero">
-        <div className="hrms-hero-left">
-          <span className="hrms-kicker">Human Resources</span>
-          <h1 className="hrms-hero-title">Team Management</h1>
-          <p className="hrms-hero-sub">Workforce Overview, EOD Tracking, And Project Health.</p>
-          <div className="hrms-hero-actions">
-            <button className="primary-button" onClick={() => setTab("goals")} style={{ marginTop: "12px" }}>
+      <div className="Hrms-Hero">
+        <div className="Hrms-Hero-Left">
+          <span className="Hrms-Kicker">Human Resources</span>
+          <h1 className="Hrms-Hero-Title">Team Management</h1>
+          <p className="Hrms-Hero-Sub">Workforce Overview, EOD Tracking, And Project Health.</p>
+          <div className="Hrms-Hero-Actions">
+            <button className="Primary-Button" onClick={() => setTab("goals")} style={{ marginTop: "12px" }}>
               <Target size={14} /> Goals Workspace
             </button>
-            <button className="outline-button" onClick={() => setShowGoalModal(true)} style={{ marginTop: "12px" }}>
+            <button className="Outline-Button" onClick={() => setShowGoalModal(true)} style={{ marginTop: "12px" }}>
               <Target size={14} /> Quick Assign Goal
             </button>
           </div>
         </div>
-        <div className="hrms-kpi-row">
+        <div className="Hrms-Kpi-Row">
           {[
             { label: "Total", value: totalEmp,  cls: "" },
             { label: "Active", value: activeEmp, cls: "green" },
-            { label: "On Bench", value: benchEmp, cls: "gold" },
+            { label: "OnBench", value: benchEmp, cls: "gold" },
             { label: "Departments", value: deptCount, cls: "blue" },
           ].map(({ label, value, cls }) => (
             <div key={label} className={`hrms-kpi ${cls}`}>
@@ -87,52 +87,52 @@ export function HrmsScreen({ data, reload }) {
       </div>
 
       {/* ── Tabs ── */}
-      <div className="hrms-tab-shell">
+      <div className="Hrms-Tab-Shell">
         <Tabs
           value={tab}
           onChange={setTab}
-          items={[["team", "Team"], ["goals", "Goals"], ["sanity", "Project Sanity"], ["finance", "Project Finance"]]}
+          items={[["team", "Team"], ["goals", "Goals"], ["sanity", "ProjectSanity"], ["finance", "ProjectFinance"]]}
         />
       </div>
 
       {/* ── Team ── */}
       {tab === "team" && (
-        <div className="hrms-body">
-          <div className="hrms-toolbar">
-            <div className="hrms-search">
+        <div className="Hrms-Body">
+          <div className="Hrms-Toolbar">
+            <div className="Hrms-Search">
               <Search size={16} />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search Employees Or Departments…"
+                placeholder="SearchEmployeesOrDepartments…"
               />
             </div>
-            <button className="outline-button" onClick={toggleAll}>
+            <button className="Outline-Button" onClick={toggleAll}>
               <Menu size={14} />
-              {expanded.size === departments.size ? "Collapse All" : "Expand All"}
+              {expanded.size === departments.size ? "CollapseAll" : "ExpandAll"}
             </button>
           </div>
-          <div className="hrms-dept-stack">
+          <div className="Hrms-Dept-Stack">
             {Array.from(departments.entries()).map(([deptName, rows]) => {
               const assigned     = rows.filter((e) => e.status === "Active").length;
               const bench        = rows.filter((e) => e.status === "OnBench").length;
               const notAssigned  = Math.max(rows.length - assigned - bench, 0);
               const isOpen       = expanded.has(deptName);
               return (
-                <div className="hrms-dept-card" key={deptName}>
+                <div className="Hrms-Dept-Card" key={deptName}>
                   <button
-                    className="hrms-dept-head"
+                    className="Hrms-Dept-Head"
                     onClick={() => setExpanded(toggleSet(expanded, deptName))}
                   >
-                    <div className="hrms-dept-left">
-                      <span className="hrms-dept-icon"><Users size={16} /></span>
+                    <div className="Hrms-Dept-Left">
+                      <span className="Hrms-Dept-Icon"><Users size={16} /></span>
                       <strong>{deptName}</strong>
-                      <span className="hrms-dept-badge">{rows.length}</span>
+                      <span className="Hrms-Dept-Badge">{rows.length}</span>
                     </div>
-                    <div className="hrms-dept-right">
-                      <span className="hrms-pill green">Assigned: {assigned}</span>
-                      <span className="hrms-pill red">Not Assigned: {notAssigned}</span>
-                      <span className="hrms-pill slate">On-Bench: {bench}</span>
+                    <div className="Hrms-Dept-Right">
+                      <span className="Hrms-PillGreen">Assigned: {assigned}</span>
+                      <span className="Hrms-PillRed">Not Assigned: {notAssigned}</span>
+                      <span className="Hrms-PillSlate">On-Bench: {bench}</span>
                       {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                     </div>
                   </button>
@@ -185,8 +185,8 @@ export function HrmsScreen({ data, reload }) {
 /* ─── HrmsTeamTable ──────────────────────────────────────────── */
 function HrmsTeamTable({ rows, data, setEodEmployee, setGoalEmployee, reload }) {
   return (
-    <div className="hrms-table-wrap">
-      <table className="hrms-emp-table">
+    <div className="Hrms-Table-Wrap">
+      <table className="Hrms-Emp-Table">
         <thead>
           <tr>
             <th>Name / Joining Date</th>
@@ -218,11 +218,11 @@ function HrmsTeamTable({ rows, data, setEodEmployee, setGoalEmployee, reload }) 
 
 /* ─── EmployeeRow ────────────────────────────────────────────── */
 const PERF_OPTIONS = [
-  { label: "Good Performer",   color: "#10b981" },
-  { label: "Medium Performer", color: "#f59e0b" },
-  { label: "Low Performer",    color: "#f97316" },
-  { label: "On Notice",        color: "#ef4444" },
-  { label: "On Bench",         color: "#94a3b8" },
+  { label: "GoodPerformer",   color: "#10b981" },
+  { label: "MediumPerformer", color: "#f59e0b" },
+  { label: "LowPerformer",    color: "#f97316" },
+  { label: "OnNotice",        color: "#ef4444" },
+  { label: "OnBench",         color: "#94a3b8" },
 ];
 
 function createGoalDraft(employee = "") {
@@ -239,17 +239,17 @@ function createGoalDraft(employee = "") {
 
 function validateGoalDraft(formData) {
   const errors = {};
-  if (!formData.employee) errors.employee = "Please select an employee";
-  if (!formData.title.trim()) errors.title = "Please enter a goal title";
-  if (!formData.description.trim()) errors.description = "Please enter a goal description";
-  if (!formData.due_on) errors.due_on = "Please select a due date";
+  if (!formData.employee) errors.employee = "PleaseSelectAnEmployee";
+  if (!formData.title.trim()) errors.title = "PleaseEnterAGoalTitle";
+  if (!formData.description.trim()) errors.description = "PleaseEnterAGoalDescription";
+  if (!formData.due_on) errors.due_on = "PleaseSelectADueDate";
   return errors;
 }
 
 function goalStatusMeta(status = "") {
   const normalized = String(status || "").toLowerCase();
   if (isCompleted(normalized)) return { label: "Completed", tone: "green", progress: 100 };
-  if (normalized.includes("progress") || normalized.includes("review")) return { label: "In Progress", tone: "blue", progress: 68 };
+  if (normalized.includes("progress") || normalized.includes("review")) return { label: "InProgress", tone: "blue", progress: 68 };
   if (normalized.includes("cancel")) return { label: "Cancelled", tone: "slate", progress: 0 };
   return { label: status || "Open", tone: "gold", progress: 18 };
 }
@@ -267,8 +267,7 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
   const [showPerfMenu, setShowPerfMenu] = useState(false);
   const [showSkillMenu, setShowSkillMenu] = useState(false);
   const [showMenu,     setShowMenu]     = useState(false);
-  const [eodPopover,   setEodPopover]   = useState(null); // iso date string or null
-  const [saving,       setSaving]       = useState(false);
+  const [eodPopover,   setEodPopover]   = useState(null); // IsoDateStringOrNull  const [saving,       setSaving]       = useState(false);
   const [profilePayload, setProfilePayload] = useState(employee.profile_payload || {});
   const [optimisticSkill, setOptimisticSkill] = useState(null);
   const [updatedField, setUpdatedField] = useState("");
@@ -297,7 +296,7 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
   const prof      = skill?.proficiency ?? 1;
   const profLabel = prof >= 3 ? "Advanced" : prof >= 2 ? "Intermediate" : "Basic";
   const profCls   = prof >= 3 ? "adv" : prof >= 2 ? "mid" : "bas";
-  const skillLabel = skill?.skill_name || skillOptions[0]?.name || "Department Skill";
+  const skillLabel = skill?.skill_name || skillOptions[0]?.name || "DepartmentSkill";
 
   useEffect(() => {
     setProfilePayload(employee.profile_payload || {});
@@ -415,10 +414,10 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
       await apiPost("/Users/Goals/", {
         employee: employee.id,
         title: `HRMS Follow Up For ${employee.display_name}`,
-        description: "Created From HRMS Action Menu.",
+        description: "CreatedFromHRMSActionMenu.",
         due_on: isoDate(due),
         status: "Open",
-        metadata: { source: "hrms-action-menu" },
+        metadata: { source: "Hrms-Action-Menu" },
       });
       if (reload) reload(["goals", "employees", "notifications"]);
     } finally {
@@ -446,28 +445,28 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
   const perfColor = perfMatch?.color || "transparent";
 
   return (
-    <tr className={`hrms-emp-row${updatedField ? ` hrms-emp-row-updated hrms-emp-row-updated-${updatedField}` : ""}`} style={{ borderLeft: perfMatch ? `4px solid ${perfColor}` : "4px solid transparent" }}>
+    <tr className={`hrms-emp-row${updatedField ? ` hrms-emp-row-updated hrms-emp-row-updated-${updatedField}` : ""}`} style={{ borderLeft: perfMatch ? `4px solid ${perfColor}` : "4pxSolidTransparent" }}>
       {/* Name */}
       <td>
-        <div className="hrms-name-cell">
-          <span className="hrms-avatar" style={{ background: ac }}>{ic}</span>
-          <div className="hrms-name-stack" ref={perfRef}>
+        <div className="Hrms-Name-Cell">
+          <span className="Hrms-Avatar" style={{ background: ac }}>{ic}</span>
+          <div className="Hrms-Name-Stack" ref={perfRef}>
             <button
-              className="hrms-name-btn"
+              className="Hrms-Name-Btn"
               onClick={() => setShowPerfMenu(!showPerfMenu)}
             >
-              {perfMatch && <span className="hrms-perf-dot" style={{ background: perfMatch.color }} />}
+              {perfMatch && <span className="Hrms-Perf-Dot" style={{ background: perfMatch.color }} />}
               <strong>{employee.display_name}</strong>
               {showPerfMenu ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
             </button>
-            <small className="hrms-join-date">Joined: {formatDate(employee.joined_on)}</small>
-            <span className={`hrms-performance-chip${currentPerformance ? "" : " empty"}${updatedField === "performance" ? " is-updated" : ""}`}>
-              {currentPerformance || "No Performance Tag"}
+            <small className="Hrms-Join-Date">Joined: {formatDate(employee.joined_on)}</small>
+            <span className={`hrms-performance-chip${currentPerformance ? "" : "Empty"}${updatedField === "performance" ? "Is-Updated" : ""}`}>
+              {currentPerformance || "NoPerformanceTag"}
             </span>
             {showPerfMenu && (
-              <div className="hrms-perf-menu">
+              <div className="Hrms-Perf-Menu">
                 <button
-                  className="hrms-perf-close"
+                  className="Hrms-Perf-Close"
                   onClick={() => setShowPerfMenu(false)}
                 >
                   <X size={13} />
@@ -479,18 +478,18 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
                     onClick={() => savePerformance(opt.label)} 
                     disabled={saving}
                   >
-                    <span className="hrms-perf-dot" style={{ background: opt.color }} />
+                    <span className="Hrms-Perf-Dot" style={{ background: opt.color }} />
                     {opt.label}
                     {currentPerformance === opt.label && <CheckCircle size={14} />}
                   </button>
                 ))}
-                <button className="hrms-perf-opt muted" onClick={() => savePerformance("")} disabled={saving}>
+                <button className="Hrms-Perf-OptMuted" onClick={() => savePerformance("")} disabled={saving}>
                   {saving ? "Saving..." : "Unselect"}
                 </button>
               </div>
             )}
           </div>
-          <button className="hrms-info-btn" title="View Profile">
+          <button className="Hrms-Info-Btn" title="ViewProfile">
             <Info size={14} />
           </button>
         </div>
@@ -498,9 +497,9 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
 
       {/* Skill */}
       <td>
-        <div className="hrms-skill-wrap">
+        <div className="Hrms-Skill-Wrap">
           <button 
-            className={`hrms-skill-badge ${profCls} ${saving ? "saving" : ""}${updatedField === "skill" ? " is-updated" : ""}`} 
+            className={`hrms-skill-badge ${profCls} ${saving ? "saving" : ""}${updatedField === "skill" ? "Is-Updated" : ""}`} 
             onClick={() => !saving && setShowSkillMenu(!showSkillMenu)} 
             title={skillLabel}
             disabled={saving}
@@ -510,9 +509,9 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
             {saving ? "Saving..." : profLabel}
             <ChevronDown size={11} />
           </button>
-          <small className="hrms-skill-caption">{skillLabel}</small>
+          <small className="Hrms-Skill-Caption">{skillLabel}</small>
           {showSkillMenu && (
-            <div className="hrms-skill-menu">
+            <div className="Hrms-Skill-Menu">
               <strong>{skillLabel}</strong>
               {[
                 [1, "Basic"],
@@ -537,12 +536,12 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
 
       {/* Projects */}
       <td>
-        <div className="hrms-proj-stack">
+        <div className="Hrms-Proj-Stack">
           {empProjects.length
             ? empProjects.slice(0, 3).map((name) => (
-                <span key={name} className="hrms-proj-tag">{name}</span>
+                <span key={name} className="Hrms-Proj-Tag">{name}</span>
               ))
-            : <span className="hrms-no-proj">—</span>}
+            : <span className="Hrms-No-Proj">—</span>}
         </div>
       </td>
 
@@ -550,26 +549,26 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
       <td>
         <textarea
           ref={remarkRef}
-          className="hrms-remark"
+          className="Hrms-Remark"
           defaultValue={employee.profile_payload?.remarks || ""}
-          placeholder="Add Remarks…"
+          placeholder="AddRemarks…"
           onBlur={saveRemark}
         />
       </td>
 
       {/* BA / BC */}
-      <td className="hrms-num">0</td>
-      <td className="hrms-num">0</td>
+      <td className="Hrms-Num">0</td>
+      <td className="Hrms-Num">0</td>
 
       {/* EOD & Attendance */}
       <td>
-        <div className="hrms-att-cell">
-          <div className="hrms-att-strip">
+        <div className="Hrms-Att-Cell">
+          <div className="Hrms-Att-Strip">
             {days.map((day) => {
               const ds = findDailyStatus(data.dailyStatus, employee.id, day.iso);
               const isOpen = eodPopover === day.iso;
               return (
-                <div key={day.iso} className="hrms-att-wrap" onMouseLeave={() => setEodPopover(null)}>
+                <div key={day.iso} className="Hrms-Att-Wrap" onMouseLeave={() => setEodPopover(null)}>
                   <button
                     className={`hrms-att-day ${ds ? "submitted" : "missing"}`}
                     onClick={() => setEodPopover(isOpen ? null : day.iso)}
@@ -579,22 +578,22 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
                     {day.label}
                   </button>
                   {isOpen && (
-                    <div className="hrms-eod-pop">
+                    <div className="Hrms-Eod-Pop">
                       <button
-                        className="hrms-eod-pop-close"
+                        className="Hrms-Eod-Pop-Close"
                         onClick={() => setEodPopover(null)}
                       >
                         <X size={13} />
                       </button>
-                      <strong className="hrms-eod-pop-name">{employee.display_name}</strong>
-                      <small className="hrms-eod-pop-date">{day.iso} · EOD Report</small>
+                      <strong className="Hrms-Eod-Pop-Name">{employee.display_name}</strong>
+                      <small className="Hrms-Eod-Pop-Date">{day.iso} · EOD Report</small>
                       {ds ? (
-                        <div className="hrms-eod-pop-project">
+                        <div className="Hrms-Eod-Pop-Project">
                           <span>{ds.metadata?.project || "Project"}</span>
-                          <p>{ds.summary || "No Summary Provided."}</p>
+                          <p>{ds.summary || "NoSummaryProvided."}</p>
                         </div>
                       ) : (
-                        <div className="hrms-eod-pop-project missing">
+                        <div className="Hrms-Eod-Pop-ProjectMissing">
                           <span>No EOD Submitted</span>
                           <p>Use View More To Submit Or Review The Full EOD Calendar.</p>
                         </div>
@@ -609,7 +608,7 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
             })}
           </div>
           <button
-            className="hrms-view-more"
+            className="Hrms-View-More"
             onClick={() => setEodEmployee(employee)}
           >
             View More <ChevronDown size={14} />
@@ -619,15 +618,15 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
 
       {/* Actions */}
       <td>
-        <div className="hrms-action-wrap" ref={menuRef}>
+        <div className="Hrms-Action-Wrap" ref={menuRef}>
           <button
-            className="icon-button"
+            className="Icon-Button"
             onClick={() => setShowMenu(!showMenu)}
           >
             <MoreHorizontal size={16} />
           </button>
           {showMenu && (
-            <div className="hrms-ctx-menu">
+            <div className="Hrms-Ctx-Menu">
               <button onClick={assignGoal} disabled={saving}>
                 <Target size={13} /> Assign Goal
               </button>
@@ -696,25 +695,25 @@ function HrmsGoalsWorkspace({ data, setGoalEmployee, reload }) {
         description: formData.description,
         due_on: formData.due_on,
         status: formData.status,
-        metadata: { source: "hrms-goals-workspace" },
+        metadata: { source: "Hrms-Goals-Workspace" },
       });
       setGoalRows((current) => [createdGoal, ...current.filter((goal) => String(goal.id) !== String(createdGoal?.id))]);
       setFormData(createGoalDraft(formData.employee));
       setErrors({});
       if (reload) reload(["goals", "goalFeedback", "employees", "notifications"]);
     } catch (error) {
-      setErrors({ submit: error.message || "Failed to create goal" });
+      setErrors({ submit: error.message || "FailedToCreateGoal" });
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="hrms-body">
-      <div className="hrms-goal-kpis">
+    <div className="Hrms-Body">
+      <div className="Hrms-Goal-Kpis">
         {[
-          { label: "Total Goals", value: totalGoals, tone: "blue" },
-          { label: "In Progress", value: inProgressGoals, tone: "gold" },
+          { label: "TotalGoals", value: totalGoals, tone: "blue" },
+          { label: "InProgress", value: inProgressGoals, tone: "gold" },
           { label: "Completed", value: completedGoals, tone: "green" },
           { label: "Overdue", value: overdueGoals, tone: overdueGoals ? "red" : "slate" },
         ].map((item) => (
@@ -725,38 +724,38 @@ function HrmsGoalsWorkspace({ data, setGoalEmployee, reload }) {
         ))}
       </div>
 
-      <div className="hrms-goals-grid">
-        <Panel title="Create And Assign Goal">
-          <div className="hrms-goal-form">
+      <div className="Hrms-Goals-Grid">
+        <Panel title="CreateAndAssignGoal">
+          <div className="Hrms-Goal-Form">
             <label>
               <span>Employee</span>
               <select className={`form-input ${errors.employee ? "error" : ""}`} value={formData.employee} onChange={(event) => handleChange("employee", event.target.value)}>
                 <option value="">Select Employee</option>
                 {employees.map((emp) => (
-                  <option key={emp.id} value={emp.id}>{emp.display_name} ({emp.department_name || "No Department"})</option>
+                  <option key={emp.id} value={emp.id}>{emp.display_name} ({emp.department_name || "NoDepartment"})</option>
                 ))}
               </select>
-              {errors.employee && <small className="error-text">{errors.employee}</small>}
+              {errors.employee && <small className="Error-Text">{errors.employee}</small>}
             </label>
             <label>
               <span>Goal Title</span>
-              <input className={`form-input ${errors.title ? "error" : ""}`} value={formData.title} onChange={(event) => handleChange("title", event.target.value)} placeholder="Enter goal title" />
-              {errors.title && <small className="error-text">{errors.title}</small>}
+              <input className={`form-input ${errors.title ? "error" : ""}`} value={formData.title} onChange={(event) => handleChange("title", event.target.value)} placeholder="EnterGoalTitle" />
+              {errors.title && <small className="Error-Text">{errors.title}</small>}
             </label>
             <label>
               <span>Description</span>
-              <textarea className={`form-input ${errors.description ? "error" : ""}`} value={formData.description} onChange={(event) => handleChange("description", event.target.value)} rows={5} placeholder="Describe the goal, expected output, and follow-up notes" />
-              {errors.description && <small className="error-text">{errors.description}</small>}
+              <textarea className={`form-input ${errors.description ? "error" : ""}`} value={formData.description} onChange={(event) => handleChange("description", event.target.value)} rows={5} placeholder="DescribeTheGoal, ExpectedOutput, AndFollow-UpNotes" />
+              {errors.description && <small className="Error-Text">{errors.description}</small>}
             </label>
-            <div className="hrms-goal-form-row">
+            <div className="Hrms-Goal-Form-Row">
               <label>
                 <span>Due Date</span>
                 <input type="date" className={`form-input ${errors.due_on ? "error" : ""}`} value={formData.due_on} onChange={(event) => handleChange("due_on", event.target.value)} min={isoDate(new Date())} />
-                {errors.due_on && <small className="error-text">{errors.due_on}</small>}
+                {errors.due_on && <small className="Error-Text">{errors.due_on}</small>}
               </label>
               <label>
                 <span>Status</span>
-                <select className="form-input" value={formData.status} onChange={(event) => handleChange("status", event.target.value)}>
+                <select className="Form-Input" value={formData.status} onChange={(event) => handleChange("status", event.target.value)}>
                   <option value="Open">Open</option>
                   <option value="InProgress">In Progress</option>
                   <option value="Completed">Completed</option>
@@ -765,25 +764,25 @@ function HrmsGoalsWorkspace({ data, setGoalEmployee, reload }) {
               </label>
             </div>
             {errors.submit && (
-              <div className="error-banner">
+              <div className="Error-Banner">
                 <AlertTriangle size={14} />
                 <span>{errors.submit}</span>
               </div>
             )}
-            <div className="hrms-goal-actions-row">
-              <button className="outline-button" onClick={() => { setFormData(createGoalDraft()); setErrors({}); }} disabled={submitting}>Reset</button>
-              <button className="primary-button" onClick={handleSubmit} disabled={submitting}>{submitting ? "Assigning..." : "Assign Goal"}</button>
+            <div className="Hrms-Goal-Actions-Row">
+              <button className="Outline-Button" onClick={() => { setFormData(createGoalDraft()); setErrors({}); }} disabled={submitting}>Reset</button>
+              <button className="Primary-Button" onClick={handleSubmit} disabled={submitting}>{submitting ? "Assigning..." : "AssignGoal"}</button>
             </div>
           </div>
         </Panel>
 
         <Panel
-          title="Assigned Goals"
+          title="AssignedGoals"
           right={
-            <div className="hrms-goal-toolbar">
-              <div className="hrms-search hrms-goal-search">
+            <div className="Hrms-Goal-Toolbar">
+              <div className="Hrms-SearchHrms-Goal-Search">
                 <Search size={16} />
-                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by goal, employee, or status" />
+                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="SearchByGoal, Employee, OrStatus" />
               </div>
             </div>
           }
@@ -797,23 +796,23 @@ function HrmsGoalsWorkspace({ data, setGoalEmployee, reload }) {
                 const overdue = isGoalOverdue(goal);
                 const feedbackCount = feedback.filter((item) => String(item.goal) === String(goal.id)).length;
                 return [
-                  <div key={`goal-${goal.id}`} className="hrms-goal-summary">
+                  <div key={`goal-${goal.id}`} className="Hrms-Goal-Summary">
                     <strong>{goal.title}</strong>
-                    <small>{goal.description || "No description provided."}</small>
+                    <small>{goal.description || "NoDescriptionProvided."}</small>
                   </div>,
                   employee?.display_name || "—",
                   <span key={`status-${goal.id}`} className={`hrms-goal-status ${overdue ? "red" : meta.tone}`}>{overdue ? "Overdue" : meta.label}</span>,
-                  <span key={`progress-${goal.id}`} className="hrms-goal-progress"><Progress value={overdue ? Math.max(meta.progress - 10, 5) : meta.progress} /><small>{overdue ? Math.max(meta.progress - 10, 5) : meta.progress}%</small></span>,
+                  <span key={`progress-${goal.id}`} className="Hrms-Goal-Progress"><Progress value={overdue ? Math.max(meta.progress - 10, 5) : meta.progress} /><small>{overdue ? Math.max(meta.progress - 10, 5) : meta.progress}%</small></span>,
                   formatDate(goal.due_on),
                   feedbackCount,
-                  <span key={`action-${goal.id}`} className="table-actions">
-                    <button className="soft-button small" onClick={() => employee && setGoalEmployee(employee)}>View Employee</button>
+                  <span key={`action-${goal.id}`} className="Table-Actions">
+                    <button className="Soft-ButtonSmall" onClick={() => employee && setGoalEmployee(employee)}>View Employee</button>
                   </span>,
                 ];
               })}
             />
           ) : (
-            <EmptyState label="No Goals Match The Current Search." />
+            <EmptyState label="NoGoalsMatchTheCurrentSearch." />
           )}
         </Panel>
       </div>
@@ -827,10 +826,10 @@ function GoalOverviewModal({ employee, data, onClose }) {
 
   return (
     <Modal onClose={onClose} wide title={`${employee.display_name} Goals`}>
-      <div className="eod-tab-body">
+      <div className="Eod-Tab-Body">
         {goals.length ? (
           <SimpleTable
-            columns={["Goal", "Status", "Due On", "Feedback"]}
+            columns={["Goal", "Status", "DueOn", "Feedback"]}
             rows={goals.map((goal) => [
               goal.title,
               goal.status,
@@ -839,7 +838,7 @@ function GoalOverviewModal({ employee, data, onClose }) {
             ])}
           />
         ) : (
-          <EmptyState label="No Goals Assigned Yet." />
+          <EmptyState label="NoGoalsAssignedYet." />
         )}
       </div>
     </Modal>
@@ -881,24 +880,24 @@ function GoalAssignModal({ data, onClose, reload }) {
         description: formData.description,
         due_on: formData.due_on,
         status: formData.status,
-        metadata: { source: "hrms-goal-modal" },
+        metadata: { source: "Hrms-Goal-Modal" },
       });
       if (reload) reload(["goals", "employees", "notifications"]);
       onClose();
     } catch (error) {
-      setErrors({ submit: error.message || "Failed to create goal" });
+      setErrors({ submit: error.message || "FailedToCreateGoal" });
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <Modal onClose={onClose} title="Assign Goal">
-      <div style={{ display: "grid", gap: "16px", padding: "8px 0" }}>
-        {/* Employee Selector */}
+    <Modal onClose={onClose} title="AssignGoal">
+      <div style={{ display: "grid", gap: "16px", padding: "8px0" }}>
+        {/* EmployeeSelector */}
         <div>
-          <label className="form-label">
-            Employee <span style={{ color: "var(--danger)" }}>*</span>
+          <label className="Form-Label">
+            Employee <span style={{ color: "Var(--Danger)" }}>*</span>
           </label>
           <select
             className={`form-input ${errors.employee ? "error" : ""}`}
@@ -908,49 +907,49 @@ function GoalAssignModal({ data, onClose, reload }) {
             <option value="">Select Employee</option>
             {employees.map((emp) => (
               <option key={emp.id} value={emp.id}>
-                {emp.display_name} ({emp.department_name || "No Department"})
+                {emp.display_name} ({emp.department_name || "NoDepartment"})
               </option>
             ))}
           </select>
-          {errors.employee && <small className="error-text">{errors.employee}</small>}
+          {errors.employee && <small className="Error-Text">{errors.employee}</small>}
         </div>
 
-        {/* Goal Title */}
+        {/* GoalTitle */}
         <div>
-          <label className="form-label">
-            Goal Title <span style={{ color: "var(--danger)" }}>*</span>
+          <label className="Form-Label">
+            Goal Title <span style={{ color: "Var(--Danger)" }}>*</span>
           </label>
           <input
             type="text"
             className={`form-input ${errors.title ? "error" : ""}`}
-            placeholder="Enter goal title"
+            placeholder="EnterGoalTitle"
             value={formData.title}
             onChange={(e) => handleChange("title", e.target.value)}
           />
-          {errors.title && <small className="error-text">{errors.title}</small>}
+          {errors.title && <small className="Error-Text">{errors.title}</small>}
         </div>
 
-        {/* Goal Description */}
+        {/* GoalDescription */}
         <div>
-          <label className="form-label">
-            Goal Description <span style={{ color: "var(--danger)" }}>*</span>
+          <label className="Form-Label">
+            Goal Description <span style={{ color: "Var(--Danger)" }}>*</span>
           </label>
           <textarea
             className={`form-input ${errors.description ? "error" : ""}`}
-            placeholder="Enter goal description"
+            placeholder="EnterGoalDescription"
             value={formData.description}
             onChange={(e) => handleChange("description", e.target.value)}
             rows={4}
             style={{ resize: "vertical", minHeight: "80px" }}
           />
-          {errors.description && <small className="error-text">{errors.description}</small>}
+          {errors.description && <small className="Error-Text">{errors.description}</small>}
         </div>
 
-        {/* Due Date and Status Row */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+        {/* DueDateAndStatusRow */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr1fr", gap: "12px" }}>
           <div>
-            <label className="form-label">
-              Due Date <span style={{ color: "var(--danger)" }}>*</span>
+            <label className="Form-Label">
+              Due Date <span style={{ color: "Var(--Danger)" }}>*</span>
             </label>
             <input
               type="date"
@@ -959,13 +958,13 @@ function GoalAssignModal({ data, onClose, reload }) {
               onChange={(e) => handleChange("due_on", e.target.value)}
               min={today}
             />
-            {errors.due_on && <small className="error-text">{errors.due_on}</small>}
+            {errors.due_on && <small className="Error-Text">{errors.due_on}</small>}
           </div>
 
           <div>
-            <label className="form-label">Status</label>
+            <label className="Form-Label">Status</label>
             <select
-              className="form-input"
+              className="Form-Input"
               value={formData.status}
               onChange={(e) => handleChange("status", e.target.value)}
             >
@@ -977,21 +976,21 @@ function GoalAssignModal({ data, onClose, reload }) {
           </div>
         </div>
 
-        {/* Error Message */}
+        {/* ErrorMessage */}
         {errors.submit && (
-          <div className="error-banner">
+          <div className="Error-Banner">
             <AlertTriangle size={14} />
             <span>{errors.submit}</span>
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "8px" }}>
-          <button className="outline-button" onClick={onClose} disabled={submitting}>
+        {/* ActionButtons */}
+        <div style={{ display: "flex", gap: "12px", justifyContent: "Flex-End", marginTop: "8px" }}>
+          <button className="Outline-Button" onClick={onClose} disabled={submitting}>
             Cancel
           </button>
-          <button className="primary-button" onClick={handleSubmit} disabled={submitting}>
-            {submitting ? "Assigning..." : "Assign Goal"}
+          <button className="Primary-Button" onClick={handleSubmit} disabled={submitting}>
+            {submitting ? "Assigning..." : "AssignGoal"}
           </button>
         </div>
       </div>
@@ -1011,7 +1010,7 @@ function EodSummaryModal({ employee, data, onClose, reload }) {
   );
   const tasks     = filterForEmployee(data.tasks, employee.id);
   const monthDays = calendarDays(calMonth);
-  const monthLabel = calMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const monthLabel = calMonth.toLocaleDateString("En-US", { month: "long", year: "numeric" });
   const today     = isoDate(new Date());
   const orderedTasks = [...tasks].sort((left, right) => Number(left.bounty || 0) - Number(right.bounty || 0) || new Date(left.due_at || 0) - new Date(right.due_at || 0));
   const completedTasks = orderedTasks.filter((task) => isCompleted(task.status)).length;
@@ -1037,7 +1036,7 @@ function EodSummaryModal({ employee, data, onClose, reload }) {
       });
       setEodText("");
       if (reload) reload(["dailyStatus"]);
-    } catch { /* silent */ }
+    } catch { /* Silent */ }
     setSubmitting(false);
   };
 
@@ -1047,43 +1046,43 @@ function EodSummaryModal({ employee, data, onClose, reload }) {
 
   return (
     <Modal onClose={onClose} wide title="">
-      <div className="eod-modal-hero">
-        <span className="eod-modal-avatar" style={{ background: ac }}>{ic}</span>
+      <div className="Eod-Modal-Hero">
+        <span className="Eod-Modal-Avatar" style={{ background: ac }}>{ic}</span>
         <div>
-          <h2 className="eod-modal-name">{employee.display_name}</h2>
-          <p className="eod-modal-sub">
+          <h2 className="Eod-Modal-Name">{employee.display_name}</h2>
+          <p className="Eod-Modal-Sub">
             {employee.department_name || "—"} · Joined {formatDate(employee.joined_on)}
           </p>
         </div>
-        <div className="eod-modal-today">
+        <div className="Eod-Modal-Today">
           {todayStatus
-            ? <span className="hrms-pill green"><CheckCircle size={12} /> EOD Submitted Today</span>
-            : <span className="hrms-pill red">No EOD Today</span>}
+            ? <span className="Hrms-PillGreen"><CheckCircle size={12} /> EOD Submitted Today</span>
+            : <span className="Hrms-PillRed">No EOD Today</span>}
         </div>
       </div>
 
-      <div className="eod-kpi-grid">
-        <article className="eod-kpi-card">
+      <div className="Eod-Kpi-Grid">
+        <article className="Eod-Kpi-Card">
           <span>Assigned Tasks</span>
           <strong>{orderedTasks.length}</strong>
           <small>Current Workload</small>
         </article>
-        <article className="eod-kpi-card">
+        <article className="Eod-Kpi-Card">
           <span>Completed</span>
           <strong>{completedTasks}</strong>
           <small>Finished Bounties</small>
         </article>
-        <article className="eod-kpi-card">
+        <article className="Eod-Kpi-Card">
           <span>Average Progress</span>
           <strong>{averageProgress}%</strong>
           <small>Status And Task Metadata</small>
         </article>
-        <article className="eod-kpi-card">
+        <article className="Eod-Kpi-Card">
           <span>Total Bounty Count</span>
           <strong>{totalBountyCount}</strong>
           <small>Numbered Bounties</small>
         </article>
-        <article className="eod-credential-card">
+        <article className="Eod-Credential-Card">
           <span>Seed Login</span>
           <strong>{credentials?.username || employee.username || "—"}</strong>
           <small>User Id: {credentials?.user_id || employee.user || "—"}</small>
@@ -1094,20 +1093,20 @@ function EodSummaryModal({ employee, data, onClose, reload }) {
       <Tabs
         value={tab}
         onChange={setTab}
-        items={[["calendar", "Calendar"], ["submit", "Submit EOD"], ["bounties", "Bounties"], ["summaries", "EOD Summaries"]]}
+        items={[["calendar", "Calendar"], ["submit", "SubmitEOD"], ["bounties", "Bounties"], ["summaries", "EODSummaries"]]}
       />
 
       {/* Calendar */}
       {tab === "calendar" && (
-        <div className="eod-cal-wrap">
-          <div className="eod-cal-nav">
-            <button className="outline-button" onClick={prevMonth}>← Previous</button>
+        <div className="Eod-Cal-Wrap">
+          <div className="Eod-Cal-Nav">
+            <button className="Outline-Button" onClick={prevMonth}>← Previous</button>
             <h3>{monthLabel}</h3>
-            <button className="outline-button" onClick={nextMonth}>Next →</button>
+            <button className="Outline-Button" onClick={nextMonth}>Next →</button>
           </div>
-          <div className="eod-cal-grid">
+          <div className="Eod-Cal-Grid">
             {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-              <strong key={d} className="eod-cal-hdr">{d}</strong>
+              <strong key={d} className="Eod-Cal-Hdr">{d}</strong>
             ))}
             {monthDays.map((day, i) =>
               !day ? (
@@ -1132,13 +1131,13 @@ function EodSummaryModal({ employee, data, onClose, reload }) {
         </div>
       )}
 
-      {/* Submit EOD */}
+      {/* SubmitEOD */}
       {tab === "submit" && (
-        <div className="eod-submit-wrap">
-          <div className="eod-submit-card">
+        <div className="Eod-Submit-Wrap">
+          <div className="Eod-Submit-Card">
             <h3>Submit EOD Report For Today ({today})</h3>
             {todayStatus ? (
-              <div className="eod-already-submitted">
+              <div className="Eod-Already-Submitted">
                 <CheckCircle size={20} />
                 <div>
                   <strong>EOD Already Submitted</strong>
@@ -1150,15 +1149,15 @@ function EodSummaryModal({ employee, data, onClose, reload }) {
                 <textarea
                   value={eodText}
                   onChange={(e) => setEodText(e.target.value)}
-                  placeholder="Describe What You Worked On Today…"
-                  className="eod-text-input"
+                  placeholder="DescribeWhatYouWorkedOnToday…"
+                  className="Eod-Text-Input"
                 />
                 <button
-                  className="primary-button"
+                  className="Primary-Button"
                   onClick={submitEod}
                   disabled={submitting || !eodText.trim()}
                 >
-                  {submitting ? "Submitting…" : "Submit EOD"}
+                  {submitting ? "Submitting…" : "SubmitEOD"}
                 </button>
               </>
             )}
@@ -1168,7 +1167,7 @@ function EodSummaryModal({ employee, data, onClose, reload }) {
 
       {/* Bounties */}
       {tab === "bounties" && (
-        <div className="eod-tab-body">
+        <div className="Eod-Tab-Body">
           {orderedTasks.length ? (
             <SimpleTable
               columns={["Bounty #", "Task", "Project", "Status", "Progress", "Due"]}
@@ -1179,33 +1178,33 @@ function EodSummaryModal({ employee, data, onClose, reload }) {
                   task.title,
                   projectName(data, task.project),
                   task.status,
-                  <span key={`progress-${task.id}`} className="eod-progress-cell"><Progress value={progress} /><small>{progress}%</small></span>,
+                  <span key={`progress-${task.id}`} className="Eod-Progress-Cell"><Progress value={progress} /><small>{progress}%</small></span>,
                   formatDate(task.due_at || task.updated_at || task.created_at),
                 ];
               })}
             />
           ) : (
-            <EmptyState label="No Bounties Assigned Yet." />
+            <EmptyState label="NoBountiesAssignedYet." />
           )}
         </div>
       )}
 
-      {/* EOD Summaries */}
+      {/* EODSummaries */}
       {tab === "summaries" && (
-        <div className="eod-tab-body">
-          <div className="eod-summary-list">
+        <div className="Eod-Tab-Body">
+          <div className="Eod-Summary-List">
             {lastDays(14).reverse().map((day) => {
               const ds = findDailyStatus(statuses, employee.id, day.iso);
               return (
                 <div key={day.iso} className={`eod-summary-row ${ds ? "has" : "no"}`}>
-                  <div className="eod-sum-date"><strong>{day.iso}</strong></div>
+                  <div className="Eod-Sum-Date"><strong>{day.iso}</strong></div>
                   {ds ? (
-                    <div className="eod-sum-content">
-                      <span className="eod-sum-proj">{ds.metadata?.project || "—"}</span>
-                      <p>{ds.summary || "No Summary Text."}</p>
+                    <div className="Eod-Sum-Content">
+                      <span className="Eod-Sum-Proj">{ds.metadata?.project || "—"}</span>
+                      <p>{ds.summary || "NoSummaryText."}</p>
                     </div>
                   ) : (
-                    <div className="eod-sum-content empty">No EOD Submitted</div>
+                    <div className="Eod-Sum-ContentEmpty">No EOD Submitted</div>
                   )}
                   <span className={`eod-sum-badge ${ds ? "submitted" : "missing"}`}>
                     <span className="dot" />
@@ -1225,8 +1224,8 @@ function EodSummaryModal({ employee, data, onClose, reload }) {
 function ProjectSanity({ data }) {
   const byProject = groupBy(data.milestones || [], (m) => String(m.project));
   return (
-    <div className="hrms-body">
-      <div className="hrms-sanity-list">
+    <div className="Hrms-Body">
+      <div className="Hrms-Sanity-List">
         {(data.projects || []).map((project) => {
           const milestones = byProject.get(String(project.id)) || [];
           const done = milestones.filter((m) => isCompleted(m.status)).length;
@@ -1234,23 +1233,23 @@ function ProjectSanity({ data }) {
             ? Math.round((done / milestones.length) * 100)
             : 0;
           return (
-            <div className="hrms-sanity-card" key={project.id}>
-              <div className="hrms-sanity-left">
-                <span className="hrms-sanity-priority">P{project.priority}</span>
-                <div className="hrms-sanity-meta">
+            <div className="Hrms-Sanity-Card" key={project.id}>
+              <div className="Hrms-Sanity-Left">
+                <span className="Hrms-Sanity-Priority">P{project.priority}</span>
+                <div className="Hrms-Sanity-Meta">
                   <strong>{project.name}</strong>
                   <small>{project.project_type || project.status || "—"}</small>
                 </div>
               </div>
-              <div className="hrms-sanity-mid">
+              <div className="Hrms-Sanity-Mid">
                 <MilestoneRail milestones={milestones} />
-                <small className="hrms-milestone-ct">{done}/{milestones.length} Milestones</small>
+                <small className="Hrms-Milestone-Ct">{done}/{milestones.length} Milestones</small>
               </div>
-              <div className="hrms-sanity-right">
-                <span className="hrms-pct">{pct}%</span>
+              <div className="Hrms-Sanity-Right">
+                <span className="Hrms-Pct">{pct}%</span>
                 <span className={`hrms-health ${
                   project.health === "Escalated" ? "danger" :
-                  project.health === "On Track"  ? "ok"     : ""
+                  project.health === "OnTrack"  ? "ok"     : ""
                 }`}>
                   {project.health || "Null"}
                 </span>
@@ -1269,24 +1268,24 @@ function ProjectFinance({ data }) {
     (sum, t) => sum + Number(t.bounty || 0), 0,
   );
   return (
-    <div className="hrms-body">
-      <div className="hrms-fin-kpis">
+    <div className="Hrms-Body">
+      <div className="Hrms-Fin-Kpis">
         {[
-          { icon: <Briefcase size={18} />, label: "Total Projects",    value: (data.projects || []).length },
-          { icon: <CheckCircle size={18} />, label: "Total Tasks",     value: (data.tasks || []).length },
-          { icon: <TrendingUp size={18} />, label: "Total Bounty",     value: Math.round(totalBounty) },
-          { icon: <Users size={18} />,      label: "Team Assignments", value: (data.teamAssignments || []).length },
+          { icon: <Briefcase size={18} />, label: "TotalProjects",    value: (data.projects || []).length },
+          { icon: <CheckCircle size={18} />, label: "TotalTasks",     value: (data.tasks || []).length },
+          { icon: <TrendingUp size={18} />, label: "TotalBounty",     value: Math.round(totalBounty) },
+          { icon: <Users size={18} />,      label: "TeamAssignments", value: (data.teamAssignments || []).length },
         ].map(({ icon, label, value }) => (
-          <div key={label} className="hrms-fin-kpi">
-            <span className="hrms-fin-icon">{icon}</span>
+          <div key={label} className="Hrms-Fin-Kpi">
+            <span className="Hrms-Fin-Icon">{icon}</span>
             <strong>{value}</strong>
             <span>{label}</span>
           </div>
         ))}
       </div>
-      <Panel title="Project Finance Breakdown">
+      <Panel title="ProjectFinanceBreakdown">
         <SimpleTable
-          columns={["Project", "Health", "Team Size", "Tasks", "Bounty Pool"]}
+          columns={["Project", "Health", "TeamSize", "Tasks", "BountyPool"]}
           rows={(data.projects || []).map((project) => [
             project.name,
             project.health || "—",

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { ChevronDown, Search, X } from "lucide-react";
+import { ChevronDown, Search, X } from "Lucide-React";
 
 import { apiPost } from "../Api/Client.js";
 import { EmptyState, Modal, Panel, SimpleTable, StatusPill, Tabs } from "./Shared/ScreenComponents.jsx";
@@ -39,7 +39,7 @@ export function AssessmentScreen({ data, reload }) {
   };
   const submitAssignment = async (id) => {
     if (!id) return;
-    const url = window.prompt("Provider Submission URL (Optional)");
+    const url = window.prompt("ProviderSubmissionURL (Optional)");
     await apiPost(`/Assesment/AssessmentAssignments/${id}/submit/`, { provider_url: url || "", score: null });
     reload(["assessmentAssignments", "assessmentLegacy"]);
   };
@@ -50,25 +50,25 @@ export function AssessmentScreen({ data, reload }) {
   };
 
   return (
-    <section className="assessment-screen screen-stack">
+    <section className="Assessment-ScreenScreen-Stack">
       <Tabs
         value={tab}
         onChange={setTab}
         items={[
-          ["results", "Assessment Results"],
-          ["assign", "Assign Assessment"],
+          ["results", "AssessmentResults"],
+          ["assign", "AssignAssessment"],
         ]}
       />
       {tab === "results" && (
-        <Panel title="Assessment Results">
-          <div className="toolbar-row">
-            <div className="search-box">
-              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search Here..." />
+        <Panel title="AssessmentResults">
+          <div className="Toolbar-Row">
+            <div className="Search-Box">
+              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="SearchHere..." />
               <Search size={17} />
               {search && <X size={17} onClick={() => setSearch("")} />}
             </div>
           </div>
-          <table className="erp-table">
+          <table className="Erp-Table">
             <thead>
               <tr><th>Intern Name</th><th>Week Since Joining</th><th>Latest Assessment</th><th>Number</th><th>Status</th><th>Actions</th></tr>
             </thead>
@@ -83,17 +83,17 @@ export function AssessmentScreen({ data, reload }) {
                     <td>{row.assessment_title || row.latest_assessment || row.assessment}</td>
                     <td>{row.assessment_sequence_number || row.assessment_number || row.attempts_count || 1}</td>
                     <td><StatusPill tone={isCompleted(row.status || row.note) ? "green" : "gold"}>{row.note || row.status || "Incomplete"}</StatusPill></td>
-                    <td className="table-actions">
+                    <td className="Table-Actions">
                       {!status.includes("progress") && !status.includes("submit") && !status.includes("complete") && assignmentId && (
-                        <button className="soft-button small" onClick={() => startAssignment(assignmentId)}>Start</button>
+                        <button className="Soft-ButtonSmall" onClick={() => startAssignment(assignmentId)}>Start</button>
                       )}
                       {!status.includes("submit") && !status.includes("complete") && assignmentId && (
-                        <button className="soft-button small" onClick={() => submitAssignment(assignmentId)}>Submit</button>
+                        <button className="Soft-ButtonSmall" onClick={() => submitAssignment(assignmentId)}>Submit</button>
                       )}
                       {assignmentId ? (
-                        <button className="soft-button small" onClick={() => syncAssignment(assignmentId)}>Sync</button>
+                        <button className="Soft-ButtonSmall" onClick={() => syncAssignment(assignmentId)}>Sync</button>
                       ) : (
-                        <span className="muted-text">No Assignment Id</span>
+                        <span className="Muted-Text">No Assignment Id</span>
                       )}
                     </td>
                   </tr>
@@ -101,19 +101,19 @@ export function AssessmentScreen({ data, reload }) {
               })}
             </tbody>
           </table>
-          {!rows.length && <EmptyState label="No Assessment Results Returned." />}
+          {!rows.length && <EmptyState label="NoAssessmentResultsReturned." />}
         </Panel>
       )}
       {tab === "assign" && (
         <Panel
-          title="Assign Assessment"
-          right={<button className="primary-button small" onClick={() => setAssignOpen(true)}>New Assignment</button>}
+          title="AssignAssessment"
+          right={<button className="Primary-ButtonSmall" onClick={() => setAssignOpen(true)}>New Assignment</button>}
         >
           <SimpleTable
             columns={["Template", "Status", "Tags", "Updated"]}
             rows={(data.assessmentTemplates || []).map((tpl) => [tpl.title, tpl.status, (tpl.tags || []).join(", "), formatDate(tpl.updated_at)])}
           />
-          {!(data.assessmentTemplates || []).length && <EmptyState label="No Templates Returned." />}
+          {!(data.assessmentTemplates || []).length && <EmptyState label="NoTemplatesReturned." />}
         </Panel>
       )}
       {assignOpen && <AssignModal data={data} onClose={() => setAssignOpen(false)} reload={reload} />}
@@ -141,7 +141,7 @@ function AssignModal({ data, onClose, reload }) {
   };
 
   return (
-    <Modal title="Assign Assessment" onClose={onClose} wide>
+    <Modal title="AssignAssessment" onClose={onClose} wide>
       <label>Template
         <select value={templateId} onChange={(event) => setTemplateId(event.target.value)}>
           <option value="">Select Template</option>
@@ -149,15 +149,15 @@ function AssignModal({ data, onClose, reload }) {
         </select>
       </label>
       <h4>Employees</h4>
-      <div className="checkbox-grid">
+      <div className="Checkbox-Grid">
         {(data.employees || []).map((emp) => (
-          <label key={emp.id} className="inline-checkbox">
+          <label key={emp.id} className="Inline-Checkbox">
             <input type="checkbox" checked={employees.includes(emp.id)} onChange={() => toggle(emp.id)} />
             {emp.display_name || employeeName(data, emp.id)}
           </label>
         ))}
       </div>
-      <button className="primary-button" onClick={save} disabled={busy || !templateId || !employees.length}>Assign To {employees.length || "0"} Employees</button>
+      <button className="Primary-Button" onClick={save} disabled={busy || !templateId || !employees.length}>Assign To {employees.length || "0"} Employees</button>
     </Modal>
   );
 }

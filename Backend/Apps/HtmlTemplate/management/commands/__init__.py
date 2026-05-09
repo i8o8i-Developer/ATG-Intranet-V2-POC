@@ -1,1 +1,1 @@
-"""HtmlTemplate management commands."""
+"""HtmlTemplate Management Commands."""

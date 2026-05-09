@@ -66,7 +66,7 @@ class NotificationItemViewSet(TenantScopedModelViewSet):
         user_model = get_user_model()
         recipient = user_model.objects.filter(id=request.data.get("recipient")).first()
         if not recipient:
-            return Response({"recipient": "Recipient user not found."}, status=404)
+            return Response({"recipient": "Recipient User Not Found."}, status=404)
         result = NotificationService.notify(
             self.get_tenant_context(),
             recipient,
@@ -104,7 +104,7 @@ class CredentialVaultItemViewSet(TenantScopedModelViewSet):
         user_model = get_user_model()
         grantee = user_model.objects.filter(id=request.data.get("grantee")).first()
         if not grantee:
-            return Response({"grantee": "Grantee user not found."}, status=404)
+            return Response({"grantee": "Grantee User Not Found."}, status=404)
         result = CredentialVaultService.share(self.get_tenant_context(), pk, grantee, permission=request.data.get("permission", "Read"), expires_at=request.data.get("expires_at"), reason=request.data.get("reason", ""))
         return self.service_response(result, CredentialShareGrantSerializer)
 
@@ -154,7 +154,7 @@ class MainAppLegacyMixin:
         if tenant and not workspace:
             workspace = Workspace.objects.filter(tenant=tenant).order_by("id").first()
         if not tenant:
-            return ServiceResult.failure({"tenant": "Tenant context is required for MainApp request."}, status_code=400)
+            return ServiceResult.failure({"tenant": "Tenant Context Is Required For MainApp Request."}, status_code=400)
         return ServiceResult.success(TenantContext(tenant=tenant, workspace=workspace, actor=actor, source="MainAppLegacyAPI"))
 
     def with_context(self, request):
@@ -235,7 +235,7 @@ class MainAppLegacyActionAPIView(MainAppLegacyMixin, APIView):
             )
         elif action == "leave_detail":
             leave = LeaveRequest.objects.filter(tenant=context.tenant, id=kwargs["pk"]).first()
-            result = ServiceResult.success(leave) if leave else ServiceResult.failure({"leave": "Leave request not found."}, status_code=404)
+            result = ServiceResult.success(leave) if leave else ServiceResult.failure({"leave": "Leave Request Not Found."}, status_code=404)
         elif action == "leave_calendar":
             result = MainAppLegacyService.leave_calendar(context, employee_id=request.query_params.get("employee_id"), department_id=request.query_params.get("department_id"))
         elif action == "employees_by_department":

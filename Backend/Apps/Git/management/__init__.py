@@ -1,1 +1,1 @@
-"""Git management package."""
+"""Git Management Package."""

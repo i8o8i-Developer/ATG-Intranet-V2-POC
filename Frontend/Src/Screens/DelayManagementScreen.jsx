@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { AlertTriangle, Clock, Users } from "lucide-react";
+import { AlertTriangle, Clock, Users } from "Lucide-React";
 
 import { EmptyState, Modal, Panel, StatCard, StatusPill, Tabs } from "./Shared/ScreenComponents.jsx";
 import { apiGet, apiPost } from "../Api/Client.js";
@@ -20,23 +20,20 @@ export function DelayManagementScreen({ data, reload }) {
   const tasks = data.tasks || [];
   const delays = data.delays || [];
   
-  // Auto-reload delays when modal closes
-  useEffect(() => {
+  // Auto-ReloadDelaysWhenModalCloses  useEffect(() => {
     if (!showAddModal && reload) {
       reload(["delays"]);
     }
   }, [showAddModal]);
 
-  // Stats
-  const totalDelays = delays.length;
+  // Stats  const totalDelays = delays.length;
   const activeDelays = delays.filter(d => d.status === "Active").length;
   const resolvedDelays = delays.filter(d => d.status === "Resolved").length;
   const avgDelayDays = delays.length > 0 
     ? (delays.reduce((sum, d) => sum + (d.days || 0), 0) / delays.length).toFixed(1)
     : 0;
 
-  // Filter delays by tab
-  const filteredDelays = tab === "all" 
+  // FilterDelaysByTab  const filteredDelays = tab === "all" 
     ? delays 
     : tab === "active"
     ? delays.filter(d => d.status === "Active")
@@ -61,15 +58,14 @@ export function DelayManagementScreen({ data, reload }) {
       setDays("");
       setReason("");
       
-      // Reload delays data
-      if (reload) {
+      // ReloadDelaysData      if (reload) {
         await reload(["delays", "employees", "projects", "tasks"]);
       }
       
-      alert("Delay submitted successfully!");
+      alert("DelaySubmittedSuccessfully!");
     } catch (error) {
-      console.error("Failed to submit delay:", error);
-      alert(`Failed to submit delay: ${error.message || "Please try again."}`);
+      console.error("FailedToSubmitDelay:", error);
+      alert(`Failed to submit delay: ${error.message || "PleaseTryAgain."}`);
     } finally {
       setLoading(false);
     }
@@ -85,15 +81,15 @@ export function DelayManagementScreen({ data, reload }) {
   const getItemName = (delay) => {
     if (delay.delay_type === "Project") {
       const project = projects.find(p => p.id === delay.item_id);
-      return project?.name || "Unknown Project";
+      return project?.name || "UnknownProject";
     }
     if (delay.delay_type === "Task") {
       const task = tasks.find(t => t.id === delay.item_id);
-      return task?.title || "Unknown Task";
+      return task?.title || "UnknownTask";
     }
     if (delay.delay_type === "Employee") {
       const employee = employees.find(e => e.id === delay.item_id);
-      return employee?.display_name || "Unknown Employee";
+      return employee?.display_name || "UnknownEmployee";
     }
     return "Unknown";
   };
@@ -102,20 +98,20 @@ export function DelayManagementScreen({ data, reload }) {
     <>
       {/* Header */}
       <Panel
-        title="Delay Management System"
-        subtitle="Track and manage delays across projects, tasks, and team members"
+        title="DelayManagementSystem"
+        subtitle="TrackAndManageDelaysAcrossProjects, Tasks, AndTeamMembers"
         right={
-          <button className="button primary" onClick={() => setShowAddModal(true)}>
+          <button className="ButtonPrimary" onClick={() => setShowAddModal(true)}>
             Add Delay Form
           </button>
         }
       >
         {/* Stats */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
-          <StatCard label="Total Delays" value={totalDelays} />
-          <StatCard label="Active Delays" value={activeDelays} />
-          <StatCard label="Resolved Delays" value={resolvedDelays} />
-          <StatCard label="Avg. Delay Days" value={avgDelayDays} />
+        <div style={{ display: "grid", gridTemplateColumns: "Repeat(Auto-Fit, Minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+          <StatCard label="TotalDelays" value={totalDelays} />
+          <StatCard label="ActiveDelays" value={activeDelays} />
+          <StatCard label="ResolvedDelays" value={resolvedDelays} />
+          <StatCard label="Avg. DelayDays" value={avgDelayDays} />
         </div>
 
         {/* Tabs */}
@@ -129,12 +125,12 @@ export function DelayManagementScreen({ data, reload }) {
           ]}
         />
 
-        {/* Delays Table */}
+        {/* DelaysTable */}
         <div style={{ marginTop: "1.5rem" }}>
           {filteredDelays.length === 0 ? (
             <EmptyState label={`No ${tab} delays found`} />
           ) : (
-            <table className="erp-table">
+            <table className="Erp-Table">
               <thead>
                 <tr>
                   <th>Type</th>
@@ -177,17 +173,17 @@ export function DelayManagementScreen({ data, reload }) {
                     <td>
                       {delay.status === "Active" && (
                         <button
-                          className="button small"
+                          className="ButtonSmall"
                           onClick={async () => {
                             try {
                               await apiPost(`/Project/ProjectDelays/${delay.id}/resolve/`, {});
                               if (reload) {
                                 await reload(["delays"]);
                               }
-                              alert("Delay resolved successfully!");
+                              alert("DelayResolvedSuccessfully!");
                             } catch (error) {
-                              console.error("Failed to resolve delay:", error);
-                              alert(`Failed to resolve delay: ${error.message || "Please try again"}`);
+                              console.error("FailedToResolveDelay:", error);
+                              alert(`Failed to resolve delay: ${error.message || "PleaseTryAgain"}`);
                             }
                           }}
                         >
@@ -203,12 +199,12 @@ export function DelayManagementScreen({ data, reload }) {
         </div>
       </Panel>
 
-      {/* Team Members Section */}
-      <Panel title="Team Members" subtitle="View team member status and delays">
+      {/* TeamMembersSection */}
+      <Panel title="TeamMembers" subtitle="ViewTeamMemberStatusAndDelays">
         {employees.length === 0 ? (
-          <EmptyState label="No team members found" />
+          <EmptyState label="NoTeamMembersFound" />
         ) : (
-          <table className="erp-table">
+          <table className="Erp-Table">
             <thead>
               <tr>
                 <th>Name</th>
@@ -246,7 +242,7 @@ export function DelayManagementScreen({ data, reload }) {
                       )}
                     </td>
                     <td>
-                      <button className="button small" onClick={() => {
+                      <button className="ButtonSmall" onClick={() => {
                         setDelayType("Employee");
                         setSelectedItem(employee.id);
                         setShowAddModal(true);
@@ -262,12 +258,12 @@ export function DelayManagementScreen({ data, reload }) {
         )}
       </Panel>
 
-      {/* Add Delay Modal */}
+      {/* AddDelayModal */}
       {showAddModal && (
-        <Modal title="Add Delay" onClose={() => setShowAddModal(false)}>
+        <Modal title="AddDelay" onClose={() => setShowAddModal(false)}>
           <form onSubmit={handleSubmitDelay} style={{ padding: "1.5rem" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
-              {/* Select Type */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr1fr", gap: "1rem", marginBottom: "1rem" }}>
+              {/* SelectType */}
               <div>
                 <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500 }}>
                   Select Type
@@ -282,7 +278,7 @@ export function DelayManagementScreen({ data, reload }) {
                   style={{
                     width: "100%",
                     padding: "0.5rem",
-                    border: "1px solid #e5e7eb",
+                    border: "1pxSolid #E5e7eb",
                     borderRadius: "0.375rem",
                     fontSize: "0.875rem",
                   }}
@@ -293,7 +289,7 @@ export function DelayManagementScreen({ data, reload }) {
                 </select>
               </div>
 
-              {/* Select Item */}
+              {/* SelectItem */}
               <div>
                 <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500 }}>
                   Select
@@ -305,7 +301,7 @@ export function DelayManagementScreen({ data, reload }) {
                   style={{
                     width: "100%",
                     padding: "0.5rem",
-                    border: "1px solid #e5e7eb",
+                    border: "1pxSolid #E5e7eb",
                     borderRadius: "0.375rem",
                     fontSize: "0.875rem",
                   }}
@@ -335,7 +331,7 @@ export function DelayManagementScreen({ data, reload }) {
                 style={{
                   width: "100%",
                   padding: "0.5rem",
-                  border: "1px solid #e5e7eb",
+                  border: "1pxSolid #E5e7eb",
                   borderRadius: "0.375rem",
                   fontSize: "0.875rem",
                 }}
@@ -351,12 +347,12 @@ export function DelayManagementScreen({ data, reload }) {
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 required
-                placeholder="Supplier issue"
+                placeholder="SupplierIssue"
                 rows="3"
                 style={{
                   width: "100%",
                   padding: "0.5rem",
-                  border: "1px solid #e5e7eb",
+                  border: "1pxSolid #E5e7eb",
                   borderRadius: "0.375rem",
                   fontSize: "0.875rem",
                   resize: "vertical",
@@ -364,7 +360,7 @@ export function DelayManagementScreen({ data, reload }) {
               />
             </div>
 
-            {/* Submit Button */}
+            {/* SubmitButton */}
             <button
               type="submit"
               disabled={loading}
@@ -377,11 +373,11 @@ export function DelayManagementScreen({ data, reload }) {
                 borderRadius: "0.375rem",
                 fontSize: "0.875rem",
                 fontWeight: 500,
-                cursor: loading ? "not-allowed" : "pointer",
+                cursor: loading ? "Not-Allowed" : "pointer",
                 opacity: loading ? 0.6 : 1,
               }}
             >
-              {loading ? "Submitting..." : "Submit Delay"}
+              {loading ? "Submitting..." : "SubmitDelay"}
             </button>
           </form>
         </Modal>

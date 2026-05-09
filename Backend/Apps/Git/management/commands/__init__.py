@@ -1,1 +1,1 @@
-"""Git management commands."""
+"""Git Management Commands."""

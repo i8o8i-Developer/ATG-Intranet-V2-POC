@@ -6,12 +6,12 @@ from Backend.Apps.Users.models import EmployeePaymentSnapshot, EmployeeProfile, 
 
 
 def summarize_headcount(tenant):
-    """Summarize employee headcount by status"""
+    """Summarize Employee Headcount By Status"""
     return list(EmployeeProfile.objects.filter(tenant=tenant, is_active=True).values("status").annotate(count=Count("id")).order_by("status"))
 
 
 def summarize_effort(tenant, report_month=None, report_year=None):
-    """Summarize effort reports for a tenant"""
+    """Summarize Effort Reports For A Tenant"""
     queryset = UserEffortReport.objects.filter(tenant=tenant)
     if report_month:
         queryset = queryset.filter(report_month=report_month)
@@ -21,7 +21,7 @@ def summarize_effort(tenant, report_month=None, report_year=None):
 
 
 def summarize_payments(tenant, month=None, year=None):
-    """Summarize payment data for a tenant"""
+    """Summarize Payment Data For A Tenant"""
     queryset = EmployeePaymentSnapshot.objects.filter(tenant=tenant)
     if month:
         queryset = queryset.filter(month=month)
@@ -31,33 +31,33 @@ def summarize_payments(tenant, month=None, year=None):
 
 
 # ============================================================================
-# TASK & BOUNTY METRICS - Migrated from old utils.py
+# TASK & BOUNTY METRICS - Migrated From Old utils.py
 # ============================================================================
 
 def get_grouped_task_metrics(user_ids, start_date=None, end_date=None):
     """
-    Calculate task and bounty metrics grouped by user.
+    Calculate Task And Bounty Metrics Grouped By User.
     
     Metrics:
-    - BA (Bounties Allocated): All tasks allocated in the period
-    - BC (Bounties Completed): All tasks completed in the period
-    - Brought Down: Incomplete tasks still assigned by end of period
+    - BA (Bounties Allocated): All Tasks Allocated In The Period
+    - BC (Bounties Completed): All Tasks Completed In The Period
+    - Brought Down: Incomplete Tasks Still Assigned By End Of Period
     
     Args:
-        user_ids: List of user IDs to calculate metrics for
-        start_date: Optional start date filter
-        end_date: Optional end date filter (exclusive)
+        user_ids: List Of User IDs To Calculate Metrics For
+        start_date: Optional Start Date Filter
+        end_date: Optional End Date Filter (Exclusive)
     
     Returns:
-        Dictionary mapping user_id to metrics dict with:
-        - allocated_bounties: Sum of bounties for allocated tasks
-        - allocated_tasks: Count of allocated tasks
-        - completed_bounties: Sum of bounties for completed tasks
-        - completed_tasks: Count of completed tasks
-        - brought_down_bounties: Sum of bounties for incomplete tasks
-        - brought_down_tasks: Count of incomplete tasks
+        Dictionary Mapping user_id To Metrics dict With:
+        - allocated_bounties: Sum Of Bounties For Allocated Tasks
+        - allocated_tasks: Count Of Allocated Tasks
+        - completed_bounties: Sum Of Bounties For Completed Tasks
+        - completed_tasks: Count Of Completed Tasks
+        - brought_down_bounties: Sum Of Bounties For Incomplete Tasks
+        - brought_down_tasks: Count Of Incomplete Tasks
     """
-    # Import here to avoid circular dependency
+    # Import Here To Avoid Circular Dependency
     from Backend.Apps.TasksDashboard.models import Task
     
     if not user_ids:
@@ -65,26 +65,26 @@ def get_grouped_task_metrics(user_ids, start_date=None, end_date=None):
 
     base_queryset = Task.objects.filter(assignee_id__in=user_ids)
 
-    # Allocated tasks: created in the period
+    # Allocated Tasks: Created In The Period
     allocated_queryset = base_queryset
     if start_date:
         allocated_queryset = allocated_queryset.filter(created_at__date__gte=start_date)
     if end_date:
         allocated_queryset = allocated_queryset.filter(created_at__date__lt=end_date)
 
-    # Completed tasks: marked completed in the period
+    # Completed Tasks: Marked Completed In The Period
     completed_queryset = base_queryset.filter(status='C', completed_on__isnull=False)
     if start_date:
         completed_queryset = completed_queryset.filter(completed_on__date__gte=start_date)
     if end_date:
         completed_queryset = completed_queryset.filter(completed_on__date__lt=end_date)
 
-    # Brought down: incomplete tasks created before period end
+    # Brought Down: Incomplete Tasks Created Before Period End
     brought_down_queryset = base_queryset.filter(status='I')
     if end_date:
         brought_down_queryset = brought_down_queryset.filter(created_at__date__lt=end_date)
 
-    # Initialize metrics for all users
+    # Initialize Metrics For All Users
     metrics = {
         user_id: {
             'allocated_bounties': 0,
@@ -97,7 +97,7 @@ def get_grouped_task_metrics(user_ids, start_date=None, end_date=None):
         for user_id in user_ids
     }
 
-    # Aggregate allocated metrics
+    # Aggregate Allocated Metrics
     for row in allocated_queryset.values('assignee_id').annotate(
         allocated_bounties=Sum('bounty'),
         allocated_tasks=Count('id'),
@@ -107,7 +107,7 @@ def get_grouped_task_metrics(user_ids, start_date=None, end_date=None):
             'allocated_tasks': row['allocated_tasks'] or 0,
         })
 
-    # Aggregate completed metrics
+    # Aggregate Completed Metrics
     for row in completed_queryset.values('assignee_id').annotate(
         completed_bounties=Sum('bounty'),
         completed_tasks=Count('id'),
@@ -117,7 +117,7 @@ def get_grouped_task_metrics(user_ids, start_date=None, end_date=None):
             'completed_tasks': row['completed_tasks'] or 0,
         })
 
-    # Aggregate brought down metrics
+    # Aggregate Brought Down Metrics
     for row in brought_down_queryset.values('assignee_id').annotate(
         brought_down_bounties=Sum('bounty'),
         brought_down_tasks=Count('id'),
@@ -131,25 +131,8 @@ def get_grouped_task_metrics(user_ids, start_date=None, end_date=None):
 
 
 def get_grouped_eod_bounty_metrics(user_ids, start_date=None, end_date=None):
-    """
-    Calculate EOD-based bounty metrics grouped by user.
     
-    This mirrors the bounty calculation used in EOD summary modal.
-    Only counts bounty tasks that appear in EOD reports.
-    
-    Metrics:
-    - BA: Count and bounty sum of distinct bounty tasks in EOD for the period
-    - BC: Count and bounty sum of those tasks that are completed
-    
-    Args:
-        user_ids: List of user IDs
-        start_date: Optional start date filter
-        end_date: Optional end date filter (exclusive)
-    
-    Returns:
-        Dictionary mapping user_id to metrics dict
-    """
-    # Import here to avoid circular dependency
+    # Import Here To Avoid Circular Dependency
     from Backend.Apps.TasksDashboard.models import EOD
     
     if not user_ids:
@@ -167,7 +150,7 @@ def get_grouped_eod_bounty_metrics(user_ids, start_date=None, end_date=None):
     if end_date:
         queryset = queryset.filter(date__lt=end_date)
 
-    # Initialize metrics
+    # Initialize Metrics
     metrics = {
         user_id: {
             'allocated_bounties': 0,
@@ -180,7 +163,7 @@ def get_grouped_eod_bounty_metrics(user_ids, start_date=None, end_date=None):
         for user_id in user_ids
     }
 
-    # Get distinct tasks from EOD entries
+    # Get Distinct Tasks From EOD Entries
     distinct_task_rows = queryset.values(
         'user_id',
         'task_id',
@@ -188,16 +171,16 @@ def get_grouped_eod_bounty_metrics(user_ids, start_date=None, end_date=None):
         'task__status',
     ).distinct()
 
-    # Accumulate metrics
+    # Accumulate Metrics
     for row in distinct_task_rows:
         user_metrics = metrics[row['user_id']]
         bounty = row['task__bounty'] or 0
 
-        # All tasks in EOD are "allocated"
+        # All Tasks In EOD Are "allocated"
         user_metrics['allocated_bounties'] += bounty
         user_metrics['allocated_tasks'] += 1
 
-        # Check if completed
+        # Check If Completed
         if row['task__status'] == 'C':
             user_metrics['completed_bounties'] += bounty
             user_metrics['completed_tasks'] += 1
@@ -209,22 +192,11 @@ def get_grouped_eod_bounty_metrics(user_ids, start_date=None, end_date=None):
 
 
 # ============================================================================
-# PAYMENT & PAYROLL UTILITIES - Migrated from old utils.py
+# PAYMENT & PAYROLL UTILITIES - Migrated From Old utils.py
 # ============================================================================
 
 def get_previous_payment_data(employee_profile, month, year, num_months=3):
-    """
-    Get payment data for previous N months.
     
-    Args:
-        employee_profile: EmployeeProfile instance
-        month: Current month (1-12)
-        year: Current year
-        num_months: Number of previous months to fetch (default 3)
-    
-    Returns:
-        List of payment data dictionaries
-    """
     payment_data_list = []
     
     for i in range(1, num_months + 1):
@@ -243,32 +215,13 @@ def get_previous_payment_data(employee_profile, month, year, num_months=3):
 
 
 def get_ptrc_deduction(normal_pay, bonus):
-    """
-    Calculate Professional Tax (PTRC) deduction.
     
-    PTRC is ₹200 if total pay >= ₹25,000, else ₹0
-    
-    Args:
-        normal_pay: Base salary amount
-        bonus: Bonus amount
-    
-    Returns:
-        PTRC deduction amount
-    """
     total_pay = normal_pay + bonus
     return 200 if total_pay >= 25000 else 0
 
 
 def flatten_leave_dates(leaves):
-    """
-    Convert leave objects to flat list of dates.
     
-    Args:
-        leaves: QuerySet or list of Leave objects with date_from and date_to
-    
-    Returns:
-        List of unique date strings in "DD-MM-YYYY" format
-    """
     date_list = []
     for leave in leaves:
         current_date = leave.date_from
@@ -279,33 +232,21 @@ def flatten_leave_dates(leaves):
 
 
 def calculate_working_days(year, month, start_date=None, end_date=None, exclude_dates=None):
-    """
-    Calculate working days in a month, excluding leaves and bench periods.
     
-    Args:
-        year: Year
-        month: Month (1-12)
-        start_date: Optional employee start date
-        end_date: Optional employee end date
-        exclude_dates: Optional list of dates to exclude (leaves, bench, etc.)
-    
-    Returns:
-        Number of working days
-    """
     total_days = calendar.monthrange(year, month)[1]
     first_day = date(year, month, 1)
     last_day = date(year, month, total_days)
     
-    # Adjust for employee start/end dates
+    # Adjust For Employee Start/End Dates
     if start_date and start_date > first_day:
         first_day = start_date
     if end_date and end_date < last_day:
         last_day = end_date
     
-    # Calculate total days in range
+    # Calculate Total Days in Range
     working_days = (last_day - first_day).days + 1
     
-    # Subtract excluded dates (leaves, bench, etc.)
+    # Subtract Excluded Dates (Leaves, Bench, etc.)
     if exclude_dates:
         for exclude_date in exclude_dates:
             if first_day <= exclude_date <= last_day:
@@ -315,17 +256,7 @@ def calculate_working_days(year, month, start_date=None, end_date=None, exclude_
 
 
 def calculate_prorated_salary(base_salary, working_days, total_days_in_month):
-    """
-    Calculate prorated salary based on actual working days.
     
-    Args:
-        base_salary: Monthly base salary
-        working_days: Actual working days
-        total_days_in_month: Total days in the month
-    
-    Returns:
-        Prorated salary amount
-    """
     if total_days_in_month == 0:
         return 0
     return (base_salary / total_days_in_month) * working_days
@@ -336,17 +267,7 @@ def calculate_prorated_salary(base_salary, working_days, total_days_in_month):
 # ============================================================================
 
 def get_bench_days_in_month(employee_profile, year, month):
-    """
-    Calculate bench days for an employee in a specific month.
     
-    Args:
-        employee_profile: EmployeeProfile instance
-        year: Year
-        month: Month (1-12)
-    
-    Returns:
-        Number of bench days
-    """
     from Backend.Apps.Users.models import BenchPeriod
     
     first_day = date(year, month, 1)
@@ -369,17 +290,7 @@ def get_bench_days_in_month(employee_profile, year, month):
 
 
 def get_leave_days_in_month(employee_profile, year, month):
-    """
-    Calculate leave days for an employee in a specific month.
     
-    Args:
-        employee_profile: EmployeeProfile instance
-        year: Year
-        month: Month (1-12)
-    
-    Returns:
-        Number of leave days
-    """
     from Backend.Apps.MainApp.models import Leave
     
     first_day = date(year, month, 1)

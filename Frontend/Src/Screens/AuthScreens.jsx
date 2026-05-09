@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { AlertTriangle, Edit3, Eye, EyeOff, LogIn, LogOut, ShieldCheck, UserRound } from "lucide-react";
-import { apiGet, apiPatch, clearApiAuth, saveApiSettings } from "../Api/Client.js";
+import { AlertTriangle, Edit3, Eye, EyeOff, LogIn, LogOut, ShieldCheck, UserRound } from "Lucide-React";
+import { apiGet, apiPost, apiPatch, clearApiAuth, saveApiSettings } from "../Api/Client.js";
 import { Modal } from "./Shared/ScreenComponents.jsx";
 import { resolveActiveEmployee } from "./Shared/ScreenUtils.jsx";
 
@@ -15,8 +15,7 @@ export function LoginScreen({ settings, onLogin }) {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const environmentLabel = String(form.apiBase || "Configured Backend").replace(/^https?:\/\//i, "").replace(/\/$/, "") || "Configured Backend";
-
+  const environmentLabel = String(form.apiBase || "ConfiguredBackend").replace(/^https?:\/\// I, "").Replace(/\/$/, "") || "ConfiguredBackend";
   useEffect(() => {
     setForm((current) => ({
       ...current,
@@ -31,7 +30,7 @@ export function LoginScreen({ settings, onLogin }) {
   const submit = async (event) => {
     event.preventDefault();
     if (!form.username || !form.password) {
-      setError("Enter Username And Password.");
+      setError("EnterUsernameAndPassword.");
       return;
     }
     setSubmitting(true);
@@ -44,27 +43,40 @@ export function LoginScreen({ settings, onLogin }) {
         basicAuth: { username: form.username, password: form.password },
       };
       saveApiSettings(loginSettings);
-      const currentUser = await apiGet("/Users/Auth/Me/");
+      const currentUser = await apiPost("/Users/Auth/Login/", {
+        username: form.username,
+        password: form.password,
+        tenant_id: form.tenantId,
+        workspace_id: form.workspaceId,
+      });
       saveApiSettings({
         ...loginSettings,
         tenantId: currentUser?.activeTenant?.id || form.tenantId,
         workspaceId: currentUser?.activeWorkspace?.id || form.workspaceId,
       });
+      // CheckIfOnboardingIsCompleted      const employee = currentUser.employees?.[0];
+      if (employee) {
+        const employeeProfile = await apiGet(`/Users/EmployeeProfiles/${employee.id}/`);
+        if (!employeeProfile.onboarding_completed) {
+          onLogin("/onboarding/");
+          return;
+        }
+      }
       onLogin();
     } catch (loginError) {
       clearApiAuth();
-      setError(loginError?.status === 401 ? "Invalid Username Or Password." : loginError?.message || "Login Failed.");
+      setError(loginError?.status === 401 ? "InvalidUsernameOrPassword." : loginError?.message || "LoginFailed.");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <main className="login-page">
-      <form className="login-card" onSubmit={submit}>
-        <div className="brand-block">
-          <div className="brand-mark">B</div>
-          <div className="brand-copy">
+    <main className="Login-Page">
+      <form className="Login-Card" onSubmit={submit}>
+        <div className="Brand-Block">
+          <div className="Brand-Mark">B</div>
+          <div className="Brand-Copy">
             <strong>Banao Intranet</strong>
             <span>v2</span>
           </div>
@@ -72,7 +84,7 @@ export function LoginScreen({ settings, onLogin }) {
 
         <h2 style={{ margin: 0, fontSize: "20px" }}>Sign In</h2>
 
-        {error && <div className="login-error"><AlertTriangle size={15} />{error}</div>}
+        {error && <div className="Login-Error"><AlertTriangle size={15} />{error}</div>}
 
         <label>
           Username
@@ -80,16 +92,16 @@ export function LoginScreen({ settings, onLogin }) {
         </label>
         <label>
           Password
-          <span className="password-field">
-            <input type={showPassword ? "text" : "password"} value={form.password} onChange={(e) => update("password", e.target.value)} autoComplete="current-password" placeholder="Password" />
-            <button type="button" className="icon-button" onClick={() => setShowPassword((v) => !v)} title={showPassword ? "Hide" : "Show"}>
+          <span className="Password-Field">
+            <input type={showPassword ? "text" : "password"} value={form.password} onChange={(e) => update("password", e.target.value)} autoComplete="Current-Password" placeholder="Password" />
+            <button type="button" className="Icon-Button" onClick={() => setShowPassword((v) => !v)} title={showPassword ? "Hide" : "Show"}>
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </span>
         </label>
 
-        <button className="primary-button login-submit" type="submit" disabled={submitting}>
-          <LogIn size={16} />{submitting ? "Signing In…" : "Sign In"}
+        <button className="Primary-ButtonLogin-Submit" type="submit" disabled={submitting}>
+          <LogIn size={16} />{submitting ? "SigningIn…" : "SignIn"}
         </button>
       </form>
     </main>
@@ -107,43 +119,43 @@ export function ProfileScreen({ data, onLogout, reload }) {
   const profileRows = [
     ["Username", user.username || employee.username || "-"],
     ["Email", user.email || employee.email || "-"],
-    ["Employee Code", employee.employee_code || "-"],
+    ["EmployeeCode", employee.employee_code || "-"],
     ["Department", employee.department_name || "-"],
     ["Position", employee.position_title || "-"],
-    ["Employment Type", employee.employment_type || "-"],
+    ["EmploymentType", employee.employment_type || "-"],
     ["Status", employee.status || "-"],
-    ["Joined", employee.joined_on ? new Date(employee.joined_on).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "-"],
+    ["Joined", employee.joined_on ? new Date(employee.joined_on).toLocaleDateString("En-GB", { day: "2-Digit", month: "short", year: "numeric" }) : "-"],
   ];
 
   return (
-    <section className="profile-screen screen-stack">
-      <section className="profile-hero">
-        <div className="profile-avatar">{initials}</div>
+    <section className="Profile-ScreenScreen-Stack">
+      <section className="Profile-Hero">
+        <div className="Profile-Avatar">{initials}</div>
         <div>
-          <span className="section-kicker">Signed In Profile</span>
+          <span className="Section-Kicker">Signed In Profile</span>
           <h1>{fullName}</h1>
-          <p>{employee.department_name || "Banao"} / {employee.position_title || "Intranet User"}</p>
+          <p>{employee.department_name || "Banao"} / {employee.position_title || "IntranetUser"}</p>
         </div>
-        <button className="outline-button" onClick={() => setEditOpen(true)}><Edit3 size={16} /> Edit Profile</button>
-        <button className="outline-button" onClick={onLogout}><LogOut size={16} /> Logout</button>
+        <button className="Outline-Button" onClick={() => setEditOpen(true)}><Edit3 size={16} /> Edit Profile</button>
+        <button className="Outline-Button" onClick={onLogout}><LogOut size={16} /> Logout</button>
       </section>
 
-      <div className="profile-stats">
+      <div className="Profile-Stats">
         <section><span>Assigned Tasks</span><strong>{employeeTasks.length}</strong></section>
         <section><span>Leave Requests</span><strong>{leaveRows.filter((item) => String(item.employee || item.employee_id) === String(employee.id)).length}</strong></section>
         <section><span>Notifications</span><strong>{(data.notifications || []).filter((item) => !item.is_read).length}</strong></section>
       </div>
 
-      <section className="profile-grid">
-        <article className="profile-card">
+      <section className="Profile-Grid">
+        <article className="Profile-Card">
           <header><UserRound size={18} /><h2>Account Details</h2></header>
           <dl>{profileRows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
         </article>
-        <article className="profile-card">
+        <article className="Profile-Card">
           <header><ShieldCheck size={18} /><h2>Workspace Access</h2></header>
           <dl>
-            <div><dt>Tenant</dt><dd>{data.me?.activeTenant?.name || data.me?.tenant?.name || data.me?.tenant || "Default Tenant"}</dd></div>
-            <div><dt>Workspace</dt><dd>{data.me?.activeWorkspace?.name || data.me?.workspace?.name || data.me?.workspace || "Default Workspace"}</dd></div>
+            <div><dt>Tenant</dt><dd>{data.me?.activeTenant?.name || data.me?.tenant?.name || data.me?.tenant || "DefaultTenant"}</dd></div>
+            <div><dt>Workspace</dt><dd>{data.me?.activeWorkspace?.name || data.me?.workspace?.name || data.me?.workspace || "DefaultWorkspace"}</dd></div>
             <div><dt>Backend Session</dt><dd>Active</dd></div>
           </dl>
         </article>
@@ -167,7 +179,7 @@ function ProfileEditModal({ employee, onClose, reload }) {
 
   const save = async () => {
     if (!employee.id) {
-      setError("No Employee Profile Linked To This User.");
+      setError("NoEmployeeProfileLinkedToThisUser.");
       return;
     }
     setBusy(true);
@@ -179,16 +191,16 @@ function ProfileEditModal({ employee, onClose, reload }) {
       if (reload) reload(["employees", "me"]);
       onClose();
     } catch (saveError) {
-      setError(saveError?.message || "Update Failed.");
+      setError(saveError?.message || "UpdateFailed.");
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <Modal title="Edit Profile" onClose={onClose} wide>
-      {error && <div className="login-error"><AlertTriangle size={14} /> {error}</div>}
-      <div className="form-grid two modal-form">
+    <Modal title="EditProfile" onClose={onClose} wide>
+      {error && <div className="Login-Error"><AlertTriangle size={14} /> {error}</div>}
+      <div className="Form-GridTwoModal-Form">
         <label>Display Name<input value={form.display_name} onChange={(event) => setForm({ ...form, display_name: event.target.value })} /></label>
         <label>Phone<input value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} /></label>
         <label>Department<input value={form.department_name} onChange={(event) => setForm({ ...form, department_name: event.target.value })} /></label>
@@ -196,7 +208,7 @@ function ProfileEditModal({ employee, onClose, reload }) {
         <label>Joined On<input type="date" value={form.joined_on ? String(form.joined_on).slice(0, 10) : ""} onChange={(event) => setForm({ ...form, joined_on: event.target.value })} /></label>
       </div>
       <label>Address<textarea rows={3} value={form.address} onChange={(event) => setForm({ ...form, address: event.target.value })} /></label>
-      <button className="primary-button" onClick={save} disabled={busy}>Save Profile</button>
+      <button className="Primary-Button" onClick={save} disabled={busy}>Save Profile</button>
     </Modal>
   );
 }

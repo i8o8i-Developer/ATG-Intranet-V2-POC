@@ -17,7 +17,7 @@ import {
   UserCheck,
   UserX,
   X,
-} from "lucide-react";
+} from "Lucide-React";
 
 import { apiGet, apiPost } from "../Api/Client.js";
 import { Disclosure, EmptyState, Modal, Panel, Progress, SimpleTable, StatusPill } from "./Shared/ScreenComponents.jsx";
@@ -43,8 +43,7 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
   const [taskFilter, setTaskFilter] = useState("pending");
   const [selectedTask, setSelectedTask] = useState(null);
 
-  // Modals
-  const [createProjectOpen, setCreateProjectOpen] = useState(false);
+  // Modals  const [createProjectOpen, setCreateProjectOpen] = useState(false);
   const [editProject, setEditProject] = useState(false);
   const [flagOpen, setFlagOpen] = useState(false);
   const [documentOpen, setDocumentOpen] = useState(false);
@@ -112,7 +111,7 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
   const removeMember = async (assignment) => {
     const employeeId = assignment.employee_id || assignment.employee;
     if (!employeeId) return;
-    await apiPost("/Project/removeMember/", { project: selectedProjectId, employee: employeeId, reason: "Removed From Dashboard" });
+    await apiPost("/Project/removeMember/", { project: selectedProjectId, employee: employeeId, reason: "RemovedFromDashboard" });
     refresh();
   };
 
@@ -157,20 +156,20 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
     return (
       <>
         {visible && (
-          <tr className="project-task-row" style={{ background: depth ? "#fafbff" : undefined }}>
+          <tr className="Project-Task-Row" style={{ background: depth ? "#fafbff" : undefined }}>
             <td onClick={() => setSelectedTask(task)} style={{ cursor: "pointer", paddingLeft: 14 + depth * 22 }}>
-              {depth > 0 ? <span className="subtask-arrow">↳</span> : <ChevronRight size={15} />}
+              {depth > 0 ? <span className="Subtask-Arrow">↳</span> : <ChevronRight size={15} />}
               {task.title}
             </td>
             <td><Progress value={progressForTask(task, data.tasks)} /></td>
             <td>{avatar(employeeName(data, task.owner || task.owner_id))}</td>
-            <td className={task.due_at && !isCompleted(task.status) && new Date(task.due_at) < new Date() ? "danger-text" : ""}>{formatDate(task.due_at)}</td>
+            <td className={task.due_at && !isCompleted(task.status) && new Date(task.due_at) < new Date() ? "Danger-Text" : ""}>{formatDate(task.due_at)}</td>
             <td><AlertTriangle size={16} /> {task.priority || "Normal"}</td>
             <td>{Math.round(Number(task.bounty || 0))}</td>
             <td>
-              <span className="table-actions">
-                <button className="soft-button small" onClick={() => setAddTaskFor({ parentTaskId: task.id, milestoneId: task.metadata?.milestone_id || null })} title="Add Sub Task"><Plus size={12} /></button>
-                <button className="soft-button small danger" onClick={() => deleteTask(task.id)} title="Delete"><Trash2 size={12} /></button>
+              <span className="Table-Actions">
+                <button className="Soft-ButtonSmall" onClick={() => setAddTaskFor({ parentTaskId: task.id, milestoneId: task.metadata?.milestone_id || null })} title="AddSubTask"><Plus size={12} /></button>
+                <button className="Soft-ButtonSmallDanger" onClick={() => deleteTask(task.id)} title="Delete"><Trash2 size={12} /></button>
               </span>
             </td>
           </tr>
@@ -181,75 +180,75 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
   };
 
   return (
-    <section className="project-screen screen-stack">
+    <section className="Project-ScreenScreen-Stack">
       <Disclosure title="Notifications" defaultOpen={false}>
-        {alerts.map((item) => <div className="notice-row compact" key={item.id}>{item.title || item.severity}</div>)}
-        {!alerts.length && <EmptyState label="No Project Alerts Returned." />}
+        {alerts.map((item) => <div className="Notice-RowCompact" key={item.id}>{item.title || item.severity}</div>)}
+        {!alerts.length && <EmptyState label="NoProjectAlertsReturned." />}
       </Disclosure>
 
-      <section className="project-title-bar">
+      <section className="Project-Title-Bar">
         <div>
           <StatusPill>{project.priority || "P3"}</StatusPill>
           <strong>{project.name || "Project"}</strong>
-          <StatusPill tone="green">{project.health || "On Track"}</StatusPill>
+          <StatusPill tone="green">{project.health || "OnTrack"}</StatusPill>
         </div>
         <select value={selectedProjectId} onChange={(event) => { setSelectedProjectId(event.target.value); navigate(`${routeBase}/${event.target.value}/${encodeURIComponent(projectName(data, event.target.value) || "project")}/`); }}>
           {(data.projects || []).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
         </select>
         <div>
-          <button className="primary-button small" onClick={() => setCreateProjectOpen(true)}><Plus size={14} /> New Project</button>
-          <button className="outline-button" onClick={() => setEditProject(true)}><Pencil size={16} /> Edit Details</button>
-          <button className="outline-button" onClick={() => setFlagOpen(true)}><Flag size={16} /> Flag</button>
-          <button className="outline-button" onClick={() => setDocumentOpen(true)}><FileText size={16} /> Documents</button>
-          <button className="outline-button" onClick={() => setReposOpen(true)}><GitBranch size={16} /> Repositories ({repos.length})</button>
-          <button className="icon-button" onClick={shareProject} title="Copy Project Link"><Share2 size={17} /></button>
+          <button className="Primary-ButtonSmall" onClick={() => setCreateProjectOpen(true)}><Plus size={14} /> New Project</button>
+          <button className="Outline-Button" onClick={() => setEditProject(true)}><Pencil size={16} /> Edit Details</button>
+          <button className="Outline-Button" onClick={() => setFlagOpen(true)}><Flag size={16} /> Flag</button>
+          <button className="Outline-Button" onClick={() => setDocumentOpen(true)}><FileText size={16} /> Documents</button>
+          <button className="Outline-Button" onClick={() => setReposOpen(true)}><GitBranch size={16} /> Repositories ({repos.length})</button>
+          <button className="Icon-Button" onClick={shareProject} title="CopyProjectLink"><Share2 size={17} /></button>
         </div>
       </section>
 
-      <Disclosure title="Key Project Details" defaultOpen>
+      <Disclosure title="KeyProjectDetails" defaultOpen>
         <SimpleTable columns={["Code", "Type", "Status", "Start", "End", "Milestones"]} rows={[[project.code, project.project_type, project.status, formatDate(project.starts_on), formatDate(project.ends_on), `${completedMilestones}/${milestones.length} (${milestoneProgress}%)`]]} />
       </Disclosure>
 
       <Panel
-        title="Tasks (Grouped By Milestone)"
+        title="Tasks (GroupedByMilestone)"
         right={
-          <div className="table-actions">
+          <div className="Table-Actions">
             <select value={taskFilter} onChange={(event) => setTaskFilter(event.target.value)}>
               <option value="pending">Pending Tasks</option>
               <option value="completed">Completed Tasks</option>
               <option value="all">All Tasks</option>
             </select>
-            <button className="soft-button small" onClick={createDefaultMilestones}>Create Default Milestones</button>
-            <button className="primary-button small" onClick={() => setAddMilestoneOpen(true)}><Plus size={14} /> New Milestone</button>
+            <button className="Soft-ButtonSmall" onClick={createDefaultMilestones}>Create Default Milestones</button>
+            <button className="Primary-ButtonSmall" onClick={() => setAddMilestoneOpen(true)}><Plus size={14} /> New Milestone</button>
           </div>
         }
       >
         {!milestones.length && (
-          <EmptyState label="No Milestones Yet. Create Default Milestones Or Add A New One." />
+          <EmptyState label="NoMilestonesYet. CreateDefaultMilestonesOrAddANewOne." />
         )}
         {[...milestones, { id: "__unassigned__", title: "Unassigned", status: "Open" }].map((milestone) => {
           const list = tasksByMilestone.get(String(milestone.id)) || [];
           if (!list.length && milestone.id === "__unassigned__") return null;
           const done = list.filter((task) => ["completed", "done", "closed"].includes(String(task.status).toLowerCase())).length;
           return (
-            <div className="milestone-block" key={milestone.id}>
-              <div className="milestone-block-head">
+            <div className="Milestone-Block" key={milestone.id}>
+              <div className="Milestone-Block-Head">
                 <div>
                   <strong>{milestone.title}</strong>
-                  <span className="muted-text"> ({done}/{list.length})</span>
+                  <span className="Muted-Text"> ({done}/{list.length})</span>
                   {milestone.status && milestone.id !== "__unassigned__" && <StatusPill tone={String(milestone.status).toLowerCase() === "completed" ? "green" : "gold"}>{milestone.status}</StatusPill>}
-                  {milestone.due_on && <span className="muted-text"> Due {formatDate(milestone.due_on)}</span>}
+                  {milestone.due_on && <span className="Muted-Text"> Due {formatDate(milestone.due_on)}</span>}
                 </div>
                 {milestone.id !== "__unassigned__" && (
-                  <span className="table-actions">
-                    <button className="soft-button small" onClick={() => setAddTaskFor({ milestoneId: milestone.id })}><Plus size={13} /> Add Task</button>
-                    <button className="soft-button small" onClick={() => setMilestoneToEdit(milestone)}>Edit</button>
-                    <button className="soft-button small" onClick={() => completeMilestone(milestone.id)}>Complete</button>
-                    <button className="soft-button small danger" onClick={() => addDelay(milestone.id)}>+1 Delay</button>
+                  <span className="Table-Actions">
+                    <button className="Soft-ButtonSmall" onClick={() => setAddTaskFor({ milestoneId: milestone.id })}><Plus size={13} /> Add Task</button>
+                    <button className="Soft-ButtonSmall" onClick={() => setMilestoneToEdit(milestone)}>Edit</button>
+                    <button className="Soft-ButtonSmall" onClick={() => completeMilestone(milestone.id)}>Complete</button>
+                    <button className="Soft-ButtonSmallDanger" onClick={() => addDelay(milestone.id)}>+1 Delay</button>
                   </span>
                 )}
               </div>
-              <table className="erp-table project-task-table">
+              <table className="Erp-TableProject-Task-Table">
                 <thead>
                   <tr>
                     <th>Task</th><th>Progress</th><th>Assignee</th><th>Due</th><th>Priority</th><th>Bounty</th><th>Actions</th>
@@ -260,9 +259,9 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
                 </tbody>
               </table>
               {!list.length && milestone.id !== "__unassigned__" && (
-                <div className="milestone-empty">
+                <div className="Milestone-Empty">
                   <span>No Tasks Yet.</span>
-                  <button className="soft-button small" onClick={() => setAddTaskFor({ milestoneId: milestone.id })}><Plus size={12} /> Add Task</button>
+                  <button className="Soft-ButtonSmall" onClick={() => setAddTaskFor({ milestoneId: milestone.id })}><Plus size={12} /> Add Task</button>
                 </div>
               )}
             </div>
@@ -270,9 +269,9 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
         })}
       </Panel>
 
-      <Disclosure title="Team Members" defaultOpen>
-        <div className="table-actions top-actions">
-          <button className="soft-button small" onClick={() => setAddMemberOpen(true)}><Plus size={13} /> Add Member</button>
+      <Disclosure title="TeamMembers" defaultOpen>
+        <div className="Table-ActionsTop-Actions">
+          <button className="Soft-ButtonSmall" onClick={() => setAddMemberOpen(true)}><Plus size={13} /> Add Member</button>
         </div>
         <SimpleTable
           columns={["Name", "Role", "Availability", "Contact", "Repos / GitHub", "Action", "EOD"]}
@@ -282,11 +281,11 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
             assignment.is_absent ? "Absent" : assignment.status === "Active" ? "Available" : assignment.status,
             employeeContact(data, assignment.employee_id || assignment.employee),
             <MemberRepoIcon key="repo" assignment={assignment} repos={repos} data={data} />,
-            <span className="table-actions" key="action">
-              <button className="soft-button small" onClick={() => markAbsent(assignment)}>{assignment.is_absent ? <UserCheck size={13} /> : <UserX size={13} />}{assignment.is_absent ? "Mark Available" : "Mark Absent"}</button>
-              <button className="soft-button small danger" onClick={() => removeMember(assignment)}><X size={13} /></button>
+            <span className="Table-Actions" key="action">
+              <button className="Soft-ButtonSmall" onClick={() => markAbsent(assignment)}>{assignment.is_absent ? <UserCheck size={13} /> : <UserX size={13} />}{assignment.is_absent ? "MarkAvailable" : "MarkAbsent"}</button>
+              <button className="Soft-ButtonSmallDanger" onClick={() => removeMember(assignment)}><X size={13} /></button>
             </span>,
-            <button className="primary-button small" key="eod" onClick={() => setEodEmployee(assignment)}><CalendarDays size={13} /> View</button>,
+            <button className="Primary-ButtonSmall" key="eod" onClick={() => setEodEmployee(assignment)}><CalendarDays size={13} /> View</button>,
           ])}
         />
       </Disclosure>
@@ -296,7 +295,7 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
           columns={["Title", "Type", "Pinned", "Reference"]}
           rows={docs.map((doc) => [doc.title, doc.document_type, doc.is_pinned ? "Yes" : "No", doc.storage_reference || doc.file_id || doc.metadata?.url || "-"])}
         />
-        {!docs.length && <EmptyState label="No Project Documents Returned." />}
+        {!docs.length && <EmptyState label="NoProjectDocumentsReturned." />}
       </Disclosure>
 
       {selectedTask && <TaskDetailModal task={selectedTask} data={data} onClose={() => setSelectedTask(null)} reload={refresh} />}
@@ -322,21 +321,20 @@ function MemberRepoIcon({ assignment, repos, data }) {
     const allowed = repo.metadata?.assigned_employees || [];
     return allowed.length === 0 || allowed.map(String).includes(String(employeeId));
   });
-  // No-pushes signal: from gitActivitySnapshots commit_count===0 for any repo today
-  const today = isoDate(new Date());
+  // No-PushesSignal: FromGitActivitySnapshotsCommit_Count===0ForAnyRepoToday  const today = isoDate(new Date());
   const noPushRepos = memberRepos.filter((repo) => {
     const activity = (data.gitActivitySnapshots || []).find((snap) => String(snap.repository) === String(repo.id) && String(snap.snapshot_date) === today);
     return activity && Number(activity.commit_count || 0) === 0;
   });
 
   return (
-    <span className="member-repo-icon" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
-      <GitBranch size={14} className={noPushRepos.length ? "danger-text" : ""} />
+    <span className="Member-Repo-Icon" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+      <GitBranch size={14} className={noPushRepos.length ? "Danger-Text" : ""} />
       {open && (
-        <span className="member-repo-tooltip">
+        <span className="Member-Repo-Tooltip">
           {githubUser && <small>@{githubUser}</small>}
           {memberRepos.length ? memberRepos.map((repo) => <span key={repo.id}>{repo.name}</span>) : <span>No Repositories Linked.</span>}
-          {noPushRepos.length > 0 && <small className="danger-text">No GitHub Pushes Today.</small>}
+          {noPushRepos.length > 0 && <small className="Danger-Text">No GitHub Pushes Today.</small>}
         </span>
       )}
     </span>
@@ -359,8 +357,8 @@ function CreateProjectModal({ data, onClose, reload, defaultProjectType = "Devel
   };
 
   return (
-    <Modal title="Create New Project" onClose={onClose} wide>
-      <div className="form-grid two modal-form">
+    <Modal title="CreateNewProject" onClose={onClose} wide>
+      <div className="Form-GridTwoModal-Form">
         <label>Name<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label>
         <label>Code<input value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} placeholder="PRJ-001" /></label>
         <label>Type<select value={form.project_type} onChange={(event) => setForm({ ...form, project_type: event.target.value })}><option>Development</option><option>Marketing</option><option>Operations</option><option>Internal</option></select></label>
@@ -370,7 +368,7 @@ function CreateProjectModal({ data, onClose, reload, defaultProjectType = "Devel
         <label>Starts On<input type="date" value={form.starts_on} onChange={(event) => setForm({ ...form, starts_on: event.target.value })} /></label>
         <label>Ends On<input type="date" value={form.ends_on} onChange={(event) => setForm({ ...form, ends_on: event.target.value })} /></label>
       </div>
-      <button className="primary-button" onClick={save} disabled={busy || !form.name || !form.code}>Create Project</button>
+      <button className="Primary-Button" onClick={save} disabled={busy || !form.name || !form.code}>Create Project</button>
     </Modal>
   );
 }
@@ -394,8 +392,8 @@ function EditProjectModal({ project, onClose, reload }) {
   };
 
   return (
-    <Modal title="Edit Project Details" onClose={onClose} wide>
-      <div className="form-grid two modal-form">
+    <Modal title="EditProjectDetails" onClose={onClose} wide>
+      <div className="Form-GridTwoModal-Form">
         <label>Name<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label>
         <label>Code<input value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} /></label>
         <label>Type<input value={form.project_type} onChange={(event) => setForm({ ...form, project_type: event.target.value })} /></label>
@@ -405,7 +403,7 @@ function EditProjectModal({ project, onClose, reload }) {
         <label>Starts On<input type="date" value={form.starts_on || ""} onChange={(event) => setForm({ ...form, starts_on: event.target.value })} /></label>
         <label>Ends On<input type="date" value={form.ends_on || ""} onChange={(event) => setForm({ ...form, ends_on: event.target.value })} /></label>
       </div>
-      <button className="primary-button" onClick={save} disabled={!form.name}>Save Project</button>
+      <button className="Primary-Button" onClick={save} disabled={!form.name}>Save Project</button>
     </Modal>
   );
 }
@@ -452,8 +450,8 @@ function AddTaskModal({ project, team, milestones, data, initial, onClose, reloa
   };
 
   return (
-    <Modal title={initial?.parentTaskId ? "Add Sub Task" : "Add Task"} onClose={onClose} wide>
-      <div className="form-grid two modal-form">
+    <Modal title={initial?.parentTaskId ? "AddSubTask" : "AddTask"} onClose={onClose} wide>
+      <div className="Form-GridTwoModal-Form">
         <label>Title<input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label>
         <label>Assignee<select value={form.owner} onChange={(event) => setForm({ ...form, owner: event.target.value })}><option value="">Unassigned</option>{team.map((item) => <option key={item.id} value={item.employee_id || item.employee}>{item.employee_name || employeeName(data, item.employee_id || item.employee)}</option>)}</select></label>
         <label>Milestone<select value={form.milestone_id} onChange={(event) => setForm({ ...form, milestone_id: event.target.value })}><option value="">Unassigned</option>{milestones.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
@@ -462,13 +460,13 @@ function AddTaskModal({ project, team, milestones, data, initial, onClose, reloa
         <label>Bounty<input type="number" value={form.bounty} onChange={(event) => setForm({ ...form, bounty: event.target.value })} /></label>
       </div>
       <label>Description<textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label>
-      <button className="primary-button" onClick={save} disabled={busy || !form.title}>{initial?.parentTaskId ? "Create Sub Task" : "Create Task"}</button>
+      <button className="Primary-Button" onClick={save} disabled={busy || !form.title}>{initial?.parentTaskId ? "CreateSubTask" : "CreateTask"}</button>
     </Modal>
   );
 }
 
 function FlagProjectModal({ project, onClose, reload }) {
-  const [form, setForm] = useState({ severity: "High", title: "Project Risk", description: "" });
+  const [form, setForm] = useState({ severity: "High", title: "ProjectRisk", description: "" });
 
   const save = async () => {
     await apiPost(`/Project/ProjectWorkspaces/${project.id}/raise-alert/`, form);
@@ -477,13 +475,13 @@ function FlagProjectModal({ project, onClose, reload }) {
   };
 
   return (
-    <Modal title="Flag Project Risk" onClose={onClose}>
-      <div className="form-grid two modal-form">
+    <Modal title="FlagProjectRisk" onClose={onClose}>
+      <div className="Form-GridTwoModal-Form">
         <label>Severity<select value={form.severity} onChange={(event) => setForm({ ...form, severity: event.target.value })}><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select></label>
         <label>Title<input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label>
       </div>
       <label>Description<textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label>
-      <button className="primary-button" onClick={save} disabled={!form.title}>Create Alert</button>
+      <button className="Primary-Button" onClick={save} disabled={!form.title}>Create Alert</button>
     </Modal>
   );
 }
@@ -498,11 +496,11 @@ function DocumentModal({ project, onClose, reload }) {
   };
 
   return (
-    <Modal title="Create Project Document" onClose={onClose}>
+    <Modal title="CreateProjectDocument" onClose={onClose}>
       <label>Title<input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label>
       <label>Type<input value={form.document_type} onChange={(event) => setForm({ ...form, document_type: event.target.value })} /></label>
       <label>Reference Or URL<input value={form.storage_reference} onChange={(event) => setForm({ ...form, storage_reference: event.target.value })} /></label>
-      <button className="primary-button" onClick={save} disabled={!form.title}>Save Document</button>
+      <button className="Primary-Button" onClick={save} disabled={!form.title}>Save Document</button>
     </Modal>
   );
 }
@@ -533,36 +531,36 @@ function RepositoriesModal({ project, repos, onClose, reload }) {
     <Modal title="Repositories" onClose={onClose} wide>
       {!creating && (
         <>
-          <ul className="repo-list">
+          <ul className="Repo-List">
             {repos.map((repo) => (
               <li key={repo.id}>
                 <span><GitBranch size={13} /> {repo.full_name || `${repo.owner}/${repo.name}` || repo.name}</span>
-                <span className="muted-text">{repo.access_status}</span>
-                <span className="table-actions">
-                  {repo.full_name && <a className="soft-button small" href={`https://github.com/${repo.full_name}`} target="_blank" rel="noreferrer"><ExternalLink size={12} /></a>}
-                  <button className="soft-button small danger" onClick={() => revoke(repo)}>Revoke</button>
+                <span className="Muted-Text">{repo.access_status}</span>
+                <span className="Table-Actions">
+                  {repo.full_name && <a className="Soft-ButtonSmall" href={`https://github.com/${repo.full_name}`} target="_blank" rel="noreferrer"><ExternalLink size={12} /></a>}
+                  <button className="Soft-ButtonSmallDanger" onClick={() => revoke(repo)}>Revoke</button>
                 </span>
               </li>
             ))}
-            {!repos.length && <li className="muted-text">No Repositories Yet.</li>}
+            {!repos.length && <li className="Muted-Text">No Repositories Yet.</li>}
           </ul>
-          <div className="modal-actions">
-            <button className="primary-button" onClick={() => setCreating(true)}><Plus size={14} /> Create New Repository</button>
-            <button className="soft-button" onClick={onClose}>Close</button>
+          <div className="Modal-Actions">
+            <button className="Primary-Button" onClick={() => setCreating(true)}><Plus size={14} /> Create New Repository</button>
+            <button className="Soft-Button" onClick={onClose}>Close</button>
           </div>
         </>
       )}
       {creating && (
         <>
-          <div className="form-grid two modal-form">
+          <div className="Form-GridTwoModal-Form">
             <label>Provider<select value={form.provider} onChange={(event) => setForm({ ...form, provider: event.target.value })}><option>GitHub</option><option>GitLab</option><option>Bitbucket</option></select></label>
             <label>Owner / Organization<input value={form.owner} onChange={(event) => setForm({ ...form, owner: event.target.value })} placeholder="atgworld" /></label>
-            <label>Repository Name<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="intranet-v2" /></label>
+            <label>Repository Name<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Intranet-V2" /></label>
             <label>Default Branch<input value={form.default_branch} onChange={(event) => setForm({ ...form, default_branch: event.target.value })} /></label>
           </div>
-          <div className="modal-actions">
-            <button className="primary-button" onClick={create} disabled={busy || !form.name}>Create</button>
-            <button className="soft-button" onClick={() => setCreating(false)}>Back</button>
+          <div className="Modal-Actions">
+            <button className="Primary-Button" onClick={create} disabled={busy || !form.name}>Create</button>
+            <button className="Soft-Button" onClick={() => setCreating(false)}>Back</button>
           </div>
         </>
       )}
@@ -580,12 +578,12 @@ function MilestoneEditModal({ milestone, onClose, reload }) {
   };
 
   return (
-    <Modal title="Edit Milestone" onClose={onClose}>
+    <Modal title="EditMilestone" onClose={onClose}>
       <label>Title<input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label>
       <label>Status<select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}><option>Open</option><option>InProgress</option><option>Completed</option><option>Delayed</option></select></label>
       <label>Due On<input type="date" value={form.due_on || ""} onChange={(event) => setForm({ ...form, due_on: event.target.value })} /></label>
       <label>Delayed Days<input type="number" value={form.delayed_days} onChange={(event) => setForm({ ...form, delayed_days: event.target.value })} /></label>
-      <button className="primary-button" onClick={save} disabled={!form.title}>Save Milestone</button>
+      <button className="Primary-Button" onClick={save} disabled={!form.title}>Save Milestone</button>
     </Modal>
   );
 }
@@ -606,11 +604,11 @@ function AddMilestoneModal({ project, onClose, reload }) {
   };
 
   return (
-    <Modal title="New Milestone" onClose={onClose}>
-      <label>Title<input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="M1, 1st Vertical, etc." /></label>
+    <Modal title="NewMilestone" onClose={onClose}>
+      <label>Title<input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="M1, 1stVertical, Etc." /></label>
       <label>Status<select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}><option>Open</option><option>InProgress</option><option>Completed</option><option>Delayed</option></select></label>
       <label>Due On<input type="date" value={form.due_on} onChange={(event) => setForm({ ...form, due_on: event.target.value })} /></label>
-      <button className="primary-button" onClick={save} disabled={busy || !form.title}>Create Milestone</button>
+      <button className="Primary-Button" onClick={save} disabled={busy || !form.title}>Create Milestone</button>
     </Modal>
   );
 }
@@ -631,11 +629,11 @@ function AddMemberModal({ project, data, onClose, reload }) {
   };
 
   return (
-    <Modal title="Add Team Member" onClose={onClose}>
+    <Modal title="AddTeamMember" onClose={onClose}>
       <label>Employee<select value={form.employee} onChange={(event) => setForm({ ...form, employee: event.target.value })}><option value="">Select Employee</option>{(data.employees || []).map((emp) => <option key={emp.id} value={emp.id}>{emp.display_name}</option>)}</select></label>
       <label>Role<input value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })} /></label>
       <label>Allocation %<input type="number" value={form.allocation_percent} onChange={(event) => setForm({ ...form, allocation_percent: event.target.value })} /></label>
-      <button className="primary-button" onClick={save} disabled={busy || !form.employee}>Add Member</button>
+      <button className="Primary-Button" onClick={save} disabled={busy || !form.employee}>Add Member</button>
     </Modal>
   );
 }
@@ -646,8 +644,8 @@ function TeamEodModal({ assignment, data, onClose }) {
 
   return (
     <Modal title={`${assignment.employee_name || employeeName(data, employeeId)} EOD Reports`} onClose={onClose} wide>
-      <SimpleTable columns={["Date", "Summary"]} rows={rows.map((item) => [formatDate(item.status_date), item.summary || "No Summary Text."])} />
-      {!rows.length && <EmptyState label="No EOD Entries Returned For This Team Member." />}
+      <SimpleTable columns={["Date", "Summary"]} rows={rows.map((item) => [formatDate(item.status_date), item.summary || "NoSummaryText."])} />
+      {!rows.length && <EmptyState label="NoEODEntriesReturnedForThisTeamMember." />}
     </Modal>
   );
 }
@@ -689,46 +687,46 @@ function TaskDetailModal({ task, data, onClose, reload }) {
 
   return (
     <Modal onClose={onClose} wide title={<><a>{projectName(data, task.project) || "Project"}</a> / Task</>}>
-      <div className="task-modal-grid">
+      <div className="Task-Modal-Grid">
         <section>
           <StatusPill tone="blue">Task</StatusPill>
           <h2>{task.title}</h2>
-          <dl className="details-grid">
+          <dl className="Details-Grid">
             <div><dt>Status</dt><dd>
-              <span className="inline-form-row">
+              <span className="Inline-Form-Row">
                 <select value={status} onChange={(event) => setStatus(event.target.value)}><option>Open</option><option>InProgress</option><option>Blocked</option><option>Completed</option></select>
-                <button className="soft-button small" onClick={saveStatus}>Save</button>
+                <button className="Soft-ButtonSmall" onClick={saveStatus}>Save</button>
               </span>
             </dd></div>
             <div><dt>Created</dt><dd>{formatDate(task.created_at)}</dd></div>
             <div><dt>Due Date</dt><dd>{formatDate(task.due_at)}</dd></div>
             <div><dt>Assignee</dt><dd>{employeeName(data, task.owner || task.owner_id)}</dd></div>
           </dl>
-          <label>Description<textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Add A Description..." /></label>
-          <button className="primary-button" onClick={saveDescription}>Save Description</button>
+          <label>Description<textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="AddADescription..." /></label>
+          <button className="Primary-Button" onClick={saveDescription}>Save Description</button>
 
           <h4>Sub Tasks ({subs.length})</h4>
-          {subs.length ? subs.map((sub) => <div className="pr-row" key={sub.id}><span>↳ {sub.title}</span> <span>({sub.status})</span></div>) : <EmptyState label="No Sub Tasks." />}
+          {subs.length ? subs.map((sub) => <div className="Pr-Row" key={sub.id}><span>↳ {sub.title}</span> <span>({sub.status})</span></div>) : <EmptyState label="NoSubTasks." />}
 
           <h4>Links</h4>
-          <div className="inline-form-row">
+          <div className="Inline-Form-Row">
             <input value={linkUrl} onChange={(event) => setLinkUrl(event.target.value)} placeholder="https://..." />
-            <button className="primary-button small" onClick={saveLink}><LinkIcon size={13} /> Add Link</button>
+            <button className="Primary-ButtonSmall" onClick={saveLink}><LinkIcon size={13} /> Add Link</button>
           </div>
-          {task.metadata?.task_link && <a className="pr-row" href={task.metadata.task_link} target="_blank" rel="noreferrer"><ExternalLink size={13} /> {task.metadata.task_link}</a>}
+          {task.metadata?.task_link && <a className="Pr-Row" href={task.metadata.task_link} target="_blank" rel="noreferrer"><ExternalLink size={13} /> {task.metadata.task_link}</a>}
 
           <h4>Pull Requests</h4>
-          <div className="inline-form-row">
-            <input value={prForm.name} onChange={(event) => setPrForm({ ...prForm, name: event.target.value })} placeholder="PR Title" />
-            <input value={prForm.url} onChange={(event) => setPrForm({ ...prForm, url: event.target.value })} placeholder="PR URL" />
-            <button className="primary-button small" onClick={savePr}><GitPullRequest size={13} /> Add PR</button>
+          <div className="Inline-Form-Row">
+            <input value={prForm.name} onChange={(event) => setPrForm({ ...prForm, name: event.target.value })} placeholder="PRTitle" />
+            <input value={prForm.url} onChange={(event) => setPrForm({ ...prForm, url: event.target.value })} placeholder="PRURL" />
+            <button className="Primary-ButtonSmall" onClick={savePr}><GitPullRequest size={13} /> Add PR</button>
           </div>
-          {prLinks.map((pr) => <div className="pr-row" key={pr.url}><a href={pr.url} target="_blank" rel="noreferrer">{pr.name}</a> <span>({pr.state})</span></div>)}
+          {prLinks.map((pr) => <div className="Pr-Row" key={pr.url}><a href={pr.url} target="_blank" rel="noreferrer">{pr.name}</a> <span>({pr.state})</span></div>)}
         </section>
         <aside>
           <h3>Activity</h3>
-          {activities.map((item) => <div className="activity-row" key={item.id}><span>{item.message || item.activity_type}</span><time>{formatDate(item.created_at)}</time></div>)}
-          {!activities.length && <EmptyState label="No Task Activity Returned." />}
+          {activities.map((item) => <div className="Activity-Row" key={item.id}><span>{item.message || item.activity_type}</span><time>{formatDate(item.created_at)}</time></div>)}
+          {!activities.length && <EmptyState label="NoTaskActivityReturned." />}
         </aside>
       </div>
     </Modal>

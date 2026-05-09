@@ -15,13 +15,13 @@ requests>=2.31.0
 PyGithub>=2.1.0
 paramiko>=3.3.0
 
-# PDF Generation (lightweight - no pycairo needed)
+# PDF Generation (lightweight - No Pycairo Needed)
 xhtml2pdf>=0.2.11
 reportlab>=4.0.0
 beautifulsoup4>=4.12.0
 lxml>=4.9.0
 
-# Excel/Data Processing (avoid full pandas to reduce dependencies)
+# Excel/Data Processing (Avoid Full Pandas To Reduce Dependencies)
 openpyxl>=3.1.0
 
 # Configuration
@@ -34,8 +34,8 @@ gunicorn>=21.0.0
 # Image Processing
 Pillow>=10.0.0
 
-# Date/Time utilities
+# Date/Time Utilities
 python-dateutil>=2.8.0
 
-# Additional utilities
+# Additional Utilities
 pytz>=2023.3

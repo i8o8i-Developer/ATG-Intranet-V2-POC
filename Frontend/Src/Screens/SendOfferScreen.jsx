@@ -21,23 +21,23 @@ function renderTemplate(template = "", variables = {}) {
 }
 
 function displayDate(value) {
-  if (!value) return new Date().toLocaleDateString("en-GB");
+  if (!value) return new Date().toLocaleDateString("En-GB");
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleDateString("en-GB");
+  return date.toLocaleDateString("En-GB");
 }
 
 function defaultEmailTemplate() {
-  return "<div style='padding:32px;font-family:Arial,Helvetica,sans-serif;background:#f5f7fb'><div style='max-width:680px;margin:0 auto;background:#fff;border:1px solid #dfe5ee;border-radius:18px;padding:28px'><h2 style='margin-top:0'>Onboarding Email</h2><p>Hi {{ candidate_name }},</p><p>Your offer for <strong>{{ position_title }}</strong> with <strong>{{ company_name }}</strong> is ready.</p><p><a href='{{ offer_url }}'>Open offer</a></p></div></div>";
+  return "<DivStyle='Padding:32px;Font-Family:Arial,Helvetica,Sans-Serif;Background:#F5f7fb'><DivStyle='Max-Width:680px;Margin:0Auto;Background:#Fff;Border:1pxSolid #Dfe5ee;Border-Radius:18px;Padding:28px'><H2Style='Margin-Top:0'>OnboardingEmail</H2><P>Hi {{ Candidate_Name }},</P><P>YourOfferFor <Strong>{{ Position_Title }}</Strong> With <Strong>{{ Company_Name }}</Strong> IsReady.</P><P><AHref='{{ Offer_Url }}'>OpenOffer</A></P></Div></Div>";
 }
 
 function defaultOfferTemplate() {
   return `<!doctype html>
   <html>
     <head>
-      <meta charset="utf-8" />
+      <meta charset="Utf-8" />
       <style>
-        body { margin: 0; padding: 28px; background: #ffffff; color: #111827; font-family: Georgia, 'Times New Roman', serif; }
+        body { margin: 0; padding: 28px; background: #ffffff; color: #111827; font-family: Georgia, 'TimesNewRoman', serif; }
         .offer-shell { max-width: 860px; margin: 0 auto; border: 2px solid #111827; padding: 36px 42px 48px; }
         .offer-logo { text-align: center; margin-bottom: 18px; }
         .offer-logo img { width: 100%; max-width: 520px; height: auto; }
@@ -50,14 +50,14 @@ function defaultOfferTemplate() {
       </style>
     </head>
     <body>
-      <div class="offer-shell">
-        <div class="offer-logo"><img src="https://i.postimg.cc/kgHvKMLz/employed-India-Logo.png" alt="ATG Offer Letter" /></div>
-        <div class="offer-title">{{ offer_heading }}</div>
+      <div class="Offer-Shell">
+        <div class="Offer-Logo"><img src="https://i.postimg.cc/kgHvKMLz/employed-India-Logo.png" alt="ATGOfferLetter" /></div>
+        <div class="Offer-Title">{{ offer_heading }}</div>
         {{ offer_disclaimer }}
-        <div class="offer-date"><strong>{{ joining_date }}</strong></div>
-        <p class="offer-copy">Dear Mr./Ms. {{ candidate_name }},</p>
-        <p class="offer-copy">We are pleased to offer you the position of <strong>{{ position_title }}</strong> with <strong>{{ company_name }}</strong>. This fallback template is ready to preview and send even before the synced library finishes loading.</p>
-        <table class="offer-table">
+        <div class="Offer-Date"><strong>{{ joining_date }}</strong></div>
+        <p class="Offer-Copy">Dear Mr./Ms. {{ candidate_name }},</p>
+        <p class="Offer-Copy">We are pleased to offer you the position of <strong>{{ position_title }}</strong> with <strong>{{ company_name }}</strong>. This fallback template is ready to preview and send even before the synced library finishes loading.</p>
+        <table class="Offer-Table">
           <tbody>
             <tr><th style="width:34%">Designation</th><td>{{ position_title }}</td></tr>
             <tr><th>Date of Joining / Issue</th><td>{{ joining_date }}</td></tr>
@@ -69,14 +69,14 @@ function defaultOfferTemplate() {
             <tr><th>Candidate Email</th><td>{{ candidate_email }}</td></tr>
           </tbody>
         </table>
-        <p class="offer-copy">This offer remains subject to company policy and onboarding formalities communicated by the hiring team.</p>
+        <p class="Offer-Copy">This offer remains subject to company policy and onboarding formalities communicated by the hiring team.</p>
       </div>
     </body>
   </html>`;
 }
 
 function templateSummary(template) {
-  return template?.metadata?.summary || template?.position || template?.name || "Legacy offer template";
+  return template?.metadata?.summary || template?.position || template?.name || "LegacyOfferTemplate";
 }
 
 export function SendOfferScreen({ data, reload }) {
@@ -89,7 +89,7 @@ export function SendOfferScreen({ data, reload }) {
     sub_department: "",
     position_title: "",
     employment_type: "Intern",
-    pay_type: "Performance Based",
+    pay_type: "PerformanceBased",
     joining_date: isoDate(new Date()),
     template_search: "",
   });
@@ -124,7 +124,7 @@ export function SendOfferScreen({ data, reload }) {
   );
 
   const legacyLibraryCount = useMemo(
-    () => templates.filter((template) => template?.metadata?.source === "legacy-offer-library").length,
+    () => templates.filter((template) => template?.metadata?.source === "Legacy-Offer-Library").length,
     [templates],
   );
 
@@ -151,7 +151,7 @@ export function SendOfferScreen({ data, reload }) {
       } catch (error) {
         if (!active) return;
         setAutoBootstrapState("failed");
-        setResult({ mode: "sync_error", response: error?.data || { error: error?.message || "Unable to sync legacy templates." } });
+        setResult({ mode: "sync_error", response: error?.data || { error: error?.message || "UnableToSyncLegacyTemplates." } });
       }
     })();
     return () => {
@@ -185,10 +185,10 @@ export function SendOfferScreen({ data, reload }) {
       sub_department_name: subDepartmentName || "-",
       username: form.username || form.candidate_email.split("@")[0] || "candidate",
       employment_type: form.employment_type || selectedTemplate?.offer_type || "Intern",
-      pay_type: form.pay_type || "Performance Based",
+      pay_type: form.pay_type || "PerformanceBased",
       joining_date: displayDate(form.joining_date),
-      offer_heading: "PROVISIONAL OFFER LETTER",
-      offer_disclaimer: "<p style='text-align:center;margin:8px 0 22px;font-size:13px;font-weight:700;'>This is a provisional offer letter. This is NOT an actual offer letter which will be sent after successful first month completion.</p>",
+      offer_heading: "PROVISIONALOFFERLETTER",
+      offer_disclaimer: "<PStyle='Text-Align:Center;Margin:8px022px;Font-Size:13px;Font-Weight:700;'>ThisIsAProvisionalOfferLetter. ThisIsNOTAnActualOfferLetterWhichWillBeSentAfterSuccessfulFirstMonthCompletion.</P>",
       offer_url: `${window.location.origin}/offer/accept/DEMO_TOKEN`,
     };
   }, [departmentName, form.candidate_email, form.candidate_name, form.company_name, form.employment_type, form.joining_date, form.pay_type, form.position_title, form.username, selectedTemplate?.offer_domain, selectedTemplate?.offer_type, selectedTemplate?.position, subDepartmentName]);
@@ -205,7 +205,7 @@ export function SendOfferScreen({ data, reload }) {
       reload(["contentTemplates", "genericHtmlTemplates", "offerTemplates"]);
     } catch (error) {
       setAutoBootstrapState("failed");
-      setResult({ mode: "sync_error", response: error?.data || { error: error?.message || "Unable to sync legacy templates." } });
+      setResult({ mode: "sync_error", response: error?.data || { error: error?.message || "UnableToSyncLegacyTemplates." } });
     } finally {
       setBusyAction("");
     }
@@ -228,9 +228,9 @@ export function SendOfferScreen({ data, reload }) {
           employment_type: form.employment_type,
           joining_date: form.joining_date,
           template_id: selectedTemplate?.id,
-          template_name: selectedTemplate?.name || "Fallback Legacy Template",
+          template_name: selectedTemplate?.name || "FallbackLegacyTemplate",
           template_key: selectedTemplate?.metadata?.template_key || "fallback_legacy_template",
-          summary: templateSummary(selectedTemplate) || "Fallback legacy offer template",
+          summary: templateSummary(selectedTemplate) || "FallbackLegacyOfferTemplate",
         },
       };
       const offer = await apiPost(issue ? "/MainApp/Onboard/send-actual-offer" : "/MainApp/Onboard/Send_Offer", payload);
@@ -241,7 +241,7 @@ export function SendOfferScreen({ data, reload }) {
           email: form.candidate_email,
           macro_values: {
             ...templateVariables,
-            offer_heading: "OFFER LETTER",
+            offer_heading: "OFFERLETTER",
             offer_disclaimer: "",
           },
         });
@@ -249,39 +249,39 @@ export function SendOfferScreen({ data, reload }) {
       setResult({ mode: issue ? "sent" : "draft", response });
       reload(["offers"]);
     } catch (error) {
-      setResult({ mode: "error", response: error?.payload || { error: error?.message || "Unable to process offer." } });
+      setResult({ mode: "error", response: error?.payload || { error: error?.message || "UnableToProcessOffer." } });
     } finally {
       setBusyAction("");
     }
   };
 
   return (
-    <section className="offer-page screen-stack">
-      <section className="page-heading">
+    <section className="Offer-PageScreen-Stack">
+      <section className="Page-Heading">
         <div>
           <span>Onboarding / Offers</span>
           <h1>Offer Templates And Onboarding Email</h1>
         </div>
-        <div className="button-row">
+        <div className="Button-Row">
           <StatusPill tone="blue">{visibleTemplates.length} Templates</StatusPill>
-          <button className="outline-button" disabled={busyAction === "sync"} onClick={syncLibrary}>{busyAction === "sync" ? "Syncing…" : "Sync Legacy Templates"}</button>
-          <button className="outline-button" onClick={() => setShowPreview(!showPreview)}>{showPreview ? "Hide Preview" : "Show Preview"}</button>
-          <button className="outline-button" disabled={!formReady || Boolean(busyAction)} onClick={() => submit(false)}>{busyAction === "draft" ? "Creating…" : "Create Draft"}</button>
-          <button className="primary-button" disabled={!formReady || Boolean(busyAction)} onClick={() => submit(true)}>{busyAction === "send" ? "Sending…" : "Send Offer"}</button>
+          <button className="Outline-Button" disabled={busyAction === "sync"} onClick={syncLibrary}>{busyAction === "sync" ? "Syncing…" : "SyncLegacyTemplates"}</button>
+          <button className="Outline-Button" onClick={() => setShowPreview(!showPreview)}>{showPreview ? "HidePreview" : "ShowPreview"}</button>
+          <button className="Outline-Button" disabled={!formReady || Boolean(busyAction)} onClick={() => submit(false)}>{busyAction === "draft" ? "Creating…" : "CreateDraft"}</button>
+          <button className="Primary-Button" disabled={!formReady || Boolean(busyAction)} onClick={() => submit(true)}>{busyAction === "send" ? "Sending…" : "SendOffer"}</button>
         </div>
       </section>
 
-      <section className="stat-grid four">
-        <StatCard label="Active Template Library" value={String(templates.length)} />
-        <StatCard label="Current Domain" value={form.company_name} />
-        <StatCard label="Recent Offers" value={String(recentOffers.length)} />
-        <StatCard label="Onboarding Email Ready" value={selectedTemplate?.email_template ? "Template" : "Fallback"} />
+      <section className="Stat-GridFour">
+        <StatCard label="ActiveTemplateLibrary" value={String(templates.length)} />
+        <StatCard label="CurrentDomain" value={form.company_name} />
+        <StatCard label="RecentOffers" value={String(recentOffers.length)} />
+        <StatCard label="OnboardingEmailReady" value={selectedTemplate?.email_template ? "Template" : "Fallback"} />
       </section>
 
-      <Panel title="Offer Configuration & Templates" subtitle="Configure candidate details, select a legacy template, and preview the onboarding package.">
-        <div className="split-grid two-one offer-screen-grid">
+      <Panel title="OfferConfiguration & Templates" subtitle="ConfigureCandidateDetails, SelectALegacyTemplate, AndPreviewTheOnboardingPackage.">
+        <div className="Split-GridTwo-OneOffer-Screen-Grid">
           <div>
-            <div className="form-grid two">
+            <div className="Form-GridTwo">
               <label>Company<select value={form.company_name} onChange={(event) => setForm((current) => ({ ...current, company_name: event.target.value }))}><option>ATG</option><option>Banao</option><option>Bunny</option></select></label>
               <label>Candidate Name<input value={form.candidate_name} onChange={(event) => setForm((current) => ({ ...current, candidate_name: event.target.value }))} /></label>
               <label>Candidate Email<input type="email" value={form.candidate_email} onChange={(event) => setForm((current) => ({ ...current, candidate_email: event.target.value }))} /></label>
@@ -290,7 +290,7 @@ export function SendOfferScreen({ data, reload }) {
               <label>Employment Type<select value={form.employment_type} onChange={(event) => setForm((current) => ({ ...current, employment_type: event.target.value }))}><option>Intern</option><option>Full Time</option><option>Contract</option><option>Part Time</option></select></label>
               <label>Department<select value={form.department} onChange={(event) => setForm((current) => ({ ...current, department: event.target.value }))}><option value="">Select Department</option>{(data.departments || []).map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}</select></label>
               <label>Sub Department<select value={form.sub_department} onChange={(event) => setForm((current) => ({ ...current, sub_department: event.target.value }))}><option value="">Select Sub Department</option>{(data.subDepartments || []).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-              <label>Position Title<input value={form.position_title} onChange={(event) => setForm((current) => ({ ...current, position_title: event.target.value }))} placeholder={selectedTemplate?.position || "Role title"} /></label>
+              <label>Position Title<input value={form.position_title} onChange={(event) => setForm((current) => ({ ...current, position_title: event.target.value }))} placeholder={selectedTemplate?.position || "RoleTitle"} /></label>
               <label>Pay Type<select value={form.pay_type} onChange={(event) => setForm((current) => ({ ...current, pay_type: event.target.value }))}><option>Performance Based</option><option>Fixed</option><option>Hybrid</option></select></label>
             </div>
           </div>
@@ -298,53 +298,53 @@ export function SendOfferScreen({ data, reload }) {
           <div>
             <div style={{ marginBottom: "12px", display: "flex", flexDirection: "column", gap: "6px" }}>
               <h3 style={{ margin: 0, fontSize: "15px" }}>Template Library</h3>
-              <p style={{ margin: 0, fontSize: "13px", color: "var(--muted)" }}>All discovered legacy offer types are synced here.</p>
+              <p style={{ margin: 0, fontSize: "13px", color: "Var(--Muted)" }}>All discovered legacy offer types are synced here.</p>
             </div>
-            {autoBootstrapState === "running" && <div className="notice-row compact">Bootstrapping the legacy offer library for this workspace.</div>}
-            {showingFallbackLibrary && <div className="notice-row"><div><strong>No exact {form.company_name} template yet.</strong><p>Showing templates from other domains so you can still preview and send immediately. Sync will populate the full ATG library.</p></div></div>}
-            <div className="form-grid">
-              <label>Search Templates<input value={form.template_search} onChange={(event) => setForm((current) => ({ ...current, template_search: event.target.value }))} placeholder="Developer, marketing, testing..." /></label>
+            {autoBootstrapState === "running" && <div className="Notice-RowCompact">Bootstrapping the legacy offer library for this workspace.</div>}
+            {showingFallbackLibrary && <div className="Notice-Row"><div><strong>No exact {form.company_name} template yet.</strong><p>Showing templates from other domains so you can still preview and send immediately. Sync will populate the full ATG library.</p></div></div>}
+            <div className="Form-Grid">
+              <label>Search Templates<input value={form.template_search} onChange={(event) => setForm((current) => ({ ...current, template_search: event.target.value }))} placeholder="Developer, Marketing, Testing..." /></label>
             </div>
-            <div className="template-catalog">
+            <div className="Template-Catalog">
               {visibleTemplates.length ? visibleTemplates.map((template) => {
                 const active = String(template.id) === String(selectedTemplateId);
                 return (
-                  <button key={template.id} className={active ? "template-card active" : "template-card"} onClick={() => setSelectedTemplateId(String(template.id))}>
-                    <div className="template-card-head">
+                  <button key={template.id} className={active ? "Template-CardActive" : "Template-Card"} onClick={() => setSelectedTemplateId(String(template.id))}>
+                    <div className="Template-Card-Head">
                       <strong>{normalizeLabel(template.name)}</strong>
                       <StatusPill tone={active ? "blue" : "green"}>{template.offer_type || "Offer"}</StatusPill>
                     </div>
                     <p>{templateSummary(template)}</p>
-                    <div className="template-card-tags">
+                    <div className="Template-Card-Tags">
                       <span>{template.offer_domain || form.company_name}</span>
                       <span>{template.position || "General"}</span>
                       <span>{normalizeLabel(template.metadata?.template_key || "legacy")}</span>
                     </div>
                   </button>
                 );
-              }) : <div className="empty-state">No templates are loaded yet. The fallback preview below is still ready, and the legacy library sync will populate this list.</div>}
+              }) : <div className="Empty-State">No templates are loaded yet. The fallback preview below is still ready, and the legacy library sync will populate this list.</div>}
             </div>
           </div>
         </div>
       </Panel>
 
       {showPreview && (
-        <section className="preview-section fade-in">
-          <Panel title="Preview Workspace" subtitle={selectedTemplate ? `Selected template: ${normalizeLabel(selectedTemplate.name)}` : "Preview is available below even without a selected template. Once the library loads, clicking a template card updates it here."}>
-            <Tabs value={previewMode} onChange={setPreviewMode} items={[["offer", "Offer Letter"], ["email", "Onboarding Email"]]} />
-            <div className="template-preview-shell">
+        <section className="Preview-SectionFade-In">
+          <Panel title="PreviewWorkspace" subtitle={selectedTemplate ? `Selected template: ${normalizeLabel(selectedTemplate.name)}` : "PreviewIsAvailableBelowEvenWithoutASelectedTemplate. OnceTheLibraryLoads, ClickingATemplateCardUpdatesItHere."}>
+            <Tabs value={previewMode} onChange={setPreviewMode} items={[["offer", "OfferLetter"], ["email", "OnboardingEmail"]]} />
+            <div className="Template-Preview-Shell">
               <iframe
-                title={previewMode === "offer" ? "Offer preview" : "Onboarding email preview"}
+                title={previewMode === "offer" ? "OfferPreview" : "OnboardingEmailPreview"}
                 srcDoc={previewMode === "offer" ? offerPreviewHtml : emailPreviewHtml}
-                className="offer-preview-frame"
+                className="Offer-Preview-Frame"
               />
             </div>
           </Panel>
         </section>
       )}
 
-      <section className="recent-offers-section">
-        <Panel title="Recent Offers" subtitle="Latest onboarding offers created in the rebuilt MainApp service.">
+      <section className="Recent-Offers-Section">
+        <Panel title="RecentOffers" subtitle="LatestOnboardingOffersCreatedInTheRebuiltMainAppService.">
           <SimpleTable
             columns={["Candidate", "Position", "Status", "Email", "Created"]}
             rows={recentOffers.map((offer) => [offer.candidate_name, offer.position_title, offer.status, offer.candidate_email, formatDate(offer.created_at)])}
@@ -353,7 +353,7 @@ export function SendOfferScreen({ data, reload }) {
       </section>
 
       {result && (
-        <Panel title="Offer Activity Result" subtitle={`Mode: ${result.mode}`}>
+        <Panel title="OfferActivityResult" subtitle={`Mode: ${result.mode}`}>
           <pre>{JSON.stringify(result.response, null, 2)}</pre>
         </Panel>
       )}

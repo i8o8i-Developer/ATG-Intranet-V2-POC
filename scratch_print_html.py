@@ -11,8 +11,8 @@ from Backend.Apps.MainApp.models import HtmlTemplate
 
 template = HtmlTemplate.objects.filter(name__icontains="ATG Common Offer").first()
 if template:
-    print("Found template:", template.name)
+    print("Found Template:", template.name)
     print("----- HTML BODY -----")
     print(template.body_html)
 else:
-    print("Template not found.")
+    print("Template Not Found.")

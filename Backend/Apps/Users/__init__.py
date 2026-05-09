@@ -1,1 +1,1 @@
-"""User, Employee, Skill, and Organization Profile APIs."""
+"""User, Employee, Skill, And Organization Profile APIs."""

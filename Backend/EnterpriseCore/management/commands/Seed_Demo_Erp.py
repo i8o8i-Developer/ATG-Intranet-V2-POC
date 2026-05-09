@@ -227,7 +227,7 @@ class Command(BaseCommand):
             self.upsert(UserStatusSnapshot, {"tenant": self.tenant, "employee": employee, "status": "Active", "effective_from": self.today - timezone.timedelta(days=30)}, {"reason": "Demo Active Status"})
         self.upsert(BenchPeriod, {"tenant": self.tenant, "employee": employees["EMP006"], "started_on": self.today - timezone.timedelta(days=10)}, {"reason": "Available For AI Design Pilot"})
         self.upsert(EmployeeCertificate, {"tenant": self.tenant, "employee": employees["EMP002"], "position_title": "Django Developer"}, {"manager": employees["EMP001"], "issued_on": self.today - timezone.timedelta(days=20), "storage_reference": "demo://certificate/faraz"})
-        self.upsert(EmployeeFeedback, {"tenant": self.tenant, "employee": employees["EMP002"], "feedback_type": "Project", "project_name": "Intranet Rebuild"}, {"submitted_by": self.admin_user, "feedback_text": "Solid progress on API parity and React screens."})
+        self.upsert(EmployeeFeedback, {"tenant": self.tenant, "employee": employees["EMP002"], "feedback_type": "Project", "project_name": "Intranet Rebuild"}, {"submitted_by": self.admin_user, "feedback_text": "Solid Progress On API Parity And React Screens."})
         self.upsert(InterviewProgress, {"tenant": self.tenant, "employee": employees["EMP008"]}, {"candidate_id": "IG-DEMO-001", "status": "InProgress", "level": "L1", "job_id": "L3-INTERN"})
         return employees
 
@@ -239,15 +239,15 @@ class Command(BaseCommand):
         self.upsert(LeaveRequest, {"tenant": self.tenant, "employee": employees["EMP002"], "starts_on": self.today + timezone.timedelta(days=3)}, {"leave_type": "Casual", "ends_on": self.today + timezone.timedelta(days=4), "status": "Submitted", "requested_days": Decimal("2"), "reason": "Family function"})
         self.upsert(OnboardingOffer, {"tenant": self.tenant, "candidate_email": "new.dev@example.com"}, {"candidate_name": "New Dev Candidate", "company_name": "Banao", "position_title": "React Developer", "offer_type": "Intern", "token": "demo-offer-token", "status": "Issued", "issued_at": self.now})
         self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP001"].user, "title": "Project Dashboard Review Due"}, {"message": "Review Delayed Milestones And Repo Access", "category": "Project", "resource_type": "ProjectWorkspace", "resource_id": "demo", "delivered_at": self.now})
-        self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP002"].user, "title": "New Pull Request Opened"}, {"message": "PR #345: Add user authentication flow - Ready for review", "category": "github", "resource_type": "pull_request", "resource_id": "345", "is_read": False, "metadata": {"repo": "intranet-v2", "author": "faraz-dev", "branch": "feature/auth"}})
-        self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP003"].user, "title": "Code Review Requested"}, {"message": "Your review is requested on PR #345 - Authentication flow", "category": "github", "resource_type": "pull_request", "resource_id": "345", "is_read": False, "metadata": {"repo": "intranet-v2"}})
-        self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP001"].user, "title": "Skill Updated: React"}, {"message": "Your skill level for React has been updated to Advanced.", "category": "hrms", "resource_type": "skill", "resource_id": "1", "is_read": True, "metadata": {"proficiency": 3}})
+        self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP002"].user, "title": "New Pull Request Opened"}, {"message": "PR #345: Add User Authentication Flow - Ready For Review", "category": "github", "resource_type": "pull_request", "resource_id": "345", "is_read": False, "metadata": {"repo": "intranet-v2", "author": "faraz-dev", "branch": "feature/auth"}})
+        self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP003"].user, "title": "Code Review Requested"}, {"message": "Your Review Is Requested On PR #345 - Authentication flow", "category": "github", "resource_type": "pull_request", "resource_id": "345", "is_read": False, "metadata": {"repo": "intranet-v2"}})
+        self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP001"].user, "title": "Skill Updated: React"}, {"message": "Your Skill Level For React Has Been Updated To Advanced.", "category": "hrms", "resource_type": "skill", "resource_id": "1", "is_read": True, "metadata": {"proficiency": 3}})
         self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP002"].user, "title": "New Goal Assigned"}, {"message": "Complete Intranet Module Redesign - Due in 14 days", "category": "hrms", "resource_type": "goal", "resource_id": "1", "is_read": False})
         credential = self.upsert(CredentialVaultItem, {"tenant": self.tenant, "name": "Demo GitHub Token", "system_name": "GitHub"}, {"owner": self.admin_user, "secret_reference": "secret://demo/github", "status": "Active", "rotation_due_at": self.now + timezone.timedelta(days=30)})
         self.upsert(CredentialShareGrant, {"tenant": self.tenant, "credential": credential, "grantee": employees["EMP001"].user}, {"permission": "Read", "expires_at": self.now + timezone.timedelta(days=14), "reason": "Project access"})
         self.upsert(ExternalIssueReference, {"tenant": self.tenant, "provider": "Mantis", "title": "Demo blocker on old dashboard"}, {"issue_type": "Bug", "priority": "P2", "status": "Open", "assigned_to": employees["EMP007"].user})
         self.upsert(ManagerScope, {"tenant": self.tenant, "manager": employees["EMP001"], "department": employees["EMP002"].department}, {"scope_type": "Department", "status": "Active"})
-        self.upsert(ResignationRequest, {"tenant": self.tenant, "employee": employees["EMP008"], "requested_on": self.today - timezone.timedelta(days=5)}, {"reason": "Demo resignation workflow", "status": "InReview", "last_working_day": self.today + timezone.timedelta(days=30)})
+        self.upsert(ResignationRequest, {"tenant": self.tenant, "employee": employees["EMP008"], "requested_on": self.today - timezone.timedelta(days=5)}, {"reason": "Demo Resignation Workflow", "status": "InReview", "last_working_day": self.today + timezone.timedelta(days=30)})
         self.upsert(EmployeePaymentSnapshot, {"tenant": self.tenant, "employee": employees["EMP002"], "month": self.today.month, "year": self.today.year}, {"normal_pay": Decimal("35000"), "bonus": Decimal("2500"), "bounty": Decimal("4"), "task_count": 4, "manager_status": "Approved", "finance_status": "Pending"})
         self.upsert(UserEffortReport, {"tenant": self.tenant, "employee": employees["EMP002"], "report_month": self.today.month, "report_year": self.today.year}, {"project_reference": "Intranet Rebuild", "effort_percent": Decimal("80")})
 
@@ -277,7 +277,7 @@ class Command(BaseCommand):
         return {"project_a": project_a, "project_b": project_b}
 
     def seed_delays(self, employees, projects):
-        """Seed realistic delay data for projects, tasks, and employees"""
+        """Seed Realistic Delay Data For Projects, Tasks, And Employees"""
         # Project Delays
         self.upsert(
             ProjectDelay,
@@ -406,7 +406,7 @@ class Command(BaseCommand):
 
     def seed_docs(self, employees):
         folder = self.upsert(DriveFolder, {"tenant": self.tenant, "path": "/Delivery", "name": "Delivery"}, {"drive_folder_id": "drive-folder-demo"})
-        doc = self.upsert(KnowledgeDocument, {"tenant": self.tenant, "slug": "react-erp-old-page-map"}, {"title": "React ERP Old Page Map", "document_type": "Runbook", "status": "Published", "body": "Mapped old intranet templates into React workbenches.", "owner": employees["EMP001"]})
+        doc = self.upsert(KnowledgeDocument, {"tenant": self.tenant, "slug": "react-erp-old-page-map"}, {"title": "React ERP Old Page Map", "document_type": "Runbook", "status": "Published", "body": "Mapped Old Intranet Templates Into React Workbenches.", "owner": employees["EMP001"]})
         self.upsert(KnowledgePermission, {"tenant": self.tenant, "document": doc, "subject_type": "Department", "subject_id": str(employees["EMP002"].department_id)}, {"permission": "Read"})
         self.upsert(KnowledgeActivity, {"tenant": self.tenant, "document": doc, "activity_type": "Viewed"}, {"actor": employees["EMP002"], "payload": {"screen": "Docs Home"}})
         self.upsert(DriveFile, {"tenant": self.tenant, "document": doc, "title": "React ERP Old Page Map"}, {"folder": folder, "mime_type": "text/html", "drive_file_id": "drive-file-demo", "web_view_link": "https://docs.example/demo", "is_public": False})
@@ -433,8 +433,8 @@ class Command(BaseCommand):
         self.upsert(GitActivitySnapshot, {"tenant": self.tenant, "repository": repo, "snapshot_date": self.today}, {"commit_count": 18, "pull_request_count": 4, "review_count": 6})
         self.upsert(RepositoryUtilityRequest, {"tenant": self.tenant, "repository": repo, "request_type": "CollaboratorAccess"}, {"requested_by": employees["EMP002"], "status": "Queued", "payload": {"username": "faraz"}})
         gh_repo = self.upsert(GitHubRepository, {"tenant": self.tenant, "owner": "atg-world", "name": "intranet-v2"}, {"project": projects["project_a"], "default_branch": "main", "status": "Active"})
-        self.upsert(BranchReviewerAssignment, {"tenant": self.tenant, "repository": gh_repo, "branch_name": "feature/react-old-pages", "reviewer": employees["EMP001"]}, {"status": "Assigned", "is_pass": "Pending", "comment": "Review UI parity"})
-        self.upsert(BranchTestingAssignment, {"tenant": self.tenant, "repository": gh_repo, "branch_name": "feature/react-old-pages", "tester": employees["EMP007"]}, {"status": "Pending", "is_pass": "Pending", "comment": "Run old-page smoke"})
+        self.upsert(BranchReviewerAssignment, {"tenant": self.tenant, "repository": gh_repo, "branch_name": "feature/react-old-pages", "reviewer": employees["EMP001"]}, {"status": "Assigned", "is_pass": "Pending", "comment": "Review UI Parity"})
+        self.upsert(BranchTestingAssignment, {"tenant": self.tenant, "repository": gh_repo, "branch_name": "feature/react-old-pages", "tester": employees["EMP007"]}, {"status": "Pending", "is_pass": "Pending", "comment": "Run Old-Page Smoke"})
         self.upsert(RepositoryBranchStatus, {"tenant": self.tenant, "repository": gh_repo, "branch_name": "feature/react-old-pages"}, {"last_commit_sha": "demo456", "review_status": "Pending", "testing_status": "Pending"})
 
     def seed_templates(self):

@@ -9,7 +9,7 @@ import {
   ClipboardList,
   Clock3,
   EllipsisVertical,
-} from "lucide-react";
+} from "Lucide-React";
 
 
 import { apiPost } from "../Api/Client.js";
@@ -74,16 +74,16 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
       employee: employeeId,
       summary,
       status_date: isoDate(new Date()),
-      metadata: { source: "react-home", task_id: expandedTaskId },
+      metadata: { source: "React-Home", task_id: expandedTaskId },
     });
     setSummary("");
     reload();
   };
 
   const quickLinks = [
-    { label: "Getting started", onClick: () => navigate("/docs/") },
+    { label: "GettingStarted", onClick: () => navigate("/docs/") },
     { label: "Onboarding", onClick: () => navigate("/Project/onboarding/") },
-    { label: "Workflow reports", onClick: () => navigate("/workflow/") },
+    { label: "WorkflowReports", onClick: () => navigate("/workflow/") },
   ];
 
   const statusTone = (status = "") => {
@@ -103,7 +103,7 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
 
   const attendanceLabel = (entry) => {
     const tone = attendanceTone(entry);
-    if (tone === "leave") return "On leave";
+    if (tone === "leave") return "OnLeave";
     if (tone === "present") return "Present";
     return "Absent";
   };
@@ -113,32 +113,32 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
   };
 
   return (
-    <section className="screen-stack home-screen-redesign">
-      {/* <section className="home-shell-card">
-        <div className="home-page-title">
-          <h1>Home</h1>
-          <p>{useWorkspaceScope ? "Workspace overview" : employee?.display_name || "Employee dashboard"}</p>
-        </div>
-      </section> */}
+    <section className="Screen-StackHome-Screen-Redesign">
+      {/* <SectionClassName="Home-Shell-Card">
+        <DivClassName="Home-Page-Title">
+          <H1>Home</H1>
+          <P>{UseWorkspaceScope ? "WorkspaceOverview" : Employee?.Display_Name || "EmployeeDashboard"}</P>
+        </Div>
+      </Section> */}
 
-      <section className="home-mock-panel">
-        <div className="home-card home-notification-card">
-          <div className="home-card-header">
-            <span className="home-card-title"><Bell size={18} /> Notifications</span>
+      <section className="Home-Mock-Panel">
+        <div className="Home-CardHome-Notification-Card">
+          <div className="Home-Card-Header">
+            <span className="Home-Card-Title"><Bell size={18} /> Notifications</span>
             <ChevronDown size={18} />
           </div>
-          <div className="home-notification-banner">
-            <span>{primaryNotification?.title || primaryNotification?.message || "You have been added to a new project ( Intranet )"}</span>
+          <div className="Home-Notification-Banner">
+            <span>{primaryNotification?.title || primaryNotification?.message || "YouHaveBeenAddedToANewProject ( Intranet )"}</span>
             <button type="button" onClick={() => navigate("/notifications/")}>Review</button>
           </div>
         </div>
 
-        <div className="home-dashboard-grid">
-          <div className="home-card">
-            <div className="home-card-header">
-              <span className="home-card-title">Attendance Overview <small>(last 15 days)</small></span>
+        <div className="Home-Dashboard-Grid">
+          <div className="Home-Card">
+            <div className="Home-Card-Header">
+              <span className="Home-Card-Title">Attendance Overview <small>(last 15 days)</small></span>
             </div>
-            <div className="home-attendance-grid">
+            <div className="Home-Attendance-Grid">
               {days.map((day) => {
                 const status = findDailyStatus(data.dailyStatus, employee?.id, day.iso);
                 const tone = attendanceTone(status);
@@ -149,21 +149,21 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
                 );
               })}
             </div>
-            <div className="home-attendance-legend">
+            <div className="Home-Attendance-Legend">
               <span><i className="present" /> Present</span>
               <span><i className="absent" /> Absent</span>
               <span><i className="leave" /> On leave</span>
             </div>
           </div>
 
-          <div className="home-side-stack">
-            <div className="home-card">
-              <div className="home-card-header">
-                <span className="home-card-title">Quick links</span>
+          <div className="Home-Side-Stack">
+            <div className="Home-Card">
+              <div className="Home-Card-Header">
+                <span className="Home-Card-Title">Quick links</span>
               </div>
-              <div className="home-quick-links-list">
+              <div className="Home-Quick-Links-List">
                 {quickLinks.map((link) => (
-                  <button key={link.label} type="button" className="home-quick-link" onClick={link.onClick}>
+                  <button key={link.label} type="button" className="Home-Quick-Link" onClick={link.onClick}>
                     <span>{link.label}</span>
                     <ChevronRight size={18} />
                   </button>
@@ -171,23 +171,23 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
               </div>
             </div>
 
-            <div className="home-summary-grid">
-              <article className="home-summary-card">
-                <span className="home-summary-icon blue"><ClipboardList size={18} /></span>
+            <div className="Home-Summary-Grid">
+              <article className="Home-Summary-Card">
+                <span className="Home-Summary-IconBlue"><ClipboardList size={18} /></span>
                 <div>
                   <small>Total tasks</small>
                   <strong>{totalTasks}</strong>
                 </div>
               </article>
-              <article className="home-summary-card">
-                <span className="home-summary-icon green"><ClipboardCheck size={18} /></span>
+              <article className="Home-Summary-Card">
+                <span className="Home-Summary-IconGreen"><ClipboardCheck size={18} /></span>
                 <div>
                   <small>Completed</small>
                   <strong>{completedTasks.length}</strong>
                 </div>
               </article>
-              <article className="home-summary-card">
-                <span className="home-summary-icon red"><Clock3 size={18} /></span>
+              <article className="Home-Summary-Card">
+                <span className="Home-Summary-IconRed"><Clock3 size={18} /></span>
                 <div>
                   <small>Overdue</small>
                   <strong>{overdueTasks}</strong>
@@ -197,7 +197,7 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
           </div>
         </div>
 
-        <div className="home-task-toolbar">
+        <div className="Home-Task-Toolbar">
           <label>
             <span>Filter by status</span>
             <select value={taskFilter} onChange={(event) => setTaskFilter(event.target.value)}>
@@ -205,14 +205,14 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
               <option value="completed">Completed</option>
             </select>
           </label>
-          <div className="home-toolbar-meta">
+          <div className="Home-Toolbar-Meta">
             <span><CircleAlert size={15} /> {unread.length} unread notifications</span>
             <span><ClipboardList size={15} /> {pendingCompliance.length} pending compliance</span>
           </div>
         </div>
 
-        <div className="home-card home-task-table-card">
-          <table className="erp-table home-task-table">
+        <div className="Home-CardHome-Task-Table-Card">
+          <table className="Erp-TableHome-Task-Table">
             <thead>
               <tr>
                 <th>Assigned Task</th>
@@ -228,9 +228,9 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
                 const isCollapsed = Boolean(collapsedProjects[name]);
                 return (
                   <React.Fragment key={name}>
-                    <tr className="home-project-row">
+                    <tr className="Home-Project-Row">
                       <td colSpan="6">
-                        <button type="button" className="home-project-toggle" onClick={() => toggleProject(name)}>
+                        <button type="button" className="Home-Project-Toggle" onClick={() => toggleProject(name)}>
                           {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
                           <strong>{name}</strong>
                         </button>
@@ -241,27 +241,27 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
                       const completed = isCompleted(task.status);
                       return (
                         <React.Fragment key={task.id}>
-                          <tr className={selected ? "home-task-row active" : "home-task-row"}>
+                          <tr className={selected ? "Home-Task-RowActive" : "Home-Task-Row"}>
                             <td>
-                              <button className={selected ? "check active home-task-check" : completed ? "check active done home-task-check" : "check home-task-check"} onClick={() => setExpandedTaskId(String(task.id))}>
+                              <button className={selected ? "CheckActiveHome-Task-Check" : completed ? "CheckActiveDoneHome-Task-Check" : "CheckHome-Task-Check"} onClick={() => setExpandedTaskId(String(task.id))}>
                                 <Check size={16} />
                               </button>
-                              <span className="home-task-name">{task.title}</span>
+                              <span className="Home-Task-Name">{task.title}</span>
                             </td>
                             <td>{money(task.bounty)}</td>
-                            <td><span className={`status-pill ${statusTone(task.status)}`}>{task.status || "Not started"}</span></td>
-                            <td><span className="home-date-cell"><CalendarDays size={15} /> {task.due_at ? formatDate(task.due_at) : "Not set"}</span></td>
+                            <td><span className={`status-pill ${statusTone(task.status)}`}>{task.status || "NotStarted"}</span></td>
+                            <td><span className="Home-Date-Cell"><CalendarDays size={15} /> {task.due_at ? formatDate(task.due_at) : "NotSet"}</span></td>
                             <td>{avatar(employeeName(data, task.owner || task.owner_id) || employee?.display_name)}</td>
-                            <td><button type="button" className="home-more-button" onClick={() => setExpandedTaskId(String(task.id))}><EllipsisVertical size={16} /></button></td>
+                            <td><button type="button" className="Home-More-Button" onClick={() => setExpandedTaskId(String(task.id))}><EllipsisVertical size={16} /></button></td>
                           </tr>
                           {selected && !completed && (
-                            <tr className="inline-editor home-inline-editor">
+                            <tr className="Inline-EditorHome-Inline-Editor">
                               <td colSpan="6">
-                                <div className="home-editor-shell">
+                                <div className="Home-Editor-Shell">
                                   <strong>Update EOD report for this task</strong>
-                                  <textarea value={summary} onChange={(event) => setSummary(event.target.value)} placeholder="What did you do today on this task?" />
-                                  <div className="home-editor-actions">
-                                    <button className="primary-button" onClick={submitEod}>Update EOD Report</button>
+                                  <textarea value={summary} onChange={(event) => setSummary(event.target.value)} placeholder="WhatDidYouDoTodayOnThisTask?" />
+                                  <div className="Home-Editor-Actions">
+                                    <button className="Primary-Button" onClick={submitEod}>Update EOD Report</button>
                                   </div>
                                 </div>
                               </td>
@@ -275,7 +275,7 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
               })}
             </tbody>
           </table>
-          {!filteredTasks.length && <div className="empty-state">No tasks found for this filter.</div>}
+          {!filteredTasks.length && <div className="Empty-State">No tasks found for this filter.</div>}
         </div>
       </section>
     </section>

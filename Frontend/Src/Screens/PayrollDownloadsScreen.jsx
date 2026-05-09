@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Download } from "lucide-react";
+import { Download } from "Lucide-React";
 
 import { Panel, SimpleTable, StatCard } from "./Shared/ScreenComponents.jsx";
 import { downloadCsv, employeeName, money } from "./Shared/ScreenUtils.jsx";
@@ -28,7 +28,7 @@ export function PayrollDownloadsScreen({ data }) {
   const downloadSheet = () =>
     downloadCsv(
       `payroll-${monthLabel}-${yearLabel}.csv`,
-      ["Employee", "Username", "Department", "Employment Type", "Pay Type", "Base Pay", "Pay Per Task", "Manager Status", "Finance Status", "Payment Status"],
+      ["Employee", "Username", "Department", "EmploymentType", "PayType", "BasePay", "PayPerTask", "ManagerStatus", "FinanceStatus", "PaymentStatus"],
       filtered.map((row) => [
         row.display_name,
         row.username,
@@ -46,7 +46,7 @@ export function PayrollDownloadsScreen({ data }) {
   const downloadPayslipIndex = () =>
     downloadCsv(
       "payslip-index.csv",
-      ["Payslip", "Employee", "Line Item", "Status", "Storage Reference"],
+      ["Payslip", "Employee", "LineItem", "Status", "StorageReference"],
       (data.payslipDocuments || []).map((item) => {
         const line = (data.payrollLineItems || []).find((row) => String(row.id) === String(item.payroll_line_item)) || {};
         return [item.id, employeeName(data, line.employee), item.payroll_line_item, item.status, item.storage_reference || "-"];
@@ -61,37 +61,37 @@ export function PayrollDownloadsScreen({ data }) {
     );
 
   return (
-    <section className="payroll-download-screen screen-stack">
-      <section className="page-heading">
+    <section className="Payroll-Download-ScreenScreen-Stack">
+      <section className="Page-Heading">
         <div>
           <span>Finance / Payroll</span>
           <h1>Payroll Downloads — {monthLabel} {yearLabel}</h1>
         </div>
-        <div className="button-row">
-          <button className="primary-button" onClick={downloadSheet}><Download size={16} /> Download Full Sheet</button>
-          <button className="outline-button" onClick={downloadPayslipIndex}><Download size={16} /> Payslip Index</button>
-          <button className="outline-button" onClick={downloadOrders}><Download size={16} /> Payment Orders</button>
+        <div className="Button-Row">
+          <button className="Primary-Button" onClick={downloadSheet}><Download size={16} /> Download Full Sheet</button>
+          <button className="Outline-Button" onClick={downloadPayslipIndex}><Download size={16} /> Payslip Index</button>
+          <button className="Outline-Button" onClick={downloadOrders}><Download size={16} /> Payment Orders</button>
         </div>
       </section>
 
-      <div className="stat-grid four">
+      <div className="Stat-GridFour">
         <StatCard label="Employees" value={filtered.length} />
-        <StatCard label="Gross (Base Pay)" value={money(totalGross)} />
-        <StatCard label="Pay Periods" value={(data.payPeriods || []).length} />
+        <StatCard label="Gross (BasePay)" value={money(totalGross)} />
+        <StatCard label="PayPeriods" value={(data.payPeriods || []).length} />
         <StatCard label="Payslips" value={(data.payslipDocuments || []).length} />
       </div>
 
-      <Panel title="Filters" subtitle="Filter The Bulk Sheet Before Download.">
-        <div className="form-grid three">
+      <Panel title="Filters" subtitle="FilterTheBulkSheetBeforeDownload.">
+        <div className="Form-GridThree">
           <label>Search<input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name, Username, Department" /></label>
-          <label>Department<select value={department} onChange={(event) => setDepartment(event.target.value)}>{departments.map((item) => <option key={item} value={item}>{item === "all" ? "All Departments" : item}</option>)}</select></label>
-          <label>Employment Type<select value={employmentType} onChange={(event) => setEmploymentType(event.target.value)}>{employmentTypes.map((item) => <option key={item} value={item}>{item === "all" ? "All Types" : item}</option>)}</select></label>
+          <label>Department<select value={department} onChange={(event) => setDepartment(event.target.value)}>{departments.map((item) => <option key={item} value={item}>{item === "all" ? "AllDepartments" : item}</option>)}</select></label>
+          <label>Employment Type<select value={employmentType} onChange={(event) => setEmploymentType(event.target.value)}>{employmentTypes.map((item) => <option key={item} value={item}>{item === "all" ? "AllTypes" : item}</option>)}</select></label>
         </div>
       </Panel>
 
-      <Panel title="Payroll Sheet (All Members)" subtitle="Source: /FinanceAndPayroll/payments/ — Includes Pay Type For Every Employee.">
+      <Panel title="PayrollSheet (AllMembers)" subtitle="Source: /FinanceAndPayroll/payments/ — Includes Pay Type For Every Employee.">
         <SimpleTable
-          columns={["Employee", "Department", "Employment", "Pay Type", "Base Pay", "Pay Per Task", "Manager", "Finance", "Payment"]}
+          columns={["Employee", "Department", "Employment", "PayType", "BasePay", "PayPerTask", "Manager", "Finance", "Payment"]}
           rows={filtered.map((row) => [
             row.display_name,
             row.department,
@@ -106,11 +106,11 @@ export function PayrollDownloadsScreen({ data }) {
         />
       </Panel>
 
-      <section className="split-grid">
-        <Panel title="Pay Periods">
+      <section className="Split-Grid">
+        <Panel title="PayPeriods">
           <SimpleTable columns={["Name", "Starts", "Ends", "Status"]} rows={(data.payPeriods || []).map((item) => [item.name, item.starts_on, item.ends_on, item.status])} />
         </Panel>
-        <Panel title="Payslip Documents">
+        <Panel title="PayslipDocuments">
           <SimpleTable columns={["ID", "Line", "Status", "Storage"]} rows={(data.payslipDocuments || []).map((item) => [item.id, item.payroll_line_item, item.status, item.storage_reference || "-"])} />
         </Panel>
       </section>

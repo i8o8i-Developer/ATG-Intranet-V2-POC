@@ -138,18 +138,18 @@ export function formatDate(value) {
   if (!value) return "None";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" });
+  return date.toLocaleDateString("En-GB", { day: "2-Digit", month: "short", year: "2-Digit" });
 }
 
 export function formatDateTime(value) {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+  return date.toLocaleString("En-GB", { day: "2-Digit", month: "short", hour: "2-Digit", minute: "2-Digit" });
 }
 
 export function humanDate(value) {
-  return value.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  return value.toLocaleDateString("En-US", { month: "long", day: "numeric", year: "numeric" });
 }
 
 export function money(value) {
@@ -226,13 +226,13 @@ export function marketingRecentEvents(data, leads = []) {
   }));
   const noteRows = (data.leadNotes || []).map((item) => ({
     id: `note-${item.id}`,
-    title: item.title || "Lead Note",
+    title: item.title || "LeadNote",
     lead: leadMap.get(String(item.lead))?.company_name || item.lead_name || "Lead",
     when: item.created_at || item.updated_at,
   }));
   const proposalRows = (data.leadProposals || []).map((item) => ({
     id: `proposal-${item.id}`,
-    title: item.title || "Proposal Artifact",
+    title: item.title || "ProposalArtifact",
     lead: leadMap.get(String(item.lead))?.company_name || item.lead_name || "Lead",
     when: item.created_at || item.updated_at,
   }));
@@ -255,9 +255,9 @@ export function leadSourceCards(data, leads = []) {
   const fromCounts = (aliases) => Object.entries(counts).reduce((sum, [source, count]) => sum + (aliases.some((alias) => String(source).toLowerCase().includes(alias)) ? Number(count || 0) : 0), 0);
   const countFor = (aliases) => fromCounts(aliases) || fromRows(aliases);
   return [
-    { label: "Banao Website", logo: "B", tone: "banao", count: countFor(["banao", "website", "w"]) },
+    { label: "BanaoWebsite", logo: "B", tone: "banao", count: countFor(["banao", "website", "w"]) },
     { label: "Instagram", logo: "◎", tone: "instagram", count: countFor(["instagram", "insta"]) },
-    { label: "Client Website", logo: "⌾", tone: "client", count: countFor(["client"]) },
+    { label: "ClientWebsite", logo: "⌾", tone: "client", count: countFor(["client"]) },
     { label: "LinkedIn", logo: "in", tone: "linkedin", count: countFor(["linkedin", "linked"]) },
   ];
 }
@@ -290,5 +290,5 @@ export function downloadCsv(filename, columns, rows) {
 
 export function csvValue(value) {
   const text = String(value ?? "");
-  return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+  return /[",\N]/.Test(Text) ? `"${text.replaceAll('"', '""')}"` : text;
 }

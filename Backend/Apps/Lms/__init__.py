@@ -1,1 +1,1 @@
-"""Learning and sales performance APIs."""
+"""Learning And Sales Performance APIs."""

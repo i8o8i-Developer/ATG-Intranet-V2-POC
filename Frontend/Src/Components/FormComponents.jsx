@@ -1,25 +1,9 @@
-/**
- * FORM COMPONENTS - INTRANET V2
- * Extended form components for professional data entry
- * 
- * Components:
- * - Select (dropdown)
- * - Textarea (multiline input)
- * - Checkbox
- * - Radio
- * - DatePicker
- * - FileUpload
- * - AutoComplete
- * - FormGroup
- */
+
 
 import React, { useState, useRef } from 'react';
 import { colors, spacing, typography, borderRadius, shadows } from './DesignSystem';
 
-// ============================================================================
-// SELECT COMPONENT
-// ============================================================================
-
+// ============================================================================// SELECTCOMPONENT// ============================================================================
 export const Select = ({
   label,
   options = [],
@@ -31,7 +15,7 @@ export const Select = ({
   size = 'md',
   disabled = false,
   required = false,
-  placeholder = 'Select an option...',
+  placeholder = 'SelectAnOption...',
   ...props
 }) => {
   const selectStyles = {
@@ -43,9 +27,9 @@ export const Select = ({
     borderRadius: borderRadius.md,
     backgroundColor: disabled ? colors.gray[100] : 'white',
     color: colors.gray[900],
-    transition: 'all 0.2s ease-in-out',
+    transition: 'All0.2sEase-In-Out',
     outline: 'none',
-    cursor: disabled ? 'not-allowed' : 'pointer',
+    cursor: disabled ? 'Not-Allowed' : 'pointer',
   };
 
   return (
@@ -105,10 +89,7 @@ export const Select = ({
   );
 };
 
-// ============================================================================
-// TEXTAREA COMPONENT
-// ============================================================================
-
+// ============================================================================// TEXTAREACOMPONENT// ============================================================================
 export const Textarea = ({
   label,
   error,
@@ -132,7 +113,7 @@ export const Textarea = ({
     borderRadius: borderRadius.md,
     backgroundColor: disabled ? colors.gray[100] : 'white',
     color: colors.gray[900],
-    transition: 'all 0.2s ease-in-out',
+    transition: 'All0.2sEase-In-Out',
     outline: 'none',
     resize: 'vertical',
     minHeight: `${rows * 1.5}em`,
@@ -169,7 +150,7 @@ export const Textarea = ({
         {...props}
       />
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: spacing.xs }}>
+      <div style={{ display: 'flex', justifyContent: 'Space-Between', marginTop: spacing.xs }}>
         <div>
           {error && (
             <p style={{
@@ -205,10 +186,7 @@ export const Textarea = ({
   );
 };
 
-// ============================================================================
-// CHECKBOX COMPONENT
-// ============================================================================
-
+// ============================================================================// CHECKBOXCOMPONENT// ============================================================================
 export const Checkbox = ({
   label,
   checked,
@@ -222,7 +200,7 @@ export const Checkbox = ({
       <label style={{
         display: 'flex',
         alignItems: 'center',
-        cursor: disabled ? 'not-allowed' : 'pointer',
+        cursor: disabled ? 'Not-Allowed' : 'pointer',
         opacity: disabled ? 0.6 : 1,
       }}>
         <input
@@ -234,7 +212,7 @@ export const Checkbox = ({
             width: '18px',
             height: '18px',
             marginRight: spacing.sm,
-            cursor: disabled ? 'not-allowed' : 'pointer',
+            cursor: disabled ? 'Not-Allowed' : 'pointer',
             accentColor: colors.primary[600],
           }}
           {...props}
@@ -261,10 +239,7 @@ export const Checkbox = ({
   );
 };
 
-// ============================================================================
-// RADIO COMPONENT
-// ============================================================================
-
+// ============================================================================// RADIOCOMPONENT// ============================================================================
 export const Radio = ({
   name,
   options = [],
@@ -298,7 +273,7 @@ export const Radio = ({
             style={{
               display: 'flex',
               alignItems: 'center',
-              cursor: disabled || option.disabled ? 'not-allowed' : 'pointer',
+              cursor: disabled || option.disabled ? 'Not-Allowed' : 'pointer',
               opacity: disabled || option.disabled ? 0.6 : 1,
             }}
           >
@@ -313,7 +288,7 @@ export const Radio = ({
                 width: '18px',
                 height: '18px',
                 marginRight: spacing.sm,
-                cursor: disabled || option.disabled ? 'not-allowed' : 'pointer',
+                cursor: disabled || option.disabled ? 'Not-Allowed' : 'pointer',
                 accentColor: colors.primary[600],
               }}
               {...props}
@@ -341,10 +316,7 @@ export const Radio = ({
   );
 };
 
-// ============================================================================
-// DATE PICKER COMPONENT
-// ============================================================================
-
+// ============================================================================// DATEPICKERCOMPONENT// ============================================================================
 export const DatePicker = ({
   label,
   value,
@@ -368,7 +340,7 @@ export const DatePicker = ({
     borderRadius: borderRadius.md,
     backgroundColor: disabled ? colors.gray[100] : 'white',
     color: colors.gray[900],
-    transition: 'all 0.2s ease-in-out',
+    transition: 'All0.2sEase-In-Out',
     outline: 'none',
   };
 
@@ -421,10 +393,7 @@ export const DatePicker = ({
   );
 };
 
-// ============================================================================
-// FILE UPLOAD COMPONENT
-// ============================================================================
-
+// ============================================================================// FILEUPLOADCOMPONENT// ============================================================================
 export const FileUpload = ({
   label,
   onChange,
@@ -434,8 +403,7 @@ export const FileUpload = ({
   multiple = false,
   disabled = false,
   required = false,
-  maxSize, // in MB
-  ...props
+  maxSize, // InMB  ...props
 }) => {
   const [fileName, setFileName] = useState('');
   const fileInputRef = useRef(null);
@@ -443,17 +411,16 @@ export const FileUpload = ({
   const handleFileChange = (e) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      // Check file size if maxSize is specified
       if (maxSize) {
         const fileSizeMB = files[0].size / (1024 * 1024);
         if (fileSizeMB > maxSize) {
-          alert(`File size must be less than ${maxSize}MB`);
+          alert(`File Size Must Be Less Than ${maxSize}MB`);
           return;
         }
       }
 
       if (multiple) {
-        setFileName(`${files.length} file(s) selected`);
+        setFileName(`${files.length} File(s) Selected`);
       } else {
         setFileName(files[0].name);
       }
@@ -507,8 +474,8 @@ export const FileUpload = ({
             border: `1px solid ${colors.gray[300]}`,
             backgroundColor: disabled ? colors.gray[100] : 'white',
             color: colors.gray[700],
-            cursor: disabled ? 'not-allowed' : 'pointer',
-            transition: 'all 0.2s ease-in-out',
+            cursor: disabled ? 'Not-Allowed' : 'pointer',
+            transition: 'All0.2sEase-In-Out',
           }}
         >
           Choose File
@@ -518,7 +485,7 @@ export const FileUpload = ({
           fontSize: typography.fontSize.sm,
           color: colors.gray[600],
         }}>
-          {fileName || 'No file chosen'}
+          {fileName || 'NoFileChosen'}
         </span>
       </div>
 
@@ -545,10 +512,7 @@ export const FileUpload = ({
   );
 };
 
-// ============================================================================
-// AUTOCOMPLETE COMPONENT
-// ============================================================================
-
+// ============================================================================// AUTOCOMPLETECOMPONENT// ============================================================================
 export const AutoComplete = ({
   label,
   options = [],
@@ -561,7 +525,7 @@ export const AutoComplete = ({
   size = 'md',
   disabled = false,
   required = false,
-  placeholder = 'Type to search...',
+  placeholder = 'TypeToSearch...',
   ...props
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -571,7 +535,6 @@ export const AutoComplete = ({
     const inputValue = e.target.value;
     onChange(e);
 
-    // Filter options based on input
     const filtered = options.filter(option =>
       option.label.toLowerCase().includes(inputValue.toLowerCase())
     );
@@ -595,7 +558,7 @@ export const AutoComplete = ({
     borderRadius: borderRadius.md,
     backgroundColor: disabled ? colors.gray[100] : 'white',
     color: colors.gray[900],
-    transition: 'all 0.2s ease-in-out',
+    transition: 'All0.2sEase-In-Out',
     outline: 'none',
   };
 
@@ -649,7 +612,7 @@ export const AutoComplete = ({
                 padding: spacing.md,
                 cursor: 'pointer',
                 borderBottom: index < filteredOptions.length - 1 ? `1px solid ${colors.gray[200]}` : 'none',
-                transition: 'background-color 0.2s ease',
+                transition: 'Background-Color0.2sEase',
               }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.gray[50]}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
@@ -683,10 +646,7 @@ export const AutoComplete = ({
   );
 };
 
-// ============================================================================
-// FORM GROUP COMPONENT
-// ============================================================================
-
+// ============================================================================// FORMGROUPCOMPONENT// ============================================================================
 export const FormGroup = ({
   children,
   title,
@@ -716,7 +676,7 @@ export const FormGroup = ({
           )}
           {subtitle && (
             <p style={{
-              margin: '4px 0 0 0',
+              margin: '4px000',
               fontSize: typography.fontSize.sm,
               color: colors.gray[600],
             }}>

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Bell, CheckCheck, Filter, Search } from "lucide-react";
+import { Bell, CheckCheck, Filter, Search } from "Lucide-React";
 import { apiPost } from "../Api/Client.js";
 import { Panel } from "./Shared/ScreenComponents.jsx";
 import { formatDate } from "./Shared/ScreenUtils.jsx";
@@ -64,34 +64,34 @@ export function NotificationsScreen({ data, reload, navigate }) {
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <span style={{ position: "relative" }}>
             <Search size={14} style={{ position: "absolute", left: 8, top: 9, opacity: 0.5 }} />
-            <input className="mini-inp" style={{ paddingLeft: 26 }} placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} />
+            <input className="Mini-Inp" style={{ paddingLeft: 26 }} placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} />
           </span>
           <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
             <Filter size={14} />
-            <select className="mini-inp" value={filter} onChange={(e) => setFilter(e.target.value)}>
+            <select className="Mini-Inp" value={filter} onChange={(e) => setFilter(e.target.value)}>
               {categories.map((category) => <option key={category} value={category}>{category}</option>)}
             </select>
           </span>
-          <button className="soft-button small" onClick={markAllRead} disabled={busy || !unread.length}>
+          <button className="Soft-ButtonSmall" onClick={markAllRead} disabled={busy || !unread.length}>
             <CheckCheck size={14} /> Mark All Read
           </button>
         </div>
       )}
     >
-      <div className="notification-list" style={{ maxHeight: "none" }}>
+      <div className="Notification-List" style={{ maxHeight: "none" }}>
         {visible.map((item) => (
-          <div key={item.id} className={item.is_read ? "notification-item" : "notification-item unread"}>
+          <div key={item.id} className={item.is_read ? "Notification-Item" : "Notification-ItemUnread"}>
             <div onClick={() => open(item)} style={{ cursor: "pointer", flex: 1 }}>
               <strong>{item.title || item.category || "Notification"}</strong>
-              <p>{item.message || item.description || "(no content)"}</p>
+              <p>{item.message || item.description || "(NoContent)"}</p>
               <small>{formatDate(item.created_at)} · {item.category || item.resource_type || "general"}</small>
             </div>
             {!item.is_read && (
-              <button className="soft-button small" onClick={() => markRead(item)} disabled={busy}>Mark Read</button>
+              <button className="Soft-ButtonSmall" onClick={() => markRead(item)} disabled={busy}>Mark Read</button>
             )}
           </div>
         ))}
-        {!visible.length && <div className="notification-empty">No Notifications Match.</div>}
+        {!visible.length && <div className="Notification-Empty">No Notifications Match.</div>}
       </div>
     </Panel>
   );

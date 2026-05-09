@@ -5,7 +5,7 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Install system dependencies for Python packages
+# Install System Dependencies For Python Packages
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential \

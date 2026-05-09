@@ -163,7 +163,7 @@ class ComplianceAssignment(TenantScopedModel):
 class ProjectDelay(TenantScopedModel):
     """Track delays in projects, tasks, or employee work"""
     delay_type = models.CharField(max_length=40, db_index=True)  # Project, Task, Employee
-    item_id = models.PositiveIntegerField()  # ID of the delayed item
+    item_id = models.PositiveIntegerField()  # ID Of The Delayed Item
     days = models.PositiveIntegerField(default=0)
     reason = models.TextField()
     status = models.CharField(max_length=40, default="Active", db_index=True)  # Active, Resolved

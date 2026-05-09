@@ -44,7 +44,7 @@ export function EmployeeRegistrarScreen({ data, reload }) {
   const positionTitle = findById(data.positions || [], form.position)?.title || form.employment_type;
 
   const credentialBlueprints = useMemo(() => {
-    const employeeName = form.display_name || form.candidate_name || "New Hire";
+    const employeeName = form.display_name || form.candidate_name || "NewHire";
     const vaultSlug = (derivedUsername || "candidate").replace(/[^a-z0-9._-]+/gi, "-").toLowerCase();
     return [
       {
@@ -58,7 +58,7 @@ export function EmployeeRegistrarScreen({ data, reload }) {
       {
         key: "email",
         enabled: credentialOptions.email,
-        system_name: "Work Email",
+        system_name: "WorkEmail",
         name: `${employeeName} Work Email`,
         login: form.candidate_email || `${vaultSlug}@example.com`,
         secret_reference: `vault://onboarding/${vaultSlug}/email`,
@@ -90,7 +90,7 @@ export function EmployeeRegistrarScreen({ data, reload }) {
         candidate_email: form.candidate_email,
         company_name: form.company_name,
         position_title: positionTitle,
-        offer_type: "Employee Registration",
+        offer_type: "EmployeeRegistration",
         offer_payload: {
           employee_code: form.employee_code,
           department: form.department,
@@ -106,7 +106,7 @@ export function EmployeeRegistrarScreen({ data, reload }) {
       setResult({ mode: "registration_offer", response });
       reload(["offers"]);
     } catch (error) {
-      setResult({ mode: "registration_offer_error", response: error?.data || { error: error?.message || "Failed to create registration offer." } });
+      setResult({ mode: "registration_offer_error", response: error?.data || { error: error?.message || "FailedToCreateRegistrationOffer." } });
     } finally {
       setBusyAction("");
     }
@@ -165,13 +165,13 @@ export function EmployeeRegistrarScreen({ data, reload }) {
           credentials: credentialResults.map((item, index) => ({
             system: credentialBlueprints.filter((row) => row.enabled)[index]?.system_name,
             status: item.status,
-            response: item.status === "fulfilled" ? item.value : (item.reason?.data || { error: item.reason?.message || "Credential provisioning failed." }),
+            response: item.status === "fulfilled" ? item.value : (item.reason?.data || { error: item.reason?.message || "CredentialProvisioningFailed." }),
           })),
         },
       });
       reload(["employees", "users", "credentialVaultItems"]);
     } catch (error) {
-      setResult({ mode: "error", response: error?.data || { error: error?.message || "Failed to provision onboarding package." } });
+      setResult({ mode: "error", response: error?.data || { error: error?.message || "FailedToProvisionOnboardingPackage." } });
     } finally {
       setBusyAction("");
     }
@@ -180,8 +180,8 @@ export function EmployeeRegistrarScreen({ data, reload }) {
   const recentCredentials = (data.credentialVaultItems || []).slice(0, 10);
 
   return (
-    <section className="registrar-screen screen-stack">
-      <section className="page-heading">
+    <section className="Registrar-ScreenScreen-Stack">
+      <section className="Page-Heading">
         <div>
           <span>HRMS / Registrar</span>
           <h1>Employee Onboarding And Credentials</h1>
@@ -189,23 +189,23 @@ export function EmployeeRegistrarScreen({ data, reload }) {
         <StatusPill tone="blue">{(data.employees || []).length} Employees</StatusPill>
       </section>
 
-      <section className="stat-grid four">
+      <section className="Stat-GridFour">
         <StatCard label="Employees" value={String((data.employees || []).length)} />
-        <StatCard label="Credential Vault Items" value={String((data.credentialVaultItems || []).length)} />
-        <StatCard label="Provisioned Systems" value={String(credentialBlueprints.filter((item) => item.enabled).length)} />
-        <StatCard label="Login Username" value={derivedUsername || "Pending"} />
+        <StatCard label="CredentialVaultItems" value={String((data.credentialVaultItems || []).length)} />
+        <StatCard label="ProvisionedSystems" value={String(credentialBlueprints.filter((item) => item.enabled).length)} />
+        <StatCard label="LoginUsername" value={derivedUsername || "Pending"} />
       </section>
 
-      <section className="split-grid two-one">
-        <Panel title="Onboarding Intake" subtitle="Create the employee record, generate a one-time login, and provision credential vault entries.">
-          <div className="form-grid three">
+      <section className="Split-GridTwo-One">
+        <Panel title="OnboardingIntake" subtitle="CreateTheEmployeeRecord, GenerateAOne-TimeLogin, AndProvisionCredentialVaultEntries.">
+          <div className="Form-GridThree">
             <label>Candidate Name<input value={form.candidate_name} onChange={(event) => update("candidate_name", event.target.value)} /></label>
             <label>Company<select value={form.company_name} onChange={(event) => update("company_name", event.target.value)}><option>ATG</option><option>Banao</option><option>Bunny</option></select></label>
             <label>Candidate Email<input type="email" value={form.candidate_email} onChange={(event) => update("candidate_email", event.target.value)} /></label>
             <label>Employee Code<input value={form.employee_code} onChange={(event) => update("employee_code", event.target.value)} /></label>
             <label>Display Name<input value={form.display_name} onChange={(event) => update("display_name", event.target.value)} /></label>
             <label>Username<input value={derivedUsername} onChange={(event) => update("username", event.target.value)} /></label>
-            <label>Password<div className="credential-inline-field"><input value={form.password} onChange={(event) => update("password", event.target.value)} /><button className="soft-button small" type="button" onClick={() => update("password", generatePassword())}>Regenerate</button></div></label>
+            <label>Password<div className="Credential-Inline-Field"><input value={form.password} onChange={(event) => update("password", event.target.value)} /><button className="Soft-ButtonSmall" type="button" onClick={() => update("password", generatePassword())}>Regenerate</button></div></label>
             <label>Department<select value={form.department} onChange={(event) => update("department", event.target.value)}><option value="">Select Department</option>{(data.departments || []).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
             <label>Position<select value={form.position} onChange={(event) => update("position", event.target.value)}><option value="">Select Position</option>{(data.positions || []).map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
             <label>Manager<select value={form.manager} onChange={(event) => update("manager", event.target.value)}><option value="">No Manager</option>{(data.employees || []).map((item) => <option key={item.id} value={item.id}>{item.display_name}</option>)}</select></label>
@@ -217,7 +217,7 @@ export function EmployeeRegistrarScreen({ data, reload }) {
             <label>Leaves Per Month<input type="number" value={form.leaves_per_month} onChange={(event) => update("leaves_per_month", event.target.value)} /></label>
           </div>
 
-          <div className="credential-pack">
+          <div className="Credential-Pack">
             <header>
               <div>
                 <strong>Credential Pack</strong>
@@ -225,32 +225,32 @@ export function EmployeeRegistrarScreen({ data, reload }) {
               </div>
             </header>
             {credentialBlueprints.map((item) => (
-              <label key={item.key} className="credential-row">
-                <span className="credential-toggle"><input type="checkbox" checked={item.enabled} onChange={(event) => setCredentialOptions((current) => ({ ...current, [item.key]: event.target.checked }))} />{item.system_name}</span>
+              <label key={item.key} className="Credential-Row">
+                <span className="Credential-Toggle"><input type="checkbox" checked={item.enabled} onChange={(event) => setCredentialOptions((current) => ({ ...current, [item.key]: event.target.checked }))} />{item.system_name}</span>
                 <span>{item.login}</span>
                 <span>{item.secret_reference}</span>
               </label>
             ))}
           </div>
 
-          <div className="button-row">
-            <button className="outline-button" onClick={createOfferRegistration} disabled={busyAction === "offer" || !form.candidate_email || !(form.candidate_name || form.display_name)}>Create Registration Offer</button>
-            <button className="primary-button" onClick={provisionEmployeePackage} disabled={Boolean(busyAction) || !form.employee_code || !form.candidate_email || !(form.display_name || form.candidate_name)}>{busyAction === "provision" ? "Provisioning…" : "Provision Employee + Credentials"}</button>
+          <div className="Button-Row">
+            <button className="Outline-Button" onClick={createOfferRegistration} disabled={busyAction === "offer" || !form.candidate_email || !(form.candidate_name || form.display_name)}>Create Registration Offer</button>
+            <button className="Primary-Button" onClick={provisionEmployeePackage} disabled={Boolean(busyAction) || !form.employee_code || !form.candidate_email || !(form.display_name || form.candidate_name)}>{busyAction === "provision" ? "Provisioning…" : "ProvisionEmployee + Credentials"}</button>
           </div>
         </Panel>
 
-        <Panel title="Existing Access Pack" subtitle="Recent credential items already created in the rebuilt vault.">
+        <Panel title="ExistingAccessPack" subtitle="RecentCredentialItemsAlreadyCreatedInTheRebuiltVault.">
           <SimpleTable columns={["System", "Name", "Owner", "Status"]} rows={recentCredentials.map((item) => [item.system_name, item.name, item.owner, item.status])} />
         </Panel>
       </section>
 
-      <section className="split-grid">
-        <Panel title="Recent Registered Employees">
+      <section className="Split-Grid">
+        <Panel title="RecentRegisteredEmployees">
           <SimpleTable columns={["Code", "Name", "Department", "Position", "Status", "Joined"]} rows={(data.employees || []).slice(0, 12).map((item) => [item.employee_code, item.display_name, item.department_name, item.position_title, item.status, formatDate(item.joined_on)])} />
         </Panel>
 
         {result && (
-          <Panel title="Onboarding Result" subtitle={`Mode: ${result.mode}`}>
+          <Panel title="OnboardingResult" subtitle={`Mode: ${result.mode}`}>
             <pre>{JSON.stringify(result.response, null, 2)}</pre>
           </Panel>
         )}

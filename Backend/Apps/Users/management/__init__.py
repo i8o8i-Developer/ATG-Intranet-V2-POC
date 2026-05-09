@@ -1,1 +1,1 @@
-"""Management command package for Users."""
+"""Management Command Package For Users."""

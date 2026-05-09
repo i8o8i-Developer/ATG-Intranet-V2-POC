@@ -1,1 +1,1 @@
-"""GithubExtension management commands."""
+"""GithubExtension Management Commands."""

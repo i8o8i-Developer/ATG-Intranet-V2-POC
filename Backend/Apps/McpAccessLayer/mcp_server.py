@@ -1,18 +1,3 @@
-"""
-MCP (Model Context Protocol) Server for AI-first ERP
-
-This server exposes enterprise ERP operations as MCP tools that can be invoked by AI agents.
-It provides a secure, tenant-aware interface for AI to interact with the ERP system.
-
-Architecture:
-- Tool-based: Each operation is a discrete tool
-- Tenant-scoped: All operations respect multi-tenancy
-- Audited: All invocations are logged
-- Permission-checked: RBAC enforced
-
-Usage:
-    python manage.py run_mcp_server --host=0.0.0.0 --port=8100
-"""
 
 import json
 import logging
@@ -37,7 +22,6 @@ User = get_user_model()
 
 
 class McpTool:
-    """Base class for MCP tools"""
     
     def __init__(self, name: str, description: str, input_schema: Dict, is_mutating: bool = False):
         self.name = name
@@ -46,24 +30,23 @@ class McpTool:
         self.is_mutating = is_mutating
     
     def execute(self, context, params: Dict[str, Any]) -> ServiceResult:
-        """Execute the tool with given parameters"""
-        raise NotImplementedError("Subclasses must implement execute()")
+        
+        raise NotImplementedError("Subclasses Must Implement execute()")
 
 
 class ListEmployeesTool(McpTool):
-    """List employees with optional filtering"""
     
     def __init__(self):
         super().__init__(
             name="list_employees",
-            description="List all employees in the tenant with optional filtering by department, status, or skills",
+            description="List All Employees In The Tenant With Optional Filtering By Department, Status, Or Skills",
             input_schema={
                 "type": "object",
                 "properties": {
-                    "department_id": {"type": "integer", "description": "Filter by department ID"},
-                    "status": {"type": "string", "description": "Filter by status (Active, Exited, OnNotice, OnBench)"},
-                    "has_skill": {"type": "string", "description": "Filter by skill name"},
-                    "limit": {"type": "integer", "description": "Maximum number of results", "default": 50}
+                    "department_id": {"type": "integer", "description": "Filter By Department ID"},
+                    "status": {"type": "string", "description": "Filter By Status (Active, Exited, OnNotice, OnBench)"},
+                    "has_skill": {"type": "string", "description": "Filter By Skill Name"},
+                    "limit": {"type": "integer", "description": "Maximum Number Of Results", "default": 50}
                 }
             }
         )
@@ -100,7 +83,6 @@ class ListEmployeesTool(McpTool):
 
 
 class GetEmployeeDetailsTool(McpTool):
-    """Get detailed information about a specific employee"""
     
     def __init__(self):
         super().__init__(

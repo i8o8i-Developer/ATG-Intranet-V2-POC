@@ -1,1 +1,1 @@
-"""LMS management package."""
+"""LMS Management Package."""

@@ -3,7 +3,6 @@ import React from "react";
 import { AssessmentScreen } from "./AssessmentScreen.jsx";
 import { AdminChangePasswordScreen } from "./AdminChangePasswordScreen.jsx";
 import { BankDetailsScreen } from "./BankDetailsScreen.jsx";
-import { ConnectedSummaryScreen } from "./ConnectedSummaryScreen.jsx";
 import { DeactivateEmployeeScreen } from "./DeactivateEmployeeScreen.jsx";
 import { DelayManagementScreen } from "./DelayManagementScreen.jsx";
 import { DocsDetailScreen, DocsScreen } from "./DocsScreen.jsx";
@@ -16,6 +15,7 @@ import { LmsScreen } from "./LmsScreen.jsx";
 import { MarketingProjectScreen } from "./MarketingProjectScreen.jsx";
 import { McpScreen } from "./McpScreen.jsx";
 import { NotificationsScreen } from "./NotificationsScreen.jsx";
+import OnboardingScreen from "./OnboardingScreen.jsx";
 import { PayrollDownloadsScreen } from "./PayrollDownloadsScreen.jsx";
 import { PayslipsScreen } from "./PayslipsScreen.jsx";
 import { ProjectDashboardScreen } from "./ProjectDashboardScreen.jsx";
@@ -25,6 +25,7 @@ import { WorkflowIntelligenceScreen } from "./WorkflowIntelligenceScreen.jsx";
 
 export function RouteRenderer(props) {
   const path = props.route.split("?")[0];
+  if (path.startsWith("/onboarding")) return <OnboardingScreen {...props} />;
   if (path.startsWith("/hrms")) return <HrmsScreen {...props} />;
   if (path.startsWith("/employee-registrar")) return <EmployeeRegistrarScreen {...props} />;
   if (path.startsWith("/leave")) return <LeaveApplyScreen {...props} />;

@@ -1,1 +1,1 @@
-"""HtmlTemplate management package."""
+"""HtmlTemplate Management Package."""

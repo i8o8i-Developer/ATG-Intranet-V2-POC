@@ -1,16 +1,17 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { AlertTriangle, Bell, LogOut } from "lucide-react";
+import { AlertTriangle, Bell, LogOut } from "Lucide-React";
 import { apiGet, apiPost, clearApiAuth, getApiSettings, unpackList } from "./Api/Client.js";
 import { LoginScreen, ProfileScreen } from "./Screens/AuthScreens.jsx";
 import { RouteRenderer } from "./Screens/AppScreens.jsx";
 import OfferAcceptanceScreen from "./Screens/OfferAcceptanceScreen.jsx";
-import { resolveActiveEmployee } from "./Screens/Shared/ScreenUtils.jsx"; // Forced reload
+import { resolveActiveEmployee } from "./Screens/Shared/ScreenUtils.jsx"; // ForcedReload
 import {
   ATGLogo,
   IconHome,
   IconWorkflow,
   IconHRMS,
   IconLMS,
+  IconMCP,
   IconDevProject,
   IconMarketing,
   IconCalendar,
@@ -29,30 +30,31 @@ import {
   SvgChevronDown,
 } from "./Components/icons/icons.jsx";
 
-// ─── Flat nav list for page-title lookup (unchanged from original) ────────────
+// ─── FlatNavListForPage-TitleLookup (UnchangedFromOriginal) ────────────
 const navItems = [
   { label: "Home",                  path: "/home/" },
-  { label: "Workflow Intelligence", path: "/workflow/" },
+  { label: "WorkflowIntelligence", path: "/workflow/" },
   { label: "HRMS",                  path: "/hrms/" },
   { label: "LMS",                   path: "/lms/" },
-  { label: "Development Projects",  path: "/project/dashboard/" },
-  { label: "Marketing Project",     path: "/marketing-project/" },
-  { label: "Apply Leave",           path: "/leave/apply/" },
-  { label: "Password Management",   path: "/change-password/" },
+  { label: "MCPAgents",            path: "/mcp/" },
+  { label: "DevelopmentProjects",  path: "/project/dashboard/" },
+  { label: "MarketingProject",     path: "/marketing-project/" },
+  { label: "ApplyLeave",           path: "/leave/apply/" },
+  { label: "PasswordManagement",   path: "/change-password/" },
   { label: "Assessments",           path: "/assessment/" },
-  { label: "Bank Details",          path: "/Bankdetails/" },
+  { label: "BankDetails",          path: "/Bankdetails/" },
   { label: "Payslips",              path: "/payslips/" },
-  { label: "Manage Employees",      path: "/employee-registrar/" },
-  { label: "Send Offer",            path: "/Onboard/Send_Offer" },
-  { label: "Send Certificate",      path: "/send-certificate" },
-  { label: "Deactivate Employee",   path: "/deactivate-multiple-employee/" },
+  { label: "ManageEmployees",      path: "/employee-registrar/" },
+  { label: "SendOffer",            path: "/Onboard/Send_Offer" },
+  { label: "SendCertificate",      path: "/send-certificate" },
+  { label: "DeactivateEmployee",   path: "/deactivate-multiple-employee/" },
   { label: "Documents",             path: "/docs/" },
-  { label: "Finance Department",    path: "/payments/" },
-  { label: "New Employee Register", path: "/employee-registrar/new/" },
-  { label: "MCP Agents",            path: "/mcp/" },
+  { label: "FinanceDepartment",    path: "/payments/" },
+  { label: "NewEmployeeRegister", path: "/employee-registrar/new/" },
+  { label: "MCPAgents",            path: "/mcp/" },
   { label: "Notifications",         path: "/notifications/" },
-  { label: "Payroll Downloads",     path: "/payroll-downloads/" },
-  { label: "Delay Management",      path: "/delays/" },
+  { label: "PayrollDownloads",     path: "/payroll-downloads/" },
+  { label: "DelayManagement",      path: "/delays/" },
 ];
 
 const endpointMap = [
@@ -199,50 +201,44 @@ const endpointMap = [
 
 
 
-// ─── Nav structure — maps Figma items to your existing paths ─────────────────
+// ─── NavStructure — MapsFigmaItemsToYourExistingPaths ─────────────────
 function buildNavItems(activePath) {
   return [
     { label: "Home",                 icon: <IconHome active={activePath === "/home/"} />, path: "/home/" },
-    { label: "Workflow Intelligence",icon: <IconWorkflow />,         path: "/workflow/" },
+    { label: "WorkflowIntelligence",icon: <IconWorkflow />,         path: "/workflow/" },
     { label: "HRMS",                 icon: <IconHRMS />,             path: "/hrms/" },
     { label: "LMS",                  icon: <IconLMS />,              path: "/lms/" },
+    { label: "MCP",                  icon: <IconMCP />,              path: "/mcp/" },
     {
-      label: "Development Project",
+      label: "DevelopmentProject",
       icon: <IconDevProject />,
       path: "/project/dashboard/",
-      children: [
-        { label: "Add new project",  icon: <IconAdd />,  path: "/project/new/" },
-        { label: "Interview God",    isDot: true,        path: "/project/dashboard/interview-god/" },
-        { label: "Banao Website",                        path: "/project/dashboard/banao-website/" },
-        { label: "Kavach",                               path: "/project/dashboard/kavach/" },
-        { label: "Meet Recorder",                        path: "/project/dashboard/meet-recorder/" },
-        { label: "Sadiqi",                               path: "/project/dashboard/sadiqi/" },
-      ],
+      children: [],
     },
-    { label: "Marketing Project",    icon: <IconMarketing />,        path: "/marketing-project/", children: [] },
-    { label: "Apply Leave",          icon: <IconCalendar />,         path: "/leave/apply/" },
-    { label: "Password Management",  icon: <IconPassword />,         path: "/change-password/" },
+    { label: "MarketingProject",    icon: <IconMarketing />,        path: "/marketing-project/", children: [] },
+    { label: "ApplyLeave",          icon: <IconCalendar />,         path: "/leave/apply/" },
+    { label: "PasswordManagement",  icon: <IconPassword />,         path: "/change-password/" },
     { label: "Assessments",          icon: <IconAssessments />,      path: "/assessment/" },
-    { label: "Bank Details",         icon: <IconBank />,             path: "/Bankdetails/" },
+    { label: "BankDetails",         icon: <IconBank />,             path: "/Bankdetails/" },
     { label: "Payslips",             icon: <IconPayslip />,          path: "/payslips/" },
     {
-      label: "Manage Employees",
+      label: "ManageEmployees",
       icon: <IconManageEmployees />,
       path: "/employee-registrar/",
       children: [
-        { label: "Send offer letter",  path: "/Onboard/Send_Offer" },
-        { label: "Send certificate",   path: "/send-certificate" },
-        { label: "Deactivate Employee",path: "/deactivate-multiple-employee/" },
+        { label: "SendOfferLetter",  path: "/Onboard/Send_Offer" },
+        { label: "SendCertificate",   path: "/send-certificate" },
+        { label: "DeactivateEmployee",path: "/deactivate-multiple-employee/" },
       ],
     },
     { label: "Documents",            icon: <IconDocument />,         path: "/docs/" },
-    { label: "Provide Feedbacks",    icon: <IconFeedback />,         path: "/feedback/" },
-    { label: "Finance Department",   icon: <IconFinance />,          path: "/payments/?pay_month=current&month_name=May" },
-    { label: "New Employee Register",icon: <IconNewEmployee />,      path: "/employee-registrar/new/" },
+    { label: "ProvideFeedbacks",    icon: <IconFeedback />,         path: "/feedback/" },
+    { label: "FinanceDepartment",   icon: <IconFinance />,          path: "/payments/?pay_month=current&month_name=May" },
+    { label: "NewEmployeeRegister",icon: <IconNewEmployee />,      path: "/employee-registrar/new/" },
   ];
 }
 
-// ─── NavLink — mirrors builder.io NavLink but uses navigate() not <Link> ─────
+// ─── NavLink — MirrorsBuilder.IoNavLinkButUsesNavigate() Not <Link> ─────
 function NavLink({ item, depth = 0, activePath, navigate }) {
   const hasChildren = item.children && item.children.length > 0;
 
@@ -251,14 +247,14 @@ function NavLink({ item, depth = 0, activePath, navigate }) {
       activePath.startsWith(item.path.split("?")[0].replace(/\/$/, "")));
 
   const [open, setOpen] = useState(
-    item.label === "Development Project" || isGroupActive
+    item.label === "DevelopmentProject" || isGroupActive
   );
 
   useEffect(() => {
     if (isGroupActive && hasChildren) setOpen(true);
   }, [activePath, isGroupActive, hasChildren]);
 
-  const pl = depth === 0 ? "pl-3" : "pl-8";
+  const pl = depth === 0 ? "Pl-3" : "Pl-8";
 
   if (hasChildren) {
     return (
@@ -271,7 +267,7 @@ function NavLink({ item, depth = 0, activePath, navigate }) {
             borderRadius: 13.6, border: "none", background: "transparent",
             cursor: "pointer", textAlign: "left",
             paddingLeft: depth === 0 ? 12 : 32,
-            transition: "background 0.12s",
+            transition: "Background0.12s",
           }}
           onMouseEnter={e => e.currentTarget.style.background = "#EEF3FF"}
           onMouseLeave={e => e.currentTarget.style.background = "transparent"}
@@ -295,8 +291,7 @@ function NavLink({ item, depth = 0, activePath, navigate }) {
     );
   }
 
-  // Leaf item — determine active state
-  const pathBase = item.path ? item.path.split("?")[0] : "";
+  // LeafItem — DetermineActiveState  const pathBase = item.path ? item.path.split("?")[0] : "";
   const isActive = activePath === pathBase ||
     (pathBase && pathBase !== "/home/" && activePath.startsWith(pathBase.replace(/\/$/, "")));
 
@@ -311,7 +306,7 @@ function NavLink({ item, depth = 0, activePath, navigate }) {
         background: isActive ? "#D7E4FF" : "transparent",
         cursor: "pointer", textAlign: "left",
         paddingLeft: depth === 0 ? 12 : 32,
-        transition: "background 0.12s",
+        transition: "Background0.12s",
       }}
       onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "#EEF3FF"; }}
       onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
@@ -334,7 +329,7 @@ function NavLink({ item, depth = 0, activePath, navigate }) {
   );
 }
 
-// ─── App (unchanged logic) ───────────────────────────────────────────────────
+// ─── App (UnchangedLogic) ───────────────────────────────────────────────────
 function App() {
   const [settings, setSettings] = useState(getApiSettings);
   const [route, setRoute] = useState(() => window.location.pathname + window.location.search);
@@ -343,8 +338,7 @@ function App() {
   const path = route.split("?")[0];
 
   const isLoginRoute = path.startsWith("/login");
-  // Public offer acceptance route — no auth needed
-  const isPublicOfferRoute = path.startsWith("/offer/accept/");
+  // PublicOfferAcceptanceRoute — NoAuthNeeded  const isPublicOfferRoute = path.startsWith("/offer/accept/");
   const hasAuth = Boolean(settings.basicAuth?.username && settings.basicAuth?.password);
   const { data, loading, errors, apiOnline, reload } = useIntranetData(reloadKey, hasAuth && !isLoginRoute && !isPublicOfferRoute);
 
@@ -382,11 +376,20 @@ function App() {
     }
   }, [errors, loading, apiOnline, hasAuth, isLoginRoute, navigate]);
 
-  const login = () => { setSettings(getApiSettings()); setReloadKey((v) => v + 1); navigate("/home/"); };
-  const logout = () => { clearApiAuth(); setSettings(getApiSettings()); setReloadKey((v) => v + 1); navigate("/login/"); };
+  const login = (path = "/home/") => { setSettings(getApiSettings()); setReloadKey((v) => v + 1); navigate(path); };
+  const logout = async () => {
+    try {
+      await apiPost("/Users/Auth/Logout/");
+    } catch (error) {
+      console.warn("LogoutRequestFailed", error);
+    }
+    clearApiAuth();
+    setSettings(getApiSettings());
+    setReloadKey((v) => v + 1);
+    navigate("/login/");
+  };
 
-  // Public offer acceptance — bypass auth, AppShell, and resolveActiveEmployee entirely
-  if (isPublicOfferRoute) return <OfferAcceptanceScreen />;
+  // PublicOfferAcceptance — BypassAuth, AppShell, AndResolveActiveEmployeeEntirely  if (isPublicOfferRoute) return <OfferAcceptanceScreen />;
 
   if (!hasAuth || path.startsWith("/login")) return <LoginScreen settings={settings} onLogin={login} />;
 
@@ -401,7 +404,7 @@ function App() {
   );
 }
 
-// ─── useIntranetData (unchanged) ─────────────────────────────────────────────
+// ─── UseIntranetData (Unchanged) ─────────────────────────────────────────────
 function useIntranetData(reloadKey, enabled) {
   const [state, setState] = useState({ data: {}, loading: false, errors: [], apiOnline: false });
   const hasInitiallyLoaded = useRef(false);
@@ -437,7 +440,7 @@ function useIntranetData(reloadKey, enabled) {
       results.forEach((result, i) => {
         const [key, , mode] = subset[i];
         if (result.status === "fulfilled") applyPayload(nextData, key, mode, result.value.payload);
-        else { requestErrors.push({ key, status: result.reason?.status, message: result.reason?.message || "Request failed" }); if (!isPartial) nextData[key] = mode === "list" ? [] : null; }
+        else { requestErrors.push({ key, status: result.reason?.status, message: result.reason?.message || "RequestFailed" }); if (!isPartial) nextData[key] = mode === "list" ? [] : null; }
       });
       return { data: nextData, loading: false, errors: requestErrors, apiOnline: isPartial ? cur.apiOnline : requestErrors.length < endpointMap.length };
     });
@@ -448,7 +451,7 @@ function useIntranetData(reloadKey, enabled) {
   return { ...state, reload: load };
 }
 
-// ─── AppShell — Figma builder.io sidebar + existing topbar logic ──────────────
+// ─── AppShell — FigmaBuilder.IoSidebar + ExistingTopbarLogic ──────────────
 function AppShell({ children, route, navigate, data, apiOnline, loading, logout, errors, reloadData }) {
   const activePath = route.split("?")[0];
   const activeItem = navItems.find((item) => activePath === item.path || (item.path !== "/home/" && activePath.startsWith(item.path.replace(/\/$/, ""))));
@@ -501,7 +504,7 @@ function AppShell({ children, route, navigate, data, apiOnline, loading, logout,
         }
         .atg-avatar-btn:hover { background: #bfdbfe; }
 
-        /* Nav scroll */
+        /* NavScroll */
         .atg-nav {
           flex: 1; overflow-y: auto; overflow-x: hidden;
           padding: 0 16px 24px;
@@ -598,7 +601,7 @@ function AppShell({ children, route, navigate, data, apiOnline, loading, logout,
         }
         .atg-soft-btn:hover { background: #f1f5f9; }
 
-        /* Error banner */
+        /* ErrorBanner */
         .atg-error-bar {
           display: flex; align-items: center; gap: 8px;
           background: #fef2f2; border-bottom: 1px solid #fecaca;
@@ -609,20 +612,20 @@ function AppShell({ children, route, navigate, data, apiOnline, loading, logout,
         .atg-content { flex: 1; overflow-y: auto; overflow-x: hidden; background: #fff; }
       `}</style>
 
-      <div className="atg-app">
+      <div className="Atg-App">
         {/* ── Sidebar ── */}
-        <aside className="atg-sidebar">
-          <div className="atg-brand">
-            <div className="atg-brand-left">
+        <aside className="Atg-Sidebar">
+          <div className="Atg-Brand">
+            <div className="Atg-Brand-Left">
               <ATGLogo />
-              <span className="atg-brand-name">Intranet</span>
+              <span className="Atg-Brand-Name">Intranet</span>
             </div>
-            <button className="atg-avatar-btn" onClick={() => navigate("/profile/")} title={displayName}>
+            <button className="Atg-Avatar-Btn" onClick={() => navigate("/profile/")} title={displayName}>
               {initials}
             </button>
           </div>
 
-          <nav className="atg-nav">
+          <nav className="Atg-Nav">
             {builtNav.map((item) => (
               <NavLink
                 key={item.path || item.label}
@@ -636,39 +639,39 @@ function AppShell({ children, route, navigate, data, apiOnline, loading, logout,
         </aside>
 
         {/* ── Main ── */}
-        <main className="atg-main">
-          <header className="atg-topbar">
-            <div className="atg-topbar-title">
+        <main className="Atg-Main">
+          <header className="Atg-Topbar">
+            <div className="Atg-Topbar-Title">
               <span className="crumb">Banao Intranet</span>
               <strong>{pageTitle}</strong>
             </div>
-            <div className="atg-topbar-actions">
-              {loading && <span className="sync-badge">Syncing</span>}
-              {!loading && !apiOnline && <span className="sync-badge danger">Offline</span>}
+            <div className="Atg-Topbar-Actions">
+              {loading && <span className="Sync-Badge">Syncing</span>}
+              {!loading && !apiOnline && <span className="Sync-BadgeDanger">Offline</span>}
               <NotificationBell notifications={data.notifications || []} navigate={navigate} reloadData={reloadData} />
-              <button className={activePath.startsWith("/profile") ? "atg-user-chip active" : "atg-user-chip"} onClick={() => navigate("/profile/")}>
-                <span className="chip-avatar">{initials}</span>
+              <button className={activePath.startsWith("/profile") ? "Atg-User-ChipActive" : "Atg-User-Chip"} onClick={() => navigate("/profile/")}>
+                <span className="Chip-Avatar">{initials}</span>
                 <b>{displayName}</b>
               </button>
-              <button className="atg-icon-btn" onClick={logout} title="Logout"><LogOut size={16} /></button>
+              <button className="Atg-Icon-Btn" onClick={logout} title="Logout"><LogOut size={16} /></button>
             </div>
           </header>
 
           {visibleErrors.length > 0 && (
-            <div className="atg-error-bar">
+            <div className="Atg-Error-Bar">
               <AlertTriangle size={16} />
-              <span>{visibleErrors[0].status === 403 ? "Current User Does Not Have Permission For One Or More Records." : visibleErrors[0].message}</span>
+              <span>{visibleErrors[0].status === 403 ? "CurrentUserDoesNotHavePermissionForOneOrMoreRecords." : visibleErrors[0].message}</span>
             </div>
           )}
 
-          <div className="atg-content">{children}</div>
+          <div className="Atg-Content">{children}</div>
         </main>
       </div>
     </>
   );
 }
 
-// ─── NotificationBell (unchanged logic) ──────────────────────────────────────
+// ─── NotificationBell (UnchangedLogic) ──────────────────────────────────────
 function NotificationBell({ notifications = [], navigate, reloadData }) {
   const [open, setOpen] = useState(false);
   const [busyId, setBusyId] = useState("");
@@ -710,33 +713,33 @@ function NotificationBell({ notifications = [], navigate, reloadData }) {
   };
 
   return (
-    <div className="atg-notif-bell" ref={ref}>
-      <button className={open ? "atg-icon-btn active" : "atg-icon-btn"} onClick={() => setOpen((v) => !v)} title="Notifications">
+    <div className="Atg-Notif-Bell" ref={ref}>
+      <button className={open ? "Atg-Icon-BtnActive" : "Atg-Icon-Btn"} onClick={() => setOpen((v) => !v)} title="Notifications">
         <Bell size={16} />
-        {unread.length > 0 && <span className="atg-notif-count">{unread.length}</span>}
+        {unread.length > 0 && <span className="Atg-Notif-Count">{unread.length}</span>}
       </button>
       {open && (
-        <div className="atg-notif-popover">
-          <div className="atg-notif-head">
+        <div className="Atg-Notif-Popover">
+          <div className="Atg-Notif-Head">
             <strong>Notifications</strong>
             <span>{unread.length} Unread</span>
-            {unread.length > 0 && <button className="atg-link-btn" onClick={markAllRead}>Mark All Read</button>}
-            <button className="atg-link-btn" onClick={() => { setOpen(false); navigate("/notifications/"); }}>View All</button>
+            {unread.length > 0 && <button className="Atg-Link-Btn" onClick={markAllRead}>Mark All Read</button>}
+            <button className="Atg-Link-Btn" onClick={() => { setOpen(false); navigate("/notifications/"); }}>View All</button>
           </div>
-          <div className="atg-notif-list">
+          <div className="Atg-Notif-List">
             {rows.map((item) => (
-              <div key={item.id} className={item.is_read ? "atg-notif-item" : "atg-notif-item unread"}>
+              <div key={item.id} className={item.is_read ? "Atg-Notif-Item" : "Atg-Notif-ItemUnread"}>
                 <div>
                   <strong>{item.title || item.category || "Notification"}</strong>
-                  <p>{item.message || item.description || "Open This Notification."}</p>
+                  <p>{item.message || item.description || "OpenThisNotification."}</p>
                   <small>{item.created_at || ""}</small>
                 </div>
-                <button className="atg-soft-btn" onClick={() => review(item)} disabled={busyId === String(item.id)}>
+                <button className="Atg-Soft-Btn" onClick={() => review(item)} disabled={busyId === String(item.id)}>
                   {busyId === String(item.id) ? "Opening" : "Review"}
                 </button>
               </div>
             ))}
-            {!rows.length && <div className="atg-notif-empty">No Notifications Loaded.</div>}
+            {!rows.length && <div className="Atg-Notif-Empty">No Notifications Loaded.</div>}
           </div>
         </div>
       )}

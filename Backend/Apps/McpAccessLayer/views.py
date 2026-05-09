@@ -74,20 +74,11 @@ class McpToolDefinitionViewSet(TenantScopedModelViewSet):
     
     @action(detail=True, methods=["post"], url_path="invoke")
     def invoke_tool(self, request, pk=None):
-        """
-        Invoke a specific MCP tool with parameters
         
-        Body:
-        {
-            "params": {...},
-            "agent_id": <optional agent principal ID for permission checking>
-        }
-        """
         tool_definition = self.get_object()
         params = request.data.get("params", {})
         agent_id = request.data.get("agent_id")
         
-        # Check permissions if agent specified
         if agent_id:
             agent = AgentPrincipal.objects.filter(
                 tenant=self.get_tenant_context().tenant,
@@ -96,11 +87,10 @@ class McpToolDefinitionViewSet(TenantScopedModelViewSet):
             
             if not agent:
                 return Response(
-                    {"error": "Agent principal not found"},
+                    {"error": "Agent Principal Not Found"},
                     status=status.HTTP_404_NOT_FOUND
                 )
             
-            # Check if agent has permission to invoke this tool
             allowed = McpPolicyService.can_invoke(
                 self.get_tenant_context(),
                 agent,
@@ -108,7 +98,6 @@ class McpToolDefinitionViewSet(TenantScopedModelViewSet):
             )
             
             if not allowed:
-                # Record denied invocation
                 McpInvocationService.record_invocation(
                     self.get_tenant_context(),
                     agent,
@@ -116,22 +105,20 @@ class McpToolDefinitionViewSet(TenantScopedModelViewSet):
                     "Denied",
                     tool=tool_definition,
                     input_payload=params,
-                    reason="Permission denied"
+                    reason="Permission Denied"
                 )
                 
                 return Response(
-                    {"error": "Permission denied"},
+                    {"error": "Permission Denied"},
                     status=status.HTTP_403_FORBIDDEN
                 )
         
-        # Invoke the tool
         result = mcp_server.invoke_tool(
             self.get_tenant_context(),
             tool_definition.slug,
             params
         )
         
-        # Record invocation
         if agent_id:
             McpInvocationService.record_invocation(
                 self.get_tenant_context(),

@@ -1,23 +1,10 @@
-/**
- * DESIGN SYSTEM - INTRANET V2
- * Professional UI Component Library
- * 
- * Features:
- * - Consistent design tokens
- * - Accessible components
- * - Responsive layouts
- * - Modern styling
- */
+
 
 import React from 'react';
 
-// ============================================================================
-// DESIGN TOKENS
-// ============================================================================
-
+// ============================================================================// DESIGNTOKENS// ============================================================================
 export const colors = {
-  // Primary Brand Colors
-  primary: {
+  // PrimaryBrandColors  primary: {
     50: '#f0f9ff',
     100: '#e0f2fe',
     200: '#bae6fd',
@@ -30,8 +17,7 @@ export const colors = {
     900: '#0c4a6e',
   },
   
-  // Secondary Colors
-  secondary: {
+  // SecondaryColors  secondary: {
     50: '#faf5ff',
     100: '#f3e8ff',
     200: '#e9d5ff',
@@ -44,8 +30,7 @@ export const colors = {
     900: '#581c87',
   },
   
-  // Neutral/Gray Scale
-  gray: {
+  // Neutral/GrayScale  gray: {
     50: '#f9fafb',
     100: '#f3f4f6',
     200: '#e5e7eb',
@@ -58,8 +43,7 @@ export const colors = {
     900: '#111827',
   },
   
-  // Semantic Colors
-  success: {
+  // SemanticColors  success: {
     light: '#d1fae5',
     main: '#10b981',
     dark: '#059669',
@@ -82,30 +66,15 @@ export const colors = {
 };
 
 export const spacing = {
-  xs: '0.25rem',    // 4px
-  sm: '0.5rem',     // 8px
-  md: '1rem',       // 16px
-  lg: '1.5rem',     // 24px
-  xl: '2rem',       // 32px
-  '2xl': '3rem',    // 48px
-  '3xl': '4rem',    // 64px
-};
+  xs: '0.25rem',    // 4px  sm: '0.5rem',     // 8px  md: '1rem',       // 16px  lg: '1.5rem',     // 24px  xl: '2rem',       // 32px  '2xl': '3rem',    // 48px  '3xl': '4rem',    // 64px};
 
 export const typography = {
   fontFamily: {
-    sans: "'Inter', 'Segoe UI', 'Roboto', sans-serif",
-    mono: "'Fira Code', 'Consolas', monospace",
+    sans: "'Inter', 'SegoeUI', 'Roboto', Sans-Serif",
+    mono: "'FiraCode', 'Consolas', Monospace",
   },
   fontSize: {
-    xs: '0.75rem',      // 12px
-    sm: '0.875rem',     // 14px
-    base: '1rem',       // 16px
-    lg: '1.125rem',     // 18px
-    xl: '1.25rem',      // 20px
-    '2xl': '1.5rem',    // 24px
-    '3xl': '1.875rem',  // 30px
-    '4xl': '2.25rem',   // 36px
-  },
+    xs: '0.75rem',      // 12px    sm: '0.875rem',     // 14px    base: '1rem',       // 16px    lg: '1.125rem',     // 18px    xl: '1.25rem',      // 20px    '2xl': '1.5rem',    // 24px    '3xl': '1.875rem',  // 30px    '4xl': '2.25rem',   // 36px  },
   fontWeight: {
     light: 300,
     normal: 400,
@@ -116,10 +85,10 @@ export const typography = {
 };
 
 export const shadows = {
-  sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-  md: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-  lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-  xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+  sm: '01px2px0Rgba(0, 0, 0, 0.05)',
+  md: '04px6px -1pxRgba(0, 0, 0, 0.1), 02px4px -1pxRgba(0, 0, 0, 0.06)',
+  lg: '010px15px -3pxRgba(0, 0, 0, 0.1), 04px6px -2pxRgba(0, 0, 0, 0.05)',
+  xl: '020px25px -5pxRgba(0, 0, 0, 0.1), 010px10px -5pxRgba(0, 0, 0, 0.04)',
 };
 
 export const borderRadius = {
@@ -130,10 +99,7 @@ export const borderRadius = {
   full: '9999px',
 };
 
-// ============================================================================
-// BUTTON COMPONENT
-// ============================================================================
-
+// ============================================================================// BUTTONCOMPONENT// ============================================================================
 export const Button = ({
   children,
   variant = 'primary',
@@ -149,15 +115,15 @@ export const Button = ({
   ...props
 }) => {
   const baseStyles = {
-    display: 'inline-flex',
+    display: 'Inline-Flex',
     alignItems: 'center',
     justifyContent: 'center',
     fontFamily: typography.fontFamily.sans,
     fontWeight: typography.fontWeight.medium,
     borderRadius: borderRadius.md,
     border: 'none',
-    cursor: disabled || loading ? 'not-allowed' : 'pointer',
-    transition: 'all 0.2s ease-in-out',
+    cursor: disabled || loading ? 'Not-Allowed' : 'pointer',
+    transition: 'All0.2sEase-In-Out',
     opacity: disabled || loading ? 0.6 : 1,
     width: fullWidth ? '100%' : 'auto',
   };
@@ -237,10 +203,7 @@ export const Button = ({
   );
 };
 
-// ============================================================================
-// CARD COMPONENT
-// ============================================================================
-
+// ============================================================================// CARDCOMPONENT// ============================================================================
 export const Card = ({
   children,
   title,
@@ -255,7 +218,7 @@ export const Card = ({
     backgroundColor: 'white',
     borderRadius: borderRadius.lg,
     boxShadow: shadows.md,
-    transition: 'all 0.2s ease-in-out',
+    transition: 'All0.2sEase-In-Out',
     cursor: hoverable ? 'pointer' : 'default',
     ':hover': hoverable ? { boxShadow: shadows.lg } : {},
   };
@@ -275,7 +238,7 @@ export const Card = ({
           padding: paddingMap[padding],
           borderBottom: `1px solid ${colors.gray[200]}`,
           display: 'flex',
-          justifyContent: 'space-between',
+          justifyContent: 'Space-Between',
           alignItems: 'center',
         }}>
           <div>
@@ -291,7 +254,7 @@ export const Card = ({
             )}
             {subtitle && (
               <p style={{
-                margin: '4px 0 0 0',
+                margin: '4px000',
                 fontSize: typography.fontSize.sm,
                 color: colors.gray[600],
               }}>
@@ -309,10 +272,7 @@ export const Card = ({
   );
 };
 
-// ============================================================================
-// INPUT COMPONENT
-// ============================================================================
-
+// ============================================================================// INPUTCOMPONENT// ============================================================================
 export const Input = ({
   label,
   error,
@@ -334,7 +294,7 @@ export const Input = ({
     borderRadius: borderRadius.md,
     backgroundColor: disabled ? colors.gray[100] : 'white',
     color: colors.gray[900],
-    transition: 'all 0.2s ease-in-out',
+    transition: 'All0.2sEase-In-Out',
     outline: 'none',
     ':focus': {
       borderColor: error ? colors.error.main : colors.primary[500],
@@ -363,7 +323,7 @@ export const Input = ({
             position: 'absolute',
             left: spacing.sm,
             top: '50%',
-            transform: 'translateY(-50%)',
+            transform: 'TranslateY(-50%)',
             color: colors.gray[400],
           }}>
             {leftIcon}
@@ -385,7 +345,7 @@ export const Input = ({
             position: 'absolute',
             right: spacing.sm,
             top: '50%',
-            transform: 'translateY(-50%)',
+            transform: 'TranslateY(-50%)',
             color: colors.gray[400],
           }}>
             {rightIcon}
@@ -416,10 +376,7 @@ export const Input = ({
   );
 };
 
-// ============================================================================
-// BADGE COMPONENT
-// ============================================================================
-
+// ============================================================================// BADGECOMPONENT// ============================================================================
 export const Badge = ({
   children,
   variant = 'default',
@@ -461,7 +418,7 @@ export const Badge = ({
   };
 
   const styles = {
-    display: 'inline-flex',
+    display: 'Inline-Flex',
     alignItems: 'center',
     fontWeight: typography.fontWeight.medium,
     borderRadius: borderRadius.full,
@@ -472,10 +429,7 @@ export const Badge = ({
   return <span style={styles} {...props}>{children}</span>;
 };
 
-// ============================================================================
-// SPINNER COMPONENT
-// ============================================================================
-
+// ============================================================================// SPINNERCOMPONENT// ============================================================================
 export const Spinner = ({ size = 'md', color = colors.primary[600] }) => {
   const sizes = {
     xs: '12px',
@@ -493,16 +447,13 @@ export const Spinner = ({ size = 'md', color = colors.primary[600] }) => {
         border: `2px solid ${colors.gray[200]}`,
         borderTopColor: color,
         borderRadius: '50%',
-        animation: 'spin 0.8s linear infinite',
+        animation: 'Spin0.8sLinearInfinite',
       }}
     />
   );
 };
 
-// ============================================================================
-// ALERT COMPONENT
-// ============================================================================
-
+// ============================================================================// ALERTCOMPONENT// ============================================================================
 export const Alert = ({
   children,
   variant = 'info',
@@ -538,8 +489,8 @@ export const Alert = ({
     borderRadius: borderRadius.md,
     borderLeft: `4px solid`,
     display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    justifyContent: 'Space-Between',
+    alignItems: 'Flex-Start',
     ...variants[variant],
   };
 
@@ -578,10 +529,7 @@ export const Alert = ({
   );
 };
 
-// ============================================================================
-// MODAL COMPONENT
-// ============================================================================
-
+// ============================================================================// MODALCOMPONENT// ============================================================================
 export const Modal = ({
   isOpen,
   onClose,
@@ -609,7 +557,7 @@ export const Modal = ({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backgroundColor: 'Rgba(0, 0, 0, 0.5)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -639,7 +587,7 @@ export const Modal = ({
             padding: spacing.lg,
             borderBottom: `1px solid ${colors.gray[200]}`,
             display: 'flex',
-            justifyContent: 'space-between',
+            justifyContent: 'Space-Between',
             alignItems: 'center',
           }}
         >
@@ -680,7 +628,7 @@ export const Modal = ({
             padding: spacing.lg,
             borderTop: `1px solid ${colors.gray[200]}`,
             display: 'flex',
-            justifyContent: 'flex-end',
+            justifyContent: 'Flex-End',
             gap: spacing.sm,
           }}>
             {footer}
@@ -691,10 +639,7 @@ export const Modal = ({
   );
 };
 
-// ============================================================================
-// TABLE COMPONENT
-// ============================================================================
-
+// ============================================================================// TABLECOMPONENT// ============================================================================
 export const Table = ({ columns, data, onRowClick, striped = true }) => {
   return (
     <div style={{ overflow: 'auto' }}>
@@ -732,7 +677,7 @@ export const Table = ({ columns, data, onRowClick, striped = true }) => {
                 backgroundColor: striped && rowIndex % 2 === 1 ? colors.gray[50] : 'white',
                 cursor: onRowClick ? 'pointer' : 'default',
                 borderBottom: `1px solid ${colors.gray[200]}`,
-                transition: 'background-color 0.2s ease',
+                transition: 'Background-Color0.2sEase',
                 ':hover': onRowClick ? { backgroundColor: colors.gray[100] } : {},
               }}
             >
@@ -755,10 +700,7 @@ export const Table = ({ columns, data, onRowClick, striped = true }) => {
   );
 };
 
-// ============================================================================
-// TABS COMPONENT
-// ============================================================================
-
+// ============================================================================// TABSCOMPONENT// ============================================================================
 export const Tabs = ({ tabs, activeTab, onChange }) => {
   return (
     <div>
@@ -779,7 +721,7 @@ export const Tabs = ({ tabs, activeTab, onChange }) => {
               color: activeTab === tab.key ? colors.primary[600] : colors.gray[600],
               fontWeight: activeTab === tab.key ? typography.fontWeight.semibold : typography.fontWeight.normal,
               cursor: 'pointer',
-              transition: 'all 0.2s ease',
+              transition: 'All0.2sEase',
               marginBottom: '-2px',
             }}
           >
@@ -794,7 +736,7 @@ export const Tabs = ({ tabs, activeTab, onChange }) => {
   );
 };
 
-// Add CSS animations
+// AddCSSAnimations
 if (typeof document !== 'undefined') {
   const style = document.createElement('style');
   style.textContent = `

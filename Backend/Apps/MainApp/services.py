@@ -28,20 +28,17 @@ _ALL_IMG_RE = re.compile(r'<img\b[^>]*>', re.IGNORECASE)
 
 
 def _sanitize_html_for_pisa(html: str) -> str:
-    """Strip CSS/JS/remote refs that xhtml2pdf cannot handle without internet or that crash its parser."""
     if not html:
         return html
     cleaned = _LINK_TAG_RE.sub("", html)
     cleaned = _SCRIPT_TAG_RE.sub("", cleaned)
     cleaned = _FOCUS_VISIBLE_RULE_RE.sub("", cleaned)
     cleaned = _AT_IMPORT_RE.sub("", cleaned)
-    # Drop all images to prevent xhtml2pdf PmlKeepInFrame row height calculation crashes in legacy tables
     cleaned = _ALL_IMG_RE.sub("", cleaned)
     return cleaned
 
 
 def _pisa_link_callback(uri, rel):
-    """Make pisa ignore any remote URL it stumbles upon instead of raising HTTPError."""
     if not uri:
         return uri
     lowered = uri.lower()
@@ -177,8 +174,6 @@ class OfferLifecycleService:
         OutboxService.publish(context, "OnboardingOffer", offer.id, "OfferAccepted", {"candidateEmail": offer.candidate_email})
 
         # ── AUTO ONBOARDING ──────────────────────────────────────────────────
-        # Exactly like the old intranet: when candidate accepts the offer + NDA,
-        # automatically create their intranet account and email them credentials.
         op = offer.offer_payload or {}
         profile_data = op.get("acceptance", {}).get("profile_data") or {}
         username = (op.get("username") or "").strip() or (offer.candidate_email or "").split("@")[0]
@@ -228,7 +223,6 @@ class OfferLifecycleService:
                     updated_by=context.actor,
                 )
             else:
-                # User already exists — retrieve their password isn't possible, generate new one
                 auto_user = user_model.objects.filter(username__iexact=username).first()
                 auto_user.set_password(password)
                 auto_user.save(update_fields=["password"])
@@ -236,7 +230,6 @@ class OfferLifecycleService:
         except Exception as exc:
             provision_error = str(exc)
 
-        # Send credentials email
         try:
             base_url = str(getattr(settings, "PUBLIC_BASE_URL", "http://localhost:5173") or "http://localhost:5173").rstrip("/")
             intranet_url = base_url
@@ -301,7 +294,6 @@ class OfferLifecycleService:
         except Exception:
             pass
 
-        # Store provisioning result back in offer payload
         offer.offer_payload = {
             **offer.offer_payload,
             "onboarding": {
@@ -831,11 +823,7 @@ class MainAppLegacyService:
 
     @staticmethod
     def send_pdf_offer(context, offer_id, email=None, html_template=None, email_subject=None, email_template=None, macro_values=None):
-        """
-        Generate and send PDF offer letter with full email support.
-        Builds a clean, xhtml2pdf-safe PDF from offer data directly.
-        The rich branded HTML is sent only in the email body — not fed to xhtml2pdf.
-        """
+
         from django.conf import settings
         from django.template import Template, Context
 
@@ -850,7 +838,7 @@ class MainAppLegacyService:
             offer = issued.data
 
         if not pisa:
-            return ServiceResult.failure({"error": "PDF generation dependencies not installed (xhtml2pdf)"}, status_code=500)
+            return ServiceResult.failure({"error": "PDF Generation Dependencies Not Installed (xhtml2pdf)"}, status_code=500)
 
         try:
             template_context = MainAppLegacyService.offer_template_context(offer, macro_values or {})
@@ -867,13 +855,7 @@ class MainAppLegacyService:
             if not email:
                 return ServiceResult.failure({"email": "Candidate email not available"}, status_code=400)
 
-            # ----------------------------------------------------------------
-            # PDF: Build a purpose-built, xhtml2pdf-safe document from offer
-            # data. We deliberately skip all legacy .html template files here
-            # because they contain rowspan/colspan, Django template tags, and
-            # remote images that crash xhtml2pdf's layout engine. The clean
-            # data-table approach below is 100% compatible with xhtml2pdf.
-            # ----------------------------------------------------------------
+            
             d = template_context
             heading = "OFFER LETTER" if d.get("actual_offer") else "PROVISIONAL OFFER LETTER"
             disclaimer = (
@@ -882,7 +864,6 @@ class MainAppLegacyService:
                 else "<p style='text-align:center;font-weight:700;font-size:11px;margin:0 0 16px;color:#b91c1c;'>"
                      "This is a provisional offer letter and NOT a final offer letter.</p>"
             )
-            # Simple two-column table — no rowspan/colspan — xhtml2pdf-safe
             def row(label, value):
                 return (
                     f"<tr>"
@@ -945,15 +926,8 @@ body {{ margin:0; padding:28px; background:#fff; color:#111827; font-family:Aria
             if pdf_status.err:
                 return ServiceResult.failure({"error": "PDF generation failed"}, status_code=500)
 
-            # ----------------------------------------------------------------
-            # Email body: rich branded HTML (legacy template or fallback)
-            # ----------------------------------------------------------------
-            # Build rich branded email body.
-            # NOTE: The onboarding_email.html file on disk has hardcoded legacy URLs and wrong
-            # variable names ({{user}}, {{department}}, {{position}} instead of our context keys).
-            # We use build_offer_email_html which correctly injects offer_url = localhost:5173/...
+           
             if email_template:
-                # Only use a passed-in template string (from ContentTemplate.email_template field)
                 try:
                     email_content = Template(email_template).render(Context(template_context))
                 except Exception:
@@ -961,14 +935,13 @@ body {{ margin:0; padding:28px; background:#fff; color:#111827; font-family:Aria
             else:
                 email_content = MainAppLegacyService.build_offer_email_html(offer, offer_url, template_context)
 
-            # Render email_subject — may contain {{ variables }} from stored ContentTemplates
-            raw_subject = email_subject or f"Congratulations! Offer as {{{{ position_title }}}} from Across The Globe (ATG)"
+            raw_subject = email_subject or f"Congratulations! Offer As {{{{ position_title }}}} From Across The Globe (ATG)"
             try:
                 email_subject = Template(raw_subject).render(Context(template_context))
             except Exception:
-                email_subject = f"Congratulations! Offer as {offer.position_title or 'Intern'} from Across The Globe (ATG)"
+                email_subject = f"Congratulations! Offer As {offer.position_title or 'Intern'} From Across The Globe (ATG)"
             if not email_subject or "{{" in email_subject:
-                email_subject = f"Congratulations! Offer as {offer.position_title or 'Intern'} from Across The Globe (ATG)"
+                email_subject = f"Congratulations! Offer As {offer.position_title or 'Intern'} From Across The Globe (ATG)"
             from_email = (
                 getattr(settings, "DEFAULT_FROM_EMAIL", "")
                 or getattr(settings, "EMAIL_HOST_USER", "")
@@ -993,22 +966,11 @@ body {{ margin:0; padding:28px; background:#fff; color:#111827; font-family:Aria
                 "email_sent": True,
             })
         except Exception as e:
-            return ServiceResult.failure({"error": f"Failed to send offer: {str(e)}"}, status_code=500)
+            return ServiceResult.failure({"error": f"Failed To Send Offer: {str(e)}"}, status_code=500)
 
     @staticmethod
     def send_certificate(context, recipient_id, joining_date, completion_date, position, responsibility="", title="Certificate issued"):
-        """
-        Generate and send completion certificate with full PDF and email support.
-        
-        Args:
-            context: Service context
-            recipient_id: ID of the employee receiving certificate
-            joining_date: Start date of employment/internship
-            completion_date: End date of employment/internship
-            position: Job title/position
-            responsibility: Optional description of responsibilities
-            title: Certificate title
-        """
+
         from django.conf import settings
         from django.utils.safestring import mark_safe
         
@@ -1020,13 +982,11 @@ body {{ margin:0; padding:28px; background:#fff; color:#111827; font-family:Aria
         joining_date = joining_date or (recipient_employee.joined_on.isoformat() if recipient_employee and recipient_employee.joined_on else "")
         completion_date = completion_date or timezone.now().date().isoformat()
         position = position or (recipient_employee.position.title if recipient_employee and recipient_employee.position else "Team Member")
-        
-        # Check if PDF generation dependencies are available
+
         if not pisa:
-            return ServiceResult.failure({"error": "PDF generation dependencies not installed (xhtml2pdf)"}, status_code=500)
+            return ServiceResult.failure({"error": "PDF Generation Dependencies Not Installed (xhtml2pdf)"}, status_code=500)
         
         try:
-            # Helper function to load images as data URIs
             def load_image_data_uri(path_parts, mime_type):
                 from django.conf import settings
                 base_dir = settings.BASE_DIR
@@ -1038,7 +998,6 @@ body {{ margin:0; padding:28px; background:#fff; color:#111827; font-family:Aria
                     encoded_img = base64.b64encode(image_file.read()).decode('utf-8')
                 return mark_safe(f"data:{mime_type};base64,{encoded_img}")
             
-            # Determine pronouns based on gender (if available)
             gender = getattr(getattr(recipient, 'profile', None), 'gender', None)
             if gender == 1:  # Male
                 title_prefix = 'Mr.'
@@ -1056,7 +1015,6 @@ body {{ margin:0; padding:28px; background:#fff; color:#111827; font-family:Aria
                 pronoun2 = 'his/her'
                 pronoun3 = 'he/she'
             
-            # Prepare certificate context
             cert_context = {
                 'joining_date': joining_date,
                 'completion_date': completion_date,
@@ -1068,7 +1026,6 @@ body {{ margin:0; padding:28px; background:#fff; color:#111827; font-family:Aria
                 'pronoun3': pronoun3,
             }
             
-            # Try to load images
             try:
                 cert_context['certificate_logo'] = load_image_data_uri(
                     ('Apps', 'Banao', 'static', 'banao', 'images', 'logo.png'),
@@ -1079,12 +1036,11 @@ body {{ margin:0; padding:28px; background:#fff; color:#111827; font-family:Aria
                     'image/jpeg',
                 )
             except:
-                pass  # Images optional
+                pass 
             
             if responsibility:
                 cert_context['responsibility'] = responsibility
             
-            # Generate certificate PDF
             html_content = render_to_string('mainapp/certificates/certificate.html', cert_context)
             pdf_html = _sanitize_html_for_pisa(html_content)
             result = BytesIO()
@@ -1098,10 +1054,8 @@ body {{ margin:0; padding:28px; background:#fff; color:#111827; font-family:Aria
             if pdf_status.err:
                 return ServiceResult.failure({"error": "Certificate PDF generation failed"}, status_code=500)
             
-            # Generate email content
             email_content = render_to_string('mainapp/certificates/certificate_email.html', {'name': recipient.get_full_name()})
             
-            # Send certificate email
             if recipient.email and recipient.email != '':
                 from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "") or getattr(settings, "EMAIL_HOST_USER", "") or "admin@atg.world"
                 
@@ -1115,7 +1069,6 @@ body {{ margin:0; padding:28px; background:#fff; color:#111827; font-family:Aria
                 certificate_email.attach_alternative(email_content, 'text/html')
                 certificate_email.send(fail_silently=False)
                 
-                # Create certificate record (if model exists)
                 try:
                     from Backend.Apps.Users.models import EmployeeCertificate
                     EmployeeCertificate.objects.create(
@@ -1128,10 +1081,9 @@ body {{ margin:0; padding:28px; background:#fff; color:#111827; font-family:Aria
                         updated_by=context.actor,
                     )
                 except:
-                    pass  # Model may not exist in all setups
+                    pass  
                 
-                # Also send notification
-                NotificationService.notify(context, recipient, title, message="Certificate Has Been Generated and Sent via Email.", category="Certificate")
+                NotificationService.notify(context, recipient, title, message="Certificate Has Been Generated And Sent vVa Email.", category="Certificate")
                 
                 return ServiceResult.success({
                     "recipient_id": recipient.id,
@@ -1139,10 +1091,10 @@ body {{ margin:0; padding:28px; background:#fff; color:#111827; font-family:Aria
                     "certificate_sent": True
                 })
             else:
-                return ServiceResult.failure({"email": "Recipient email not available"}, status_code=400)
+                return ServiceResult.failure({"email": "Recipient Email Not Available"}, status_code=400)
         
         except Exception as e:
-            return ServiceResult.failure({"error": f"Failed to send certificate: {str(e)}"}, status_code=500)
+            return ServiceResult.failure({"error": f"Failed To Send Certificate: {str(e)}"}, status_code=500)
 
     @staticmethod
     def search_username(context, query):

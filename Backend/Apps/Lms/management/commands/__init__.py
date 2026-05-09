@@ -1,1 +1,1 @@
-"""LMS management commands."""
+"""LMS Management Commands."""
