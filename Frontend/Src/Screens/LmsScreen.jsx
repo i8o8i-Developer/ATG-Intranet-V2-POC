@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ArrowDown, ArrowLeft, ArrowUp, Globe, Mail, MoreHorizontal, PhoneCall, Plus, RefreshCw, Save, Search, Star, Trash2, Users } from "Lucide-React";
+import { ArrowDown, ArrowLeft, ArrowUp, Globe, Mail, MoreHorizontal, PhoneCall, Plus, RefreshCw, Save, Search, Star, Trash2, Users } from "lucide-react";
 
 import { apiPatch, apiPost } from "../Api/Client.js";
 import { EmptyState, Modal, StatusPill } from "./Shared/ScreenComponents.jsx";
@@ -27,18 +27,18 @@ const SORT_FIELDS = {
 };
 
 const CALL_STATUS_OPTIONS = [
-  ["", "CallStatus"],
-  ["call_failed", "CallFailed"],
-  ["call_connected", "CallConnected"],
-  ["call_didnot_pickup", "CallDidn'TPickup"],
+  ["", "Call Status"],
+  ["call_failed", "Call Failed"],
+  ["call_connected", "Call Connected"],
+  ["call_didnot_pickup", "Call Didn't Pickup"],
 ];
 
 const NOTE_CHANNELS = [
-  { key: "meeting", label: "Meeting", placeholder: "MeetingRecorderLink", options: [["", "MeetingRecorderLink"], ["google_meet", "GoogleMeet"], ["zoom", "Zoom"], ["microsoft_teams", "MicrosoftTeams"], ["other", "Other"]] },
-  { key: "call", label: "PhoneCall", placeholder: "CallStatus", options: CALL_STATUS_OPTIONS },
-  { key: "email", label: "Email", placeholder: "EmailStatus", options: [["", "EmailStatus"], ["EmailSent", "EmailSent"], ["EmailDelivered", "EmailDelivered"], ["EmailOpened", "EmailOpened"], ["LinkClicked", "LinkClicked"], ["Replied", "Replied"], ["Bounced", "Bounced"], ["Pending", "Pending"]] },
-  { key: "whatsapp", label: "Whatsapp", placeholder: "WhatsappStatus", options: [["", "WhatsappStatus"], ["MessageSent", "MessageSent"], ["MessageDelivered", "MessageDelivered"], ["MessageRead", "MessageRead"], ["LeadReplied", "LeadReplied"], ["CallInitiated(ViaWhatsappCall)", "CallInitiated (ViaWhatsappCall)"], ["NotDelivered / Blocked", "NotDelivered / Blocked"]] },
-  { key: "linkedin", label: "LinkedIn", placeholder: "LinkedInStatus", options: [["", "LinkedInStatus"], ["ConnectionRequestSent", "ConnectionRequestSent"], ["RequestPending", "RequestPending"], ["Connected", "Connected"], ["MessageSent", "MessageSent"], ["MessageSeen", "MessageSeen"], ["LeadReplied", "LeadReplied"], ["ProfileUnavailable / Restricted", "ProfileUnavailable / Restricted"], ["Follow-UpScheduled", "Follow-UpScheduled"]] },
+  { key: "meeting", label: "Meeting", placeholder: "Meeting Recorder Link", options: [["", "Meeting Recorder Link"], ["google_meet", "Google Meet"], ["zoom", "Zoom"], ["microsoft_teams", "Microsoft Teams"], ["other", "Other"]] },
+  { key: "call", label: "Phone Call", placeholder: "Call Status", options: CALL_STATUS_OPTIONS },
+  { key: "email", label: "Email", placeholder: "Email Status", options: [["", "Email Status"], ["EmailSent", "Email Sent"], ["Email Delivered", "Email Delivered"], ["Email Opened", "Email Opened"], ["Link Clicked", "Link Clicked"], ["Replied", "Replied"], ["Bounced", "Bounced"], ["Pending", "Pending"]] },
+  { key: "whatsapp", label: "Whatsapp", placeholder: "Whatsapp Status", options: [["", "Whatsapp Status"], ["MessageSent", "Message Sent"], ["Message Delivered", "Message Delivered"], ["Message Read", "Message Read"], ["Lead Replied", "Lead Replied"], ["CallInitiated(ViaWhatsappCall)", "Call Initiated (Via Whatsapp Call)"], ["NotDelivered / Blocked", "Not Delivered / Blocked"]] },
+  { key: "linkedin", label: "LinkedIn", placeholder: "LinkedIn Status", options: [["", "LinkedIn Status"], ["ConnectionRequestSent", "Connection Request Sent"], ["Request Pending", "Request Pending"], ["Connected", "Connected"], ["Message Sent", "Message Sent"], ["Message Seen", "Message Seen"], ["Lead Replied", "Lead Replied"], ["ProfileUnavailable / Restricted", "Profile Unavailable / Restricted"], ["Follow-UpScheduled", "Follow-Up Scheduled"]] },
 ];
 
 function stageTone(value = "") {
@@ -123,12 +123,12 @@ function currentEmployeeId(data) {
 }
 
 function leadTypeLabel(lead) {
-  return lead.metadata?.lead_type || lead.metadata?.type || lead.metadata?.service_type || "NotGathered";
+  return lead.metadata?.lead_type || lead.metadata?.type || lead.metadata?.service_type || "Not Gathered";
 }
 
 function buildLeadDraft(lead, tagOptions) {
   return {
-    stageLabel: lead.stageLabel || "NewLead",
+    stageLabel: lead.stageLabel || "New Lead",
     ownerId: String(lead.ownerId || ""),
     tagIds: tagIdsForLead(lead.tags || [], tagOptions),
     nextFollowUpAt: toDateInput(lead.nextFollowUpAt),
@@ -138,14 +138,14 @@ function buildLeadDraft(lead, tagOptions) {
     important: Boolean(lead.important),
     checklist: parseChecklist(lead.actionItem),
     message: lead.message === "-" ? "" : lead.message,
-    typeLabel: lead.typeLabel || "NotGathered",
+    typeLabel: lead.typeLabel || "Not Gathered",
   };
 }
 
 function buildLeadPayload(lead, draft) {
   return {
     owner: draft.ownerId || null,
-    stage: draft.stageLabel || lead.stageLabel || "NewLead",
+    stage: draft.stageLabel || lead.stageLabel || "New Lead",
     tags: payloadIds(draft.tagIds),
     next_follow_up_at: toDateTimePayload(draft.nextFollowUpAt),
     latest_comment: draft.lastUpdateNote || "",
@@ -275,7 +275,7 @@ export function LmsScreen({ data, reload, navigate, route }) {
     if (!toStage || !selected.size) return;
     setBusy(true);
     try {
-      await Promise.all(Array.from(selected).map((leadId) => apiPost(`/Banao/LeadAccounts/${leadId}/move-stage/`, { to_stage: toStage, reason: "BulkUpdate" })));
+      await Promise.all(Array.from(selected).map((leadId) => apiPost(`/Banao/LeadAccounts/${leadId}/move-stage/`, { to_stage: toStage, reason: "Bulk Update" })));
       setSelected(new Set());
       refresh();
       setMoreOpen(false);
@@ -286,7 +286,7 @@ export function LmsScreen({ data, reload, navigate, route }) {
 
   const addLead = async (formData) => {
     if (!formData.company_name?.trim()) {
-      alert("CompanyNameIsRequired");
+      alert("Company Name Is Required");
       return;
     }
     setBusy(true);
@@ -295,7 +295,7 @@ export function LmsScreen({ data, reload, navigate, route }) {
       refresh();
       setAddLeadOpen(false);
     } catch (error) {
-      alert(error?.data?.detail || error?.message || "UnableToCreateLead.");
+      alert(error?.data?.detail || error?.message || "Unable To Create Lead.");
     } finally {
       setBusy(false);
     }
@@ -320,7 +320,7 @@ export function LmsScreen({ data, reload, navigate, route }) {
   }).sort((left, right) => compareRows(left, right, sortField, sortDirection)), [leads, search, tag, priority, owner, stage, source, moreFilter, sortField, sortDirection]);
 
   const sourceCards = useMemo(() => leadSourceCards(data, leads), [data, leads]);
-  const stageOptions = useMemo(() => uniqueOptions(["NewLead", "ContactAttempted", "Discovery / DemoScheduled", "Discovery / DemoCompleted", "ProposalSent", "Closed - Won", "Closed - Lost", "Nurture / Recycle", ...leads.map((lead) => lead.stageLabel)]), [leads]);
+  const stageOptions = useMemo(() => uniqueOptions(["New Lead", "Contact Attempted", "Discovery / Demo Scheduled", "Discovery / Demo Completed", "Proposal Sent", "Closed - Won", "Closed - Lost", "Nurture / Recycle", ...leads.map((lead) => lead.stageLabel)]), [leads]);
   const selectedVisibleCount = filtered.filter((lead) => selected.has(lead.id)).length;
   const allVisibleSelected = filtered.length > 0 && filtered.every((lead) => selected.has(lead.id));
   const activeLead = activeLeadId ? leads.find((lead) => String(lead.id) === String(activeLeadId)) : null;
@@ -364,7 +364,7 @@ export function LmsScreen({ data, reload, navigate, route }) {
 
   if (activeLeadId && !activeLead) {
     return (
-      <section className="Lms-ScreenLms-Detail-Screen">
+      <section className="Lms-Screen Lms-Detail-Screen">
         <div className="Lms-Breadcrumb">
           <strong>Intranet</strong>
           <button onClick={() => navigate?.("/home/")}>Home</button>
@@ -378,7 +378,7 @@ export function LmsScreen({ data, reload, navigate, route }) {
             <button className="Outline-Button" onClick={() => navigate?.("/lms/")}><ArrowLeft size={16} /> Back To Leads</button>
             <button className="Outline-Button" onClick={refresh}><RefreshCw size={16} /> Refresh</button>
           </div>
-          <EmptyState label="LeadNotFoundInTheCurrentWorkspace." />
+          <EmptyState label="Lead Not Found In The Current Workspace." />
         </section>
       </section>
     );
@@ -408,12 +408,12 @@ export function LmsScreen({ data, reload, navigate, route }) {
             <small>{card.label}</small>
           </button>
         ))}
-        {!sourceCards.length && <EmptyState label="NoLeadSourcesReturned." />}
+        {!sourceCards.length && <EmptyState label="No Lead Sources Returned." />}
       </section>
 
       <div className="Lms-Search-Row">
         <div className="Lms-Search">
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="SearchName" />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search Name" />
           <Search size={18} />
         </div>
       </div>
@@ -423,16 +423,16 @@ export function LmsScreen({ data, reload, navigate, route }) {
           <div>
             <h2>Leads <span>{selectedVisibleCount} of {filtered.length} Selected</span></h2>
           </div>
-          <button className="Icon-Button" title="ResetFilters" onClick={resetFilters}>
+          <button className="Icon-Button" title="Reset Filters" onClick={resetFilters}>
             <RefreshCw size={18} />
           </button>
         </header>
 
         <div className="Lead-Tools">
-          <button className="Icon-Action" title="AddLead" onClick={() => setAddLeadOpen(true)}><Plus size={16} /></button>
-          <button className="Icon-Action" title="BulkMoveStage" onClick={() => setMoreOpen(true)} disabled={!selected.size}><MoreHorizontal size={16} /></button>
-          <button className="Icon-Action" title="ClearSelection" onClick={() => setSelected(new Set())} disabled={!selected.size}><Trash2 size={16} /></button>
-          <button className="Icon-Action" title="AssignSelected" onClick={() => setAssignOpen(true)} disabled={!selected.size}><Users size={16} /></button>
+          <button className="Icon-Action" title="Add Lead" onClick={() => setAddLeadOpen(true)}><Plus size={16} /></button>
+          <button className="Icon-Action" title="Bulk Move Stage" onClick={() => setMoreOpen(true)} disabled={!selected.size}><MoreHorizontal size={16} /></button>
+          <button className="Icon-Action" title="Clear Selection" onClick={() => setSelected(new Set())} disabled={!selected.size}><Trash2 size={16} /></button>
+          <button className="Icon-Action" title="Assign Selected" onClick={() => setAssignOpen(true)} disabled={!selected.size}><Users size={16} /></button>
         </div>
 
         <div className="Lms-Filters">
@@ -466,28 +466,28 @@ export function LmsScreen({ data, reload, navigate, route }) {
         </div>
 
         <div className="Lead-Table-Scroll">
-          <table className="Erp-TableLms-Lead-Table">
+          <table className="Erp-Table Lms-Lead-Table">
             <thead>
               <tr>
-                <th><input type="checkbox" checked={allVisibleSelected} onChange={toggleAllVisible} aria-label="SelectAllVisibleLeads" /></th>
+                <th><input type="checkbox" checked={allVisibleSelected} onChange={toggleAllVisible} aria-label="Select All Visible Leads" /></th>
                 <th>
-                  <button className="Lms-Sort-Head" onClick={() => toggleSort("leadName")}>Lead/Client Name {renderSortIcon("leadName")}</button>
+                  <button className="Lms-Sort-Head" onClick={() => toggleSort("leadName")}>Lead / Client Name {renderSortIcon("leadName")}</button>
                 </th>
                 <th>Origin</th>
-                <th>Work flow status</th>
+                <th>Workflow Status</th>
                 <th>
-                  <button className="Lms-Sort-Head" onClick={() => toggleSort("notesCount")}>Lead note count {renderSortIcon("notesCount")}</button>
+                  <button className="Lms-Sort-Head" onClick={() => toggleSort("notesCount")}>Lead Note Count {renderSortIcon("notesCount")}</button>
                 </th>
                 <th>
-                  <button className="Lms-Sort-Head" onClick={() => toggleSort("companyName")}>Company name {renderSortIcon("companyName")}</button>
+                  <button className="Lms-Sort-Head" onClick={() => toggleSort("companyName")}>Company Name {renderSortIcon("companyName")}</button>
                 </th>
                 <th>Email</th>
-                <th>Phone No's</th>
+                <th>Phone Nos</th>
                 <th>Assigned To</th>
                 <th>
                   <button className="Lms-Sort-Head" onClick={() => toggleSort("createdAt")}>Created At {renderSortIcon("createdAt")}</button>
                 </th>
-                <th>Last Update note</th>
+                <th>Last Update Note</th>
                 <th>
                   <button className="Lms-Sort-Head" onClick={() => toggleSort("updatedAt")}>Last Updated {renderSortIcon("updatedAt")}</button>
                 </th>
@@ -522,7 +522,7 @@ export function LmsScreen({ data, reload, navigate, route }) {
               {!filtered.length && (
                 <tr>
                   <td colSpan={12}>
-                    <div className="Lms-Empty-Wrap"><EmptyState label="NoLeadsMatchTheCurrentFilters." /></div>
+                    <div className="Lms-Empty-Wrap"><EmptyState label="No Leads Match The Current Filters." /></div>
                   </td>
                 </tr>
               )}
@@ -554,7 +554,7 @@ function LeadDetailWorkspace({ data, lead, navigate, refresh, stageOptions }) {
     setFlash("");
   }, [lead, data.leadTags]);
 
-  const saveLead = async (nextDraft = draft, successMessage = "LeadUpdated.") => {
+  const saveLead = async (nextDraft = draft, successMessage = "Lead Updated.") => {
     setSaving(true);
     try {
       await apiPatch(`/Banao/LeadAccounts/${lead.id}/`, buildLeadPayload(lead, nextDraft));
@@ -562,7 +562,7 @@ function LeadDetailWorkspace({ data, lead, navigate, refresh, stageOptions }) {
       setFlash(successMessage);
       refresh();
     } catch (error) {
-      setFlash(error?.data?.detail || error?.message || "UnableToSaveLeadDetails.");
+      setFlash(error?.data?.detail || error?.message || "Unable To Save Lead Details.");
     } finally {
       setSaving(false);
     }
@@ -579,12 +579,12 @@ function LeadDetailWorkspace({ data, lead, navigate, refresh, stageOptions }) {
     if (!label) return;
     const nextChecklist = [...draft.checklist, { id: `task-${Date.now()}`, label, done: false }];
     setChecklistInput("");
-    await updateChecklist(nextChecklist, "ChecklistUpdated.");
+    await updateChecklist(nextChecklist, "Checklist Updated.");
   };
 
   const submitNote = async () => {
     if (!note.body.trim()) {
-      setFlash("AddANoteDescriptionBeforeSaving.");
+      setFlash("Add A Note Description Before Saving.");
       return;
     }
     setNoteBusy(true);
@@ -593,7 +593,7 @@ function LeadDetailWorkspace({ data, lead, navigate, refresh, stageOptions }) {
       const enabledChannels = Object.entries(note.channelEnabled).filter(([, value]) => value).map(([key]) => key);
       const nextDraft = { ...draft, lastUpdateNote: note.title.trim() ? `${note.title.trim()}: ${note.body.trim()}` : note.body.trim() };
       await apiPost(`/Banao/LeadAccounts/${lead.id}/add-note/`, {
-        title: note.title.trim() || "GeneralUpdate",
+        title: note.title.trim() || "General Update",
         body: note.body.trim(),
         author: actorId || undefined,
         metadata: {
@@ -607,10 +607,10 @@ function LeadDetailWorkspace({ data, lead, navigate, refresh, stageOptions }) {
       await apiPatch(`/Banao/LeadAccounts/${lead.id}/`, buildLeadPayload(lead, nextDraft));
       setDraft(nextDraft);
       setNote({ title: "", body: "", channelEnabled: { meeting: false, call: false, email: false, whatsapp: false, linkedin: false }, channelStatus: { meeting: "", call: "", email: "", whatsapp: "", linkedin: "" } });
-      setFlash("NoteAdded.");
+      setFlash("Note Added.");
       refresh();
     } catch (error) {
-      setFlash(error?.data?.detail || error?.message || "UnableToSaveNote.");
+      setFlash(error?.data?.detail || error?.message || "Unable To Save Note.");
     } finally {
       setNoteBusy(false);
     }
@@ -620,7 +620,7 @@ function LeadDetailWorkspace({ data, lead, navigate, refresh, stageOptions }) {
   const latestAudit = lead.audits[0];
 
   return (
-    <section className="Lms-ScreenLms-Detail-Screen">
+    <section className="Lms-Screen Lms-Detail-Screen">
       <div className="Lms-Breadcrumb">
         <strong>Intranet</strong>
         <button onClick={() => navigate?.("/home/")}>Home</button>
@@ -635,7 +635,7 @@ function LeadDetailWorkspace({ data, lead, navigate, refresh, stageOptions }) {
       <section className="Lms-Detail-Shell">
         <div className="Lms-Detail-Topbar">
           <button className="Outline-Button" onClick={() => navigate?.("/lms/")}><ArrowLeft size={16} /> Back To Leads</button>
-          <button className="Primary-Button" disabled={saving} onClick={() => saveLead()}><Save size={16} /> {saving ? "Saving…" : "SaveLead"}</button>
+          <button className="Primary-Button" disabled={saving} onClick={() => saveLead()}><Save size={16} /> {saving ? "Saving…" : "Save Lead"}</button>
         </div>
 
         <header className="Lms-Detail-Header">
@@ -644,11 +644,11 @@ function LeadDetailWorkspace({ data, lead, navigate, refresh, stageOptions }) {
             <div>
               <h1>{lead.leadName}</h1>
               <p>Origin <span className={`lms-origin-inline ${sourceTone(lead.sourceLabel)}`}>{sourceLogoNode(lead.sourceLabel)}</span> {lead.sourceLabel}</p>
-              <small>Created at : {formatDate(lead.createdAt)} | Updated at : {formatDate(lead.updatedAt)}</small>
+              <small>Created At: {formatDate(lead.createdAt)} | Updated At: {formatDate(lead.updatedAt)}</small>
             </div>
           </div>
           <div className="Lms-Detail-Actions">
-            <button className={draft.important ? "Lms-Detail-ActionActive" : "Lms-Detail-Action"} onClick={() => saveLead({ ...draft, important: !draft.important }, draft.important ? "LeadUnmarkedAsImportant." : "LeadMarkedAsImportant.")}><Star size={17} /> <span>Mark as Important</span></button>
+            <button className={draft.important ? "Lms-Detail-ActionActive" : "Lms-Detail-Action"} onClick={() => saveLead({ ...draft, important: !draft.important }, draft.important ? "Lead Unmarked As Important." : "Lead Marked As Important.")}><Star size={17} /> <span>Mark As Important</span></button>
             <a className="Lms-Detail-Action" href={lead.email && lead.email !== "-" ? `mailto:${lead.email}` : undefined} onClick={(event) => { if (!lead.email || lead.email === "-") event.preventDefault(); }}><Mail size={17} /> <span>Email</span></a>
             <a className="Lms-Detail-Action" href={lead.phone && lead.phone !== "-" ? `tel:${String(lead.phone).replace(/\s+/g, "")}` : undefined} onClick={(event) => { if (!lead.phone || lead.phone === "-") event.preventDefault(); }}><PhoneCall size={17} /> <span>Call</span></a>
           </div>
@@ -657,14 +657,14 @@ function LeadDetailWorkspace({ data, lead, navigate, refresh, stageOptions }) {
         <section className="Lms-Detail-Tags-Strip">
           <strong>Tags:</strong>
           <div className="Lms-Detail-Tags">
-            {draft.tagIds.length ? draft.tagIds.map((id) => <span key={id} className="Lms-Tag-Chip">{(data.leadTags || []).find((item) => String(item.id) === String(id))?.name || id}</span>) : <span className="Lms-Muted">No tags assigned</span>}
+            {draft.tagIds.length ? draft.tagIds.map((id) => <span key={id} className="Lms-Tag-Chip">{(data.leadTags || []).find((item) => String(item.id) === String(id))?.name || id}</span>) : <span className="Lms-Muted">No Tags Assigned</span>}
           </div>
         </section>
 
         {flash && <div className="Lms-Flash">{flash}</div>}
 
         <div className="Lms-Detail-Form-Row">
-          <label className="Lms-Field-Stack">Call Updated at
+          <label className="Lms-Field-Stack">Call Updated At
             <input type="date" value={draft.callUpdatedAt} onChange={(event) => setDraft({ ...draft, callUpdatedAt: event.target.value })} />
           </label>
           <label className="Lms-Field-Stack">Workflow Status
@@ -679,7 +679,7 @@ function LeadDetailWorkspace({ data, lead, navigate, refresh, stageOptions }) {
           </label>
           <label className="Lms-Field-Stack">Assigned To
             <select value={draft.ownerId} onChange={(event) => setDraft({ ...draft, ownerId: event.target.value })}>
-              <option value="">No one assigned</option>
+              <option value="">No One Assigned</option>
               {(data.employees || []).map((employee) => <option key={employee.id} value={employee.id}>{employee.display_name}</option>)}
             </select>
           </label>
@@ -687,16 +687,16 @@ function LeadDetailWorkspace({ data, lead, navigate, refresh, stageOptions }) {
             <select multiple value={draft.tagIds} onChange={(event) => setDraft({ ...draft, tagIds: Array.from(event.target.selectedOptions).map((option) => option.value) })}>
               {(data.leadTags || []).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
             </select>
-            <small>press ctrl + click</small>
+            <small>Press Ctrl + Click</small>
           </label>
         </div>
 
         <div className="Lms-Detail-Grid">
-          <section className="Lms-Detail-CardLms-Detail-Main">
-            <h3>Add new note</h3>
+          <section className="Lms-Detail-Card Lms-Detail-Main">
+            <h3>Add New Note</h3>
             <div className="Lms-Note-Editor">
-              <input value={note.title} onChange={(event) => setNote({ ...note, title: event.target.value })} placeholder="NoteTitle (Call, Meeting, Objection, Negotiation, GeneralUpdate)" />
-              <textarea rows={6} value={note.body} onChange={(event) => setNote({ ...note, body: event.target.value })} placeholder="NoteDescription" />
+              <input value={note.title} onChange={(event) => setNote({ ...note, title: event.target.value })} placeholder="Note Title (Call, Meeting, Objection, Negotiation, General Update)" />
+              <textarea rows={6} value={note.body} onChange={(event) => setNote({ ...note, body: event.target.value })} placeholder="Note Description" />
               <div className="Lms-Note-Channels">
                 {NOTE_CHANNELS.map((channel) => (
                   <div key={channel.key} className="Lms-Note-Channel">
@@ -708,11 +708,11 @@ function LeadDetailWorkspace({ data, lead, navigate, refresh, stageOptions }) {
                 ))}
               </div>
               <div className="Lms-Note-Footer">
-                <div className="Lms-Field-StackCompact">Next follow up
+                <div className="Lms-Field-Stack Compact">Next Follow Up
                   <input type="date" value={draft.nextFollowUpAt} onChange={(event) => setDraft({ ...draft, nextFollowUpAt: event.target.value })} />
-                  <small>{draft.nextFollowUpAt ? formatDate(draft.nextFollowUpAt) : "NextFollowUpDateNotSet"}</small>
+                  <small>{draft.nextFollowUpAt ? formatDate(draft.nextFollowUpAt) : "Next Follow Up Date Not Set"}</small>
                 </div>
-                <button className="Primary-Button" disabled={noteBusy} onClick={submitNote}>{noteBusy ? "Saving…" : "AddNote"}</button>
+                <button className="Primary-Button" disabled={noteBusy} onClick={submitNote}>{noteBusy ? "Saving…" : "Add Note"}</button>
               </div>
             </div>
 
@@ -720,17 +720,17 @@ function LeadDetailWorkspace({ data, lead, navigate, refresh, stageOptions }) {
               {(lead.notes || []).map((item) => (
                 <article key={item.id} className="Lms-Note-Card">
                   <header>
-                    <strong>{item.title || "GeneralUpdate"}</strong>
+                    <strong>{item.title || "General Update"}</strong>
                     <span>{formatDateTime(item.created_at || item.updated_at)}</span>
                   </header>
                   <p>{item.body}</p>
                 </article>
               ))}
-              {!lead.notes.length && <EmptyState label="NoNotesOnThisLeadYet." />}
+              {!lead.notes.length && <EmptyState label="No Notes On This Lead Yet." />}
             </div>
           </section>
 
-          <aside className="Lms-Detail-CardLms-Detail-Side">
+          <aside className="Lms-Detail-Card Lms-Detail-Side">
             <h3>Lead Information</h3>
             <div className="Lms-Info-Block">
               <label>Email</label>
@@ -746,15 +746,15 @@ function LeadDetailWorkspace({ data, lead, navigate, refresh, stageOptions }) {
               <div className="Lms-Checklist-List">
                 {draft.checklist.map((item) => (
                   <div key={item.id} className="Lms-Checklist-Row">
-                    <label><input type="checkbox" checked={item.done} onChange={() => updateChecklist(draft.checklist.map((entry) => entry.id === item.id ? { ...entry, done: !entry.done } : entry), "ChecklistUpdated.")} /> {item.label}</label>
-                    <button className="Icon-Action" onClick={() => updateChecklist(draft.checklist.filter((entry) => entry.id !== item.id), "ChecklistUpdated.")}><Trash2 size={14} /></button>
+                    <label><input type="checkbox" checked={item.done} onChange={() => updateChecklist(draft.checklist.map((entry) => entry.id === item.id ? { ...entry, done: !entry.done } : entry), "Checklist Updated.")} /> {item.label}</label>
+                    <button className="Icon-Action" onClick={() => updateChecklist(draft.checklist.filter((entry) => entry.id !== item.id), "Checklist Updated.")}><Trash2 size={14} /></button>
                   </div>
                 ))}
                 {!draft.checklist.length && <p className="Lms-Muted">No tasks yet.</p>}
               </div>
               <div className="Lms-Checklist-Input-Row">
-                <input value={checklistInput} onChange={(event) => setChecklistInput(event.target.value)} placeholder="AddNewTask..." />
-                <button className="Primary-ButtonSmall" onClick={addChecklistItem}><Plus size={14} /></button>
+                <input value={checklistInput} onChange={(event) => setChecklistInput(event.target.value)} placeholder="Add New Task..." />
+                <button className="Primary-Button Small" onClick={addChecklistItem}><Plus size={14} /></button>
               </div>
             </div>
 
@@ -808,7 +808,7 @@ function AddLeadModal({ data, sources, busy, onClose, onSubmit }) {
 
   const handleSubmit = () => {
     if (!formData.source.trim()) {
-      alert("OriginIsRequired");
+      alert("Origin Is Required");
       return;
     }
     const payload = {
@@ -826,10 +826,10 @@ function AddLeadModal({ data, sources, busy, onClose, onSubmit }) {
   };
 
   return (
-    <Modal title="AddNewLead" onClose={onClose}>
+    <Modal title="Add New Lead" onClose={onClose}>
       <div className="Form-Grid">
         <label>Company Name *
-          <input type="text" value={formData.company_name} onChange={(e) => handleChange("company_name", e.target.value)} placeholder="EnterCompanyName" />
+          <input type="text" value={formData.company_name} onChange={(e) => handleChange("company_name", e.target.value)} placeholder="Enter Company Name" />
         </label>
         <label>Priority
           <select value={formData.priority} onChange={(e) => handleChange("priority", e.target.value)}>
@@ -839,7 +839,7 @@ function AddLeadModal({ data, sources, busy, onClose, onSubmit }) {
           </select>
         </label>
         <label>Contact Name
-          <input type="text" value={formData.contact_name} onChange={(e) => handleChange("contact_name", e.target.value)} placeholder="EnterContactName" />
+          <input type="text" value={formData.contact_name} onChange={(e) => handleChange("contact_name", e.target.value)} placeholder="Enter Contact Name" />
         </label>
         <label>Origin *
           <select value={formData.source} onChange={(e) => handleChange("source", e.target.value)}>
@@ -848,7 +848,7 @@ function AddLeadModal({ data, sources, busy, onClose, onSubmit }) {
           </select>
         </label>
         <label>Email
-          <input type="email" value={formData.contact_email} onChange={(e) => handleChange("contact_email", e.target.value)} placeholder="EnterEmail" />
+          <input type="email" value={formData.contact_email} onChange={(e) => handleChange("contact_email", e.target.value)} placeholder="Enter Email" />
         </label>
         <label>Assigned To
           <select value={formData.owner} onChange={(e) => handleChange("owner", e.target.value)}>
@@ -857,7 +857,7 @@ function AddLeadModal({ data, sources, busy, onClose, onSubmit }) {
           </select>
         </label>
         <label>Phone
-          <input type="tel" value={formData.contact_phone} onChange={(e) => handleChange("contact_phone", e.target.value)} placeholder="EnterPhoneNumber" />
+          <input type="tel" value={formData.contact_phone} onChange={(e) => handleChange("contact_phone", e.target.value)} placeholder="Enter Phone Number" />
         </label>
         <label>Estimated Value
           <input type="number" step="0.01" value={formData.estimated_value} onChange={(e) => handleChange("estimated_value", e.target.value)} placeholder="0.00" />
@@ -865,7 +865,7 @@ function AddLeadModal({ data, sources, busy, onClose, onSubmit }) {
       </div>
       <div className="Modal-Actions">
         <button className="Outline-Button" onClick={onClose}>Cancel</button>
-        <button className="Primary-Button" disabled={busy || !formData.company_name.trim() || !formData.source.trim()} onClick={handleSubmit}>{busy ? "Creating..." : "CreateLead"}</button>
+        <button className="Primary-Button" disabled={busy || !formData.company_name.trim() || !formData.source.trim()} onClick={handleSubmit}>{busy ? "Creating..." : "Create Lead"}</button>
       </div>
     </Modal>
   );
@@ -875,7 +875,12 @@ function AssignLeadModal({ data, count, busy, onClose, onSubmit }) {
   const [employeeId, setEmployeeId] = useState("");
   return (
     <Modal title={`Assign ${count} Leads To Owner`} onClose={onClose}>
-      <label>Owner<select value={employeeId} onChange={(event) => setEmployeeId(event.target.value)}><option value="">Select Owner</option>{(data.employees || []).map((emp) => <option key={emp.id} value={emp.id}>{emp.display_name}</option>)}</select></label>
+      <label>Owner
+        <select value={employeeId} onChange={(event) => setEmployeeId(event.target.value)}>
+          <option value="">Select Owner</option>
+          {(data.employees || []).map((emp) => <option key={emp.id} value={emp.id}>{emp.display_name}</option>)}
+        </select>
+      </label>
       <button className="Primary-Button" disabled={busy || !employeeId} onClick={() => onSubmit(employeeId)}>Assign</button>
     </Modal>
   );
@@ -883,10 +888,14 @@ function AssignLeadModal({ data, count, busy, onClose, onSubmit }) {
 
 function BulkStageModal({ count, busy, onClose, onSubmit, options }) {
   const [stage, setStage] = useState("Contacted");
-  const stages = options?.length ? options : ["NewLead", "ContactAttempted", "Discovery / DemoScheduled", "ProposalSent", "Closed - Won", "Closed - Lost"];
+  const stages = options?.length ? options : ["New Lead", "Contact Attempted", "Discovery / Demo Scheduled", "Proposal Sent", "Closed - Won", "Closed - Lost"];
   return (
     <Modal title={`Move ${count} Leads To Stage`} onClose={onClose}>
-      <label>Stage<select value={stage} onChange={(event) => setStage(event.target.value)}>{stages.map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
+      <label>Stage
+        <select value={stage} onChange={(event) => setStage(event.target.value)}>
+          {stages.map((value) => <option key={value} value={value}>{value}</option>)}
+        </select>
+      </label>
       <button className="Primary-Button" disabled={busy} onClick={() => onSubmit(stage)}>Apply Stage</button>
     </Modal>
   );

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { KeyRound, Search, ShieldAlert } from "Lucide-React";
+import { KeyRound, Search, ShieldAlert } from "lucide-react";
 import { apiPost } from "../Api/Client.js";
 import { Panel } from "./Shared/ScreenComponents.jsx";
 
@@ -28,15 +28,15 @@ export function AdminChangePasswordScreen({ data }) {
   const submit = async () => {
     setResult(null);
     if (!newPassword || newPassword.length < 6) {
-      setResult({ ok: false, message: "PasswordMustBeAtLeast6Characters." });
+      setResult({ ok: false, message: "Password Must Be At Least 6 Characters." });
       return;
     }
     if (newPassword !== confirmPassword) {
-      setResult({ ok: false, message: "PasswordsDoNotMatch." });
+      setResult({ ok: false, message: "Passwords Do Not Match." });
       return;
     }
     if (mode === "admin" && !targetId) {
-      setResult({ ok: false, message: "SelectATargetUser." });
+      setResult({ ok: false, message: "Select A Target User." });
       return;
     }
     setBusy(true);
@@ -45,12 +45,12 @@ export function AdminChangePasswordScreen({ data }) {
         ? { user_id: targetId, new_password: newPassword }
         : { old_password: oldPassword, new_password: newPassword };
       const response = await apiPost("/Users/Auth/ChangePassword/", payload);
-      setResult({ ok: true, message: response.detail || "PasswordUpdated." });
+      setResult({ ok: true, message: response.detail || "Password Updated." });
       setOldPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (error) {
-      setResult({ ok: false, message: error?.data?.detail || error?.message || "UpdateFailed." });
+      setResult({ ok: false, message: error?.data?.detail || error?.message || "Update Failed." });
     } finally {
       setBusy(false);
     }
@@ -59,7 +59,7 @@ export function AdminChangePasswordScreen({ data }) {
   return (
     <Panel
       title={<span><KeyRound size={18} /> Change Password</span>}
-      subtitle={mode === "admin" ? "ResetPasswordForAnyUser (Admin)." : "UpdateYourOwnPassword."}
+      subtitle={mode === "admin" ? "Reset Password For Any User (Admin)." : "Update Your Own Password."}
       right={isAdmin ? (
         <div className="tabs" style={{ display: "Inline-Flex" }}>
           <button className={mode === "self" ? "active" : ""} onClick={() => setMode("self")}>My Account</button>
@@ -73,7 +73,7 @@ export function AdminChangePasswordScreen({ data }) {
             <label>Target User
               <span style={{ position: "relative", display: "block" }}>
                 <Search size={14} style={{ position: "absolute", left: 8, top: 9, opacity: 0.5 }} />
-                <input className="Mini-Inp" style={{ paddingLeft: 26 }} placeholder="SearchEmployees" value={query} onChange={(e) => setQuery(e.target.value)} />
+                <input className="Mini-Inp" style={{ paddingLeft: 26 }} placeholder="Search Employees" value={query} onChange={(e) => setQuery(e.target.value)} />
               </span>
             </label>
             <label>Select User
@@ -81,7 +81,7 @@ export function AdminChangePasswordScreen({ data }) {
                 <option value="">— Pick User —</option>
                 {filtered.map((employee) => (
                   <option key={employee.id} value={employee.user || employee.id}>
-                    {employee.display_name || employee.candidate_name || `#${employee.id}`} ({employee.candidate_email || "NoEmail"})
+                    {employee.display_name || employee.candidate_name || `#${employee.id}`} ({employee.candidate_email || "No Email"})
                   </option>
                 ))}
               </select>
@@ -101,7 +101,7 @@ export function AdminChangePasswordScreen({ data }) {
         </label>
         <div>
           <button className="Primary-Button" onClick={submit} disabled={busy}>
-            {busy ? "Saving…" : (mode === "admin" ? "ResetUserPassword" : "UpdateMyPassword")}
+            {busy ? "Saving…" : (mode === "admin" ? "Reset User Password" : "Update My Password")}
           </button>
         </div>
         {result && (

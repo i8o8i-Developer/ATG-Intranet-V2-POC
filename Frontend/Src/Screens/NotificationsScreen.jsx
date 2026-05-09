@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Bell, CheckCheck, Filter, Search } from "Lucide-React";
+import { Bell, CheckCheck, Filter, Search } from "lucide-react";
 import { apiPost } from "../Api/Client.js";
 import { Panel } from "./Shared/ScreenComponents.jsx";
 import { formatDate } from "./Shared/ScreenUtils.jsx";
@@ -72,7 +72,7 @@ export function NotificationsScreen({ data, reload, navigate }) {
               {categories.map((category) => <option key={category} value={category}>{category}</option>)}
             </select>
           </span>
-          <button className="Soft-ButtonSmall" onClick={markAllRead} disabled={busy || !unread.length}>
+          <button className="Soft-Button Small" onClick={markAllRead} disabled={busy || !unread.length}>
             <CheckCheck size={14} /> Mark All Read
           </button>
         </div>
@@ -80,14 +80,14 @@ export function NotificationsScreen({ data, reload, navigate }) {
     >
       <div className="Notification-List" style={{ maxHeight: "none" }}>
         {visible.map((item) => (
-          <div key={item.id} className={item.is_read ? "Notification-Item" : "Notification-ItemUnread"}>
+          <div key={item.id} className={item.is_read ? "Notification-Item" : "Notification-Item Unread"}>
             <div onClick={() => open(item)} style={{ cursor: "pointer", flex: 1 }}>
               <strong>{item.title || item.category || "Notification"}</strong>
-              <p>{item.message || item.description || "(NoContent)"}</p>
+              <p>{item.message || item.description || "(No Content)"}</p>
               <small>{formatDate(item.created_at)} · {item.category || item.resource_type || "general"}</small>
             </div>
             {!item.is_read && (
-              <button className="Soft-ButtonSmall" onClick={() => markRead(item)} disabled={busy}>Mark Read</button>
+              <button className="Soft-Button Small" onClick={() => markRead(item)} disabled={busy}>Mark Read</button>
             )}
           </div>
         ))}

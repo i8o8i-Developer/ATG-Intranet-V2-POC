@@ -1,14 +1,15 @@
 /* *
- * APISERVICELAYER - INTRANETV2
- * CentralizedAPIIntegrationWithAxios
+ * API Service Layer - Banao Intranet v2
+ * Centralized API Integration With Axios
  * */
 
 import axios from 'axios';
 
-// APIConfiguration
+// API Configuration
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-const DEFAULT_TIMEOUT = 30000; // 30Seconds
-// CreateAxiosInstance
+const DEFAULT_TIMEOUT = 30000; // 30 Seconds
+
+// Create Axios Instance
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: DEFAULT_TIMEOUT,
@@ -17,7 +18,9 @@ const apiClient = axios.create({
   },
 });
 
-// ============================================================================// REQUESTINTERCEPTOR// ============================================================================
+// ============================================================================
+// Request Interceptor
+// ============================================================================
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('authToken');
@@ -42,12 +45,14 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error('RequestError:', error);
+    console.error('Request Error:', error);
     return Promise.reject(error);
   }
 );
 
-// ============================================================================// RESPONSEINTERCEPTOR// ============================================================================
+// ============================================================================
+// Response Interceptor
+// ============================================================================
 apiClient.interceptors.response.use(
   (response) => {
     if (import.meta.env.DEV) {
@@ -69,30 +74,32 @@ apiClient.interceptors.response.use(
         break;
 
       case 403:
-        console.error('PermissionDenied:', message);
+        console.error('Permission Denied:', message);
         break;
 
       case 404:
-        console.error('ResourceNotFound:', message);
+        console.error('Resource Not Found:', message);
         break;
 
       case 422:
-        console.error('ValidationError:', error.response?.data);
+        console.error('Validation Error:', error.response?.data);
         break;
 
       case 500:
-        console.error('ServerError:', message);
+        console.error('Server Error:', message);
         break;
 
       default:
-        console.error('UnexpectedError:', error);
+        console.error('Unexpected Error:', error);
     }
 
     return Promise.reject(error);
   }
 );
 
-// ============================================================================// APISERVICEMETHODS// ============================================================================
+// ============================================================================
+// API Service Methods
+// ============================================================================
 const api = {
   get: (url, config = {}) => apiClient.get(url, config),
   post: (url, data = {}, config = {}) => apiClient.post(url, data, config),
@@ -100,7 +107,9 @@ const api = {
   patch: (url, data = {}, config = {}) => apiClient.patch(url, data, config),
   delete: (url, config = {}) => apiClient.delete(url, config),
 
-  // ============================================================================  // AUTHENTICATION  // ============================================================================
+  // ============================================================================
+  // Authentication
+  // ============================================================================
   auth: {
     login: (credentials) => apiClient.post('/users/login/', credentials),
     logout: () => apiClient.post('/users/logout/'),
@@ -108,7 +117,9 @@ const api = {
     changePassword: (data) => apiClient.post('/users/change-password/', data),
   },
 
-  // ============================================================================  // HRMS / EMPLOYEES  // ============================================================================
+  // ============================================================================
+  // HRMS / Employees
+  // ============================================================================
   employees: {
     list: (params = {}) => apiClient.get('/users/employees/', { params }),
     get: (id) => apiClient.get(`/users/employees/${id}/`),
@@ -117,17 +128,21 @@ const api = {
     patch: (id, data) => apiClient.patch(`/users/employees/${id}/`, data),
     delete: (id) => apiClient.delete(`/users/employees/${id}/`),
     
-    // EmployeeActions    activate: (id) => apiClient.post(`/users/employees/${id}/activate/`),
+    // Employee Actions
+    activate: (id) => apiClient.post(`/users/employees/${id}/activate/`),
     changeStatus: (id, data) => apiClient.post(`/users/employees/${id}/change-status/`, data),
     transferDepartment: (id, data) => apiClient.post(`/users/employees/${id}/transfer-department/`, data),
     assignSkill: (id, data) => apiClient.post(`/users/employees/${id}/assign-skill/`, data),
     completeOnboarding: (id) => apiClient.post(`/users/employees/${id}/complete-onboarding/`),
     saveTimezone: (id, data) => apiClient.post(`/users/employees/${id}/save-timezone/`, data),
     
-    // Dashboard    dashboard: () => apiClient.get('/users/employees/dashboard/'),
+    // Dashboard
+    dashboard: () => apiClient.get('/users/employees/dashboard/'),
   },
 
-  // ============================================================================  // DEPARTMENTS  // ============================================================================
+  // ============================================================================
+  // Departments
+  // ============================================================================
   departments: {
     list: (params = {}) => apiClient.get('/users/departments/', { params }),
     get: (id) => apiClient.get(`/users/departments/${id}/`),
@@ -137,7 +152,9 @@ const api = {
     assignDefaultSkills: (id, data) => apiClient.post(`/users/departments/${id}/assign-default-skills/`, data),
   },
 
-  // ============================================================================  // POSITIONS  // ============================================================================
+  // ============================================================================
+  // Positions
+  // ============================================================================
   positions: {
     list: (params = {}) => apiClient.get('/users/positions/', { params }),
     get: (id) => apiClient.get(`/users/positions/${id}/`),
@@ -146,7 +163,9 @@ const api = {
     delete: (id) => apiClient.delete(`/users/positions/${id}/`),
   },
 
-  // ============================================================================  // SKILLS  // ============================================================================
+  // ============================================================================
+  // Skills
+  // ============================================================================
   skills: {
     list: (params = {}) => apiClient.get('/users/skills/', { params }),
     get: (id) => apiClient.get(`/users/skills/${id}/`),
@@ -162,7 +181,9 @@ const api = {
     delete: (id) => apiClient.delete(`/users/user-skills/${id}/`),
   },
 
-  // ============================================================================  // GOALS & FEEDBACK  // ============================================================================
+  // ============================================================================
+  // Goals & Feedback
+  // ============================================================================
   goals: {
     list: (params = {}) => apiClient.get('/users/goals/', { params }),
     get: (id) => apiClient.get(`/users/goals/${id}/`),
@@ -176,7 +197,9 @@ const api = {
     create: (data) => apiClient.post('/users/goal-feedback/', data),
   },
 
-  // ============================================================================  // PAYROLL & PAYMENTS  // ============================================================================
+  // ============================================================================
+  // Payroll & Payments
+  // ============================================================================
   payments: {
     list: (params = {}) => apiClient.get('/users/payments/', { params }),
     get: (id) => apiClient.get(`/users/payments/${id}/`),
@@ -189,7 +212,9 @@ const api = {
     download: (fileId) => apiClient.get(`/users/payroll/download/${fileId}/`, { responseType: 'blob' }),
   },
 
-  // ============================================================================  // LEAVES  // ============================================================================
+  // ============================================================================
+  // Leaves
+  // ============================================================================
   leaves: {
     list: (params = {}) => apiClient.get('/mainapp/leaves/', { params }),
     get: (id) => apiClient.get(`/mainapp/leaves/${id}/`),
@@ -212,7 +237,9 @@ const api = {
     update: (id, data) => apiClient.put(`/users/leave-policies/${id}/`, data),
   },
 
-  // ============================================================================  // EOD & EFFORTREPORTS  // ============================================================================
+  // ============================================================================
+  // EOD & Effort Reports
+  // ============================================================================
   eod: {
     list: (params = {}) => apiClient.get('/tasks/eod/', { params }),
     get: (id) => apiClient.get(`/tasks/eod/${id}/`),
@@ -226,7 +253,9 @@ const api = {
     createReminders: (data) => apiClient.post('/users/effort-reports/create-reminders/', data),
   },
 
-  // ============================================================================  // PROJECTS  // ============================================================================
+  // ============================================================================
+  // Projects
+  // ============================================================================
   projects: {
     list: (params = {}) => apiClient.get('/projects/', { params }),
     get: (id) => apiClient.get(`/projects/${id}/`),
@@ -234,12 +263,15 @@ const api = {
     update: (id, data) => apiClient.put(`/projects/${id}/`, data),
     delete: (id) => apiClient.delete(`/projects/${id}/`),
     
-    // ProjectActions    addMember: (id, data) => apiClient.post(`/projects/${id}/add-member/`, data),
+    // Project Actions
+    addMember: (id, data) => apiClient.post(`/projects/${id}/add-member/`, data),
     removeMember: (id, data) => apiClient.post(`/projects/${id}/remove-member/`, data),
     updateBudget: (id, data) => apiClient.post(`/projects/${id}/update-budget/`, data),
   },
 
-  // ============================================================================  // TASKS  // ============================================================================
+  // ============================================================================
+  // Tasks
+  // ============================================================================
   tasks: {
     list: (params = {}) => apiClient.get('/tasks/', { params }),
     get: (id) => apiClient.get(`/tasks/${id}/`),
@@ -249,22 +281,28 @@ const api = {
     markComplete: (id) => apiClient.post(`/tasks/${id}/mark-complete/`),
   },
 
-  // ============================================================================  // OFFERS & CERTIFICATES  // ============================================================================
+  // ============================================================================
+  // Offers & Certificates
+  // ============================================================================
   offers: {
-    // CRUDOperations    list: (params = {}) => apiClient.get('/mainapp/OnboardingOffers/', { params }),
+    // CRUD Operations
+    list: (params = {}) => apiClient.get('/mainapp/OnboardingOffers/', { params }),
     get: (id) => apiClient.get(`/mainapp/OnboardingOffers/${id}/`),
     create: (data) => apiClient.post('/mainapp/OnboardingOffers/', data),
     update: (id, data) => apiClient.put(`/mainapp/OnboardingOffers/${id}/`, data),
     delete: (id) => apiClient.delete(`/mainapp/OnboardingOffers/${id}/`),
     
-    // OfferLifecycle    issue: (id, data = {}) => apiClient.post(`/mainapp/OnboardingOffers/${id}/issue/`, data),
+    // Offer Lifecycle
+    issue: (id, data = {}) => apiClient.post(`/mainapp/OnboardingOffers/${id}/issue/`, data),
     accept: (data) => apiClient.post('/mainapp/OnboardingOffers/accept/', data),
     queueReminders: () => apiClient.post('/mainapp/OnboardingOffers/queue-reminders/'),
     
-    // LegacySendMethods    send: (data) => apiClient.post('/mainapp/send-offer/', data),
+    // Legacy Send Methods
+    send: (data) => apiClient.post('/mainapp/send-offer/', data),
     sendPdf: (data) => apiClient.post('/mainapp/send-pdf-offer/', data),
     
-    // Preview & Download    preview: (token) => apiClient.get(`/mainapp/offer/${token}/`),
+    // Preview & Download
+    preview: (token) => apiClient.get(`/mainapp/offer/${token}/`),
     download: (token) => apiClient.get(`/mainapp/download-offer/${token}/`, { responseType: 'blob' }),
   },
 
@@ -272,7 +310,9 @@ const api = {
     send: (data) => apiClient.post('/mainapp/send-certificate/', data),
   },
 
-  // ============================================================================  // NOTIFICATIONS  // ============================================================================
+  // ============================================================================
+  // Notifications
+  // ============================================================================
   notifications: {
     list: (params = {}) => apiClient.get('/mainapp/notifications/', { params }),
     markRead: (id) => apiClient.post(`/mainapp/notifications/${id}/mark-read/`),
@@ -280,7 +320,9 @@ const api = {
     delete: (id) => apiClient.delete(`/mainapp/notifications/${id}/`),
   },
 
-  // ============================================================================  // RESIGNATIONS  // ============================================================================
+  // ============================================================================
+  // Resignations
+  // ============================================================================
   resignations: {
     list: (params = {}) => apiClient.get('/users/resignations/', { params }),
     get: (id) => apiClient.get(`/users/resignations/${id}/`),
@@ -288,7 +330,9 @@ const api = {
     approve: (id, data) => apiClient.post(`/users/resignations/${id}/approve/`, data),
   },
 
-  // ============================================================================  // ANALYTICS & REPORTS  // ============================================================================
+  // ============================================================================
+  // Analytics & Reports
+  // ============================================================================
   analytics: {
     headcount: (params = {}) => apiClient.get('/analytics/headcount/', { params }),
     performance: (params = {}) => apiClient.get('/analytics/performance/', { params }),
@@ -297,9 +341,13 @@ const api = {
   },
 };
 
-// ============================================================================// HELPERFUNCTIONS// ============================================================================
-/* *
- * SetAuthenticationToken */
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Set Authentication Token
+ */
 export const setAuthToken = (token) => {
   if (token) {
     localStorage.setItem('authToken', token);
@@ -310,12 +358,12 @@ export const setAuthToken = (token) => {
   }
 };
 
-/* *
- * SetTenantContext */
+/**
+ * Set Tenant Context
+ */
 export const setTenantContext = (tenantId, workspaceId = null) => {
   if (tenantId) {
-    localStorage.setItem('tenantId', tenantId);    
-    
+    localStorage.setItem('tenantId', tenantId);
   } else {
     localStorage.removeItem('tenantId');
   }
@@ -327,21 +375,24 @@ export const setTenantContext = (tenantId, workspaceId = null) => {
   }
 };
 
-/* *
- * GetCurrentUserFromLocalStorage */
+/**
+ * Get Current User From Local Storage
+ */
 export const getCurrentUser = () => {
   const userStr = localStorage.getItem('user');
   return userStr ? JSON.parse(userStr) : null;
 };
 
-/* *
- * SaveCurrentUserToLocalStorage */
+/**
+ * Save Current User To Local Storage
+ */
 export const saveCurrentUser = (user) => {
   localStorage.setItem('user', JSON.stringify(user));
 };
 
-/* *
- * ClearAllAuthData */
+/**
+ * Clear All Auth Data
+ */
 export const clearAuth = () => {
   localStorage.removeItem('authToken');
   localStorage.removeItem('user');
@@ -350,41 +401,47 @@ export const clearAuth = () => {
   delete apiClient.defaults.headers.common['Authorization'];
 };
 
-/* *
- * HandleAPIErrorsWithUser-FriendlyMessages */
+/**
+ * Handle API Errors With User-Friendly Messages
+ */
 export const handleApiError = (error) => {
   if (error.response) {
-    // ServerRespondedWithErrorStatus    const status = error.response.status;
+    // Server Responded With Error Status
+    const status = error.response.status;
     const data = error.response.data;
 
     if (status === 422 && data.errors) {
-      // ValidationErrors      return {
+      // Validation Errors
+      return {
         type: 'validation',
         errors: data.errors,
-        message: 'PleaseFixTheValidationErrors',
+        message: 'Please Fix The Validation Errors',
       };
     }
 
     return {
       type: 'error',
-      message: data.message || data.detail || 'AnErrorOccurred',
+      message: data.message || data.detail || 'An Error Occurred',
       status,
     };
   } else if (error.request) {
-    // RequestMadeButNoResponse    return {
+    // Request Made But No Response
+    return {
       type: 'error',
-      message: 'NoResponseFromServer. PleaseCheckYourConnection.',
+      message: 'No Response From Server. Please Check Your Connection.',
     };
   } else {
-    // ErrorInRequestSetup    return {
+    // Error In Request Setup
+    return {
       type: 'error',
-      message: error.message || 'AnUnexpectedErrorOccurred',
+      message: error.message || 'An Unexpected Error Occurred',
     };
   }
 };
 
-/* *
- * DownloadFileFromBlobResponse */
+/**
+ * Download File From Blob Response
+ */
 export const downloadFile = (blob, filename) => {
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement('a');

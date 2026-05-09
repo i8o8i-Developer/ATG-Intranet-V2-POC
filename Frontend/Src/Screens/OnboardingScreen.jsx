@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { CheckCircle, User, MapPin, Phone, AlertTriangle } from "Lucide-React";
+import { CheckCircle, User, MapPin, Phone, AlertTriangle } from "lucide-react";
 import { apiGet, apiPatch, apiPost } from "../Api/Client.js";
 import { resolveActiveEmployee } from "./Shared/ScreenUtils.jsx";
 
@@ -18,11 +18,11 @@ export default function OnboardingScreen({ data, reload, navigate }) {
 
   const submit = async () => {
     if (!form.display_name) {
-      setError("PleaseProvideYourFullName.");
+      setError("Please Provide Your Full Name.");
       return;
     }
     if (!employee?.id) {
-      setError("EmployeeNotFound. PleaseRefreshThePage.");
+      setError("Employee Not Found. Please Refresh The Page.");
       return;
     }
     setBusy(true);
@@ -33,14 +33,14 @@ export default function OnboardingScreen({ data, reload, navigate }) {
       reload(["me", "employees"]);
       navigate("/home/");
     } catch (err) {
-      setError(err?.message || "FailedToCompleteOnboarding.");
+      setError(err?.message || "Failed To Complete Onboarding.");
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <section className="Onboarding-ScreenScreen-Stack">
+    <section className="Onboarding-Screen Screen-Stack">
       <section className="Page-Heading">
         <div>
           <span>Welcome</span>
@@ -58,45 +58,45 @@ export default function OnboardingScreen({ data, reload, navigate }) {
 
           {error && <div className="Login-Error"><AlertTriangle size={16} /> {error}</div>}
 
-          <div className="Form-GridTwo">
+          <div className="Form-Grid Two">
             <label>
               Full Name
               <input
                 value={form.display_name}
                 onChange={(e) => update("display_name", e.target.value)}
-                placeholder="YourFullLegalName"
-              />
-            </label>
-            <label>
-              Phone Number
-              <input
-                type="tel"
-                value={form.phone}
-                onChange={(e) => update("phone", e.target.value)}
-                placeholder="+91XXXXXXXXXX"
-              />
-            </label>
-            <label>
-              Address
-              <input
-                value={form.address}
-                onChange={(e) => update("address", e.target.value)}
-                placeholder="YourCurrentAddress"
-              />
-            </label>
-            <label>
-              Emergency Contact
-              <input
-                value={form.emergency_contact}
-                onChange={(e) => update("emergency_contact", e.target.value)}
-                placeholder="Name - Relationship - Phone"
-              />
-            </label>
-          </div>
+              placeholder="Your Full Legal Name"
+            />
+          </label>
+          <label>
+            Phone Number
+            <input
+              type="tel"
+              value={form.phone}
+              onChange={(e) => update("phone", e.target.value)}
+              placeholder="+91 XXXXXXXXXX"
+            />
+          </label>
+          <label>
+            Address
+            <input
+              value={form.address}
+              onChange={(e) => update("address", e.target.value)}
+              placeholder="Your Current Address"
+            />
+          </label>
+          <label>
+            Emergency Contact
+            <input
+              value={form.emergency_contact}
+              onChange={(e) => update("emergency_contact", e.target.value)}
+              placeholder="Name - Relationship - Phone"
+            />
+          </label>
+        </div>
 
-          <button className="Primary-Button" onClick={submit} disabled={busy}>
-            {busy ? "Completing..." : "CompleteOnboarding"} <CheckCircle size={16} />
-          </button>
+        <button className="Primary-Button" onClick={submit} disabled={busy}>
+          {busy ? "Completing..." : "Complete Onboarding"} <CheckCircle size={16} />
+        </button>
         </div>
       </div>
     </section>

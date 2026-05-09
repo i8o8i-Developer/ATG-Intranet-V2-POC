@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Award, FileSignature, Plus, Save, ShieldCheck } from "Lucide-React";
+import { Award, FileSignature, Plus, Save, ShieldCheck } from "lucide-react";
 
 import { apiPost } from "../Api/Client.js";
 import { Modal, Panel, Tabs } from "./Shared/ScreenComponents.jsx";
@@ -14,7 +14,7 @@ const CERTIFICATE_TYPES = [
 ];
 
 function fmtDate(value) {
-  return value ? new Date(value).toLocaleDateString("En-GB", { day: "2-Digit", month: "long", year: "numeric" }) : "—";
+  return value ? new Date(value).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—";
 }
 
 function applyTemplate(template, vars) {
@@ -51,7 +51,7 @@ function buildCertificateHtml({ typeId, body, vars, accent }) {
     .certificate-footer{text-align:center;font-size:10px;margin-top:34px;color:#475467}
   </style></head><body><div class='Certificate-Shell'>
     <div class='Certificate-Logo'>ATG</div>
-    <div class='Certificate-Date'><strong>${new Date().toLocaleDateString("En-GB", { day: "2-Digit", month: "long", year: "numeric" })}</strong></div>
+    <div class='Certificate-Date'><strong>${new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })}</strong></div>
     <div class='Certificate-Heading'>TO WHOMSOEVER IT MAY CONCERN</div>
     <div class='Certificate-Type'>${type.subtitle || (typeId || "").toUpperCase()}</div>
     <div class='Certificate-Copy'>${body}</div>
@@ -155,13 +155,13 @@ export function SendCertificateScreen({ data, reload }) {
   };
 
   return (
-    <section className="Certificate-PageScreen-Stack">
+    <section className="Certificate-Page Screen-Stack">
       <Tabs value={tab} onChange={setTab} items={[["issue", "IssueCertificates"], ["templates", "Templates"]]} />
 
       {tab === "issue" && (
         <>
-          <Panel title={<span><Award size={18} /> Issue Certificates</span>} subtitle="PickAType, ChooseRecipients, CustomiseContent, Preview, ThenSend.">
-            <div className="Form-GridTwo">
+          <Panel title={<span><Award size={18} /> Issue Certificates</span>} subtitle="Pick A Type, Choose Recipients, Customise Content, Preview, Then Send.">
+            <div className="Form-Grid Two">
               <label>Certificate Type
                 <select value={form.typeId} onChange={(event) => setForm({ ...form, typeId: event.target.value, templateId: "" })}>
                   {CERTIFICATE_TYPES.map((type) => <option key={type.id} value={type.id}>{type.label}</option>)}
@@ -189,7 +189,7 @@ export function SendCertificateScreen({ data, reload }) {
 
           <Panel title={<span><ShieldCheck size={18} /> Recipients ({form.selectedEmployees.length})</span>} right={(
             <div className="Button-Pair">
-              <button className="Outline-Button" onClick={() => setShowPreview((value) => !value)}>{showPreview ? "HidePreview" : "Preview"}</button>
+              <button className="Outline-Button" onClick={() => setShowPreview((value) => !value)}>{showPreview ? "Hide Preview" : "Preview"}</button>
               <button className="Primary-Button" onClick={submit} disabled={busy || !form.selectedEmployees.length}>
                 {busy ? "Sending…" : `Issue To ${form.selectedEmployees.length || "—"}`}
               </button>
@@ -213,7 +213,7 @@ export function SendCertificateScreen({ data, reload }) {
           </Panel>
 
           {showPreview && (
-            <Panel title="CertificatePreview" right={<button className="Soft-ButtonSmall" onClick={() => setShowPreview(false)}>Close</button>}>
+            <Panel title="Certificate Preview" right={<button className="Soft-Button Small" onClick={() => setShowPreview(false)}>Close</button>}>
               <iframe title="CertificatePreview" srcDoc={html} style={{ width: "100%", minHeight: "560px", border: "1pxSolid #E5e7eb", borderRadius: "10px", background: "#fff" }} />
             </Panel>
           )}
@@ -231,7 +231,7 @@ export function SendCertificateScreen({ data, reload }) {
       )}
 
       {tab === "templates" && (
-        <Panel title={<span><FileSignature size={18} /> Certificate Templates</span>} right={<button className="Primary-ButtonSmall" onClick={() => setCreateTemplateOpen(true)}><Plus size={14} /> New Template</button>}>
+        <Panel title={<span><FileSignature size={18} /> Certificate Templates</span>} right={<button className="Primary-Button Small" onClick={() => setCreateTemplateOpen(true)}><Plus size={14} /> New Template</button>}>
           <table className="Erp-Table">
             <thead><tr><th>Title</th><th>Category</th><th>Variables</th><th>Updated</th></tr></thead>
             <tbody>
@@ -267,12 +267,12 @@ function CreateCertificateTemplateModal({ onClose, reload }) {
       reload(["contentTemplates"]);
       onClose();
     } catch (err) {
-      setError(err?.data ? JSON.stringify(err.data) : err?.message || "FailedToSaveTemplate.");
+      setError(err?.data ? JSON.stringify(err.data) : err?.message || "Failed To Save Template.");
     } finally { setBusy(false); }
   };
   return (
-    <Modal title="NewCertificateTemplate" onClose={onClose} wide>
-      <div className="Form-GridTwoModal-Form">
+    <Modal title="New Certificate Template" onClose={onClose} wide>
+      <div className="Form-Grid Two Modal-Form">
         <label>Title<input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label>
         <label>Code<input value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} /></label>
         <label>Category<select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}><option>Certificate</option><option>Letter</option><option>Award</option></select></label>
@@ -281,7 +281,7 @@ function CreateCertificateTemplateModal({ onClose, reload }) {
         <textarea rows={10} value={form.body} onChange={(event) => setForm({ ...form, body: event.target.value })} />
       </label>
       {error && <p style={{ color: "#b91c1c" }}>{error}</p>}
-      <button className="Primary-Button" onClick={save} disabled={busy || !form.title || !form.body}><Save size={14} /> {busy ? "Saving…" : "SaveTemplate"}</button>
+      <button className="Primary-Button" onClick={save} disabled={busy || !form.title || !form.body}><Save size={14} /> {busy ? "Saving…" : "Save Template"}</button>
     </Modal>
   );
 }

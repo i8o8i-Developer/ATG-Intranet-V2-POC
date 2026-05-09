@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Clock, Plus, Share2, Upload } from "Lucide-React";
+import { Clock, Plus, Share2, Upload } from "lucide-react";
 
 import { apiGet, apiPost } from "../Api/Client.js";
 import { EmptyState, Modal, StatusPill, Tabs } from "./Shared/ScreenComponents.jsx";
@@ -34,7 +34,7 @@ export function DocsScreen({ data, navigate, reload }) {
       <aside className="Docs-Side">
         {types.map((item) => (
           <button key={item} className={item === type ? "active" : ""} onClick={() => setType(item)}>
-            {item === "all" ? "AllDocuments" : item}
+            {item === "all" ? "All Documents" : item}
           </button>
         ))}
       </aside>
@@ -43,16 +43,16 @@ export function DocsScreen({ data, navigate, reload }) {
           <strong>Across The Globe</strong>
           <span>
             <button onClick={() => navigate("/home/")}>Home</button>
-            <button className="Primary-ButtonSmall" onClick={() => setNewOpen(true)}><Plus size={14} /> New Doc</button>
-            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="SearchForDocs..." />
+            <button className="Primary-Button Small" onClick={() => setNewOpen(true)}><Plus size={14} /> New Doc</button>
+            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search For Docs..." />
           </span>
         </nav>
         <Tabs
           value={tab}
           onChange={setTab}
           items={[
-            ["all", "AllDocuments"],
-            ["mine", "MyDocs"],
+            ["all", "All Documents"],
+            ["mine", "My Docs"],
             ["history", "History"],
           ]}
         />
@@ -62,14 +62,14 @@ export function DocsScreen({ data, navigate, reload }) {
             {docs.map((doc) => (
               <tr key={doc.id} onClick={() => navigate(`/docs/post-detail/${doc.id}`)}>
                 <td>{doc.title}</td>
-                <td><StatusPill tone={doc.visibility === "Private" ? "red" : "green"}>{doc.visibility || "AuthenticatedUser"}</StatusPill></td>
+                <td><StatusPill tone={doc.visibility === "Private" ? "red" : "green"}>{doc.visibility || "Authenticated User"}</StatusPill></td>
                 <td>{doc.document_type}</td>
                 <td><Clock size={12} /> {formatDateTime(doc.updated_at)}</td>
               </tr>
             ))}
           </tbody>
         </table>
-        {!docs.length && <EmptyState label="NoDocumentsReturnedFromBackend." />}
+        {!docs.length && <EmptyState label="No Documents Returned From Backend." />}
       </main>
       {newOpen && <NewDocModal onClose={() => setNewOpen(false)} reload={() => { reload(); setMyDocs(null); }} />}
     </section>
@@ -93,7 +93,7 @@ export function DocsDetailScreen({ data, route, navigate, reload }) {
 
   return (
     <section className="Docs-Detail">
-      <nav className="Docs-NavDark">
+      <nav className="Docs-Nav Dark">
         <strong>Across The Globe</strong>
         <span>
           <button onClick={() => navigate("/docs/")}>Home</button>
@@ -110,7 +110,7 @@ export function DocsDetailScreen({ data, route, navigate, reload }) {
         <StatusPill tone={doc.status === "Published" ? "green" : "gold"}>{doc.status || "Draft"}</StatusPill>
         <hr />
         <div className="Doc-Body" dangerouslySetInnerHTML={{ __html: doc.body || doc.metadata?.body || "" }} />
-        {!doc.body && !doc.metadata?.body && <p className="Doc-Body">{doc.description || "DocumentContentHasNotBeenPopulatedYet."}</p>}
+        {!doc.body && !doc.metadata?.body && <p className="Doc-Body">{doc.description || "Document Content Has Not Been Populated Yet."}</p>}
       </article>
       {editOpen && <EditDocModal doc={doc} onClose={() => setEditOpen(false)} reload={reload} />}
       {permOpen && <GrantPermissionModal docId={id} data={data} onClose={() => setPermOpen(false)} reload={reload} />}
@@ -134,12 +134,12 @@ function NewDocModal({ onClose, reload }) {
   };
 
   return (
-    <Modal title="NewDocument" onClose={onClose} wide>
-      <div className="Form-GridTwoModal-Form">
+    <Modal title="New Document" onClose={onClose} wide>
+      <div className="Form-Grid Two Modal-Form">
         <label>Title<input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label>
         <label>Type<input value={form.document_type} onChange={(event) => setForm({ ...form, document_type: event.target.value })} /></label>
         <label>Visibility<select value={form.visibility} onChange={(event) => setForm({ ...form, visibility: event.target.value })}><option>Private</option><option>Authenticated</option><option>Public</option></select></label>
-        <label>Status<select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}><option>Draft</option><option>InReview</option><option>Published</option></select></label>
+        <label>Status<select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}><option>Draft</option><option>In Review</option><option>Published</option></select></label>
       </div>
       <label>Body<textarea rows={10} value={form.body} onChange={(event) => setForm({ ...form, body: event.target.value })} /></label>
       <label className="Inline-Checkbox"><input type="checkbox" checked={form.upload_to_drive} onChange={(event) => setForm({ ...form, upload_to_drive: event.target.checked })} /> Upload To Drive</label>
@@ -158,12 +158,12 @@ function EditDocModal({ doc, onClose, reload }) {
   };
 
   return (
-    <Modal title="EditDocument" onClose={onClose} wide>
-      <div className="Form-GridTwoModal-Form">
+    <Modal title="Edit Document" onClose={onClose} wide>
+      <div className="Form-Grid Two Modal-Form">
         <label>Title<input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label>
         <label>Type<input value={form.document_type} onChange={(event) => setForm({ ...form, document_type: event.target.value })} /></label>
         <label>Visibility<select value={form.visibility} onChange={(event) => setForm({ ...form, visibility: event.target.value })}><option>Private</option><option>Authenticated</option><option>Public</option></select></label>
-        <label>Status<select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}><option>Draft</option><option>InReview</option><option>Published</option></select></label>
+        <label>Status<select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}><option>Draft</option><option>In Review</option><option>Published</option></select></label>
       </div>
       <label>Body<textarea rows={12} value={form.body} onChange={(event) => setForm({ ...form, body: event.target.value })} /></label>
       <button className="Primary-Button" onClick={save} disabled={!form.title}>Save Document</button>
@@ -187,8 +187,8 @@ function GrantPermissionModal({ docId, data, onClose, reload }) {
   };
 
   return (
-    <Modal title="GrantPermission" onClose={onClose}>
-      <div className="Form-GridTwoModal-Form">
+    <Modal title="Grant Permission" onClose={onClose}>
+      <div className="Form-Grid Two Modal-Form">
         <label>Subject Type<select value={form.subject_type} onChange={(event) => setForm({ ...form, subject_type: event.target.value })}><option>Employee</option><option>Department</option><option>Email</option></select></label>
         {form.subject_type === "Email" ? (
           <label>Email<input value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} /></label>

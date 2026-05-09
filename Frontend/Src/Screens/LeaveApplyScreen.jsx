@@ -32,7 +32,7 @@ export function LeaveApplyScreen({ data, selectedEmployeeId, reload }) {
 
   const reviewLeave = async (id, action) => {
     if (!id) return;
-    await apiPost(`/MainApp/LeaveRequests/${id}/${action}/`, action === "reject" ? { reason: "RejectedFromLeaveConsole" } : {});
+    await apiPost(`/MainApp/LeaveRequests/${id}/${action}/`, action === "reject" ? { reason: "Rejected From Leave Console" } : {});
     reload();
   };
 
@@ -49,8 +49,8 @@ export function LeaveApplyScreen({ data, selectedEmployeeId, reload }) {
     if (isSuperAdmin) {
       base.push(
         <span className="Table-Actions" key="actions">
-          <button className="Soft-ButtonSmall" onClick={() => reviewLeave(item.id, "approve")} disabled={String(item.status).toLowerCase() === "approved"}>Approve</button>
-          <button className="Soft-ButtonSmallDanger" onClick={() => reviewLeave(item.id, "reject")} disabled={String(item.status).toLowerCase() === "rejected"}>Reject</button>
+          <button className="Soft-Button Small" onClick={() => reviewLeave(item.id, "approve")} disabled={String(item.status).toLowerCase() === "approved"}>Approve</button>
+          <button className="Soft-Button Small Danger" onClick={() => reviewLeave(item.id, "reject")} disabled={String(item.status).toLowerCase() === "rejected"}>Reject</button>
         </span>,
       );
     }
@@ -58,11 +58,11 @@ export function LeaveApplyScreen({ data, selectedEmployeeId, reload }) {
   });
 
   return (
-    <section className="Leave-ScreenScreen-Stack">
-      <section className="Page-Heading"><div><span>MainApp / Leave</span><h1>{isSuperAdmin ? "LeaveConsole" : "ApplyLeave"}</h1></div><StatusPill tone="gold">{leaveRows.filter((item) => !isCompleted(item.status) && String(item.status).toLowerCase() !== "approved").length} Pending</StatusPill></section>
-      <section className="Split-GridTwo-One">
-        <Panel title="LeaveRequest" subtitle="SubmitsToMainAppLeaveWorkflow.">
-          <div className="Form-GridTwo">
+    <section className="Leave-Screen Screen-Stack">
+      <section className="Page-Heading"><div><span>Main App / Leave</span><h1>{isSuperAdmin ? "Leave Console" : "Apply Leave"}</h1></div><StatusPill tone="gold">{leaveRows.filter((item) => !isCompleted(item.status) && String(item.status).toLowerCase() !== "approved").length} Pending</StatusPill></section>
+      <section className="Split-Grid Two-One">
+        <Panel title="Leave Request" subtitle="Submits To Main App Leave Workflow.">
+          <div className="Form-Grid Two">
             <label>Employee{isSuperAdmin ? <select value={form.employee_id} onChange={(event) => setForm({ ...form, employee_id: event.target.value })}>{(data.employees || []).map((item) => <option key={item.id} value={item.id}>{item.display_name}</option>)}</select> : <input value={employee.display_name || ""} readOnly />}</label>
             <label>Leave Type<select value={form.leave_type} onChange={(event) => setForm({ ...form, leave_type: event.target.value })}><option>Paid</option><option>Sick</option><option>Casual</option><option>Unpaid</option><option>Comp Off</option></select></label>
             <label>Starts On<input type="date" value={form.starts_on} onChange={(event) => setForm({ ...form, starts_on: event.target.value })} /></label>
@@ -72,9 +72,9 @@ export function LeaveApplyScreen({ data, selectedEmployeeId, reload }) {
           <button className="Primary-Button" onClick={submit} disabled={!form.employee_id || !form.starts_on || !form.ends_on}>Submit Leave</button>
           {result && <pre>{JSON.stringify(result, null, 2)}</pre>}
         </Panel>
-        <Panel title="LeaveWallets"><SimpleTable columns={["Employee", "Balance", "Accrued", "Used"]} rows={visibleBalances.slice(0, isSuperAdmin ? 50 : 8).map((item) => [employeeName(data, item.employee), item.balance || item.available_balance || item.amount, item.accrued || "-", item.used || "-"])} /></Panel>
+        <Panel title="Leave Wallets"><SimpleTable columns={["Employee", "Balance", "Accrued", "Used"]} rows={visibleBalances.slice(0, isSuperAdmin ? 50 : 8).map((item) => [employeeName(data, item.employee), item.balance || item.available_balance || item.amount, item.accrued || "-", item.used || "-"])} /></Panel>
       </section>
-      <Panel title="LeaveRequests"><SimpleTable columns={requestColumns} rows={requestRows} /></Panel>
+      <Panel title="Leave Requests"><SimpleTable columns={requestColumns} rows={requestRows} /></Panel>
     </section>
   );
 }

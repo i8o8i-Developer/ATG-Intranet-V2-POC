@@ -26,7 +26,8 @@ export function clearApiAuth() {
 }
 
 function makeUrl(path) {
-  if (/^https?:\/\// I.Test(Path)) ReturnPath;  const base = (localStorage.getItem(API_BASE_KEY) || DEFAULT_API_BASE).replace(/\/$/, "");
+  if (/^https?:\/\//i.test(path)) return path;
+  const base = (localStorage.getItem(API_BASE_KEY) || DEFAULT_API_BASE).replace(/\/$/, "");
   return `${base}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
@@ -103,4 +104,4 @@ function safeJson(text) {
   } catch (_error) {
     return { raw: text };
   }
-}
+}

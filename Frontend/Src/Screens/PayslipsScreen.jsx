@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Download, FileText } from "Lucide-React";
+import { Download, FileText } from "lucide-react";
 
 import { EmptyState, Modal, Panel, SimpleTable, StatCard, StatusPill } from "./Shared/ScreenComponents.jsx";
 import { employeeName, money } from "./Shared/ScreenUtils.jsx";
@@ -43,40 +43,41 @@ export function PayslipsScreen({ data }) {
   const totalNet = filtered.reduce((sum, row) => sum + Number(row.net || 0), 0);
 
   const openPayslip = (row) => {
-    if (row.storage && /^https?:\/\// .Test(Row.Storage)) {      window.open(row.storage, "_blank", "noopener");
+    if (row.storage && /^https?:\/\//.test(row.storage)) {
+      window.open(row.storage, "_blank", "noopener");
     } else {
       setSelected(row);
     }
   };
 
   return (
-    <section className="Payslip-ScreenScreen-Stack">
+    <section className="Payslip-Screen Screen-Stack">
       <section className="Page-Heading">
         <div>
           <span>Finance / Payslips</span>
-          <h1>{isSuperAdmin ? "AllPayslips" : "MyPayslips"}</h1>
+          <h1>{isSuperAdmin ? "All Payslips" : "My Payslips"}</h1>
         </div>
         <StatusPill tone="blue">{filtered.length} Available</StatusPill>
       </section>
 
-      <div className="Stat-GridFour">
+      <div className="Stat-Grid Four">
         <StatCard label="Payslips" value={filtered.length} />
-        <StatCard label="TotalNet" value={money(totalNet)} />
-        <StatCard label="PayPeriods" value={(data.payPeriods || []).length} />
+        <StatCard label="Total Net" value={money(totalNet)} />
+        <StatCard label="Pay Periods" value={(data.payPeriods || []).length} />
         <StatCard label="Pending" value={filtered.filter((row) => String(row.status).toLowerCase() === "pending").length} />
       </div>
 
       {isSuperAdmin && (
-        <Panel title="Search" subtitle="FilterAllPayslipsByEmployeeName.">
+        <Panel title="Search" subtitle="Filter All Payslips By Employee Name.">
           <div className="Form-Grid">
-            <label>Search<input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="EmployeeName" /></label>
+            <label>Search<input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Employee Name" /></label>
           </div>
         </Panel>
       )}
 
-      <Panel title="Payslips" subtitle="Source: /FinanceAndPayroll/PayslipDocuments/.">
+      <Panel title="Payslips" subtitle="Source: /Finance And Payroll / Payslip Documents/.">
         <SimpleTable
-          columns={["Employee", "PayRun", "Period", "Gross", "Deduction", "Net", "Status", "Action"]}
+          columns={["Employee", "Pay Run", "Period", "Gross", "Deduction", "Net", "Status", "Action"]}
           rows={filtered.map((row) => [
             row.employeeName,
             row.runId || "-",
@@ -86,13 +87,14 @@ export function PayslipsScreen({ data }) {
             money(row.net),
             <StatusPill key="status" tone={String(row.status).toLowerCase() === "issued" || String(row.status).toLowerCase() === "paid" ? "green" : "gold"}>{row.status}</StatusPill>,
             <span className="Table-Actions" key="actions">
-              <button className="Soft-ButtonSmall" onClick={() => openPayslip(row)}><FileText size={13} /> View</button>
-              {row.storage && /^https?:\/\// .Test(Row.Storage) && (                <a className="Soft-ButtonSmall" href={row.storage} target="_blank" rel="noreferrer" download><Download size={13} /> Download</a>
+              <button className="Soft-Button Small" onClick={() => openPayslip(row)}><FileText size={13} /> View</button>
+              {row.storage && /^https?:\/\//.test(row.storage) && (
+                <a className="Soft-Button Small" href={row.storage} target="_blank" rel="noreferrer" download><Download size={13} /> Download</a>
               )}
             </span>,
           ])}
         />
-        {!filtered.length && <EmptyState label="NoPayslipsAvailableYet." />}
+        {!filtered.length && <EmptyState label="No Payslips Available Yet." />}
       </Panel>
 
       {selected && (
@@ -105,7 +107,7 @@ export function PayslipsScreen({ data }) {
             <div><dt>Deduction</dt><dd>{money(selected.deduction)}</dd></div>
             <div><dt>Net</dt><dd>{money(selected.net)}</dd></div>
             <div><dt>Status</dt><dd>{selected.status}</dd></div>
-            <div><dt>Reference</dt><dd>{selected.storage || "NotYetUploaded."}</dd></div>
+            <div><dt>Reference</dt><dd>{selected.storage || "Not Yet Uploaded."}</dd></div>
           </dl>
           {selected.metadata?.components && (
             <Panel title="Components">

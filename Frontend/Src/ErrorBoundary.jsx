@@ -35,43 +35,43 @@ class ErrorBoundary extends React.Component {
             padding: '2rem',
             backgroundColor: 'white',
             borderRadius: '8px',
-            boxShadow: '02px8pxRgba(0,0,0,0.1)'
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
           }}>
             <h1 style={{ color: '#dc3545', marginBottom: '1rem' }}>
               Oops! Something Went Wrong
             </h1>
             <p style={{ color: '#6c757d', marginBottom: '1.5rem' }}>
-              We'ReSorryForTheInconvenience. TheApplicationEncounteredAnUnexpectedError.
-            </P>
-            <DetailsStyle={{ 
-              Padding: '1rem',
-              BackgroundColor: '#f8f9fa',
-              BorderRadius: '4px',
-              MarginBottom: '1rem'
+              We're Sorry For The Inconvenience. The Application Encountered An Unexpected Error.
+            </p>
+            <details style={{ 
+              padding: '1rem',
+              backgroundColor: '#f8f9fa',
+              borderRadius: '4px',
+              marginBottom: '1rem'
             }}>
-              <SummaryStyle={{ Cursor: 'pointer', FontWeight: '500', MarginBottom: '0.5rem' }}>
-                ErrorDetails
-              </Summary>
-              <PreStyle={{
-                FontSize: '0.875rem',
-                WhiteSpace: 'pre-wrap',
-                WordBreak: 'break-word'
+              <summary style={{ cursor: 'pointer', fontWeight: '500', marginBottom: '0.5rem' }}>
+                Error Details
+              </summary>
+              <pre style={{
+                fontSize: '0.875rem',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word'
               }}>
-                {This.State.Error && This.State.Error.ToString()}
-                <Br />
-                {This.State.ErrorInfo && This.State.ErrorInfo.ComponentStack}
-              </Pre>
-            </Details>
-            <ButtonOnClick={() => Window.Location.Reload()}
-              Style={{
-                Padding: '0.75rem 1.5rem',
-                BackgroundColor: '#007bff',
-                Color: 'white',
-                Border: 'none',
-                BorderRadius: '4px',
-                Cursor: 'pointer',
-                FontSize: '1rem',
-                FontWeight: '500'
+                {this.state.error && this.state.error.toString()}
+                <br />
+                {this.state.errorInfo && this.state.errorInfo.componentStack}
+              </pre>
+            </details>
+            <button onClick={() => window.location.reload()}
+              style={{
+                padding: '0.75rem 1.5rem',
+                backgroundColor: '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '1rem',
+                fontWeight: '500'
               }}
             >
               Reload Application

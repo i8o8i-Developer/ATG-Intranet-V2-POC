@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { AlertTriangle, Bell, LogOut } from "Lucide-React";
+import { AlertTriangle, Bell, LogOut } from "lucide-react";
 import { apiGet, apiPost, clearApiAuth, getApiSettings, unpackList } from "./Api/Client.js";
 import { LoginScreen, ProfileScreen } from "./Screens/AuthScreens.jsx";
 import { RouteRenderer } from "./Screens/AppScreens.jsx";
 import OfferAcceptanceScreen from "./Screens/OfferAcceptanceScreen.jsx";
-import { resolveActiveEmployee } from "./Screens/Shared/ScreenUtils.jsx"; // ForcedReload
+import { resolveActiveEmployee } from "./Screens/Shared/ScreenUtils.jsx"; // Forced Reload
 import {
   ATGLogo,
   IconHome,
@@ -30,31 +30,31 @@ import {
   SvgChevronDown,
 } from "./Components/icons/icons.jsx";
 
-// ─── FlatNavListForPage-TitleLookup (UnchangedFromOriginal) ────────────
+// ─── Flat Nav List For Page Title Lookup ────────────
 const navItems = [
   { label: "Home",                  path: "/home/" },
-  { label: "WorkflowIntelligence", path: "/workflow/" },
+  { label: "Workflow Intelligence", path: "/workflow/" },
   { label: "HRMS",                  path: "/hrms/" },
   { label: "LMS",                   path: "/lms/" },
-  { label: "MCPAgents",            path: "/mcp/" },
-  { label: "DevelopmentProjects",  path: "/project/dashboard/" },
-  { label: "MarketingProject",     path: "/marketing-project/" },
-  { label: "ApplyLeave",           path: "/leave/apply/" },
-  { label: "PasswordManagement",   path: "/change-password/" },
+  { label: "MCP Agents",            path: "/mcp/" },
+  { label: "Development Projects",  path: "/project/dashboard/" },
+  { label: "Marketing Project",     path: "/marketing-project/" },
+  { label: "Apply Leave",           path: "/leave/apply/" },
+  { label: "Password Management",   path: "/change-password/" },
   { label: "Assessments",           path: "/assessment/" },
-  { label: "BankDetails",          path: "/Bankdetails/" },
+  { label: "Bank Details",          path: "/Bankdetails/" },
   { label: "Payslips",              path: "/payslips/" },
-  { label: "ManageEmployees",      path: "/employee-registrar/" },
-  { label: "SendOffer",            path: "/Onboard/Send_Offer" },
-  { label: "SendCertificate",      path: "/send-certificate" },
-  { label: "DeactivateEmployee",   path: "/deactivate-multiple-employee/" },
+  { label: "Manage Employees",      path: "/employee-registrar/" },
+  { label: "Send Offer",            path: "/Onboard/Send_Offer" },
+  { label: "Send Certificate",      path: "/send-certificate" },
+  { label: "Deactivate Employee",   path: "/deactivate-multiple-employee/" },
   { label: "Documents",             path: "/docs/" },
-  { label: "FinanceDepartment",    path: "/payments/" },
-  { label: "NewEmployeeRegister", path: "/employee-registrar/new/" },
-  { label: "MCPAgents",            path: "/mcp/" },
+  { label: "Finance Department",    path: "/payments/" },
+  { label: "New Employee Register", path: "/employee-registrar/new/" },
+  { label: "MCP Agents",            path: "/mcp/" },
   { label: "Notifications",         path: "/notifications/" },
-  { label: "PayrollDownloads",     path: "/payroll-downloads/" },
-  { label: "DelayManagement",      path: "/delays/" },
+  { label: "Payroll Downloads",     path: "/payroll-downloads/" },
+  { label: "Delay Management",      path: "/delays/" },
 ];
 
 const endpointMap = [
@@ -199,46 +199,44 @@ const endpointMap = [
   ["accessAuditLogs", "/EnterpriseCore/AccessAuditLogs/", "list"],
 ];
 
-
-
-// ─── NavStructure — MapsFigmaItemsToYourExistingPaths ─────────────────
+// ─── Nav Structure — Maps Figma Items To Your Existing Paths ─────────────────
 function buildNavItems(activePath) {
   return [
     { label: "Home",                 icon: <IconHome active={activePath === "/home/"} />, path: "/home/" },
-    { label: "WorkflowIntelligence",icon: <IconWorkflow />,         path: "/workflow/" },
+    { label: "Workflow Intelligence", icon: <IconWorkflow />,         path: "/workflow/" },
     { label: "HRMS",                 icon: <IconHRMS />,             path: "/hrms/" },
     { label: "LMS",                  icon: <IconLMS />,              path: "/lms/" },
     { label: "MCP",                  icon: <IconMCP />,              path: "/mcp/" },
     {
-      label: "DevelopmentProject",
+      label: "Development Project",
       icon: <IconDevProject />,
       path: "/project/dashboard/",
       children: [],
     },
-    { label: "MarketingProject",    icon: <IconMarketing />,        path: "/marketing-project/", children: [] },
-    { label: "ApplyLeave",          icon: <IconCalendar />,         path: "/leave/apply/" },
-    { label: "PasswordManagement",  icon: <IconPassword />,         path: "/change-password/" },
+    { label: "Marketing Project",    icon: <IconMarketing />,        path: "/marketing-project/", children: [] },
+    { label: "Apply Leave",          icon: <IconCalendar />,         path: "/leave/apply/" },
+    { label: "Password Management",  icon: <IconPassword />,         path: "/change-password/" },
     { label: "Assessments",          icon: <IconAssessments />,      path: "/assessment/" },
-    { label: "BankDetails",         icon: <IconBank />,             path: "/Bankdetails/" },
+    { label: "Bank Details",         icon: <IconBank />,             path: "/Bankdetails/" },
     { label: "Payslips",             icon: <IconPayslip />,          path: "/payslips/" },
     {
-      label: "ManageEmployees",
+      label: "Manage Employees",
       icon: <IconManageEmployees />,
       path: "/employee-registrar/",
       children: [
-        { label: "SendOfferLetter",  path: "/Onboard/Send_Offer" },
-        { label: "SendCertificate",   path: "/send-certificate" },
-        { label: "DeactivateEmployee",path: "/deactivate-multiple-employee/" },
+        { label: "Send Offer Letter",  path: "/Onboard/Send_Offer" },
+        { label: "Send Certificate",   path: "/send-certificate" },
+        { label: "Deactivate Employee", path: "/deactivate-multiple-employee/" },
       ],
     },
     { label: "Documents",            icon: <IconDocument />,         path: "/docs/" },
-    { label: "ProvideFeedbacks",    icon: <IconFeedback />,         path: "/feedback/" },
-    { label: "FinanceDepartment",   icon: <IconFinance />,          path: "/payments/?pay_month=current&month_name=May" },
-    { label: "NewEmployeeRegister",icon: <IconNewEmployee />,      path: "/employee-registrar/new/" },
+    { label: "Provide Feedbacks",    icon: <IconFeedback />,         path: "/feedback/" },
+    { label: "Finance Department",   icon: <IconFinance />,          path: "/payments/?pay_month=current&month_name=May" },
+    { label: "New Employee Register", icon: <IconNewEmployee />,      path: "/employee-registrar/new/" },
   ];
 }
 
-// ─── NavLink — MirrorsBuilder.IoNavLinkButUsesNavigate() Not <Link> ─────
+// ─── Nav Link ─────────────────────────────────────────────────────────────
 function NavLink({ item, depth = 0, activePath, navigate }) {
   const hasChildren = item.children && item.children.length > 0;
 
@@ -247,14 +245,12 @@ function NavLink({ item, depth = 0, activePath, navigate }) {
       activePath.startsWith(item.path.split("?")[0].replace(/\/$/, "")));
 
   const [open, setOpen] = useState(
-    item.label === "DevelopmentProject" || isGroupActive
+    item.label === "Development Project" || isGroupActive
   );
 
   useEffect(() => {
     if (isGroupActive && hasChildren) setOpen(true);
   }, [activePath, isGroupActive, hasChildren]);
-
-  const pl = depth === 0 ? "Pl-3" : "Pl-8";
 
   if (hasChildren) {
     return (
@@ -267,7 +263,7 @@ function NavLink({ item, depth = 0, activePath, navigate }) {
             borderRadius: 13.6, border: "none", background: "transparent",
             cursor: "pointer", textAlign: "left",
             paddingLeft: depth === 0 ? 12 : 32,
-            transition: "Background0.12s",
+            transition: "background 0.12s",
           }}
           onMouseEnter={e => e.currentTarget.style.background = "#EEF3FF"}
           onMouseLeave={e => e.currentTarget.style.background = "transparent"}
@@ -291,7 +287,8 @@ function NavLink({ item, depth = 0, activePath, navigate }) {
     );
   }
 
-  // LeafItem — DetermineActiveState  const pathBase = item.path ? item.path.split("?")[0] : "";
+  // Leaf Item — Determine Active State
+  const pathBase = item.path ? item.path.split("?")[0] : "";
   const isActive = activePath === pathBase ||
     (pathBase && pathBase !== "/home/" && activePath.startsWith(pathBase.replace(/\/$/, "")));
 
@@ -306,7 +303,7 @@ function NavLink({ item, depth = 0, activePath, navigate }) {
         background: isActive ? "#D7E4FF" : "transparent",
         cursor: "pointer", textAlign: "left",
         paddingLeft: depth === 0 ? 12 : 32,
-        transition: "Background0.12s",
+        transition: "background 0.12s",
       }}
       onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "#EEF3FF"; }}
       onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
@@ -329,7 +326,7 @@ function NavLink({ item, depth = 0, activePath, navigate }) {
   );
 }
 
-// ─── App (UnchangedLogic) ───────────────────────────────────────────────────
+// ─── App (Unchanged Logic) ───────────────────────────────────────────────────
 function App() {
   const [settings, setSettings] = useState(getApiSettings);
   const [route, setRoute] = useState(() => window.location.pathname + window.location.search);
@@ -338,7 +335,8 @@ function App() {
   const path = route.split("?")[0];
 
   const isLoginRoute = path.startsWith("/login");
-  // PublicOfferAcceptanceRoute — NoAuthNeeded  const isPublicOfferRoute = path.startsWith("/offer/accept/");
+  // Public Offer Acceptance Route — No Auth Needed
+  const isPublicOfferRoute = path.startsWith("/offer/accept/");
   const hasAuth = Boolean(settings.basicAuth?.username && settings.basicAuth?.password);
   const { data, loading, errors, apiOnline, reload } = useIntranetData(reloadKey, hasAuth && !isLoginRoute && !isPublicOfferRoute);
 
@@ -381,7 +379,7 @@ function App() {
     try {
       await apiPost("/Users/Auth/Logout/");
     } catch (error) {
-      console.warn("LogoutRequestFailed", error);
+      console.warn("Logout Request Failed", error);
     }
     clearApiAuth();
     setSettings(getApiSettings());
@@ -389,7 +387,8 @@ function App() {
     navigate("/login/");
   };
 
-  // PublicOfferAcceptance — BypassAuth, AppShell, AndResolveActiveEmployeeEntirely  if (isPublicOfferRoute) return <OfferAcceptanceScreen />;
+  // Public Offer Acceptance — Bypass Auth, App Shell, And Resolve Active Employee Entirely
+  if (isPublicOfferRoute) return <OfferAcceptanceScreen />;
 
   if (!hasAuth || path.startsWith("/login")) return <LoginScreen settings={settings} onLogin={login} />;
 
@@ -404,7 +403,7 @@ function App() {
   );
 }
 
-// ─── UseIntranetData (Unchanged) ─────────────────────────────────────────────
+// ─── Use Intranet Data ─────────────────────────────────────────────
 function useIntranetData(reloadKey, enabled) {
   const [state, setState] = useState({ data: {}, loading: false, errors: [], apiOnline: false });
   const hasInitiallyLoaded = useRef(false);
@@ -440,7 +439,7 @@ function useIntranetData(reloadKey, enabled) {
       results.forEach((result, i) => {
         const [key, , mode] = subset[i];
         if (result.status === "fulfilled") applyPayload(nextData, key, mode, result.value.payload);
-        else { requestErrors.push({ key, status: result.reason?.status, message: result.reason?.message || "RequestFailed" }); if (!isPartial) nextData[key] = mode === "list" ? [] : null; }
+        else { requestErrors.push({ key, status: result.reason?.status, message: result.reason?.message || "Request Failed" }); if (!isPartial) nextData[key] = mode === "list" ? [] : null; }
       });
       return { data: nextData, loading: false, errors: requestErrors, apiOnline: isPartial ? cur.apiOnline : requestErrors.length < endpointMap.length };
     });
@@ -451,7 +450,7 @@ function useIntranetData(reloadKey, enabled) {
   return { ...state, reload: load };
 }
 
-// ─── AppShell — FigmaBuilder.IoSidebar + ExistingTopbarLogic ──────────────
+// ─── App Shell — Figma Builder Sidebar + Existing Topbar Logic ──────────────
 function AppShell({ children, route, navigate, data, apiOnline, loading, logout, errors, reloadData }) {
   const activePath = route.split("?")[0];
   const activeItem = navItems.find((item) => activePath === item.path || (item.path !== "/home/" && activePath.startsWith(item.path.replace(/\/$/, ""))));
@@ -471,99 +470,99 @@ function AppShell({ children, route, navigate, data, apiOnline, loading, logout,
         *, *::before, *::after { box-sizing: border-box; }
         body { margin: 0; }
 
-        .atg-app { display: flex; height: 100vh; overflow: hidden; font-family: 'Inter', system-ui, sans-serif; background: #F7FAFF; }
+        .Atg-App { display: flex; height: 100vh; overflow: hidden; font-family: 'Inter', system-ui, sans-serif; background: #f7faff; }
 
         /* ── Sidebar ── */
-        .atg-sidebar {
+        .Atg-Sidebar {
           width: 278px; min-width: 278px; height: 100vh;
-          background: #F7FAFF;
-          border-right: 1px solid #E3E3E3;
+          background: #f7faff;
+          border-right: 1px solid #e3e3e3;
           display: flex; flex-direction: column; overflow: hidden;
         }
 
         /* Brand */
-        .atg-brand {
+        .Atg-Brand {
           display: flex; align-items: center; justify-content: space-between;
           padding: 24px 16px 0;
           margin-bottom: 24px;
           flex-shrink: 0;
         }
-        .atg-brand-left { display: flex; align-items: center; gap: 8px; }
-        .atg-brand-name {
+        .Atg-Brand-Left { display: flex; align-items: center; gap: 8px; }
+        .Atg-Brand-Name {
           font-size: 24px; font-weight: 500; line-height: 24px;
           color: #000;
           font-family: sans-serif;
         }
-        .atg-avatar-btn {
+        .Atg-Avatar-Btn {
           width: 36px; height: 36px; border-radius: 50%;
-          background: #D7E4FF;
+          background: #d7e4ff;
           border: none; cursor: pointer;
           display: flex; align-items: center; justify-content: center;
-          font-size: 16px; color: #3E3E3E; font-weight: 400; font-family: 'Inter', sans-serif;
+          font-size: 16px; color: #3e3e3e; font-weight: 400; font-family: 'Inter', sans-serif;
           flex-shrink: 0; transition: background 0.15s;
         }
-        .atg-avatar-btn:hover { background: #bfdbfe; }
+        .Atg-Avatar-Btn:hover { background: #bfdbfe; }
 
-        /* NavScroll */
-        .atg-nav {
+        /* Nav Scroll */
+        .Atg-Nav {
           flex: 1; overflow-y: auto; overflow-x: hidden;
           padding: 0 16px 24px;
           display: flex; flex-direction: column; gap: 4px;
         }
-        .atg-nav::-webkit-scrollbar { width: 4px; }
-        .atg-nav::-webkit-scrollbar-track { background: transparent; }
-        .atg-nav::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 2px; }
+        .Atg-Nav::-webkit-scrollbar { width: 4px; }
+        .Atg-Nav::-webkit-scrollbar-track { background: transparent; }
+        .Atg-Nav::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 2px; }
 
         /* ── Main ── */
-        .atg-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+        .Atg-Main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
 
         /* Topbar */
-        .atg-topbar {
+        .Atg-Topbar {
           display: flex; align-items: center; justify-content: space-between;
           padding: 0 24px; height: 56px;
-          background: #fff; border-bottom: 1px solid #E3E3E3;
+          background: #fff; border-bottom: 1px solid #e3e3e3;
           flex-shrink: 0; gap: 12px;
         }
-        .atg-topbar-title { display: flex; flex-direction: column; gap: 1px; }
-        .atg-topbar-title .crumb { font-size: 11px; color: #94a3b8; }
-        .atg-topbar-title strong { font-size: 15px; color: #0f172a; font-weight: 600; }
-        .atg-topbar-actions { display: flex; align-items: center; gap: 8px; }
+        .Atg-Topbar-Title { display: flex; flex-direction: column; gap: 1px; }
+        .Atg-Topbar-Title .crumb { font-size: 11px; color: #94a3b8; }
+        .Atg-Topbar-Title strong { font-size: 15px; color: #0f172a; font-weight: 600; }
+        .Atg-Topbar-Actions { display: flex; align-items: center; gap: 8px; }
 
-        .sync-badge {
+        .Sync-Badge {
           font-size: 11px; font-weight: 500;
           padding: 2px 8px; border-radius: 20px;
           background: #f1f5f9; color: #64748b;
         }
-        .sync-badge.danger { background: #fee2e2; color: #dc2626; }
+        .Sync-Badge-Danger { background: #fee2e2; color: #dc2626; }
 
-        .atg-user-chip {
+        .Atg-User-Chip {
           display: flex; align-items: center; gap: 6px;
           padding: 4px 10px 4px 6px; border-radius: 20px;
           border: 1px solid #e2e8f0; background: #fff;
           cursor: pointer; font-family: inherit; font-size: 13px;
           color: #374151; font-weight: 500; transition: background 0.12s;
         }
-        .atg-user-chip:hover, .atg-user-chip.active { background: #f1f5f9; }
-        .atg-user-chip .chip-avatar {
+        .Atg-User-Chip:hover, .Atg-User-Chip.Active { background: #f1f5f9; }
+        .Atg-User-Chip .Chip-Avatar {
           width: 26px; height: 26px; border-radius: 50%;
-          background: #D7E4FF; color: #1D44B0;
+          background: #d7e4ff; color: #1d44b0;
           font-size: 11px; font-weight: 700;
           display: flex; align-items: center; justify-content: center;
         }
 
-        .atg-icon-btn {
+        .Atg-Icon-Btn {
           width: 32px; height: 32px; border-radius: 8px;
           border: none; background: transparent; cursor: pointer;
           display: flex; align-items: center; justify-content: center;
           color: #64748b; transition: background 0.12s, color 0.12s;
           position: relative;
         }
-        .atg-icon-btn:hover { background: #EEF3FF; color: #1D44B0; }
-        .atg-icon-btn.active { background: #D7E4FF; color: #1D44B0; }
+        .Atg-Icon-Btn:hover { background: #eef3ff; color: #1d44b0; }
+        .Atg-Icon-Btn.Active { background: #d7e4ff; color: #1d44b0; }
 
         /* Notification */
-        .atg-notif-bell { position: relative; }
-        .atg-notif-count {
+        .Atg-Notif-Bell { position: relative; }
+        .Atg-Notif-Count {
           position: absolute; top: 2px; right: 2px;
           min-width: 16px; height: 16px; border-radius: 8px;
           background: #ef4444; color: #fff;
@@ -571,45 +570,45 @@ function AppShell({ children, route, navigate, data, apiOnline, loading, logout,
           display: flex; align-items: center; justify-content: center;
           padding: 0 3px; pointer-events: none;
         }
-        .atg-notif-popover {
+        .Atg-Notif-Popover {
           position: absolute; top: calc(100% + 8px); right: 0;
           width: 340px; background: #fff;
           border: 1px solid #e2e8f0; border-radius: 12px;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.10); z-index: 200; overflow: hidden;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10); z-index: 200; overflow: hidden;
         }
-        .atg-notif-head {
+        .Atg-Notif-Head {
           display: flex; align-items: center; gap: 8px;
           padding: 12px 16px; border-bottom: 1px solid #f1f5f9; flex-wrap: wrap;
         }
-        .atg-notif-head strong { font-size: 14px; color: #0f172a; margin-right: auto; }
-        .atg-notif-head span { font-size: 12px; color: #94a3b8; }
-        .atg-link-btn { border: none; background: transparent; color: #3b82f6; font-size: 12px; font-weight: 500; cursor: pointer; padding: 0; font-family: inherit; }
-        .atg-link-btn:hover { text-decoration: underline; }
-        .atg-notif-list { max-height: 320px; overflow-y: auto; }
-        .atg-notif-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #f8fafc; }
-        .atg-notif-item.unread { background: #f8fafc; }
-        .atg-notif-item > div { flex: 1; min-width: 0; }
-        .atg-notif-item strong { display: block; font-size: 13px; color: #0f172a; }
-        .atg-notif-item p { font-size: 12px; color: #64748b; margin: 2px 0; }
-        .atg-notif-item small { font-size: 11px; color: #94a3b8; }
-        .atg-notif-empty { padding: 24px; text-align: center; color: #94a3b8; font-size: 13px; }
-        .atg-soft-btn {
+        .Atg-Notif-Head strong { font-size: 14px; color: #0f172a; margin-right: auto; }
+        .Atg-Notif-Head span { font-size: 12px; color: #94a3b8; }
+        .Atg-Link-Btn { border: none; background: transparent; color: #3b82f6; font-size: 12px; font-weight: 500; cursor: pointer; padding: 0; font-family: inherit; }
+        .Atg-Link-Btn:hover { text-decoration: underline; }
+        .Atg-Notif-List { max-height: 320px; overflow-y: auto; }
+        .Atg-Notif-Item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #f8fafc; }
+        .Atg-Notif-Item.Unread { background: #f8fafc; }
+        .Atg-Notif-Item > div { flex: 1; min-width: 0; }
+        .Atg-Notif-Item strong { display: block; font-size: 13px; color: #0f172a; }
+        .Atg-Notif-Item p { font-size: 12px; color: #64748b; margin: 2px 0; }
+        .Atg-Notif-Item small { font-size: 11px; color: #94a3b8; }
+        .Atg-Notif-Empty { padding: 24px; text-align: center; color: #94a3b8; font-size: 13px; }
+        .Atg-Soft-Btn {
           border: 1px solid #e2e8f0; background: #fff; border-radius: 6px;
           padding: 3px 8px; font-size: 12px; font-weight: 500;
           color: #374151; cursor: pointer; white-space: nowrap;
           font-family: inherit; transition: background 0.12s;
         }
-        .atg-soft-btn:hover { background: #f1f5f9; }
+        .Atg-Soft-Btn:hover { background: #f1f5f9; }
 
-        /* ErrorBanner */
-        .atg-error-bar {
+        /* Error Banner */
+        .Atg-Error-Bar {
           display: flex; align-items: center; gap: 8px;
           background: #fef2f2; border-bottom: 1px solid #fecaca;
           padding: 10px 24px; color: #dc2626; font-size: 13px; flex-shrink: 0;
         }
 
         /* Content */
-        .atg-content { flex: 1; overflow-y: auto; overflow-x: hidden; background: #fff; }
+        .Atg-Content { flex: 1; overflow-y: auto; overflow-x: hidden; background: #fff; }
       `}</style>
 
       <div className="Atg-App">
@@ -647,9 +646,9 @@ function AppShell({ children, route, navigate, data, apiOnline, loading, logout,
             </div>
             <div className="Atg-Topbar-Actions">
               {loading && <span className="Sync-Badge">Syncing</span>}
-              {!loading && !apiOnline && <span className="Sync-BadgeDanger">Offline</span>}
+              {!loading && !apiOnline && <span className="Sync-Badge-Danger">Offline</span>}
               <NotificationBell notifications={data.notifications || []} navigate={navigate} reloadData={reloadData} />
-              <button className={activePath.startsWith("/profile") ? "Atg-User-ChipActive" : "Atg-User-Chip"} onClick={() => navigate("/profile/")}>
+              <button className={activePath.startsWith("/profile") ? "Atg-User-Chip Active" : "Atg-User-Chip"} onClick={() => navigate("/profile/")}>
                 <span className="Chip-Avatar">{initials}</span>
                 <b>{displayName}</b>
               </button>
@@ -660,7 +659,7 @@ function AppShell({ children, route, navigate, data, apiOnline, loading, logout,
           {visibleErrors.length > 0 && (
             <div className="Atg-Error-Bar">
               <AlertTriangle size={16} />
-              <span>{visibleErrors[0].status === 403 ? "CurrentUserDoesNotHavePermissionForOneOrMoreRecords." : visibleErrors[0].message}</span>
+              <span>{visibleErrors[0].status === 403 ? "Current User Does Not Have Permission For One Or More Records." : visibleErrors[0].message}</span>
             </div>
           )}
 
@@ -671,7 +670,7 @@ function AppShell({ children, route, navigate, data, apiOnline, loading, logout,
   );
 }
 
-// ─── NotificationBell (UnchangedLogic) ──────────────────────────────────────
+// ─── Notification Bell ──────────────────────────────────────
 function NotificationBell({ notifications = [], navigate, reloadData }) {
   const [open, setOpen] = useState(false);
   const [busyId, setBusyId] = useState("");
@@ -714,7 +713,7 @@ function NotificationBell({ notifications = [], navigate, reloadData }) {
 
   return (
     <div className="Atg-Notif-Bell" ref={ref}>
-      <button className={open ? "Atg-Icon-BtnActive" : "Atg-Icon-Btn"} onClick={() => setOpen((v) => !v)} title="Notifications">
+      <button className={open ? "Atg-Icon-Btn Active" : "Atg-Icon-Btn"} onClick={() => setOpen((v) => !v)} title="Notifications">
         <Bell size={16} />
         {unread.length > 0 && <span className="Atg-Notif-Count">{unread.length}</span>}
       </button>
@@ -728,10 +727,10 @@ function NotificationBell({ notifications = [], navigate, reloadData }) {
           </div>
           <div className="Atg-Notif-List">
             {rows.map((item) => (
-              <div key={item.id} className={item.is_read ? "Atg-Notif-Item" : "Atg-Notif-ItemUnread"}>
+              <div key={item.id} className={item.is_read ? "Atg-Notif-Item" : "Atg-Notif-Item Unread"}>
                 <div>
                   <strong>{item.title || item.category || "Notification"}</strong>
-                  <p>{item.message || item.description || "OpenThisNotification."}</p>
+                  <p>{item.message || item.description || "Open This Notification."}</p>
                   <small>{item.created_at || ""}</small>
                 </div>
                 <button className="Atg-Soft-Btn" onClick={() => review(item)} disabled={busyId === String(item.id)}>
@@ -751,4 +750,4 @@ function isCompleted(status = "") {
   return ["completed", "complete", "done", "passed", "submitted", "closed"].includes(String(status).toLowerCase());
 }
 
-export default App;
+export default App;

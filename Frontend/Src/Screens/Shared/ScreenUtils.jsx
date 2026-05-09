@@ -138,18 +138,18 @@ export function formatDate(value) {
   if (!value) return "None";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleDateString("En-GB", { day: "2-Digit", month: "short", year: "2-Digit" });
+  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" });
 }
 
 export function formatDateTime(value) {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleString("En-GB", { day: "2-Digit", month: "short", hour: "2-Digit", minute: "2-Digit" });
+  return date.toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
 export function humanDate(value) {
-  return value.toLocaleDateString("En-US", { month: "long", day: "numeric", year: "numeric" });
+  return value.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
 
 export function money(value) {

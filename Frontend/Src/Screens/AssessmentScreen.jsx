@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { ChevronDown, Search, X } from "Lucide-React";
+import { ChevronDown, Search, X } from "lucide-react";
 
 import { apiPost } from "../Api/Client.js";
 import { EmptyState, Modal, Panel, SimpleTable, StatusPill, Tabs } from "./Shared/ScreenComponents.jsx";
@@ -39,7 +39,7 @@ export function AssessmentScreen({ data, reload }) {
   };
   const submitAssignment = async (id) => {
     if (!id) return;
-    const url = window.prompt("ProviderSubmissionURL (Optional)");
+    const url = window.prompt("Provider Submission URL (Optional)");
     await apiPost(`/Assesment/AssessmentAssignments/${id}/submit/`, { provider_url: url || "", score: null });
     reload(["assessmentAssignments", "assessmentLegacy"]);
   };
@@ -50,20 +50,20 @@ export function AssessmentScreen({ data, reload }) {
   };
 
   return (
-    <section className="Assessment-ScreenScreen-Stack">
+    <section className="Assessment-Screen Screen-Stack">
       <Tabs
         value={tab}
         onChange={setTab}
         items={[
-          ["results", "AssessmentResults"],
-          ["assign", "AssignAssessment"],
+          ["results", "Assessment Results"],
+          ["assign", "Assign Assessment"],
         ]}
       />
       {tab === "results" && (
-        <Panel title="AssessmentResults">
+        <Panel title="Assessment Results">
           <div className="Toolbar-Row">
             <div className="Search-Box">
-              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="SearchHere..." />
+              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search Here..." />
               <Search size={17} />
               {search && <X size={17} onClick={() => setSearch("")} />}
             </div>
@@ -85,15 +85,15 @@ export function AssessmentScreen({ data, reload }) {
                     <td><StatusPill tone={isCompleted(row.status || row.note) ? "green" : "gold"}>{row.note || row.status || "Incomplete"}</StatusPill></td>
                     <td className="Table-Actions">
                       {!status.includes("progress") && !status.includes("submit") && !status.includes("complete") && assignmentId && (
-                        <button className="Soft-ButtonSmall" onClick={() => startAssignment(assignmentId)}>Start</button>
+                        <button className="Soft-Button Small" onClick={() => startAssignment(assignmentId)}>Start</button>
                       )}
                       {!status.includes("submit") && !status.includes("complete") && assignmentId && (
-                        <button className="Soft-ButtonSmall" onClick={() => submitAssignment(assignmentId)}>Submit</button>
+                        <button className="Soft-Button Small" onClick={() => submitAssignment(assignmentId)}>Submit</button>
                       )}
                       {assignmentId ? (
-                        <button className="Soft-ButtonSmall" onClick={() => syncAssignment(assignmentId)}>Sync</button>
+                        <button className="Soft-Button Small" onClick={() => syncAssignment(assignmentId)}>Sync</button>
                       ) : (
-                        <span className="Muted-Text">No Assignment Id</span>
+                        <span className="Muted-Text">No Assignment ID</span>
                       )}
                     </td>
                   </tr>
@@ -101,19 +101,19 @@ export function AssessmentScreen({ data, reload }) {
               })}
             </tbody>
           </table>
-          {!rows.length && <EmptyState label="NoAssessmentResultsReturned." />}
+          {!rows.length && <EmptyState label="No Assessment Results Returned." />}
         </Panel>
       )}
       {tab === "assign" && (
         <Panel
-          title="AssignAssessment"
-          right={<button className="Primary-ButtonSmall" onClick={() => setAssignOpen(true)}>New Assignment</button>}
+          title="Assign Assessment"
+          right={<button className="Primary-Button Small" onClick={() => setAssignOpen(true)}>New Assignment</button>}
         >
           <SimpleTable
             columns={["Template", "Status", "Tags", "Updated"]}
             rows={(data.assessmentTemplates || []).map((tpl) => [tpl.title, tpl.status, (tpl.tags || []).join(", "), formatDate(tpl.updated_at)])}
           />
-          {!(data.assessmentTemplates || []).length && <EmptyState label="NoTemplatesReturned." />}
+          {!(data.assessmentTemplates || []).length && <EmptyState label="No Templates Returned." />}
         </Panel>
       )}
       {assignOpen && <AssignModal data={data} onClose={() => setAssignOpen(false)} reload={reload} />}
@@ -141,7 +141,7 @@ function AssignModal({ data, onClose, reload }) {
   };
 
   return (
-    <Modal title="AssignAssessment" onClose={onClose} wide>
+    <Modal title="Assign Assessment" onClose={onClose} wide>
       <label>Template
         <select value={templateId} onChange={(event) => setTemplateId(event.target.value)}>
           <option value="">Select Template</option>
