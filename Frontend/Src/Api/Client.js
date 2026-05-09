@@ -78,6 +78,10 @@ export function apiPatch(path, body) {
   return apiRequest(path, { method: "PATCH", body });
 }
 
+export function apiDelete(path) {
+  return apiRequest(path, { method: "DELETE" });
+}
+
 export function unpackList(payload, keys = []) {
   if (Array.isArray(payload)) return payload;
   if (!payload || typeof payload !== "object") return [];

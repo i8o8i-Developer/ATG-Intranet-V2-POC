@@ -66,9 +66,6 @@ export function HrmsScreen({ data, reload }) {
             <button className="Primary-Button" onClick={() => setTab("goals")} style={{ marginTop: "12px" }}>
               <Target size={14} /> Goals Workspace
             </button>
-            <button className="Outline-Button" onClick={() => setShowGoalModal(true)} style={{ marginTop: "12px" }}>
-              <Target size={14} /> Quick Assign Goal
-            </button>
           </div>
         </div>
         <div className="Hrms-Kpi-Row">
@@ -142,6 +139,7 @@ export function HrmsScreen({ data, reload }) {
                       data={data}
                       setEodEmployee={setEodEmployee}
                       setGoalEmployee={setGoalEmployee}
+                      setShowGoalModal={setShowGoalModal}
                       reload={reload}
                     />
                   )}
@@ -174,6 +172,7 @@ export function HrmsScreen({ data, reload }) {
       {showGoalModal && (
         <GoalAssignModal
           data={data}
+          defaultEmployeeId={showGoalModal === true ? null : showGoalModal}
           onClose={() => setShowGoalModal(false)}
           reload={reload}
         />
@@ -183,7 +182,7 @@ export function HrmsScreen({ data, reload }) {
 }
 
 /* ─── HrmsTeamTable ──────────────────────────────────────────── */
-function HrmsTeamTable({ rows, data, setEodEmployee, setGoalEmployee, reload }) {
+function HrmsTeamTable({ rows, data, setEodEmployee, setGoalEmployee, setShowGoalModal, reload }) {
   return (
     <div className="Hrms-Table-Wrap">
       <table className="Hrms-Emp-Table">
@@ -207,6 +206,7 @@ function HrmsTeamTable({ rows, data, setEodEmployee, setGoalEmployee, reload }) 
               data={data}
               setEodEmployee={setEodEmployee}
               setGoalEmployee={setGoalEmployee}
+              setShowGoalModal={setShowGoalModal}
               reload={reload}
             />
           ))}
@@ -263,14 +263,17 @@ function isGoalOverdue(goal) {
   return dueDate < today;
 }
 
-function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }) {
+function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, setShowGoalModal, reload }) {
   const [showPerfMenu, setShowPerfMenu] = useState(false);
   const [showSkillMenu, setShowSkillMenu] = useState(false);
   const [showMenu,     setShowMenu]     = useState(false);
   const [eodPopover,   setEodPopover]   = useState(null); 
   const [saving,       setSaving]       = useState(false);
   const [profilePayload, setProfilePayload] = useState(employee.profile_payload || {});
+  const lastPropPayload = useRef(employee.profile_payload);
+
   const [optimisticSkill, setOptimisticSkill] = useState(null);
+  const lastPropSkill = useRef(null);
   const [updatedField, setUpdatedField] = useState("");
   const menuRef   = useRef(null);
   const perfRef   = useRef(null);
@@ -285,10 +288,11 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
   const skillOptions = (data.skills || []).filter(
     (item) => !item.department || String(item.department) === String(employee.department),
   );
-  const skills = (data.userSkills || []).filter(
-    (s) => String(s.employee) === String(employee.id),
+  
+  const serverSkill = (data.userSkills || []).find(
+    (us) => String(us.employee) === String(employee.id) && (us.skill_name?.toLowerCase().includes("department") || us.proficiency)
   );
-  const serverSkill = skills[0] || null;
+
   const empProjects = assignments
     .map((a) => projectMap.get(String(a.project))?.name)
     .filter(Boolean);
@@ -296,31 +300,35 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
   const skill     = optimisticSkill || serverSkill;
   const prof      = skill?.proficiency ?? 1;
   const profLabel = prof >= 3 ? "Advanced" : prof >= 2 ? "Intermediate" : "Basic";
-  const profCls   = prof >= 3 ? "adv" : prof >= 2 ? "mid" : "bas";
+  const profCls   = prof >= 3 ? "Adv" : prof >= 2 ? "Mid" : "Bas";
   const skillLabel = skill?.skill_name || skillOptions[0]?.name || "Department Skill";
 
   useEffect(() => {
-    setProfilePayload(employee.profile_payload || {});
+    if (JSON.stringify(employee.profile_payload) !== JSON.stringify(lastPropPayload.current)) {
+      setProfilePayload(employee.profile_payload || {});
+      lastPropPayload.current = employee.profile_payload;
+    }
   }, [employee.profile_payload]);
 
   useEffect(() => {
-    setOptimisticSkill(
-      serverSkill
-        ? {
-            skill: serverSkill.skill,
-            skill_name: serverSkill.skill_name,
-            proficiency: serverSkill.proficiency,
-            rating: serverSkill.rating,
-          }
-        : null,
-    );
+    const nextSkill = serverSkill ? {
+      skill: serverSkill.skill,
+      skill_name: serverSkill.skill_name,
+      proficiency: serverSkill.proficiency,
+      rating: serverSkill.rating,
+    } : null;
+
+    if (JSON.stringify(nextSkill) !== JSON.stringify(lastPropSkill.current)) {
+      setOptimisticSkill(nextSkill);
+      lastPropSkill.current = nextSkill;
+    }
   }, [serverSkill?.skill, serverSkill?.skill_name, serverSkill?.proficiency, serverSkill?.rating]);
 
   useEffect(() => {
     const handler = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) setShowMenu(false);
       if (perfRef.current && !perfRef.current.contains(e.target)) setShowPerfMenu(false);
-      if (!e.target.closest?.(".hrms-skill-wrap")) setShowSkillMenu(false);
+      if (!e.target.closest?.(".Hrms-Skill-Wrap")) setShowSkillMenu(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -357,7 +365,7 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
     const previousPayload = profilePayload;
     const nextPayload = { ...previousPayload, ...patch };
     setProfilePayload(nextPayload);
-    const response = await apiPatch(`/Users/EmployeeProfiles/${employee.id}/`, {
+    const response = await apiPatch(`/Users/EmployeeProfiles/${employee.id}/patch-payload/`, {
       profile_payload: nextPayload,
     });
     setProfilePayload(response?.profile_payload || nextPayload);
@@ -369,7 +377,7 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
     setSaving(true);
     try {
       markUpdated("performance");
-      await patchProfilePayload({ performance: label || "" });
+      await patchProfilePayload({ performance_tag: label || "" });
       setShowPerfMenu(false);
     } catch {
       setProfilePayload(employee.profile_payload || {});
@@ -407,24 +415,9 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
     }
   };
 
-  const assignGoal = async () => {
-    const due = new Date();
-    due.setDate(due.getDate() + 14);
-    setSaving(true);
-    try {
-      await apiPost("/Users/Goals/", {
-        employee: employee.id,
-        title: `HRMS Follow Up For ${employee.display_name}`,
-        description: "Created From HRMS Action Menu.",
-        due_on: isoDate(due),
-        status: "Open",
-        metadata: { source: "Hrms Action Menu" },
-      });
-      if (reload) reload(["goals", "employees", "notifications"]);
-    } finally {
-      setSaving(false);
-      setShowMenu(false);
-    }
+  const assignGoal = () => {
+    setShowGoalModal(employee.id);
+    setShowMenu(false);
   };
 
   const sendInterview = async () => {
@@ -441,12 +434,12 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
 
   const ic = initials(employee.display_name);
   const ac = avatarColor(employee.display_name);
-  const currentPerformance = profilePayload?.performance || "";
+  const currentPerformance = profilePayload?.performance_tag || profilePayload?.performance || "";
   const perfMatch = PERF_OPTIONS.find((opt) => opt.label === currentPerformance);
   const perfColor = perfMatch?.color || "transparent";
 
   return (
-    <tr className={`hrms-emp-row${updatedField ? ` hrms-emp-row-updated hrms-emp-row-updated-${updatedField}` : ""}`} style={{ borderLeft: perfMatch ? `4px solid ${perfColor}` : "4px solid transparent" }}>
+    <tr className={`Hrms-Emp-Row${updatedField ? ` Hrms-Emp-Row-Updated Hrms-Emp-Row-Updated-${updatedField}` : ""}`} style={{ borderLeft: perfMatch ? `4px solid ${perfColor}` : "4px solid transparent" }}>
       {/* Name */}
       <td>
         <div className="Hrms-Name-Cell">
@@ -461,7 +454,7 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
               {showPerfMenu ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
             </button>
             <small className="Hrms-Join-Date">Joined: {formatDate(employee.joined_on)}</small>
-            <span className={`hrms-performance-chip ${currentPerformance ? "" : "Empty"} ${updatedField === "performance" ? "Is-Updated" : ""}`}>
+            <span className={`Hrms-Performance-Chip ${currentPerformance ? "" : "Empty"} ${updatedField === "performance" ? "Is-Updated" : ""}`}>
               {currentPerformance || "No Performance Tag"}
             </span>
             {showPerfMenu && (
@@ -500,7 +493,7 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
       <td>
         <div className="Hrms-Skill-Wrap">
           <button 
-            className={`hrms-skill-badge ${profCls} ${saving ? "saving" : ""} ${updatedField === "skill" ? "Is-Updated" : ""}`} 
+            className={`Hrms-Skill-Badge ${profCls} ${saving ? "saving" : ""} ${updatedField === "skill" ? "Is-Updated" : ""}`} 
             onClick={() => !saving && setShowSkillMenu(!showSkillMenu)} 
             title={skillLabel}
             disabled={saving}
@@ -571,7 +564,7 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
               return (
                 <div key={day.iso} className="Hrms-Att-Wrap" onMouseLeave={() => setEodPopover(null)}>
                   <button
-                    className={`hrms-att-day ${ds ? "submitted" : "missing"}`}
+                    className={`Hrms-Att-Day ${ds ? "submitted" : "missing"}`}
                     onClick={() => setEodPopover(isOpen ? null : day.iso)}
                     onMouseEnter={() => setEodPopover(day.iso)}
                     title={day.iso}
@@ -599,7 +592,7 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, reload }
                           <p>Use View More To Submit Or Review The Full EOD Calendar.</p>
                         </div>
                       )}
-                      <div className={`hrms-eod-pop-status ${ds ? "" : "missing"}`}>
+                      <div className={`Hrms-Eod-Pop-Status ${ds ? "" : "missing"}`}>
                         <span className="dot" /> {ds ? "Submitted" : "Missing"}
                       </div>
                     </div>
@@ -847,9 +840,9 @@ function GoalOverviewModal({ employee, data, onClose }) {
 }
 
 /* ─── GoalAssignModal ────────────────────────────────────────── */
-function GoalAssignModal({ data, onClose, reload }) {
+function GoalAssignModal({ data, defaultEmployeeId, onClose, reload }) {
   const [submitting, setSubmitting] = useState(false);
-  const [formData, setFormData] = useState(() => createGoalDraft());
+  const [formData, setFormData] = useState(() => createGoalDraft(defaultEmployeeId || ""));
   const [errors, setErrors] = useState({});
 
   const employees = data.employees || [];
@@ -1012,7 +1005,7 @@ function EodSummaryModal({ employee, data, onClose, reload }) {
   const tasks     = filterForEmployee(data.tasks, employee.id);
   const monthDays = calendarDays(calMonth);
   const monthLabel = calMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-  const today     = isoDate(new Date());
+  const todayStr     = isoDate(new Date());
   const orderedTasks = [...tasks].sort((left, right) => Number(left.bounty || 0) - Number(right.bounty || 0) || new Date(left.due_at || 0) - new Date(right.due_at || 0));
   const completedTasks = orderedTasks.filter((task) => isCompleted(task.status)).length;
   const averageProgress = orderedTasks.length
@@ -1032,7 +1025,7 @@ function EodSummaryModal({ employee, data, onClose, reload }) {
     try {
       await apiPost("/TasksDashboard/DailyStatusEntries/", {
         employee: employee.id,
-        status_date: today,
+        status_date: todayStr,
         summary: eodText.trim(),
       });
       setEodText("");
@@ -1043,7 +1036,7 @@ function EodSummaryModal({ employee, data, onClose, reload }) {
 
   const ic = initials(employee.display_name);
   const ac = avatarColor(employee.display_name);
-  const todayStatus = findDailyStatus(statuses, employee.id, today);
+  const todayStatus = findDailyStatus(statuses, employee.id, todayStr);
 
   return (
     <Modal onClose={onClose} wide title="">

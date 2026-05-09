@@ -22,6 +22,7 @@ import { ProjectDashboardScreen } from "./ProjectDashboardScreen.jsx";
 import { SendCertificateScreen } from "./SendCertificateScreen.jsx";
 import { SendOfferScreen } from "./SendOfferScreen.jsx";
 import { WorkflowIntelligenceScreen } from "./WorkflowIntelligenceScreen.jsx";
+import { FeedbackScreen } from "./FeedbackScreen.jsx";
 
 export function RouteRenderer(props) {
   const path = props.route.split("?")[0];
@@ -46,6 +47,7 @@ export function RouteRenderer(props) {
   if (path.startsWith("/notifications")) return <NotificationsScreen {...props} />;
   if (path.startsWith("/change-password") || path.startsWith("/admin/change-password")) return <AdminChangePasswordScreen {...props} />;
   if (path.startsWith("/mcp")) return <McpScreen {...props} />;
+  if (path.startsWith("/feedback")) return <FeedbackScreen {...props} />;
   if (path.startsWith("/lms")) return <LmsScreen {...props} />;
   return <HomeScreen {...props} />;
 }

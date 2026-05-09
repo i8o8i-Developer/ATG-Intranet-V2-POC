@@ -322,9 +322,9 @@ function MemberRepoIcon({ assignment, repos, data }) {
     return allowed.length === 0 || allowed.map(String).includes(String(employeeId));
   });
   // No-PushesSignal: FromGitActivitySnapshotsCommit_Count===0ForAnyRepoToday
-  const today = isoDate(new Date());
+  const todayStr = isoDate(new Date());
   const noPushRepos = memberRepos.filter((repo) => {
-    const activity = (data.gitActivitySnapshots || []).find((snap) => String(snap.repository) === String(repo.id) && String(snap.snapshot_date) === today);
+    const activity = (data.gitActivitySnapshots || []).find((snap) => String(snap.repository) === String(repo.id) && String(snap.snapshot_date) === todayStr);
     return activity && Number(activity.commit_count || 0) === 0;
   });
 

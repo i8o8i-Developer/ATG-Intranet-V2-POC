@@ -143,6 +143,7 @@ class EmployeeCertificateSerializer(serializers.ModelSerializer):
 
 
 class EmployeeFeedbackSerializer(serializers.ModelSerializer):
+    employee_display_name = serializers.CharField(source="employee.display_name", read_only=True)
     class Meta:
         model = EmployeeFeedback
         fields = "__all__"

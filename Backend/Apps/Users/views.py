@@ -247,6 +247,22 @@ class EmployeeProfileViewSet(TenantScopedModelViewSet):
     queryset = EmployeeProfile.objects.select_related("tenant", "workspace", "user", "department", "position", "manager").all()
     serializer_class = EmployeeProfileSerializer
 
+    @action(detail=True, methods=["patch"], url_path="patch-payload")
+    def patch_payload(self, request, pk=None):
+        instance = self.get_object()
+        payload = request.data.get("profile_payload", {})
+        if not isinstance(payload, dict):
+             return Response({"error": "Payload Must Be A Dictionary."}, status=400)
+        
+        # Merge Payload
+        current = instance.profile_payload or {}
+        current.update(payload)
+        instance.profile_payload = current
+        instance.save()
+        
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
     @action(detail=True, methods=["post"], url_path="activate")
     def activate(self, request, pk=None):
         result = EmployeeLifecycleService.activate_employee(self.get_tenant_context(), pk)

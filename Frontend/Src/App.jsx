@@ -70,6 +70,7 @@ const endpointMap = [
   ["paymentSnapshots", "/Users/EmployeePaymentSnapshots/", "list"],
   ["leavePolicies", "/Users/LeavePolicies/", "list"],
   ["leaveBalances", "/Users/LeaveBalances/", "list"],
+  ["employeeFeedback", "/Users/EmployeeFeedback/", "list"],
   ["projects", "/Project/ProjectWorkspaces/", "list"],
   ["teamAssignments", "/Project/TeamAssignments/", "list"],
   ["milestones", "/Project/DeliveryMilestones/", "list"],
