@@ -11,9 +11,16 @@ export function LeaveApplyScreen({ data, selectedEmployeeId, reload }) {
   const isSuperAdmin = Boolean(user.is_superuser || user.isSuperuser || user.is_staff || user.isStaff);
   const currentEmployeeId = selectedEmployeeId || data.me?.employees?.[0]?.id || form.employee_id;
   const allLeaveRows = data.leaveOverview?.results?.length ? data.leaveOverview.results : data.leaveRequests || [];
+  const isDirectReportLeave = (item) => (data.employees || []).some((employee) => (
+    String(employee.id) === String(item.employee || item.employee_id)
+    && String(employee.manager || employee.manager_id) === String(currentEmployeeId)
+  ));
+  const isOwnLeave = (item) => String(item.employee || item.employee_id) === String(currentEmployeeId);
+  const canReviewLeave = (item) => isSuperAdmin || (isDirectReportLeave(item) && String(item.employee || item.employee_id) !== String(currentEmployeeId));
+  const canReviewAnyLeave = isSuperAdmin || allLeaveRows.some(canReviewLeave);
   const leaveRows = isSuperAdmin
     ? allLeaveRows
-    : allLeaveRows.filter((item) => String(item.employee || item.employee_id) === String(currentEmployeeId));
+    : allLeaveRows.filter((item) => isOwnLeave(item) || isDirectReportLeave(item));
   const visibleBalances = isSuperAdmin
     ? data.leaveBalances || []
     : (data.leaveBalances || []).filter((item) => String(item.employee) === String(currentEmployeeId));
@@ -43,14 +50,14 @@ export function LeaveApplyScreen({ data, selectedEmployeeId, reload }) {
     return "gold";
   };
 
-  const requestColumns = isSuperAdmin ? ["Employee", "Type", "Starts", "Ends", "Days", "Status", "Action"] : ["Employee", "Type", "Starts", "Ends", "Days", "Status"];
+  const requestColumns = canReviewAnyLeave ? ["Employee", "Type", "Starts", "Ends", "Days", "Status", "Action"] : ["Employee", "Type", "Starts", "Ends", "Days", "Status"];
   const requestRows = leaveRows.map((item) => {
     const base = [item.employee_name || employeeName(data, item.employee || item.employee_id), item.leave_type, formatDate(item.starts_on), formatDate(item.ends_on), item.requested_days, <StatusPill key="status" tone={leaveTone(item.status)}>{item.status}</StatusPill>];
-    if (isSuperAdmin) {
+    if (canReviewAnyLeave) {
       base.push(
         <span className="Table-Actions" key="actions">
-          <button className="Soft-Button Small" onClick={() => reviewLeave(item.id, "approve")} disabled={String(item.status).toLowerCase() === "approved"}>Approve</button>
-          <button className="Soft-Button Small Danger" onClick={() => reviewLeave(item.id, "reject")} disabled={String(item.status).toLowerCase() === "rejected"}>Reject</button>
+          {canReviewLeave(item) && <button className="Soft-Button Small" onClick={() => reviewLeave(item.id, "approve")} disabled={String(item.status).toLowerCase() === "approved"}>Approve</button>}
+          {canReviewLeave(item) && <button className="Soft-Button Small Danger" onClick={() => reviewLeave(item.id, "reject")} disabled={String(item.status).toLowerCase() === "rejected"}>Reject</button>}
         </span>,
       );
     }
@@ -59,7 +66,7 @@ export function LeaveApplyScreen({ data, selectedEmployeeId, reload }) {
 
   return (
     <section className="Leave-Screen Screen-Stack">
-      <section className="Page-Heading"><div><span>Main App / Leave</span><h1>{isSuperAdmin ? "Leave Console" : "Apply Leave"}</h1></div><StatusPill tone="gold">{leaveRows.filter((item) => !isCompleted(item.status) && String(item.status).toLowerCase() !== "approved").length} Pending</StatusPill></section>
+      <section className="Page-Heading"><div><span>Main App / Leave</span><h1>{canReviewAnyLeave ? "Leave Console" : "Apply Leave"}</h1></div><StatusPill tone="gold">{leaveRows.filter((item) => !isCompleted(item.status) && String(item.status).toLowerCase() !== "approved").length} Pending</StatusPill></section>
       <section className="Split-Grid Two-One">
         <Panel title="Leave Request" subtitle="Submits To Main App Leave Workflow.">
           <div className="Form-Grid Two">
