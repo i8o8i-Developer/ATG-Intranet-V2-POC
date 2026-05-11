@@ -65,9 +65,10 @@ from Backend.EnterpriseCore.models import RoleAssignment, Tenant, Workspace
 from Backend.EnterpriseCore.services import CapabilityService
 from Backend.EnterpriseCore.viewsets import TenantScopedModelViewSet
 from rest_framework import permissions, status
-from rest_framework.views import APIView
+from rest_framework.authentication import BasicAuthentication
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 
 def _first_available_context(user, tenant_id=None, workspace_id=None):
@@ -190,6 +191,8 @@ class CurrentUserAPIView(APIView):
 
 
 class ChangePasswordAPIView(APIView):
+    authentication_classes = [BasicAuthentication]
+
     def post(self, request):
         target_user = request.user
         new_password = request.data.get("new_password") or request.data.get("password")

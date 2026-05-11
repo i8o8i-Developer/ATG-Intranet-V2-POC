@@ -18,6 +18,7 @@ from django.contrib.auth import get_user_model
 from django.utils.dateparse import parse_date, parse_datetime
 from rest_framework import permissions
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -43,8 +44,25 @@ class OnboardingOfferViewSet(TenantScopedModelViewSet):
 
 
 class LeaveRequestViewSet(TenantScopedModelViewSet):
-    queryset = LeaveRequest.objects.select_related("tenant", "workspace", "employee").all()
+    queryset = LeaveRequest.objects.select_related(
+        "tenant",
+        "workspace",
+        "employee"
+    ).all()
+
     serializer_class = LeaveRequestSerializer
+
+    def get_queryset(self):
+        return LeaveApprovalService.visible_queryset(self.get_tenant_context())
+
+    def perform_create(self, serializer):
+        employee = serializer.validated_data.get("employee")
+        context = self.get_tenant_context()
+        actor_employee = LeaveApprovalService.actor_employee(context)
+        if employee and not LeaveApprovalService.is_leave_admin(context):
+            if not actor_employee or actor_employee.id != employee.id:
+                raise PermissionDenied("You Cannot Create Leave For Another Employee.")
+        super().perform_create(serializer)
 
     @action(detail=True, methods=["post"], url_path="approve")
     def approve(self, request, pk=None):

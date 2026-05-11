@@ -110,10 +110,44 @@ class NotificationService:
 
 class LeaveApprovalService:
     @staticmethod
+    def actor_employee(context):
+        if not context.actor:
+            return None
+        return EmployeeProfile.objects.filter(tenant=context.tenant, user=context.actor).select_related("department", "position", "manager").first()
+
+    @staticmethod
+    def is_leave_admin(context):
+        actor = getattr(context, "actor", None)
+        return bool(actor and (getattr(actor, "is_superuser", False) or getattr(actor, "is_staff", False)))
+
+    @staticmethod
+    def visible_queryset(context):
+        queryset = LeaveRequest.objects.filter(tenant=context.tenant).select_related("employee", "employee__user", "employee__manager")
+        if context.workspace:
+            queryset = queryset.filter(workspace=context.workspace)
+        if LeaveApprovalService.is_leave_admin(context):
+            return queryset
+        employee = LeaveApprovalService.actor_employee(context)
+        if not employee:
+            return queryset.none()
+        return queryset.filter(Q(employee=employee) | Q(employee__manager=employee))
+
+    @staticmethod
+    def can_review(context, leave_request):
+        if LeaveApprovalService.is_leave_admin(context):
+            return True
+        employee = LeaveApprovalService.actor_employee(context)
+        if not employee:
+            return False
+        return leave_request.employee.manager_id == employee.id and leave_request.employee_id != employee.id
+
+    @staticmethod
     def approve(context, leave_request_id):
-        leave_request = LeaveRequest.objects.filter(tenant=context.tenant, id=leave_request_id).first()
+        leave_request = LeaveApprovalService.visible_queryset(context).filter(id=leave_request_id).first()
         if not leave_request:
             return ServiceResult.failure({"leaveRequest": "Leave Request Not Found."}, status_code=404)
+        if not LeaveApprovalService.can_review(context, leave_request):
+            return ServiceResult.failure({"permission": "You Cannot Approve This Leave Request."}, status_code=403)
         leave_request.status = "Approved"
         leave_request.approved_by = context.actor
         leave_request.approved_at = timezone.now()
@@ -125,9 +159,11 @@ class LeaveApprovalService:
 
     @staticmethod
     def reject(context, leave_request_id, reason=""):
-        leave_request = LeaveRequest.objects.filter(tenant=context.tenant, id=leave_request_id).first()
+        leave_request = LeaveApprovalService.visible_queryset(context).filter(id=leave_request_id).first()
         if not leave_request:
             return ServiceResult.failure({"leaveRequest": "Leave Request Not Found."}, status_code=404)
+        if not LeaveApprovalService.can_review(context, leave_request):
+            return ServiceResult.failure({"permission": "You Cannot Reject This Leave Request."}, status_code=403)
         leave_request.status = "Rejected"
         leave_request.rejected_at = timezone.now()
         leave_request.approval_payload = {**leave_request.approval_payload, "rejectedAt": timezone.now().isoformat(), "reason": reason}
@@ -365,19 +401,23 @@ class CredentialVaultService:
 class MainAppLegacyService:
     @staticmethod
     def actor_employee(context):
-        if not context.actor:
-            return None
-        return EmployeeProfile.objects.filter(tenant=context.tenant, user=context.actor).select_related("department", "position", "manager").first()
+        return LeaveApprovalService.actor_employee(context)
 
     @staticmethod
     def list_leaves(context, employee_id=None):
-        queryset = LeaveRequest.objects.filter(tenant=context.tenant).select_related("employee", "employee__user")
-        actor = getattr(context, "actor", None)
-        is_privileged = bool(actor and (getattr(actor, "is_superuser", False) or getattr(actor, "is_staff", False)))
+        queryset = LeaveApprovalService.visible_queryset(context)
+        is_admin = LeaveApprovalService.is_leave_admin(context)
+        actor_employee = MainAppLegacyService.actor_employee(context)
         if employee_id:
+            if not is_admin:
+                allowed = actor_employee and (
+                    str(employee_id) == str(actor_employee.id)
+                    or EmployeeProfile.objects.filter(tenant=context.tenant, id=employee_id, manager=actor_employee).exists()
+                )
+                if not allowed:
+                    return ServiceResult.failure({"permission": "You Cannot View This Employee's Leave Requests."}, status_code=403)
             queryset = queryset.filter(employee_id=employee_id)
-        elif not is_privileged and MainAppLegacyService.actor_employee(context):
-            queryset = queryset.filter(employee=MainAppLegacyService.actor_employee(context))
+
         return ServiceResult.success(
             {
                 "count": queryset.count(),
@@ -402,6 +442,10 @@ class MainAppLegacyService:
         employee = EmployeeProfile.objects.filter(tenant=context.tenant, id=employee_id).first()
         if not employee:
             return ServiceResult.failure({"employee": "Employee Not Found."}, status_code=404)
+        actor_employee = MainAppLegacyService.actor_employee(context)
+        is_admin = LeaveApprovalService.is_leave_admin(context)
+        if not (is_admin or (actor_employee and actor_employee.id == employee.id)):
+            return ServiceResult.failure({"permission": "You Cannot Create Leave For Another Employee."}, status_code=403)
         requested_days = (ends_on - starts_on).days + 1
         leave = LeaveRequest.objects.create(
             tenant=context.tenant,
@@ -420,10 +464,21 @@ class MainAppLegacyService:
 
     @staticmethod
     def leave_calendar(context, employee_id=None, department_id=None):
-        leaves = LeaveRequest.objects.filter(tenant=context.tenant).select_related("employee")
+        leaves = LeaveApprovalService.visible_queryset(context)
+        is_admin = LeaveApprovalService.is_leave_admin(context)
+        actor_employee = MainAppLegacyService.actor_employee(context)
         if employee_id:
+            if not is_admin:
+                allowed = actor_employee and (
+                    str(employee_id) == str(actor_employee.id)
+                    or EmployeeProfile.objects.filter(tenant=context.tenant, id=employee_id, manager=actor_employee).exists()
+                )
+                if not allowed:
+                    return ServiceResult.failure({"permission": "You Cannot View This Employee's Leave Calendar."}, status_code=403)
             leaves = leaves.filter(employee_id=employee_id)
         if department_id:
+            if not is_admin:
+                return ServiceResult.failure({"permission": "You Cannot View Department Leave Calendar."}, status_code=403)
             leaves = leaves.filter(employee__department_id=department_id)
         return ServiceResult.success(
             {
