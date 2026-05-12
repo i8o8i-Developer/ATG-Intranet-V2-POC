@@ -8,7 +8,6 @@ from django.utils import timezone
 from Backend.Apps.Assesment.models import AssessmentActivity, AssessmentAssignment, AssessmentSubmission, AssessmentTemplate
 from Backend.Apps.AtgDocs.models import DriveFile, DriveFolder, DocumentVersion, KnowledgeActivity, KnowledgeDocument, KnowledgePermission
 from Backend.Apps.Banao.models import AuditArtifact, LeadAccount, LeadActivity, LeadContact, LeadNote, LeadTag, LeadTest, ProposalArtifact, WorkflowStatusHistory, WorkflowTransition
-from Backend.Apps.FinanceAndPayroll.models import ApprovalDecision, BankAccount, CompensationPlan, PaymentOrder, PaymentWebhookEvent, PayPeriod, PayrollLineItem, PayrollRun, PayoutExecution, PayslipDocument
 from Backend.Apps.Git.models import GitActivitySnapshot, GitRepositorySnapshot, RepositoryUtilityRequest
 from Backend.Apps.GithubExtension.models import BranchReviewerAssignment, BranchTestingAssignment, GitHubRepository, RepositoryBranchStatus
 from Backend.Apps.HtmlTemplate.models import ContentTemplate, GenericHtmlTemplate, OfferMacro, OfferTemplate, TemplateVariable
@@ -74,7 +73,6 @@ class Command(BaseCommand):
         self.seed_tasks(employees, projects)
         leads = self.seed_revenue(employees)
         self.seed_lms(employees)
-        self.seed_finance(employees)
         self.seed_docs(employees)
         self.seed_assessments(employees)
         self.seed_l3(employees)
@@ -404,46 +402,6 @@ class Command(BaseCommand):
         self.upsert(LearningAssignment, {"tenant": self.tenant, "path": path, "employee": employees["EMP008"]}, {"status": "Assigned", "due_on": self.today + timezone.timedelta(days=7)})
         self.upsert(LeadQueueSnapshot, {"tenant": self.tenant, "employee": employees["EMP003"], "snapshot_date": self.today}, {"open_count": 12, "stale_count": 2, "follow_up_due_count": 4, "proposal_count": 3})
         self.upsert(RevenuePerformanceSnapshot, {"tenant": self.tenant, "employee": employees["EMP003"], "snapshot_date": self.today}, {"lead_count": 18, "converted_count": 2, "proposal_count": 5, "score": Decimal("84")})
-
-    def seed_finance(self, employees):
-        previous_month = self.today.replace(day=1) - timezone.timedelta(days=1)
-        last_month_name = previous_month.strftime("%B %Y")
-        current_month_name = self.today.strftime("%B %Y")
-
-        last_period = self.upsert(PayPeriod, {"tenant": self.tenant, "name": last_month_name}, {"starts_on": previous_month.replace(day=1), "ends_on": previous_month.replace(day=28), "status": "Closed"})
-        current_period = self.upsert(PayPeriod, {"tenant": self.tenant, "name": current_month_name}, {"starts_on": self.today.replace(day=1), "ends_on": self.today, "status": "Open"})
-
-        last_run = self.upsert(PayrollRun, {"tenant": self.tenant, "pay_period": last_period, "status": "Issued"}, {"gross_amount": Decimal("148000"), "deduction_amount": Decimal("7400"), "net_amount": Decimal("140600")})
-        current_run = self.upsert(PayrollRun, {"tenant": self.tenant, "pay_period": current_period, "status": "Draft"}, {"gross_amount": Decimal("148000"), "deduction_amount": Decimal("7400"), "net_amount": Decimal("140600")})
-
-        pay_data = [
-            ("EMP001", Decimal("45000"), Decimal("2500"), Decimal("42500"), "Issued", {"Basic": 25000, "HRA": 12000, "Travel Allowance": 3000, "Special Allowance": 5000}),
-            ("EMP002", Decimal("25000"), Decimal("1200"), Decimal("23800"), "Issued", {"Basic": 15000, "HRA": 6000, "Travel Allowance": 2000, "Special Allowance": 2000}),
-            ("EMP003", Decimal("30000"), Decimal("1500"), Decimal("28500"), "Issued", {"Basic": 18000, "HRA": 7000, "Travel Allowance": 2500, "Special Allowance": 2500}),
-            ("EMP004", Decimal("28000"), Decimal("1400"), Decimal("26600"), "Issued", {"Basic": 16000, "HRA": 6500, "Travel Allowance": 2500, "Special Allowance": 3000}),
-            ("EMP005", Decimal("36000"), Decimal("1800"), Decimal("34200"), "Issued", {"Basic": 20000, "HRA": 9000, "Travel Allowance": 3000, "Special Allowance": 4000}),
-            ("EMP006", Decimal("32000"), Decimal("1500"), Decimal("30500"), "Issued", {"Basic": 18000, "HRA": 8000, "Travel Allowance": 2500, "Special Allowance": 3500}),
-            ("EMP007", Decimal("27000"), Decimal("1300"), Decimal("25700"), "Draft", {"Basic": 15000, "HRA": 6500, "Travel Allowance": 2500, "Special Allowance": 3000}),
-            ("EMP008", Decimal("15000"), Decimal("800"), Decimal("14200"), "Draft", {"Basic": 10000, "HRA": 3000, "Travel Allowance": 1000, "Special Allowance": 1000}),
-            ("EMP009", Decimal("27000"), Decimal("1300"), Decimal("25700"), "Draft", {"Basic": 15000, "HRA": 6500, "Travel Allowance": 2500, "Special Allowance": 3000}),
-            ("EMP010", Decimal("32000"), Decimal("1500"), Decimal("30500"), "Draft", {"Basic": 18000, "HRA": 8000, "Travel Allowance": 2500, "Special Allowance": 3500}),
-        ]
-
-        for code, gross, deduction, net, status, components in pay_data:
-            employee = employees[code]
-            self.upsert(CompensationPlan, {"tenant": self.tenant, "employee": employee, "plan_name": "Monthly Fixed"}, {"base_amount": gross, "frequency": "Monthly", "starts_on": employee.joined_on})
-            self.upsert(BankAccount, {"tenant": self.tenant, "employee": employee, "masked_account_number": f"XXXX-{code[-3:]}"}, {"account_holder_name": employee.display_name, "bank_name": "HDFC Bank", "ifsc_code": "HDFC000" + code[-4:], "verification_status": "Verified"})
-
-            last_line = self.upsert(PayrollLineItem, {"tenant": self.tenant, "payroll_run": last_run, "employee": employee}, {"gross_amount": gross, "deduction_amount": deduction, "net_amount": net, "status": status})
-            self.upsert(PayslipDocument, {"tenant": self.tenant, "payroll_line_item": last_line}, {"storage_reference": f"https://docs.example/payslips/{code.lower()}/{last_month_name.replace(' ', '-').lower()}.pdf", "status": status})
-
-            if status == "Draft":
-                current_line = self.upsert(PayrollLineItem, {"tenant": self.tenant, "payroll_run": current_run, "employee": employee}, {"gross_amount": gross, "deduction_amount": deduction, "net_amount": net, "status": "Pending"})
-                self.upsert(PayslipDocument, {"tenant": self.tenant, "payroll_line_item": current_line}, {"storage_reference": f"https://docs.example/payslips/{code.lower()}/{current_month_name.replace(' ', '-').lower()}.pdf", "status": "Pending"})
-        self.upsert(ApprovalDecision, {"tenant": self.tenant, "resource_type": "PayrollRun", "resource_id": str(last_run.id), "decision": "Approve"}, {"decided_by": employees["EMP005"], "reason": "Finance Manager Approval Completed"})
-        self.upsert(ApprovalDecision, {"tenant": self.tenant, "resource_type": "PayrollRun", "resource_id": str(current_run.id), "decision": "Pending"}, {"decided_by": employees["EMP005"], "reason": "Awaiting Final Review"})
-        self.upsert(PayoutExecution, {"tenant": self.tenant, "payroll_run": last_run, "provider": "Razorpay"}, {"status": "Completed", "amount": Decimal("140600"), "currency": "INR", "executed_at": self.now - timezone.timedelta(days=5)})
-        self.upsert(PaymentOrder, {"tenant": self.tenant, "provider_order_id": "order_pay_001"}, {"provider": "Razorpay", "employee": employees["EMP001"], "amount": Decimal("42500"), "currency": "INR", "status": "Paid", "receipt": "receipt-mar-001"})
 
     def seed_docs(self, employees):
         folder = self.upsert(DriveFolder, {"tenant": self.tenant, "path": "/Delivery", "name": "Delivery"}, {"drive_folder_id": "drive-folder-demo"})
