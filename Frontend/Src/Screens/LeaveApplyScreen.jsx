@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import "../Styles/LeaveScreen.css";
 
 import { apiPost } from "../Api/Client.js";
 import { Panel, SimpleTable, StatusPill } from "./Shared/ScreenComponents.jsx";

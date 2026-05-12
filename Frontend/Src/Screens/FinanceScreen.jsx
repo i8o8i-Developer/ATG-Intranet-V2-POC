@@ -1,5 +1,6 @@
 import React from "react";
 import { Check, X } from "lucide-react";
+import "../Styles/FinanceScreen.css";
 
 import { apiPost } from "../Api/Client.js";
 import { money } from "./Shared/ScreenUtils.jsx";

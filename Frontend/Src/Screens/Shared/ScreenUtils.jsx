@@ -290,5 +290,5 @@ export function downloadCsv(filename, columns, rows) {
 
 export function csvValue(value) {
   const text = String(value ?? "");
-  return /[",\N]/.Test(Text) ? `"${text.replaceAll('"', '""')}"` : text;
+  return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }

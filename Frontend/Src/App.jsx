@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { AlertTriangle, Bell, LogOut } from "lucide-react";
+import { AlertTriangle, Bell, ChevronLeft, LogOut } from "lucide-react";
 import { apiGet, apiPost, clearApiAuth, getApiSettings, unpackList } from "./Api/Client.js";
 import { LoginScreen, ProfileScreen } from "./Screens/AuthScreens.jsx";
 import { RouteRenderer } from "./Screens/AppScreens.jsx";
@@ -8,7 +8,6 @@ import { resolveActiveEmployee } from "./Screens/Shared/ScreenUtils.jsx"; // For
 import {
   ATGLogo,
   IconHome,
-  IconWorkflow,
   IconHRMS,
   IconLMS,
   IconMCP,
@@ -26,6 +25,8 @@ import {
   IconNewEmployee,
   IconAdd,
   IconDot,
+  IconDelayManagement,
+  IconPayrollDownload,
   SvgChevronUp,
   SvgChevronDown,
 } from "./Components/icons/icons.jsx";
@@ -33,7 +34,6 @@ import {
 // ─── Flat Nav List For Page Title Lookup ────────────
 const navItems = [
   { label: "Home",                  path: "/home/" },
-  { label: "Workflow Intelligence", path: "/workflow/" },
   { label: "HRMS",                  path: "/hrms/" },
   { label: "LMS",                   path: "/lms/" },
   { label: "MCP Agents",            path: "/mcp/" },
@@ -114,12 +114,6 @@ const endpointMap = [
   ["payrollLineItems", "/FinanceAndPayroll/PayrollLineItems/", "list"],
   ["payslipDocuments", "/FinanceAndPayroll/PayslipDocuments/", "list"],
   ["paymentOrders", "/FinanceAndPayroll/PaymentOrders/", "list"],
-  ["workflowSummary", "/WorkflowIntelligence/api/route-usage/summary/", "object"],
-  ["topWorkflows", "/WorkflowIntelligence/api/route-usage/top-workflows/", "object"],
-  ["businessWorkflows", "/WorkflowIntelligence/api/business-workflows/", "list"],
-  ["workflowReports", "/WorkflowIntelligence/WorkflowReports/", "list"],
-  ["routeUsageAggregates", "/WorkflowIntelligence/RouteUsageAggregates/", "list"],
-  ["businessWorkflowMaps", "/WorkflowIntelligence/BusinessWorkflowMaps/", "list"],
   ["domains", "/Users/Domains/", "list"],
   ["departmentMemberships", "/Users/DepartmentMemberships/", "list"],
   ["goals", "/Users/Goals/", "list"],
@@ -204,7 +198,6 @@ const endpointMap = [
 function buildNavItems(activePath) {
   return [
     { label: "Home",                 icon: <IconHome active={activePath === "/home/"} />, path: "/home/" },
-    { label: "Workflow Intelligence", icon: <IconWorkflow />,         path: "/workflow/" },
     { label: "HRMS",                 icon: <IconHRMS />,             path: "/hrms/" },
     { label: "LMS",                  icon: <IconLMS />,              path: "/lms/" },
     { label: "MCP",                  icon: <IconMCP />,              path: "/mcp/" },
@@ -234,11 +227,13 @@ function buildNavItems(activePath) {
     { label: "Provide Feedbacks",    icon: <IconFeedback />,         path: "/feedback/" },
     { label: "Finance Department",   icon: <IconFinance />,          path: "/payments/?pay_month=current&month_name=May" },
     { label: "New Employee Register", icon: <IconNewEmployee />,      path: "/employee-registrar/new/" },
+    { label: "Delay Management",     icon: <IconDelayManagement />,  path: "/delays/" },
+    { label: "Payroll Downloads",    icon: <IconPayrollDownload />,  path: "/payroll-downloads/" },
   ];
 }
 
 // ─── Nav Link ─────────────────────────────────────────────────────────────
-function NavLink({ item, depth = 0, activePath, navigate }) {
+function NavLink({ item, depth = 0, activePath, navigate, collapsed }) {
   const hasChildren = item.children && item.children.length > 0;
 
   const isGroupActive = activePath === item.path ||
@@ -270,17 +265,21 @@ function NavLink({ item, depth = 0, activePath, navigate }) {
           onMouseLeave={e => e.currentTarget.style.background = "transparent"}
         >
           {item.icon && <span style={{ flexShrink: 0, display: "flex" }}>{item.icon}</span>}
-          <span style={{ flex: 1, fontSize: 14, fontWeight: 500, lineHeight: "20px", color: "#60676D", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {item.label}
-          </span>
-          <span style={{ flexShrink: 0, display: "flex" }}>
-            {open ? <SvgChevronUp /> : <SvgChevronDown />}
-          </span>
+          {!collapsed && (
+            <span style={{ flex: 1, fontSize: 14, fontWeight: 500, lineHeight: "20px", color: "#60676D", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {item.label}
+            </span>
+          )}
+          {!collapsed && (
+            <span style={{ flexShrink: 0, display: "flex" }}>
+              {open ? <SvgChevronUp /> : <SvgChevronDown />}
+            </span>
+          )}
         </button>
-        {open && (
+        {open && !collapsed && (
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {item.children.map((child) => (
-              <NavLink key={child.path || child.label} item={child} depth={1} activePath={activePath} navigate={navigate} />
+              <NavLink key={child.path || child.label} item={child} depth={1} activePath={activePath} navigate={navigate} collapsed={collapsed} />
             ))}
           </div>
         )}
@@ -314,15 +313,17 @@ function NavLink({ item, depth = 0, activePath, navigate }) {
       ) : item.icon ? (
         <span style={{ flexShrink: 0, display: "flex" }}>{item.icon}</span>
       ) : (
-        <span style={{ width: 16, flexShrink: 0 }} />
+        <span style={{ width: collapsed ? 20 : 16, flexShrink: 0 }} />
       )}
-      <span style={{
-        flex: 1, fontSize: 14, fontWeight: 500, lineHeight: "20px",
-        color: isActive ? "#1D44B0" : "#60676D",
-        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-      }}>
-        {item.label}
-      </span>
+      {!collapsed && (
+        <span style={{
+          flex: 1, fontSize: 14, fontWeight: 500, lineHeight: "20px",
+          color: isActive ? "#1D44B0" : "#60676D",
+          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+        }}>
+          {item.label}
+        </span>
+      )}
     </button>
   );
 }
@@ -464,6 +465,7 @@ function AppShell({ children, route, navigate, data, apiOnline, loading, logout,
   const visibleErrors = errors.filter((item) => item.status && item.status !== 401).slice(0, 1);
 
   const builtNav = buildNavItems(activePath);
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
     <>
@@ -479,6 +481,10 @@ function AppShell({ children, route, navigate, data, apiOnline, loading, logout,
           background: #f7faff;
           border-right: 1px solid #e3e3e3;
           display: flex; flex-direction: column; overflow: hidden;
+          transition: width 0.2s, min-width 0.2s;
+        }
+        .Atg-Sidebar.Collapsed {
+          width: 80px; min-width: 80px;
         }
 
         /* Brand */
@@ -494,15 +500,20 @@ function AppShell({ children, route, navigate, data, apiOnline, loading, logout,
           color: #000;
           font-family: sans-serif;
         }
-        .Atg-Avatar-Btn {
-          width: 36px; height: 36px; border-radius: 50%;
-          background: #d7e4ff;
+        .Atg-Sidebar.Collapsed .Atg-Brand-Name { display: none; }
+        .Atg-Sidebar.Collapsed .Atg-Brand { justify-content: center; padding: 24px 8px 0; }
+        .Atg-Sidebar.Collapsed .Atg-Brand-Left { gap: 0; }
+
+        .Atg-Collapse-Btn {
+          width: 36px; height: 36px; border-radius: 8px;
+          background: transparent;
           border: none; cursor: pointer;
           display: flex; align-items: center; justify-content: center;
-          font-size: 16px; color: #3e3e3e; font-weight: 400; font-family: 'Inter', sans-serif;
-          flex-shrink: 0; transition: background 0.15s;
+          color: #64748b; font-family: 'Inter', sans-serif;
+          flex-shrink: 0; transition: background 0.15s, color 0.15s;
         }
-        .Atg-Avatar-Btn:hover { background: #bfdbfe; }
+        .Atg-Collapse-Btn:hover { background: #eef3ff; color: #1d44b0; }
+        .Atg-Sidebar.Collapsed .Atg-Collapse-Btn { display: none; }
 
         /* Nav Scroll */
         .Atg-Nav {
@@ -513,6 +524,7 @@ function AppShell({ children, route, navigate, data, apiOnline, loading, logout,
         .Atg-Nav::-webkit-scrollbar { width: 4px; }
         .Atg-Nav::-webkit-scrollbar-track { background: transparent; }
         .Atg-Nav::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 2px; }
+        .Atg-Sidebar.Collapsed .Atg-Nav { padding: 0 8px 24px; }
 
         /* ── Main ── */
         .Atg-Main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
@@ -614,14 +626,14 @@ function AppShell({ children, route, navigate, data, apiOnline, loading, logout,
 
       <div className="Atg-App">
         {/* ── Sidebar ── */}
-        <aside className="Atg-Sidebar">
+        <aside className={"Atg-Sidebar" + (collapsed ? " Collapsed" : "")}>
           <div className="Atg-Brand">
             <div className="Atg-Brand-Left">
               <ATGLogo />
               <span className="Atg-Brand-Name">Intranet</span>
             </div>
-            <button className="Atg-Avatar-Btn" onClick={() => navigate("/profile/")} title={displayName}>
-              {initials}
+            <button className="Atg-Collapse-Btn" onClick={() => setCollapsed((v) => !v)} title="Collapse sidebar">
+              <ChevronLeft size={18} />
             </button>
           </div>
 
@@ -633,6 +645,7 @@ function AppShell({ children, route, navigate, data, apiOnline, loading, logout,
                 depth={0}
                 activePath={activePath}
                 navigate={navigate}
+                collapsed={collapsed}
               />
             ))}
           </nav>
@@ -675,8 +688,10 @@ function AppShell({ children, route, navigate, data, apiOnline, loading, logout,
 function NotificationBell({ notifications = [], navigate, reloadData }) {
   const [open, setOpen] = useState(false);
   const [busyId, setBusyId] = useState("");
+  const [markAllBusy, setMarkAllBusy] = useState(false);
+  const [optimisticRead, setOptimisticRead] = useState(false);
   const ref = useRef(null);
-  const unread = notifications.filter((item) => !item.is_read);
+  const unread = optimisticRead ? [] : notifications.filter((item) => !item.is_read);
   const rows = [...notifications].sort((l, r) => new Date(r.created_at || 0) - new Date(l.created_at || 0)).slice(0, 8);
 
   useEffect(() => {
@@ -700,7 +715,7 @@ function NotificationBell({ notifications = [], navigate, reloadData }) {
   const review = async (item) => {
     setBusyId(String(item.id));
     try {
-      if (!item.is_read) await apiPost(`/MainApp/Notifications/${item.id}/read/`, {});
+      if (!item.is_read) await apiPost(`/MainApp/Notifications/${item.id}/mark-read/`, {});
       if (reloadData) reloadData(["notifications"]);
       navigate(notificationPath(item));
       setOpen(false);
@@ -708,7 +723,15 @@ function NotificationBell({ notifications = [], navigate, reloadData }) {
   };
 
   const markAllRead = async () => {
-    await Promise.allSettled(unread.map((item) => apiPost(`/MainApp/Notifications/${item.id}/read/`, {})));
+    if (markAllBusy) return;
+    setMarkAllBusy(true);
+    setOptimisticRead(true);
+    setTimeout(() => setOptimisticRead(false), 7000);
+    try {
+      await apiPost("/MainApp/Notifications/mark-all-read/", {});
+    } catch (err) {
+      console.warn("Mark All Read API Error:", err);
+    }
     if (reloadData) reloadData(["notifications"]);
   };
 

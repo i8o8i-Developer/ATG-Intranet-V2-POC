@@ -18,8 +18,9 @@ import {
   X,
 } from "lucide-react";
 
-import { apiGet, apiPost } from "../Api/Client.js";
+import { apiGet, apiPost, PUBLIC_BASE_URL } from "../Api/Client.js";
 import { Disclosure, EmptyState, Modal, Panel, Progress, SimpleTable, StatusPill } from "./Shared/ScreenComponents.jsx";
+import "../Styles/ProjectScreen.css";
 import {
   avatar,
   employeeContact,
@@ -121,7 +122,7 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
   };
 
   const shareProject = async () => {
-    const url = `${window.location.origin}${routeBase}/${selectedProjectId}/${encodeURIComponent(project.name || "project")}/`;
+    const url = `${PUBLIC_BASE_URL}${routeBase}/${selectedProjectId}/${encodeURIComponent(project.name || "project")}/`;
     if (navigator.clipboard) await navigator.clipboard.writeText(url);
   };
 
@@ -226,7 +227,7 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
         {!milestones.length && (
           <EmptyState label="No Milestones Yet. Create Default Milestones Or Add A New One." />
         )}
-        {[...milestones, { id: "__unassigned__", title: "Unassigned", status: "Open" }].map((milestone) => {
+        {[...milestones, { id: "__unassigned__", title: "Not Assigned", status: "Open" }].map((milestone) => {
           const list = tasksByMilestone.get(String(milestone.id)) || [];
           if (!list.length && milestone.id === "__unassigned__") return null;
           const done = list.filter((task) => ["completed", "done", "closed"].includes(String(task.status).toLowerCase())).length;
@@ -324,8 +325,8 @@ function MemberRepoIcon({ assignment, repos, data }) {
   // No-PushesSignal: FromGitActivitySnapshotsCommit_Count===0ForAnyRepoToday
   const todayStr = isoDate(new Date());
   const noPushRepos = memberRepos.filter((repo) => {
-    const activity = (data.gitActivitySnapshots || []).find((snap) => String(snap.repository) === String(repo.id) && String(snap.snapshot_date) === todayStr);
-    return activity && Number(activity.commit_count || 0) === 0;
+    const Activity = (data.gitActivitySnapshots || []).find((snap) => String(snap.repository) === String(repo.id) && String(snap.snapshot_date) === todayStr);
+    return Activity && Number(Activity.commit_count || 0) === 0;
   });
 
   return (
@@ -454,8 +455,8 @@ function AddTaskModal({ project, team, milestones, data, initial, onClose, reloa
     <Modal title={initial?.parentTaskId ? "Add Sub Task" : "Add Task"} onClose={onClose} wide>
       <div className="Form-Grid Two Modal-Form">
         <label>Title<input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label>
-        <label>Assignee<select value={form.owner} onChange={(event) => setForm({ ...form, owner: event.target.value })}><option value="">Unassigned</option>{team.map((item) => <option key={item.id} value={item.employee_id || item.employee}>{item.employee_name || employeeName(data, item.employee_id || item.employee)}</option>)}</select></label>
-        <label>Milestone<select value={form.milestone_id} onChange={(event) => setForm({ ...form, milestone_id: event.target.value })}><option value="">Unassigned</option>{milestones.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
+        <label>Assignee<select value={form.owner} onChange={(event) => setForm({ ...form, owner: event.target.value })}><option value="">Not Assigned</option>{team.map((item) => <option key={item.id} value={item.employee_id || item.employee}>{item.employee_name || employeeName(data, item.employee_id || item.employee)}</option>)}</select></label>
+        <label>Milestone<select value={form.milestone_id} onChange={(event) => setForm({ ...form, milestone_id: event.target.value })}><option value="">Not Assigned</option>{milestones.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
         <label>Due Date<input type="date" value={form.due_at} onChange={(event) => setForm({ ...form, due_at: event.target.value })} /></label>
         <label>Priority<select value={form.priority} onChange={(event) => setForm({ ...form, priority: event.target.value })}><option>Low</option><option>Normal</option><option>High</option><option>Urgent</option></select></label>
         <label>Bounty<input type="number" value={form.bounty} onChange={(event) => setForm({ ...form, bounty: event.target.value })} /></label>
@@ -726,7 +727,7 @@ function TaskDetailModal({ task, data, onClose, reload }) {
         </section>
         <aside>
           <h3>Activity</h3>
-          {activities.map((item) => <div className="Activity-Row" key={item.id}><span>{item.message || item.activity_type}</span><time>{formatDate(item.created_at)}</time></div>)}
+          {activities.map((item) => <div className="Activity-Row" key={item.id}><span>{item.message || item.Activity_type}</span><time>{formatDate(item.created_at)}</time></div>)}
           {!activities.length && <EmptyState label="No Task Activity Returned." />}
         </aside>
       </div>

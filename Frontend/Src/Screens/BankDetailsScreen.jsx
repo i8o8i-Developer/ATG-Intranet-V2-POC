@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import "../Styles/BankScreen.css";
 
 import { apiPost } from "../Api/Client.js";
 import { Panel, SimpleTable } from "./Shared/ScreenComponents.jsx";

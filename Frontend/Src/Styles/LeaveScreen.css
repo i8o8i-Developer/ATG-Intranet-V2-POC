@@ -1,0 +1,11 @@
+.Leave-Screen.Screen-Stack { gap: 20px; }
+.Leave-Screen.Screen-Stack .Page-Heading { background: linear-gradient(135deg, #0f172a, #1e293b); border: none; border-radius: 20px; padding: 24px 28px; color: #fff; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: space-between; }
+.Leave-Screen.Screen-Stack .Page-Heading::before { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 50%, rgba(59,130,246,0.12) 0%, transparent 70%); pointer-events: none; }
+.Leave-Screen.Screen-Stack .Page-Heading > div { position: relative; }
+.Leave-Screen.Screen-Stack .Page-Heading span { color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+.Leave-Screen.Screen-Stack .Page-Heading h1 { margin: 4px 0 0; font-size: 24px; font-weight: 600; color: #fff; }
+.Leave-Screen.Screen-Stack .Split-Grid.Two-One { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; align-items: start; }
+.Leave-Screen.Screen-Stack .Form-Grid.Two { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.Leave-Screen.Screen-Stack .Form-Grid.Two label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: #374151; }
+.Leave-Screen.Screen-Stack .Form-Grid.Two input, .Leave-Screen.Screen-Stack .Form-Grid.Two select { width: 100%; }
+.Leave-Screen.Screen-Stack .Table-Actions { display: flex; gap: 10px; align-items: center; }

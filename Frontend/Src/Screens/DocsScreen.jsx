@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Clock, Plus, Share2, Upload } from "lucide-react";
+import "../Styles/DocsScreen.css";
 
 import { apiGet, apiPost } from "../Api/Client.js";
 import { EmptyState, Modal, StatusPill, Tabs } from "./Shared/ScreenComponents.jsx";

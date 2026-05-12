@@ -1,0 +1,10 @@
+.Onboarding-Screen.Screen-Stack .Onboarding-Form-Container { max-width: 680px; }
+.Onboarding-Screen.Screen-Stack .Onboarding-Card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 28px 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.Onboarding-Screen.Screen-Stack .Onboarding-Header { text-align: center; margin-bottom: 24px; color: #2563eb; }
+.Onboarding-Screen.Screen-Stack .Onboarding-Header h2 { margin: 12px 0 4px; font-size: 20px; font-weight: 600; color: #0f172a; }
+.Onboarding-Screen.Screen-Stack .Onboarding-Header p { margin: 0; color: #64748b; font-size: 14px; }
+.Onboarding-Screen.Screen-Stack .Form-Grid.Two { gap: 16px; }
+.Onboarding-Screen.Screen-Stack .Form-Grid.Two label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: #374151; }
+.Onboarding-Screen.Screen-Stack .Form-Grid.Two input { width: 100%; }
+.Onboarding-Screen.Screen-Stack .Primary-Button { width: 100%; margin-top: 20px; justify-content: center; padding: 12px; font-size: 15px; }
+.Onboarding-Screen.Screen-Stack .Login-Error { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #fef2f2; color: #dc2626; border-radius: 8px; font-size: 13px; border: 1px solid #fecaca; margin-bottom: 16px; }

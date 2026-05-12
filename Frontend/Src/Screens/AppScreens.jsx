@@ -21,7 +21,6 @@ import { PayslipsScreen } from "./PayslipsScreen.jsx";
 import { ProjectDashboardScreen } from "./ProjectDashboardScreen.jsx";
 import { SendCertificateScreen } from "./SendCertificateScreen.jsx";
 import { SendOfferScreen } from "./SendOfferScreen.jsx";
-import { WorkflowIntelligenceScreen } from "./WorkflowIntelligenceScreen.jsx";
 import { FeedbackScreen } from "./FeedbackScreen.jsx";
 
 export function RouteRenderer(props) {
@@ -43,7 +42,6 @@ export function RouteRenderer(props) {
   if (path.startsWith("/payroll-downloads") || path.startsWith("/Payroll")) return <PayrollDownloadsScreen {...props} />;
   if (path.startsWith("/payslips")) return <PayslipsScreen {...props} />;
   if (path.startsWith("/payments") || path.startsWith("/finance")) return <FinanceScreen {...props} />;
-  if (path.startsWith("/workflow")) return <WorkflowIntelligenceScreen {...props} />;
   if (path.startsWith("/notifications")) return <NotificationsScreen {...props} />;
   if (path.startsWith("/change-password") || path.startsWith("/admin/change-password")) return <AdminChangePasswordScreen {...props} />;
   if (path.startsWith("/mcp")) return <McpScreen {...props} />;

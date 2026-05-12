@@ -88,6 +88,13 @@ class NotificationService:
         return ServiceResult.success(notification)
 
     @staticmethod
+    def mark_all_read(context, user):
+        count = NotificationItem.objects.filter(tenant=context.tenant, recipient=user, is_read=False).update(
+            is_read=True, read_at=timezone.now(), updated_at=timezone.now()
+        )
+        return ServiceResult.success({"updated": count})
+
+    @staticmethod
     def snooze(context, notification_id, snoozed_until, reason=""):
         notification = NotificationItem.objects.filter(tenant=context.tenant, id=notification_id).first()
         if not notification:

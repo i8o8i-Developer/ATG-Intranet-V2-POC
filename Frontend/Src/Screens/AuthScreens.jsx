@@ -3,6 +3,9 @@ import { AlertTriangle, Edit3, Eye, EyeOff, LogIn, LogOut, ShieldCheck, UserRoun
 import { apiGet, apiPost, apiPatch, clearApiAuth, saveApiSettings } from "../Api/Client.js";
 import { Modal } from "./Shared/ScreenComponents.jsx";
 import { resolveActiveEmployee } from "./Shared/ScreenUtils.jsx";
+import atgLogoPng from "../Images/Atg_Logo.png";
+import "../Styles/ProfileScreen.css";
+import "../Styles/LoginScreen.css";
 
 export function LoginScreen({ settings, onLogin }) {
   const [form, setForm] = useState({
@@ -15,7 +18,6 @@ export function LoginScreen({ settings, onLogin }) {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const environmentLabel = String(form.apiBase || "Configured Backend").replace(/^https?:\/\//i, "").replace(/\/$/, "") || "Configured Backend";
   useEffect(() => {
     setForm((current) => ({
       ...current,
@@ -74,37 +76,52 @@ export function LoginScreen({ settings, onLogin }) {
 
   return (
     <main className="Login-Page">
-      <form className="Login-Card" onSubmit={submit}>
-        <div className="Brand-Block">
-          <div className="Brand-Mark">B</div>
-          <div className="Brand-Copy">
-            <strong>Banao Intranet</strong>
-            <span>v2</span>
+      <div className="Login-Bg" />
+      <div className="Login-Container">
+        <div className="Login-Brand">
+          <div className="Login-Logo">
+            <img src={atgLogoPng} alt="ATG" width="48" height="48" />
           </div>
+          <h1>ATG Intranet</h1>
+          <p>Sign In To Your Workspace</p>
         </div>
 
-        <h2 style={{ margin: 0, fontSize: "20px" }}>Sign In</h2>
+        <form className="Login-Card" onSubmit={submit}>
+          {error && (
+            <div className="Login-Error">
+              <AlertTriangle size={15} />
+              <span>{error}</span>
+            </div>
+          )}
 
-        {error && <div className="Login-Error"><AlertTriangle size={15} />{error}</div>}
+          <div className="Login-Field">
+            <label>Username</label>
+            <div className="Login-Input-Wrap">
+              <input autoFocus value={form.username} onChange={(e) => update("username", e.target.value)} autoComplete="username" placeholder="Enter Your Username" />
+            </div>
+          </div>
 
-        <label>
-          Username
-          <input autoFocus value={form.username} onChange={(e) => update("username", e.target.value)} autoComplete="username" placeholder="Username" />
-        </label>
-        <label>
-          Password
-          <span className="Password-Field">
-            <input type={showPassword ? "text" : "password"} value={form.password} onChange={(e) => update("password", e.target.value)} autoComplete="current-password" placeholder="Password" />
-            <button type="button" className="Icon-Button" onClick={() => setShowPassword((v) => !v)} title={showPassword ? "Hide" : "Show"}>
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </span>
-        </label>
+          <div className="Login-Field">
+            <label>Password</label>
+            <div className="Login-Input-Wrap">
+              <input type={showPassword ? "text" : "password"} value={form.password} onChange={(e) => update("password", e.target.value)} autoComplete="current-password" placeholder="Enter Your Password" />
+              <button type="button" className="Login-Pw-Toggle" onClick={() => setShowPassword((v) => !v)} title={showPassword ? "Hide" : "Show"}>
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
 
-        <button className="Primary-Button Login-Submit" type="submit" disabled={submitting}>
-          <LogIn size={16} />{submitting ? "Signing In…" : "Sign In"}
-        </button>
-      </form>
+          <button className="Login-Submit" type="submit" disabled={submitting}>
+            {submitting ? (
+              <span className="Login-Spinner" />
+            ) : (
+              <LogIn size={18} />
+            )}
+            <span>{submitting ? "Signing In..." : "Sign In"}</span>
+          </button>
+        </form>
+
+      </div>
     </main>
   );
 }
@@ -129,38 +146,62 @@ export function ProfileScreen({ data, onLogout, reload }) {
   ];
 
   return (
-    <section className="Profile-Screen Screen-Stack">
-      <section className="Profile-Hero">
-        <div className="Profile-Avatar">{initials}</div>
-        <div>
-          <span className="Section-Kicker">Signed In Profile</span>
+    <section className="PProfile">
+      <section className="PProfile-Hero">
+        <div className="PProfile-Avatar">{initials}</div>
+        <div className="PProfile-Info">
+          <small>Signed In Profile</small>
           <h1>{fullName}</h1>
-          <p>{employee.department_name || "Banao"} / {employee.position_title || "Intranet User"}</p>
+          <p>{employee.department_name || "Banao"} &middot; {employee.position_title || "Intranet User"}</p>
         </div>
-        <button className="Outline-Button" onClick={() => setEditOpen(true)}><Edit3 size={16} /> Edit Profile</button>
-        <button className="Outline-Button" onClick={onLogout}><LogOut size={16} /> Logout</button>
+        <div className="PProfile-Actions">
+          <button className="PProfile-Btn" onClick={() => setEditOpen(true)}><Edit3 size={15} /> Edit Profile</button>
+          <button className="PProfile-Btn" onClick={onLogout}><LogOut size={15} /> Logout</button>
+        </div>
       </section>
 
-      <div className="Profile-Stats">
-        <section><span>Assigned Tasks</span><strong>{employeeTasks.length}</strong></section>
-        <section><span>Leave Requests</span><strong>{leaveRows.filter((item) => String(item.employee || item.employee_id) === String(employee.id)).length}</strong></section>
-        <section><span>Notifications</span><strong>{(data.notifications || []).filter((item) => !item.is_read).length}</strong></section>
+      <div className="PProfile-Stats">
+        <div className="PProfile-StatCard">
+          <div className="PProfile-StatIcon Blue"><UserRound size={22} /></div>
+          <div>
+            <span>Assigned Tasks</span>
+            <strong>{employeeTasks.length}</strong>
+          </div>
+        </div>
+        <div className="PProfile-StatCard">
+          <div className="PProfile-StatIcon Green"><ShieldCheck size={22} /></div>
+          <div>
+            <span>Leave Requests</span>
+            <strong>{leaveRows.filter((item) => String(item.employee || item.employee_id) === String(employee.id)).length}</strong>
+          </div>
+        </div>
+        <div className="PProfile-StatCard">
+          <div className="PProfile-StatIcon Orange"><AlertTriangle size={22} /></div>
+          <div>
+            <span>Unread Notifications</span>
+            <strong>{(data.notifications || []).filter((item) => !item.is_read).length}</strong>
+          </div>
+        </div>
       </div>
 
-      <section className="Profile-Grid">
-        <article className="Profile-Card">
-          <header><UserRound size={18} /><h2>Account Details</h2></header>
-          <dl>{profileRows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+      <div className="PProfile-Grid">
+        <article className="PProfile-Card">
+          <div className="PProfile-CardHead"><UserRound size={18} /><h2>Account Details</h2></div>
+          <div className="PProfile-CardBody">
+            {profileRows.map(([label, value]) => (
+              <dl className="PProfile-Row" key={label}><dt>{label}</dt><dd>{value}</dd></dl>
+            ))}
+          </div>
         </article>
-        <article className="Profile-Card">
-          <header><ShieldCheck size={18} /><h2>Workspace Access</h2></header>
-          <dl>
-            <div><dt>Tenant</dt><dd>{data.me?.activeTenant?.name || data.me?.tenant?.name || data.me?.tenant || "Default Tenant"}</dd></div>
-            <div><dt>Workspace</dt><dd>{data.me?.activeWorkspace?.name || data.me?.workspace?.name || data.me?.workspace || "Default Workspace"}</dd></div>
-            <div><dt>Backend Session</dt><dd>Active</dd></div>
-          </dl>
+        <article className="PProfile-Card">
+          <div className="PProfile-CardHead"><ShieldCheck size={18} /><h2>Workspace Access</h2></div>
+          <div className="PProfile-CardBody">
+            <dl className="PProfile-Row"><dt>Tenant</dt><dd>{data.me?.activeTenant?.name || data.me?.tenant?.name || data.me?.tenant || "Default Tenant"}</dd></dl>
+            <dl className="PProfile-Row"><dt>Workspace</dt><dd>{data.me?.activeWorkspace?.name || data.me?.workspace?.name || data.me?.workspace || "Default Workspace"}</dd></dl>
+            <dl className="PProfile-Row"><dt>Backend Session</dt><dd>Active</dd></dl>
+          </div>
         </article>
-      </section>
+      </div>
       {editOpen && <ProfileEditModal employee={employee} onClose={() => setEditOpen(false)} reload={reload} />}
     </section>
   );

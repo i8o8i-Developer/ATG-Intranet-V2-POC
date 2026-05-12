@@ -1,0 +1,28 @@
+.Docs-Layout { display: grid; grid-template-columns: 220px 1fr; min-height: calc(100vh - 56px); background: #f5f7fb; }
+.Docs-Side { padding: 28px 20px; display: flex; flex-direction: column; gap: 4px; background: #fff; border-right: 1px solid #e2e8f0; }
+.Docs-Side button { border: 0; background: transparent; text-align: left; color: #475569; padding: 10px 14px; border-radius: 10px; font-size: 14px; cursor: pointer; transition: all 0.15s; font-weight: 500; }
+.Docs-Side button:hover { background: #f1f5f9; color: #0f172a; }
+.Docs-Side button.active { background: #eff6ff; color: #2563eb; font-weight: 600; }
+
+.Docs-Detail { min-height: calc(100vh - 56px); background: #f5f7fb; }
+.Docs-Nav { display: flex; align-items: center; justify-content: space-between; background: #fff; border-bottom: 1px solid #e2e8f0; padding: 12px 24px; gap: 12px; }
+.Docs-Nav strong { font-size: 16px; color: #0f172a; font-weight: 600; }
+.Docs-Nav span { display: flex; gap: 10px; align-items: center; }
+.Docs-Nav button { border: 0; background: transparent; color: #475569; cursor: pointer; font-size: 14px; padding: 6px 12px; border-radius: 8px; transition: all 0.15s; font-weight: 500; }
+.Docs-Nav button:hover { background: #f1f5f9; color: #0f172a; }
+.Docs-Nav.Dark { background: #1e293b; color: #fff; }
+.Docs-Nav.Dark strong { color: #fff; }
+.Docs-Nav.Dark button { color: #94a3b8; }
+.Docs-Nav.Dark button:hover { color: #fff; background: rgba(255,255,255,0.08); }
+.Docs-Nav input { width: 220px; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; background: #f8fafc; }
+.Docs-Nav input:focus { outline: none; border-color: #3b82f6; }
+
+.Docs-List { width: 100%; border-collapse: collapse; }
+.Docs-List td { padding: 14px 20px; border-bottom: 1px solid #e2e8f0; font-size: 15px; cursor: pointer; transition: background 0.15s; }
+.Docs-List tr:hover td { background: #f8fafc; }
+
+.Docs-Detail article { max-width: 1100px; margin: 28px auto; padding: 0 36px; }
+.Docs-Detail h1 { font-size: 32px; font-weight: 700; color: #0f172a; margin: 0 0 8px; }
+.Docs-Detail p { color: #64748b; font-size: 14px; margin: 4px 0; }
+.Docs-Detail hr { border: none; border-top: 1px solid #e2e8f0; margin: 20px 0; }
+.Doc-Body { font-size: 16px; line-height: 1.7; color: #334155; max-width: 900px; }

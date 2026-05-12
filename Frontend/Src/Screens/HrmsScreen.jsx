@@ -7,6 +7,8 @@ import {
 
 import { EmptyState, MilestoneRail, Modal, Panel, Progress, SimpleTable, Tabs } from "./Shared/ScreenComponents.jsx";
 import { apiPatch, apiPost } from "../Api/Client.js";
+import "../Styles/HrmsSanity.css";
+import "../Styles/HrmsFinance.css";
 import {
   calendarDays, filterForEmployee, findDailyStatus, formatDate,
   groupBy, indexById, isCompleted, isoDate, lastDays, money, progressForTask,
@@ -37,7 +39,7 @@ export function HrmsScreen({ data, reload }) {
     e.display_name?.toLowerCase().includes(search.toLowerCase()) ||
     e.department_name?.toLowerCase().includes(search.toLowerCase()),
   );
-  const departments = groupBy(employees, (e) => e.department_name || "Unassigned");
+  const departments = groupBy(employees, (e) => e.department_name || "Not Assigned");
 
   const totalEmp   = (data.employees || []).length;
   const activeEmp  = (data.employees || []).filter((e) => e.status === "Active").length;
@@ -1117,7 +1119,7 @@ function EodSummaryModal({ employee, data, onClose, reload }) {
                   }`}
                 >
                   <strong>{day.day}</strong>
-                  <small>{day.iso === today ? "Today" : ""}</small>
+                  <small>{day.iso === todayStr ? "Today" : ""}</small>
                 </button>
               ),
             )}
@@ -1129,7 +1131,7 @@ function EodSummaryModal({ employee, data, onClose, reload }) {
       {tab === "submit" && (
         <div className="Eod-Submit-Wrap">
           <div className="Eod-Submit-Card">
-            <h3>Submit EOD Report For Today ({today})</h3>
+            <h3>Submit EOD Report For Today ({todayStr})</h3>
             {todayStatus ? (
               <div className="Eod-Already-Submitted">
                 <CheckCircle size={20} />
@@ -1218,40 +1220,38 @@ function EodSummaryModal({ employee, data, onClose, reload }) {
 function ProjectSanity({ data }) {
   const byProject = groupBy(data.milestones || [], (m) => String(m.project));
   return (
-    <div className="Hrms-Body">
-      <div className="Hrms-Sanity-List">
-        {(data.projects || []).map((project) => {
-          const milestones = byProject.get(String(project.id)) || [];
-          const done = milestones.filter((m) => isCompleted(m.status)).length;
-          const pct  = milestones.length
-            ? Math.round((done / milestones.length) * 100)
-            : 0;
-          return (
-            <div className="Hrms-Sanity-Card" key={project.id}>
-              <div className="Hrms-Sanity-Left">
-                <span className="Hrms-Sanity-Priority">P{project.priority}</span>
-                <div className="Hrms-Sanity-Meta">
-                  <strong>{project.name}</strong>
-                  <small>{project.project_type || project.status || "—"}</small>
-                </div>
-              </div>
-              <div className="Hrms-Sanity-Mid">
-                <MilestoneRail milestones={milestones} />
-                <small className="Hrms-Milestone-Ct">{done}/{milestones.length} Milestones</small>
-              </div>
-              <div className="Hrms-Sanity-Right">
-                <span className="Hrms-Pct">{pct}%</span>
-                <span className={`hrms-health ${
-                  project.health === "Escalated" ? "danger" :
-                  project.health === "On Track"  ? "ok"     : ""
-                }`}>
-                  {project.health || "Null"}
-                </span>
+    <div className="HS">
+      {(data.projects || []).map((project) => {
+        const milestones = byProject.get(String(project.id)) || [];
+        const done = milestones.filter((m) => isCompleted(m.status)).length;
+        const pct  = milestones.length
+          ? Math.round((done / milestones.length) * 100)
+          : 0;
+        return (
+          <div className="HS-Card" key={project.id}>
+            <div className="HS-Left">
+              <span className="HS-Priority">P{project.priority}</span>
+              <div className="HS-Meta">
+                <strong>{project.name}</strong>
+                <small>{project.project_type || project.status || "—"}</small>
               </div>
             </div>
-          );
-        })}
-      </div>
+            <div className="HS-Mid">
+              <MilestoneRail milestones={milestones} />
+              <span className="HS-Count">{done}/{milestones.length} Milestones</span>
+            </div>
+            <div className="HS-Right">
+              <span className="HS-Pct">{pct}%</span>
+              <span className={`HS-Health ${
+                project.health === "Escalated" ? "danger" :
+                project.health === "On Track"  ? "ok"     : "null"
+              }`}>
+                {project.health || "Null"}
+              </span>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -1262,37 +1262,46 @@ function ProjectFinance({ data }) {
     (sum, t) => sum + Number(t.bounty || 0), 0,
   );
   return (
-    <div className="Hrms-Body">
-      <div className="Hrms-Fin-Kpis">
+    <div className="HF">
+      <div className="HF-Kpis">
         {[
-          { icon: <Briefcase size={18} />, label: "Total Projects",    value: (data.projects || []).length },
-          { icon: <CheckCircle size={18} />, label: "Total Tasks",     value: (data.tasks || []).length },
-          { icon: <TrendingUp size={18} />, label: "Total Bounty",     value: Math.round(totalBounty) },
-          { icon: <Users size={18} />,      label: "Team Assignments", value: (data.teamAssignments || []).length },
+          { icon: <Briefcase size={20} />, label: "Total Projects",    value: (data.projects || []).length },
+          { icon: <CheckCircle size={20} />, label: "Total Tasks",     value: (data.tasks || []).length },
+          { icon: <TrendingUp size={20} />, label: "Total Bounty",     value: Math.round(totalBounty) },
+          { icon: <Users size={20} />,      label: "Team Assignments", value: (data.teamAssignments || []).length },
         ].map(({ icon, label, value }) => (
-          <div key={label} className="Hrms-Fin-Kpi">
-            <span className="Hrms-Fin-Icon">{icon}</span>
+          <div key={label} className="HF-Kpi">
+            <div className="HF-KpiIcon">{icon}</div>
             <strong>{value}</strong>
             <span>{label}</span>
           </div>
         ))}
       </div>
-      <Panel title="Project Finance Breakdown">
-        <SimpleTable
-          columns={["Project", "Health", "Team Size", "Tasks", "Bounty Pool"]}
-          rows={(data.projects || []).map((project) => [
-            project.name,
-            project.health || "—",
-            (data.teamAssignments || []).filter((a) => a.project === project.id).length,
-            (data.tasks || []).filter((t) => t.project === project.id).length,
-            "₹" + money(
-              (data.tasks || [])
-                .filter((t) => t.project === project.id)
-                .reduce((sum, t) => sum + Number(t.bounty || 0), 0),
-            ),
-          ])}
-        />
-      </Panel>
+      <div className="HF-TableWrap">
+        <div className="HF-TableHead"><h2>Project Finance Breakdown</h2></div>
+        <table className="HF-Table">
+          <thead>
+            <tr>
+              <th>Project</th><th>Health</th><th>Team Size</th><th>Tasks</th><th>Bounty Pool</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(data.projects || []).map((project) => (
+              <tr key={project.id}>
+                <td>{project.name}</td>
+                <td>{project.health || "—"}</td>
+                <td>{(data.teamAssignments || []).filter((a) => a.project === project.id).length}</td>
+                <td>{(data.tasks || []).filter((t) => t.project === project.id).length}</td>
+                <td>{"₹" + money(
+                  (data.tasks || [])
+                    .filter((t) => t.project === project.id)
+                    .reduce((sum, t) => sum + Number(t.bounty || 0), 0),
+                )}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

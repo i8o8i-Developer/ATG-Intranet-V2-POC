@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import "../Styles/RegistrarScreen.css";
 
 import { apiPost } from "../Api/Client.js";
 import { Panel, SimpleTable, StatCard, StatusPill } from "./Shared/ScreenComponents.jsx";

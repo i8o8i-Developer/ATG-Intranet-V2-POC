@@ -1,0 +1,12 @@
+.Payroll-Download-Screen.Screen-Stack { gap: 20px; }
+.Payroll-Download-Screen.Screen-Stack .Page-Heading { background: linear-gradient(135deg, #0f172a, #1e293b); border: none; border-radius: 20px; padding: 24px 28px; color: #fff; display: flex; align-items: center; justify-content: space-between; position: relative; overflow: hidden; }
+.Payroll-Download-Screen.Screen-Stack .Page-Heading::before { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 50%, rgba(59,130,246,0.12) 0%, transparent 70%); pointer-events: none; }
+.Payroll-Download-Screen.Screen-Stack .Page-Heading > div { position: relative; }
+.Payroll-Download-Screen.Screen-Stack .Page-Heading span { color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+.Payroll-Download-Screen.Screen-Stack .Page-Heading h1 { margin: 4px 0 0; font-size: 24px; font-weight: 600; color: #fff; }
+.Payroll-Download-Screen.Screen-Stack .Button-Row { display: flex; gap: 10px; flex-wrap: wrap; }
+.Payroll-Download-Screen.Screen-Stack .Stat-Grid.Four { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.Payroll-Download-Screen.Screen-Stack .Form-Grid.Three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.Payroll-Download-Screen.Screen-Stack .Form-Grid.Three label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: #374151; }
+.Payroll-Download-Screen.Screen-Stack .Form-Grid.Three input, .Payroll-Download-Screen.Screen-Stack .Form-Grid.Three select { width: 100%; }
+.Payroll-Download-Screen.Screen-Stack .Split-Grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }

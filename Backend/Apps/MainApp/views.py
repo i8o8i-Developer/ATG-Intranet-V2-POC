@@ -102,6 +102,16 @@ class NotificationItemViewSet(TenantScopedModelViewSet):
         result = NotificationService.mark_read(self.get_tenant_context(), pk)
         return self.service_response(result, NotificationItemSerializer)
 
+    @action(detail=True, methods=["post"], url_path="mark-read")
+    def mark_read(self, request, pk=None):
+        result = NotificationService.mark_read(self.get_tenant_context(), pk)
+        return self.service_response(result, NotificationItemSerializer)
+
+    @action(detail=False, methods=["post"], url_path="mark-all-read")
+    def mark_all_read(self, request):
+        result = NotificationService.mark_all_read(self.get_tenant_context(), request.user)
+        return self.service_response(result)
+
     @action(detail=True, methods=["post"], url_path="snooze")
     def snooze(self, request, pk=None):
         result = NotificationService.snooze(self.get_tenant_context(), pk, request.data.get("snoozed_until"), request.data.get("reason", ""))

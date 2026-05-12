@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { AlertTriangle, Clock, Users } from "lucide-react";
+import "../Styles/DelayScreen.css";
 
 import { EmptyState, Modal, Panel, StatCard, StatusPill, Tabs } from "./Shared/ScreenComponents.jsx";
 import { apiGet, apiPost } from "../Api/Client.js";
@@ -69,7 +70,7 @@ export function DelayManagementScreen({ data, reload }) {
       alert("Delay Submitted Successfully!");
     } catch (error) {
       console.error("Failed To Submit Delay:", error);
-      alert(`Failed to submit delay: ${error.message || "Please Try Again."}`);
+      alert(`Failed to Submit Delay: ${error.message || "Please Try Again."}`);
     } finally {
       setLoading(false);
     }
@@ -99,7 +100,7 @@ export function DelayManagementScreen({ data, reload }) {
   };
 
   return (
-    <>
+    <div className="DelayPage">
       {/* Header */}
       <Panel
         title="Delay Management System"
@@ -386,6 +387,6 @@ export function DelayManagementScreen({ data, reload }) {
           </form>
         </Modal>
       )}
-    </>
+    </div>
   );
 }

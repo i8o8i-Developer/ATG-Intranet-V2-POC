@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Bell, CheckCheck, Filter, Search } from "lucide-react";
+import "../Styles/NotifScreen.css";
 import { apiPost } from "../Api/Client.js";
 import { Panel } from "./Shared/ScreenComponents.jsx";
 import { formatDate } from "./Shared/ScreenUtils.jsx";
@@ -36,14 +37,14 @@ export function NotificationsScreen({ data, reload, navigate }) {
   const markRead = async (item) => {
     setBusy(true);
     try {
-      await apiPost(`/MainApp/Notifications/${item.id}/read/`, {});
+      await apiPost(`/MainApp/Notifications/${item.id}/mark-read/`, {});
       if (reload) reload(["notifications"]);
     } finally { setBusy(false); }
   };
   const markAllRead = async () => {
     setBusy(true);
     try {
-      await Promise.allSettled(unread.map((item) => apiPost(`/MainApp/Notifications/${item.id}/read/`, {})));
+      await apiPost("/MainApp/Notifications/mark-all-read/", {});
       if (reload) reload(["notifications"]);
     } finally { setBusy(false); }
   };

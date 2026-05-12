@@ -1,0 +1,20 @@
+.Registrar-Screen.Screen-Stack { gap: 20px; }
+.Registrar-Screen.Screen-Stack .Page-Heading { background: linear-gradient(135deg, #0f172a, #1e293b); border: none; border-radius: 20px; padding: 24px 28px; color: #fff; display: flex; align-items: center; justify-content: space-between; position: relative; overflow: hidden; }
+.Registrar-Screen.Screen-Stack .Page-Heading::before { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 50%, rgba(99,102,241,0.12) 0%, transparent 70%); pointer-events: none; }
+.Registrar-Screen.Screen-Stack .Page-Heading > div { position: relative; }
+.Registrar-Screen.Screen-Stack .Page-Heading span { color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+.Registrar-Screen.Screen-Stack .Page-Heading h1 { margin: 4px 0 0; font-size: 24px; font-weight: 600; color: #fff; }
+.Registrar-Screen.Screen-Stack .Stat-Grid.Four { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.Registrar-Screen.Screen-Stack .Split-Grid.Two-One { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; align-items: start; }
+.Registrar-Screen.Screen-Stack .Split-Grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.Registrar-Screen.Screen-Stack .Form-Grid.Three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.Registrar-Screen.Screen-Stack .Form-Grid.Three label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: #374151; }
+.Registrar-Screen.Screen-Stack .Form-Grid.Three input, .Registrar-Screen.Screen-Stack .Form-Grid.Three select { width: 100%; }
+.Registrar-Screen.Screen-Stack .Credential-Pack { border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px 20px; background: #f8fafc; margin: 16px 0; }
+.Registrar-Screen.Screen-Stack .Credential-Pack header { margin-bottom: 14px; }
+.Registrar-Screen.Screen-Stack .Credential-Pack header strong { font-size: 15px; color: #0f172a; }
+.Registrar-Screen.Screen-Stack .Credential-Pack header p { margin: 4px 0 0; color: #64748b; font-size: 13px; }
+.Registrar-Screen.Screen-Stack .Credential-Row { display: grid !important; grid-template-columns: 180px 1fr 1fr; gap: 12px; align-items: center; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; padding: 10px 14px; margin-bottom: 8px; }
+.Registrar-Screen.Screen-Stack .Credential-Toggle { display: inline-flex !important; align-items: center; gap: 8px; font-weight: 600; color: #0f172a; font-size: 14px; }
+.Registrar-Screen.Screen-Stack .Button-Row { display: flex; gap: 12px; margin-top: 16px; }
+.Registrar-Screen.Screen-Stack .Credential-Inline-Field { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }

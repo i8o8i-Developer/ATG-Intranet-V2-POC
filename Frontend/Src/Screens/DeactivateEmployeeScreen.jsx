@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import "../Styles/DeactivateScreen.css";
 
 import { apiPost } from "../Api/Client.js";
 import { formatDateTime, toggleSet } from "./Shared/ScreenUtils.jsx";

@@ -1,0 +1,14 @@
+.Payslip-Screen.Screen-Stack { gap: 20px; }
+.Payslip-Screen.Screen-Stack .Page-Heading { background: linear-gradient(135deg, #0f172a, #1e293b); border: none; border-radius: 20px; padding: 24px 28px; color: #fff; display: flex; align-items: center; justify-content: space-between; position: relative; overflow: hidden; }
+.Payslip-Screen.Screen-Stack .Page-Heading::before { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 50%, rgba(16,185,129,0.12) 0%, transparent 70%); pointer-events: none; }
+.Payslip-Screen.Screen-Stack .Page-Heading > div { position: relative; }
+.Payslip-Screen.Screen-Stack .Page-Heading span { color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+.Payslip-Screen.Screen-Stack .Page-Heading h1 { margin: 4px 0 0; font-size: 24px; font-weight: 600; color: #fff; }
+.Payslip-Screen.Screen-Stack .Stat-Grid.Four { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.Payslip-Screen.Screen-Stack .Form-Grid { display: grid; gap: 14px; }
+.Payslip-Screen.Screen-Stack .Form-Grid label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: #374151; }
+.Payslip-Screen.Screen-Stack .Form-Grid input { width: 100%; }
+.Payslip-Screen.Screen-Stack .Table-Actions { display: flex; gap: 8px; align-items: center; }
+.Payslip-Screen.Screen-Stack .Details-Grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.Payslip-Screen.Screen-Stack .Details-Grid dt { font-size: 12px; color: #64748b; margin-bottom: 2px; }
+.Payslip-Screen.Screen-Stack .Details-Grid dd { margin: 0; font-size: 14px; color: #0f172a; font-weight: 500; }

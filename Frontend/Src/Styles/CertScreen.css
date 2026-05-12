@@ -1,0 +1,12 @@
+.Certificate-Page.Screen-Stack .Form-Grid.Two { gap: 14px; }
+.Certificate-Page.Screen-Stack .Form-Grid.Two label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: #374151; }
+.Certificate-Page.Screen-Stack .Form-Grid.Two input, .Certificate-Page.Screen-Stack .Form-Grid.Two select { width: 100%; }
+.Certificate-Page.Screen-Stack .Span-2 { grid-column: 1 / -1; }
+.Certificate-Page.Screen-Stack .Recipient-Grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.Certificate-Page.Screen-Stack .Recipient-Card, .Certificate-Page.Screen-Stack .Recipient-CardActive { display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; cursor: pointer; transition: all 0.15s; }
+.Certificate-Page.Screen-Stack .Recipient-Card:hover { border-color: #cbd5e1; }
+.Certificate-Page.Screen-Stack .Recipient-CardActive { border-color: #2563eb; background: #eff6ff; }
+.Certificate-Page.Screen-Stack .Recipient-Card strong, .Certificate-Page.Screen-Stack .Recipient-CardActive strong { display: block; font-size: 14px; color: #0f172a; }
+.Certificate-Page.Screen-Stack .Recipient-Card small, .Certificate-Page.Screen-Stack .Recipient-CardActive small { font-size: 12px; color: #64748b; }
+.Certificate-Page.Screen-Stack .Button-Pair { display: flex; gap: 8px; }
+.Certificate-Page.Screen-Stack .Erp-Table { min-width: 600px; }

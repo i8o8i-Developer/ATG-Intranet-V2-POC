@@ -617,19 +617,19 @@ textarea { min-height: 90px; resize: vertical; }
 .bad-icon { color: red; }
 .mini-input { width: 58px; background: #e9ecef; }
 
-.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.42); display: flex; justify-content: center; align-items: flex-start; padding: 36px; z-index: 20; overflow: auto; }
-.modal { display: block; position: relative; width: min(720px, calc(100vw - 72px)); max-height: calc(100vh - 72px); overflow: auto; background: #fff; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
-.modal.wide { width: min(1060px, calc(100vw - 72px)); }
-.modal > header { display: flex; justify-content: space-between; align-items: center; padding: 20px 22px 10px; border-bottom: 1px solid var(--line); }
-.modal h1 { margin: 0; font-size: 28px; line-height: 1.2; font-weight: 400; }
-.modal h2 { font-size: 24px; line-height: 1.25; margin: 10px 0 16px; }
-.modal h3 { font-size: 16px; margin: 0 0 12px; }
-.modal h4 { font-size: 14px; margin: 14px 0 8px; }
-.modal > div, .modal > section, .modal > table { margin: 20px; }
-.modal textarea { max-width: 100%; font-size: 14px; }
-.modal .primary-button { width: max-content; }
-.modal .details-grid { grid-template-columns: repeat(4, minmax(110px, 1fr)); }
-.modal .task-modal-grid { align-items: start; }
+.Modal-Backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.42); display: flex; justify-content: center; align-items: flex-start; padding: 36px; z-index: 20; overflow: auto; }
+.Modal { display: block; position: relative; width: min(720px, calc(100vw - 72px)); max-height: calc(100vh - 72px); overflow: auto; background: #fff; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+.Modal.Wide { width: min(1060px, calc(100vw - 72px)); }
+.Modal > header { display: flex; justify-content: space-between; align-items: center; padding: 20px 22px 10px; border-bottom: 1px solid var(--line); }
+.Modal h1 { margin: 0; font-size: 28px; line-height: 1.2; font-weight: 400; }
+.Modal h2 { font-size: 24px; line-height: 1.25; margin: 10px 0 16px; }
+.Modal h3 { font-size: 16px; margin: 0 0 12px; }
+.Modal h4 { font-size: 14px; margin: 14px 0 8px; }
+.Modal > div, .Modal > section, .Modal > table { margin: 20px; }
+.Modal textarea { max-width: 100%; font-size: 14px; }
+.Modal .primary-button { width: max-content; }
+.Modal .details-grid { grid-template-columns: repeat(4, minmax(110px, 1fr)); }
+.Modal .task-modal-grid { align-items: start; }
 .calendar-nav { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; }
 .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 7px; }
 .calendar-grid > strong { text-align: center; padding: 10px 0; }
@@ -1002,13 +1002,15 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: #2454d6; b
 .assessment-screen .toolbar-row { padding: 12px; }
 .assessment-screen .search-box { min-width: min(340px, 100%); }
 
-.modal-backdrop { z-index: 200; padding: 28px; background: rgba(15, 23, 42, .58); }
-.modal { width: min(900px, calc(100vw - 56px)); border-radius: 10px; max-height: calc(100vh - 56px); }
-.modal.wide { width: min(1120px, calc(100vw - 56px)); }
-.modal > header { padding: 18px 20px 12px; position: sticky; top: 0; background: #fff; z-index: 2; }
-.modal h1 { font-size: 24px; }
-.modal > div, .modal > section, .modal > table { margin: 16px; }
-.modal .erp-table { min-width: 680px; }
+.Modal-Backdrop { z-index: 200; padding: 28px; background: rgba(15, 23, 42, .58); }
+.Modal { width: min(900px, calc(100vw - 56px)); border-radius: 10px; max-height: calc(100vh - 56px); }
+.Modal.Wide { width: min(1120px, calc(100vw - 56px)); }
+.Modal > header { padding: 18px 20px 12px; position: sticky; top: 0; background: #fff; z-index: 2; }
+.Modal-Close-Btn { width: 32px; height: 32px; border: none; background: #f1f5f9; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #64748b; transition: all 0.15s; flex-shrink: 0; }
+.Modal-Close-Btn:hover { background: #e2e8f0; color: #0f172a; }
+.Modal h1 { font-size: 24px; }
+.Modal > div, .Modal > section, .Modal > table { margin: 16px; }
+.Modal .erp-table { min-width: 680px; }
 .calendar-grid { grid-template-columns: repeat(7, minmax(74px, 1fr)); }
 .calendar-grid button { min-height: 58px; }
 .calendar-grid button:hover { background: #eaf1ff; color: #111827; }
@@ -1093,12 +1095,12 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: #2454d6; b
   .campaign-form label:first-child, .campaign-form label:nth-child(7), .campaign-form label:nth-child(8), .report-form label:first-child { grid-column: auto; }
   .project-title-bar select, .viewer-select select, .docs-nav input, .finance-search input { width: 100%; max-width: none; min-width: 0; }
   .docs-nav span, .finance-search, .button-row, .offer-actions, .deactivate-controls { width: 100%; flex-direction: column; align-items: stretch; }
-  .modal-backdrop { padding: 10px; }
-  .modal, .modal.wide { width: calc(100vw - 20px); max-height: calc(100vh - 20px); }
-  .modal > header { padding: 14px; }
-  .modal > div, .modal > section, .modal > table { margin: 12px; }
-  .modal h1 { font-size: 20px; }
-  .details-grid, .modal .details-grid { grid-template-columns: 1fr; }
+  .Modal-Backdrop { padding: 10px; }
+  .Modal, .Modal.Wide { width: calc(100vw - 20px); max-height: calc(100vh - 20px); }
+  .Modal > header { padding: 14px; }
+  .Modal > div, .Modal > section, .Modal > table { margin: 12px; }
+  .Modal h1 { font-size: 20px; }
+  .details-grid, .Modal .details-grid { grid-template-columns: 1fr; }
   .calendar-grid { grid-template-columns: repeat(7, minmax(38px, 1fr)); gap: 4px; }
   .calendar-grid button { min-height: 44px; font-size: 14px; }
   .erp-table { min-width: 620px; }
@@ -2014,6 +2016,10 @@ input:focus, select:focus, textarea:focus {
   border-color: #3b82f6;
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
 }
+/* Global select safety: ensure all option text is always visible regardless of parent background */
+select, select:focus { color: inherit; background: inherit; }
+select option { color: #0f172a; background: #fff; }
+select optgroup { color: #0f172a; background: #f8fafc; font-weight: 600; }
 
 .lms-search {
   border-radius: 20px;
@@ -2316,3 +2322,33 @@ input:focus, select:focus, textarea:focus {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+.Panel.Glass.Fade-In { animation: panelFadeIn 0.3s ease-out; }
+@keyframes panelFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+.Modal-Body { padding: 20px 22px; }
+.Modal-Body > label, .Modal-Body > div > label { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; color: #374151; font-size: 13px; font-weight: 500; }
+.Modal-Body input, .Modal-Body select, .Modal-Body textarea { width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: #f8fafc; transition: border-color 0.2s; }
+.Modal-Body input:focus, .Modal-Body select:focus, .Modal-Body textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); background: #fff; }
+.Modal-Body .Form-Grid { gap: 14px; }
+.Modal-Body .Primary-Button { margin-top: 8px; }
+.Modal-Actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
+
+.Stat-Card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.Stat-Card .Stat-Icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: #eff6ff; color: #2563eb; }
+.Stat-Card > div { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.Stat-Card span { font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600; letter-spacing: 0.04em; }
+.Stat-Card strong { font-size: 22px; color: #0f172a; font-weight: 700; line-height: 1.1; }
+
+.Table-Wrap { overflow-x: auto; }
+
+.Tabs { display: flex; gap: 0; border-bottom: 1px solid #e2e8f0; }
+.Tabs button { border: 0; background: transparent; padding: 12px 22px; font-size: 14px; font-weight: 500; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+.Tabs button:hover { color: #0f172a; background: #f8fafc; }
+.Tabs button.Active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 600; }
+
+.Panel { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); overflow: hidden; }
+.Panel > header { padding: 18px 22px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.Panel > header h2 { margin: 0; font-size: 16px; font-weight: 600; color: #0f172a; display: inline-flex; align-items: center; gap: 8px; }
+.Panel > header p { margin: 2px 0 0; color: #94a3b8; font-size: 13px; }
+.Panel > div { padding: 16px 22px; }

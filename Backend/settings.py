@@ -52,7 +52,6 @@ INSTALLED_APPS = [
     "Backend.Apps.GithubExtension",
     "Backend.Apps.Git",
     "Backend.Apps.HtmlTemplate",
-    "Backend.Apps.WorkflowIntelligence",
     "Backend.Apps.FinanceAndPayroll",
     "Backend.Apps.IntegrationHub",
     "Backend.Apps.McpAccessLayer",

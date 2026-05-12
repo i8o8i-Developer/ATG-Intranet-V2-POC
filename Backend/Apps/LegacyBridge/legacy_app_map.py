@@ -11,7 +11,6 @@ LEGACY_APP_TO_BACKEND_APP = {
     "Github_extension": "GithubExtension",
     "git": "Git",
     "Html_template": "HtmlTemplate",
-    "workflow_intelligence": "WorkflowIntelligence",
 }
 
 TARGET_PLATFORM_APPS = [

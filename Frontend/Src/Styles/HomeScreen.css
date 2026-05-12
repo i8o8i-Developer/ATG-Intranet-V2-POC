@@ -1,0 +1,160 @@
+.HomeR { padding: 28px 32px; display: flex; flex-direction: column; gap: 22px; max-width: 1400px; }
+
+.HomeR-NotifCard {
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 16px;
+  padding: 18px 22px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.HomeR-NotifCard-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px;
+}
+.HomeR-NotifCard-title {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 15px; font-weight: 600; color: #0f172a;
+}
+.HomeR-NotifBanner {
+  min-height: 44px; border-radius: 10px;
+  background: #fff4e8; color: #c17a1b;
+  padding: 12px 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+.HomeR-NotifBanner span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.HomeR-NotifBanner button {
+  border: 0; background: transparent; color: #2563eb; font-weight: 500; cursor: pointer; white-space: nowrap;
+}
+
+.HomeR-DashGrid {
+  display: grid; grid-template-columns: minmax(0, 1.28fr) minmax(300px, 1fr);
+  gap: 22px; align-items: start;
+}
+.HomeR-SideStack { display: grid; gap: 22px; }
+
+.HomeR-Card {
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 16px;
+  padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  transition: box-shadow 0.2s;
+}
+.HomeR-Card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+.HomeR-Card-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;
+}
+.HomeR-Card-title {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 15px; font-weight: 600; color: #0f172a;
+}
+.HomeR-Card-title small { font-size: inherit; color: #94a3b3; font-weight: 400; }
+
+.HomeR-AttGrid {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.HomeR-AttDay {
+  min-width: 40px; height: 36px; border-radius: 8px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 18px; font-weight: 500;
+}
+.HomeR-AttDay.present { background: #12b76a; }
+.HomeR-AttDay.absent { background: #f59e0b; }
+.HomeR-AttDay.leave { background: #ef4444; }
+
+.HomeR-AttLegend {
+  display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+  margin-top: 16px; color: #344054; font-size: 14px;
+}
+.HomeR-AttLegend span { display: inline-flex; align-items: center; gap: 8px; }
+.HomeR-AttLegend i { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
+.HomeR-AttLegend i.present { background: #12b76a; }
+.HomeR-AttLegend i.absent { background: #f59e0b; }
+.HomeR-AttLegend i.leave { background: #ef4444; }
+
+.HomeR-QuickLinks { display: grid; }
+.HomeR-QuickLink {
+  width: 100%; border: 0; border-top: 1px solid #eaecf0;
+  background: transparent; padding: 14px 0;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  color: #2563eb; font-size: 14px; text-align: left; cursor: pointer;
+}
+.HomeR-QuickLink:first-child { border-top: 0; padding-top: 0; }
+.HomeR-QuickLink:last-child { padding-bottom: 0; }
+
+.HomeR-SummaryGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.HomeR-SummaryCard {
+  border: 1px solid #eaecf0; border-radius: 14px;
+  padding: 16px; display: flex; align-items: center; gap: 14px;
+  min-height: 86px;
+}
+.HomeR-SummaryIcon {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.HomeR-SummaryIcon.Blue { background: #eff6ff; color: #2563eb; }
+.HomeR-SummaryIcon.Green { background: #f0fdf4; color: #16a34a; }
+.HomeR-SummaryIcon.Red { background: #fef2f2; color: #dc2626; }
+.HomeR-SummaryCard div { display: flex; flex-direction: column; gap: 2px; }
+.HomeR-SummaryCard small { color: #64748b; font-size: 12px; }
+.HomeR-SummaryCard strong { font-size: 20px; color: #0f172a; font-weight: 700; line-height: 1; }
+
+.HomeR-Toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px; padding: 4px 0;
+}
+.HomeR-Toolbar label {
+  display: flex; align-items: center; gap: 12px;
+  color: #0f172a; font-size: 14px; font-weight: 600;
+}
+.HomeR-Toolbar select {
+  min-width: 130px; height: 38px; border-radius: 10px; padding-right: 32px;
+  border: 1px solid #d1d5db; padding: 8px 32px 8px 12px; background: #fff;
+  font-size: 14px; appearance: auto;
+}
+.HomeR-ToolbarMeta {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  color: #64748b; font-size: 13px;
+}
+.HomeR-ToolbarMeta span { display: inline-flex; align-items: center; gap: 7px; }
+
+.HomeR-TaskCard { padding: 0; overflow: hidden; }
+.HomeR-Table { width: 100%; border-collapse: collapse; }
+.HomeR-Table thead th {
+  background: #f8fafc; color: #0f172a; font-size: 13px; font-weight: 600;
+  text-align: left; padding: 12px 16px; border-bottom: 1px solid #eaecf0;
+}
+.HomeR-Table th:first-child, .HomeR-Table td:first-child { width: 52%; }
+.HomeR-Table th:last-child, .HomeR-Table td:last-child { width: 52px; text-align: right; }
+.HomeR-Table td { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.HomeR-Table tbody tr:hover { background: #fafcff; }
+.HomeR-ProjectRow td { background: #fff; padding: 0; }
+.HomeR-ProjectToggle {
+  width: 100%; border: 0; background: transparent;
+  padding: 16px 16px 16px 14px; display: flex; align-items: center; gap: 10px;
+  color: #0f172a; text-align: left; cursor: pointer;
+}
+.HomeR-ProjectToggle strong { font-size: 14px; font-weight: 600; }
+.HomeR-TaskRow td:first-child { display: flex; align-items: center; gap: 14px; }
+.HomeR-TaskRow.active td { background: #f8faff; }
+.HomeR-TaskCheck {
+  width: 22px; height: 22px; flex-shrink: 0;
+  border: 1px solid #9ca3af; border-radius: 4px; background: #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; color: transparent; transition: all 0.15s;
+}
+.HomeR-TaskCheck.active { background: #16a34a; color: #fff; border-color: #16a34a; }
+.HomeR-TaskCheck.done { background: #6b7280; color: #fff; border-color: #6b7280; }
+.HomeR-TaskName { color: #475467; font-size: 14px; }
+.HomeR-DateCell { display: inline-flex; align-items: center; gap: 8px; color: #475467; }
+.HomeR-MoreBtn { border: 0; background: transparent; color: #94a3b3; padding: 4px; cursor: pointer; }
+.HomeR-InlineEditor td { background: #f8faff; padding: 0; }
+.HomeR-EditorShell { padding: 16px 18px 18px; display: grid; gap: 12px; }
+.HomeR-EditorShell strong { font-size: 14px; color: #0f172a; }
+.HomeR-EditorShell textarea { width: 100%; min-height: 120px; border-radius: 10px; }
+.HomeR-EditorActions { display: flex; justify-content: flex-end; }
+.HomeR-Empty { color: #64748b; padding: 24px; text-align: center; }
+
+@media (max-width: 1100px) {
+  .HomeR-DashGrid { grid-template-columns: 1fr; }
+  .HomeR-Toolbar { align-items: start; }
+  .HomeR-Toolbar label { flex-wrap: wrap; }
+}
+@media (max-width: 760px) {
+  .HomeR-Table { min-width: 860px; }
+  .HomeR-TaskCard { overflow-x: auto; }
+  .HomeR-AttDay { min-width: 34px; height: 34px; font-size: 15px; }
+}

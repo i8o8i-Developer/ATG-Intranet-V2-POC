@@ -4,6 +4,7 @@ const WORKSPACE_KEY = "intranet.workspaceId";
 const AUTH_KEY = "intranet.basicAuth";
 
 const DEFAULT_API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/";
+export const PUBLIC_BASE_URL = (import.meta.env.VITE_BASE_URL || "").replace(/\/$/, "") || window.location.origin;
 
 export function getApiSettings() {
   return {
@@ -37,6 +38,11 @@ function authHeader() {
   return `Basic ${window.btoa(`${auth.username}:${auth.password}`)}`;
 }
 
+function getCsrfToken() {
+  const match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+  return match ? match[1] : "";
+}
+
 export async function apiRequest(path, options = {}) {
   const method = options.method || "GET";
   const body = options.body;
@@ -47,6 +53,10 @@ export async function apiRequest(path, options = {}) {
   const auth = authHeader();
   if (auth) headers.set("Authorization", auth);
   if (body !== undefined && !(body instanceof FormData)) headers.set("Content-Type", "application/json");
+  if (method !== "GET") {
+    const csrf = getCsrfToken();
+    if (csrf) headers.set("X-CSRFToken", csrf);
+  }
 
   const response = await fetch(makeUrl(path), {
     method,

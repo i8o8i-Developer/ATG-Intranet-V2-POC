@@ -1,0 +1,13 @@
+.Mcp-Screen.Screen-Stack { gap: 20px; }
+.Mcp-Screen.Screen-Stack .Screen-Header { padding: 24px 28px; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius: 20px; color: #fff; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.Mcp-Screen.Screen-Stack .Screen-Header::before { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 50%, rgba(99,102,241,0.12) 0%, transparent 70%); pointer-events: none; }
+.Mcp-Screen.Screen-Stack .Screen-Header > div { position: relative; }
+.Mcp-Screen.Screen-Stack .Screen-Header .Section-Kicker { color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+.Mcp-Screen.Screen-Stack .Screen-Header h1 { margin: 4px 0 0; font-size: 24px; font-weight: 600; }
+.Mcp-Screen.Screen-Stack .Stat-Grid.Four { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.Mcp-Screen.Screen-Stack .Table-Actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.Mcp-Screen.Screen-Stack .Erp-Table { min-width: 700px; background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.Mcp-Screen.Screen-Stack .Erp-Table th { background: #f8fafc; font-size: 12px; font-weight: 600; color: #64748b; padding: 12px 14px; border-bottom: 2px solid #e2e8f0; }
+.Mcp-Screen.Screen-Stack .Erp-Table td { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+.Mcp-Screen.Screen-Stack .Erp-Table tbody tr:hover { background: #f8faff; }
+.Mcp-Screen.Screen-Stack .Muted-Text { color: #94a3b8; font-size: 13px; }

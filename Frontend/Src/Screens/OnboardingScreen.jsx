@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { CheckCircle, User, MapPin, Phone, AlertTriangle } from "lucide-react";
+import "../Styles/OnboardScreen.css";
 import { apiGet, apiPatch, apiPost } from "../Api/Client.js";
 import { resolveActiveEmployee } from "./Shared/ScreenUtils.jsx";
 
@@ -53,7 +54,7 @@ export default function OnboardingScreen({ data, reload, navigate }) {
           <div className="Onboarding-Header">
             <User size={32} />
             <h2>Personal Information</h2>
-            <p>Please provide your details to complete the setup.</p>
+            <p>Please Provide Your Details to complete the setup.</p>
           </div>
 
           {error && <div className="Login-Error"><AlertTriangle size={16} /> {error}</div>}

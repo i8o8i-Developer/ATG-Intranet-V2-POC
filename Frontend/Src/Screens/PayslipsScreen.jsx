@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Download, FileText } from "lucide-react";
+import "../Styles/PayslipScreen.css";
 
 import { EmptyState, Modal, Panel, SimpleTable, StatCard, StatusPill } from "./Shared/ScreenComponents.jsx";
 import { employeeName, money } from "./Shared/ScreenUtils.jsx";

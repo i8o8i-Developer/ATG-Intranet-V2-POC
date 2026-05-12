@@ -1,0 +1,11 @@
+.Panel .Mini-Inp { padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; background: #f8fafc; }
+.Panel .Mini-Inp:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); background: #fff; }
+.Panel select.Mini-Inp { height: 36px; padding: 4px 28px 4px 10px; }
+.Notification-List { max-height: none !important; display: flex; flex-direction: column; gap: 10px; padding: 8px 0; }
+.Notification-Item { display: flex; align-items: flex-start; gap: 14px; padding: 16px 20px; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; transition: all 0.15s; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+.Notification-Item:hover { border-color: #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.06); transform: translateY(-1px); }
+.Notification-Item.Unread { background: #f8faff; border-color: #bfdbfe; border-left: 3px solid #3b82f6; }
+.Notification-Item strong { display: block; font-size: 14px; color: #0f172a; margin-bottom: 4px; font-weight: 600; }
+.Notification-Item p { margin: 0 0 6px; color: #475569; font-size: 13px; line-height: 1.5; }
+.Notification-Item small { font-size: 12px; color: #94a3b8; }
+.Notification-Empty { padding: 32px; text-align: center; color: #94a3b8; font-size: 14px; }

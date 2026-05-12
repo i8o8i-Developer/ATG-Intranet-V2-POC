@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from "react";
 import { Download } from "lucide-react";
+import "../Styles/PayrollScreen.css";
 
 import { Panel, SimpleTable, StatCard } from "./Shared/ScreenComponents.jsx";
-import { downloadCsv, employeeName, money } from "./Shared/ScreenUtils.jsx";
+import { downloadCsv, money } from "./Shared/ScreenUtils.jsx";
 
 export function PayrollDownloadsScreen({ data }) {
   const sheet = data.financeDashboard?.user_list || [];
@@ -43,23 +44,6 @@ export function PayrollDownloadsScreen({ data }) {
       ]),
     );
 
-  const downloadPayslipIndex = () =>
-    downloadCsv(
-      "payslip-index.csv",
-      ["Payslip", "Employee", "Line Item", "Status", "Storage Reference"],
-      (data.payslipDocuments || []).map((item) => {
-        const line = (data.payrollLineItems || []).find((row) => String(row.id) === String(item.payroll_line_item)) || {};
-        return [item.id, employeeName(data, line.employee), item.payroll_line_item, item.status, item.storage_reference || "-"];
-      }),
-    );
-
-  const downloadOrders = () =>
-    downloadCsv(
-      "payment-orders.csv",
-      ["Provider", "Employee", "Amount", "Currency", "Status", "Receipt"],
-      (data.paymentOrders || []).map((item) => [item.provider, employeeName(data, item.employee), item.amount, item.currency, item.status, item.receipt || "-"]),
-    );
-
   return (
     <section className="Payroll-Download-Screen Screen-Stack">
       <section className="Page-Heading">
@@ -69,8 +53,6 @@ export function PayrollDownloadsScreen({ data }) {
         </div>
         <div className="Button-Row">
           <button className="Primary-Button" onClick={downloadSheet}><Download size={16} /> Download Full Sheet</button>
-          <button className="Outline-Button" onClick={downloadPayslipIndex}><Download size={16} /> Payslip Index</button>
-          <button className="Outline-Button" onClick={downloadOrders}><Download size={16} /> Payment Orders</button>
         </div>
       </section>
 

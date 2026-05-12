@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Award, FileSignature, Plus, Save, ShieldCheck } from "lucide-react";
 
 import { apiPost } from "../Api/Client.js";
+import "../Styles/CertScreen.css";
 import { Modal, Panel, Tabs } from "./Shared/ScreenComponents.jsx";
 import { findById } from "./Shared/ScreenUtils.jsx";
 

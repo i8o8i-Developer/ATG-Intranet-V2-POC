@@ -1,0 +1,25 @@
+.Login-Page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #0f172a; position: relative; overflow: hidden; }
+.Login-Bg { position: absolute; inset: 0; background: radial-gradient(ellipse at 20% 50%, rgba(59,130,246,0.15) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.1) 0%, transparent 50%), radial-gradient(ellipse at 50% 80%, rgba(16,185,129,0.08) 0%, transparent 50%); }
+.Login-Container { position: relative; width: 100%; max-width: 420px; padding: 24px; }
+.Login-Brand { text-align: center; margin-bottom: 32px; }
+.Login-Logo { width: 72px; height: 72px; margin: 0 auto 16px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(59,130,246,0.25); }
+.Login-Logo img { width: 40px; height: 40px; filter: brightness(0) invert(1); }
+.Login-Brand h1 { margin: 0; font-size: 24px; font-weight: 700; color: #fff; }
+.Login-Brand p { margin: 8px 0 0; color: #94a3b8; font-size: 14px; }
+
+.Login-Card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 28px 32px; backdrop-filter: blur(16px); display: flex; flex-direction: column; gap: 20px; }
+.Login-Error { display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; color: #fca5a5; font-size: 13px; }
+.Login-Field { display: flex; flex-direction: column; gap: 8px; }
+.Login-Field label { font-size: 13px; font-weight: 600; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.04em; }
+.Login-Input-Wrap { position: relative; display: flex; align-items: center; }
+.Login-Input-Wrap input { width: 100%; padding: 12px 14px; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; background: rgba(255,255,255,0.06); color: #fff; font-size: 15px; outline: none; transition: all 0.2s; }
+.Login-Input-Wrap input::placeholder { color: #64748b; }
+.Login-Input-Wrap input:focus { border-color: rgba(59,130,246,0.5); background: rgba(255,255,255,0.1); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+.Login-Pw-Toggle { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); border: none; background: transparent; color: #64748b; cursor: pointer; padding: 6px; border-radius: 6px; display: flex; transition: color 0.2s; }
+.Login-Pw-Toggle:hover { color: #94a3b8; }
+.Login-Submit { width: 100%; padding: 14px; border: none; border-radius: 12px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.2s; box-shadow: 0 4px 16px rgba(59,130,246,0.3); }
+.Login-Submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(59,130,246,0.4); }
+.Login-Submit:disabled { opacity: 0.6; cursor: not-allowed; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.Login-Spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; }
+

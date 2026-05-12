@@ -3,6 +3,7 @@ import { ArrowDown, ArrowLeft, ArrowUp, Globe, Mail, MoreHorizontal, PhoneCall, 
 
 import { apiPatch, apiPost } from "../Api/Client.js";
 import { EmptyState, Modal, StatusPill } from "./Shared/ScreenComponents.jsx";
+import "../Styles/LmsScreen.css";
 import {
   formatDate,
   formatDateTime,
@@ -750,7 +751,7 @@ function LeadDetailWorkspace({ data, lead, navigate, refresh, stageOptions }) {
                     <button className="Icon-Action" onClick={() => updateChecklist(draft.checklist.filter((entry) => entry.id !== item.id), "Checklist Updated.")}><Trash2 size={14} /></button>
                   </div>
                 ))}
-                {!draft.checklist.length && <p className="Lms-Muted">No tasks yet.</p>}
+                {!draft.checklist.length && <p className="Lms-Muted">No Tasks Yet.</p>}
               </div>
               <div className="Lms-Checklist-Input-Row">
                 <input value={checklistInput} onChange={(event) => setChecklistInput(event.target.value)} placeholder="Add New Task..." />

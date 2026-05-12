@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { CheckCircle, FileText, Check, AlertCircle, User, Shield, Download } from "lucide-react";
-import { apiGet, apiPost } from "../Api/Client";
+import { apiGet, apiPost, PUBLIC_BASE_URL } from "../Api/Client";
 
 function fmt(val) {
   if (!val) return "—";
@@ -218,7 +218,7 @@ export default function OfferAcceptanceScreen() {
               <p>You shall not conduct yourself in any manner amounting to breach of confidence reposed in you or inconsistent with the position of responsibility occupied by you. Please Deal With The Company's Money, Material And Documents With Utmost Honesty, Moral And Professional Ethics.</p>
 
               <h3>8. Data Privacy</h3>
-              <p>The Company Requires That You Shall Observe Data Privacy As Per Company's regulations/policy, regarding the processing and protection of any personal information and/or data to which you may have access to in the course of your duties, and shall report any infringement relating to the manner in which personal information or other data is processed to the Company immediately.</p>
+              <p>The Company Requires That You Shall Observe Data Privacy As Per Company's regulations/policy, regarding the processing and protection of any Personal Information and/or data to which you may have access to in the course of your duties, and shall report any infringement relating to the manner in which Personal Information or other data is processed to the Company immediately.</p>
 
               <p style={{ marginTop: "16px" }}><strong>Congratulations!<br />Team ATG — Across The Globe</strong></p>
             </div>
@@ -333,7 +333,7 @@ export default function OfferAcceptanceScreen() {
               )}
               <ul>
                 <li>✉️ Your <strong>Intranet Credentials</strong> (Username + Temporary Password) Have Been Sent To Your Email.</li>
-                <li>🔑 Login At <a href={window.location.origin} style={{ color: "#2563eb" }}>{window.location.origin}</a> And Change Your Password After First Login.</li>
+                <li>🔑 Login At <a href={PUBLIC_BASE_URL} style={{ color: "#2563eb" }}>{PUBLIC_BASE_URL}</a> And Change Your Password After First Login.</li>
                 <li>👔 Your Manager Will Reach Out Via WhatsApp/Email With First Day Instructions.</li>
                 <li>💻 IT Setup Will Be Ready Before Your Joining Date: <strong>{fmt(payload.joining_date)}</strong>.</li>
               </ul>

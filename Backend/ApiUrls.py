@@ -16,7 +16,6 @@ urlpatterns = [
     path("GithubExtension/", include("Backend.Apps.GithubExtension.urls")),
     path("Git/", include("Backend.Apps.Git.urls")),
     path("HtmlTemplate/", include("Backend.Apps.HtmlTemplate.urls")),
-    path("WorkflowIntelligence/", include("Backend.Apps.WorkflowIntelligence.urls")),
     path("FinanceAndPayroll/", include("Backend.Apps.FinanceAndPayroll.urls")),
     path("IntegrationHub/", include("Backend.Apps.IntegrationHub.urls")),
     path("McpAccessLayer/", include("Backend.Apps.McpAccessLayer.urls")),

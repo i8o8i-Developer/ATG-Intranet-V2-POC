@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { KeyRound, Search, ShieldAlert } from "lucide-react";
+import "../Styles/PasswordScreen.css";
 import { apiPost } from "../Api/Client.js";
 import { Panel } from "./Shared/ScreenComponents.jsx";
 
@@ -57,6 +58,7 @@ export function AdminChangePasswordScreen({ data }) {
   };
 
   return (
+    <div className="Pw-Page">
     <Panel
       title={<span><KeyRound size={18} /> Change Password</span>}
       subtitle={mode === "admin" ? "Reset Password For Any User (Admin)." : "Update Your Own Password."}
@@ -112,5 +114,6 @@ export function AdminChangePasswordScreen({ data }) {
         )}
       </div>
     </Panel>
+    </div>
   );
 }

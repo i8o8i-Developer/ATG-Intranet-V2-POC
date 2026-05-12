@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 
-import { apiPost } from "../Api/Client.js";
-import { Panel, SimpleTable, StatCard, StatusPill, Tabs } from "./Shared/ScreenComponents.jsx";
+import { apiPost, PUBLIC_BASE_URL } from "../Api/Client.js";
+import "../Styles/OfferScreen.css";
+import { StatCard, StatusPill, Tabs } from "./Shared/ScreenComponents.jsx";
 import { findById, formatDate, isoDate } from "./Shared/ScreenUtils.jsx";
 
 function normalizeLabel(value = "") {
@@ -189,7 +190,7 @@ export function SendOfferScreen({ data, reload }) {
       joining_date: displayDate(form.joining_date),
       offer_heading: "PROVISIONALOFFERLETTER",
       offer_disclaimer: "<PStyle='Text-Align:Center;Margin:8px022px;Font-Size:13px;Font-Weight:700;'>ThisIsAProvisionalOfferLetter. ThisIsNOTAnActualOfferLetterWhichWillBeSentAfterSuccessfulFirstMonthCompletion.</P>",
-      offer_url: `${window.location.origin}/offer/accept/DEMO_TOKEN`,
+      offer_url: `${PUBLIC_BASE_URL}/offer/accept/DEMO_TOKEN`,
     };
   }, [departmentName, form.candidate_email, form.candidate_name, form.company_name, form.employment_type, form.joining_date, form.pay_type, form.position_title, form.username, selectedTemplate?.offer_domain, selectedTemplate?.offer_type, selectedTemplate?.position, subDepartmentName]);
 
@@ -256,36 +257,38 @@ export function SendOfferScreen({ data, reload }) {
   };
 
   return (
-    <section className="Offer-Page Screen-Stack">
-      <section className="Page-Heading">
+    <section className="OF">
+      <section className="OF-Hero">
         <div>
-          <span>Onboarding / Offers</span>
-          <h1>Offer Templates And Onboarding Email</h1>
+          <small>Onboarding / Offers</small>
+          <h1>Send Offer Letter</h1>
+          <p>Configure Candidate Details, Select A Template, Preview The Offer, And Send It.</p>
         </div>
-        <div className="Button-Row">
+        <div className="OF-Hero-Actions">
           <StatusPill tone="blue">{visibleTemplates.length} Templates</StatusPill>
-          <button className="Outline-Button" disabled={busyAction === "sync"} onClick={syncLibrary}>{busyAction === "sync" ? "Syncing…" : "Sync Legacy Templates"}</button>
-          <button className="Outline-Button" onClick={() => setShowPreview(!showPreview)}>{showPreview ? "Hide Preview" : "Show Preview"}</button>
-          <button className="Outline-Button" disabled={!formReady || Boolean(busyAction)} onClick={() => submit(false)}>{busyAction === "draft" ? "Creating…" : "Create Draft"}</button>
-          <button className="Primary-Button" disabled={!formReady || Boolean(busyAction)} onClick={() => submit(true)}>{busyAction === "send" ? "Sending…" : "Send Offer"}</button>
+          <button className="OF-Hero-Btn" disabled={busyAction === "sync"} onClick={syncLibrary}>{busyAction === "sync" ? "Syncing..." : "Sync Legacy Templates"}</button>
+          <button className="OF-Hero-Btn" onClick={() => setShowPreview(!showPreview)}>{showPreview ? "Hide Preview" : "Show Preview"}</button>
+          <button className="OF-Hero-Btn" disabled={!formReady || Boolean(busyAction)} onClick={() => submit(false)}>{busyAction === "draft" ? "Creating..." : "Create Draft"}</button>
+          <button className="OF-Hero-Btn Primary" disabled={!formReady || Boolean(busyAction)} onClick={() => submit(true)}>{busyAction === "send" ? "Sending..." : "Send Offer"}</button>
         </div>
       </section>
 
-      <section className="Stat-Grid Four">
+      <section className="OF-Kpis">
         <StatCard label="Active Template Library" value={String(templates.length)} />
         <StatCard label="Current Domain" value={form.company_name} />
         <StatCard label="Recent Offers" value={String(recentOffers.length)} />
         <StatCard label="Onboarding Email Ready" value={selectedTemplate?.email_template ? "Template" : "Fallback"} />
       </section>
 
-      <Panel title="Offer Configuration & Templates" subtitle="Configure Candidate Details, Select A Legacy Template, And Preview The Onboarding Package.">
-        <div className="Split-Grid Two-One Offer-Screen-Grid">
-          <div>
-            <div className="Form-Grid Two">
+      <section className="OF-Layout">
+        <div className="OF-Card">
+          <div className="OF-CardHead"><h2>Candidate Details</h2></div>
+          <div className="OF-CardBody">
+            <div className="OF-Form">
               <label>Company<select value={form.company_name} onChange={(event) => setForm((current) => ({ ...current, company_name: event.target.value }))}><option>ATG</option><option>Banao</option><option>Bunny</option></select></label>
               <label>Candidate Name<input value={form.candidate_name} onChange={(event) => setForm((current) => ({ ...current, candidate_name: event.target.value }))} /></label>
               <label>Candidate Email<input type="email" value={form.candidate_email} onChange={(event) => setForm((current) => ({ ...current, candidate_email: event.target.value }))} /></label>
-              <label>Username<input value={form.username} onChange={(event) => setForm((current) => ({ ...current, username: event.target.value }))} placeholder="candidate.login" /></label>
+              <label>Username<input value={form.username} onChange={(event) => setForm((current) => ({ ...current, username: event.target.value }))} placeholder="Candidate.Login" /></label>
               <label>Joining Date<input type="date" value={form.joining_date} onChange={(event) => setForm((current) => ({ ...current, joining_date: event.target.value }))} /></label>
               <label>Employment Type<select value={form.employment_type} onChange={(event) => setForm((current) => ({ ...current, employment_type: event.target.value }))}><option>Intern</option><option>Full Time</option><option>Contract</option><option>Part Time</option></select></label>
               <label>Department<select value={form.department} onChange={(event) => setForm((current) => ({ ...current, department: event.target.value }))}><option value="">Select Department</option>{(data.departments || []).map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}</select></label>
@@ -294,68 +297,69 @@ export function SendOfferScreen({ data, reload }) {
               <label>Pay Type<select value={form.pay_type} onChange={(event) => setForm((current) => ({ ...current, pay_type: event.target.value }))}><option>Performance Based</option><option>Fixed</option><option>Hybrid</option></select></label>
             </div>
           </div>
+        </div>
 
-          <div>
-            <div style={{ marginBottom: "12px", display: "flex", flexDirection: "column", gap: "6px" }}>
-              <h3 style={{ margin: 0, fontSize: "15px" }}>Template Library</h3>
-              <p style={{ margin: 0, fontSize: "13px", color: "var(--Muted)" }}>All discovered legacy offer types are synced here.</p>
-            </div>
-            {autoBootstrapState === "running" && <div className="Notice-Row Compact">Bootstrapping the legacy offer library for this workspace.</div>}
-            {showingFallbackLibrary && <div className="Notice-Row"><div><strong>No Exact {form.company_name} Template Yet.</strong><p>Showing templates from other domains so you can still preview and send immediately. Sync will populate the full ATG library.</p></div></div>}
-            <div className="Form-Grid">
+        <div className="OF-Card">
+          <div className="OF-CardHead"><h2>Template Library</h2><p>All discovered legacy offer types are synced here.</p></div>
+          <div className="OF-CardBody">
+            {autoBootstrapState === "running" && <div className="OF-Notice Compact">Bootstrapping The Legacy Offer Library For This Workspace.</div>}
+            {showingFallbackLibrary && <div className="OF-Notice"><div><strong>No Exact {form.company_name} Template Yet.</strong><p>Showing templates from other domains so you can still preview and send immediately. Sync will populate the full library.</p></div></div>}
+            <div className="OF-Search">
               <label>Search Templates<input value={form.template_search} onChange={(event) => setForm((current) => ({ ...current, template_search: event.target.value }))} placeholder="Developer, Marketing, Testing..." /></label>
             </div>
-            <div className="Template-Catalog">
+            <div className="OF-Template-List">
               {visibleTemplates.length ? visibleTemplates.map((template) => {
                 const active = String(template.id) === String(selectedTemplateId);
                 return (
-                  <button key={template.id} className={active ? "Template-Card Active" : "Template-Card"} onClick={() => setSelectedTemplateId(String(template.id))}>
-                    <div className="Template-Card-Head">
+                  <button key={template.id} className={active ? "OF-Template-Card Active" : "OF-Template-Card"} onClick={() => setSelectedTemplateId(String(template.id))}>
+                    <div className="OF-Template-Head">
                       <strong>{normalizeLabel(template.name)}</strong>
                       <StatusPill tone={active ? "blue" : "green"}>{template.offer_type || "Offer"}</StatusPill>
                     </div>
                     <p>{templateSummary(template)}</p>
-                    <div className="Template-Card-Tags">
+                    <div className="OF-Template-Tags">
                       <span>{template.offer_domain || form.company_name}</span>
                       <span>{template.position || "General"}</span>
-                      <span>{normalizeLabel(template.metadata?.template_key || "legacy")}</span>
+                      <span>{normalizeLabel(template.metadata?.template_key || "Legacy")}</span>
                     </div>
                   </button>
                 );
-              }) : <div className="Empty-State">No templates are loaded yet. The fallback preview below is still ready, and the legacy library sync will populate this list.</div>}
+              }) : <div className="Wf-Empty">No Templates Are Loaded Yet. The Fallback Preview Below Is Still Ready, And The Legacy Library Sync Will Populate This List.</div>}
             </div>
           </div>
         </div>
-      </Panel>
+      </section>
 
       {showPreview && (
-        <section className="Preview-Section Fade-In">
-          <Panel title="Preview Workspace" subtitle={selectedTemplate ? `Selected Template: ${normalizeLabel(selectedTemplate.name)}` : "Preview Is Available Below Even Without A Selected Template. Once The Library Loads, Clicking A Template Card Updates It Here."}>
-            <Tabs value={previewMode} onChange={setPreviewMode} items={[["offer", "Offer Letter"], ["email", "Onboarding Email"]]} />
-            <div className="Template-Preview-Shell">
-              <iframe
-                title={previewMode === "offer" ? "Offer Preview" : "Onboarding Email Preview"}
-                srcDoc={previewMode === "offer" ? offerPreviewHtml : emailPreviewHtml}
-                className="Offer-Preview-Frame"
-              />
+        <section className="OF-Preview">
+          <div className="OF-Card">
+            <div className="OF-CardHead"><h2>Preview Workspace</h2><p>{selectedTemplate ? `Selected Template: ${normalizeLabel(selectedTemplate.name)}` : "Preview Is Available Below Even Without A Selected Template."}</p></div>
+            <div className="OF-CardBody">
+              <Tabs value={previewMode} onChange={setPreviewMode} items={[["offer", "Offer Letter"], ["email", "Onboarding Email"]]} />
+              <div className="OF-Preview-Shell">
+                <iframe title={previewMode === "offer" ? "Offer Preview" : "Onboarding Email Preview"} srcDoc={previewMode === "offer" ? offerPreviewHtml : emailPreviewHtml} className="OF-Preview-Frame" />
+              </div>
             </div>
-          </Panel>
+          </div>
         </section>
       )}
 
-      <section className="Recent-Offers-Section">
-        <Panel title="Recent Offers" subtitle="Latest Onboarding Offers Created In The Rebuilt Main App Service.">
-          <SimpleTable
-            columns={["Candidate", "Position", "Status", "Email", "Created"]}
-            rows={recentOffers.map((offer) => [offer.candidate_name, offer.position_title, offer.status, offer.candidate_email, formatDate(offer.created_at)])}
-          />
-        </Panel>
-      </section>
+      <div className="OF-Card">
+        <div className="OF-CardHead"><h2>Recent Offers</h2><p>Latest Onboarding Offers Created In The Rebuilt Main App Service.</p></div>
+        <div className="OF-CardBody">
+          <table className="OF-Table">
+            <thead><tr><th>Candidate</th><th>Position</th><th>Status</th><th>Email</th><th>Created</th></tr></thead>
+            <tbody>{recentOffers.map((offer) => <tr key={offer.id}><td>{offer.candidate_name}</td><td>{offer.position_title}</td><td>{offer.status}</td><td>{offer.candidate_email}</td><td>{formatDate(offer.created_at)}</td></tr>)}</tbody>
+          </table>
+          {!recentOffers.length && <div className="Wf-Empty">No Offers Created Yet.</div>}
+        </div>
+      </div>
 
       {result && (
-        <Panel title="Offer Activity Result" subtitle={`Mode: ${result.mode}`}>
+        <div className="OF-Result">
+          <div className="OF-CardHead"><h2>Offer Activity Result</h2><p>Mode: {result.mode}</p></div>
           <pre>{JSON.stringify(result.response, null, 2)}</pre>
-        </Panel>
+        </div>
       )}
     </section>
   );

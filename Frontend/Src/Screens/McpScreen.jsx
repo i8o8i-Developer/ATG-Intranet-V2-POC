@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Bot, FileCheck2, KeyRound, Plus, ShieldCheck, Wrench } from "lucide-react";
+import "../Styles/McpScreen.css";
 
 import { apiPost } from "../Api/Client.js";
 import { EmptyState, Modal, Panel, SimpleTable, StatCard, StatusPill, Tabs } from "./Shared/ScreenComponents.jsx";

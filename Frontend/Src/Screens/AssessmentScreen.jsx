@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { ChevronDown, Search, X } from "lucide-react";
+import "../Styles/AssessmentScreen.css";
 
 import { apiPost } from "../Api/Client.js";
 import { EmptyState, Modal, Panel, SimpleTable, StatusPill, Tabs } from "./Shared/ScreenComponents.jsx";
