@@ -99,9 +99,17 @@ class Command(BaseCommand):
     def scoped(self, **values):
         return {"tenant": self.tenant, "workspace": self.workspace, **values}
 
+    def filter_valid_fields(self, model, values):
+        valid_fields = {field.name for field in model._meta.fields}
+        invalid_fields = [key for key in values if key not in valid_fields]
+        for invalid in invalid_fields:
+            self.stdout.write(self.style.WARNING(f"Seed Ignored Invalid Field '{invalid}' For Model {model.__name__}"))
+        return {key: value for key, value in values.items() if key in valid_fields}
+
     def upsert(self, model, lookup, defaults=None):
+        lookup = self.filter_valid_fields(model, dict(lookup or {}))
+        payload = self.filter_valid_fields(model, dict(defaults or {}))
         fields = {field.name for field in model._meta.fields}
-        payload = dict(defaults or {})
         if "tenant" in fields and "tenant" not in lookup and "tenant" not in payload:
             payload["tenant"] = self.tenant
         if "workspace" in fields and "workspace" not in lookup and "workspace" not in payload:
