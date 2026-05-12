@@ -3,7 +3,7 @@ import { Award, FileSignature, Plus, Save, ShieldCheck } from "lucide-react";
 
 import { apiPost } from "../Api/Client.js";
 import "../Styles/CertScreen.css";
-import { Modal, Panel, Tabs } from "./Shared/ScreenComponents.jsx";
+import { Modal } from "./Shared/ScreenComponents.jsx";
 import { findById } from "./Shared/ScreenUtils.jsx";
 
 const CERTIFICATE_TYPES = [
@@ -156,98 +156,115 @@ export function SendCertificateScreen({ data, reload }) {
   };
 
   return (
-    <section className="Certificate-Page Screen-Stack">
-      <Tabs value={tab} onChange={setTab} items={[["issue", "IssueCertificates"], ["templates", "Templates"]]} />
+    <section className="CT">
+      <div className="CT-Tabs">
+        <button className={tab === "issue" ? "CT-Tab Active" : "CT-Tab"} onClick={() => setTab("issue")}>Issue Certificates</button>
+        <button className={tab === "templates" ? "CT-Tab Active" : "CT-Tab"} onClick={() => setTab("templates")}>Templates</button>
+      </div>
 
       {tab === "issue" && (
-        <>
-          <Panel title={<span><Award size={18} /> Issue Certificates</span>} subtitle="Pick A Type, Choose Recipients, Customise Content, Preview, Then Send.">
-            <div className="Form-Grid Two">
-              <label>Certificate Type
-                <select value={form.typeId} onChange={(event) => setForm({ ...form, typeId: event.target.value, templateId: "" })}>
-                  {CERTIFICATE_TYPES.map((type) => <option key={type.id} value={type.id}>{type.label}</option>)}
-                </select>
-              </label>
-              <label>Template (optional)
-                <select value={form.templateId} onChange={(event) => setForm({ ...form, templateId: event.target.value })}>
-                  <option value="">— Use Default Body —</option>
-                  {templates.map((tpl) => <option key={tpl.id} value={tpl.id}>{tpl.title || tpl.code}</option>)}
-                </select>
-              </label>
-              <label>Position / Role<input value={form.position} onChange={(event) => setForm({ ...form, position: event.target.value })} /></label>
-              <label>Issuer<input value={form.issuer} onChange={(event) => setForm({ ...form, issuer: event.target.value })} /></label>
-              <label>Joining Date<input type="date" value={form.joined_on} onChange={(event) => setForm({ ...form, joined_on: event.target.value })} /></label>
-              <label>Completion Date<input type="date" value={form.completion_date} onChange={(event) => setForm({ ...form, completion_date: event.target.value })} /></label>
-              <label className="Span-2">Responsibilities / Highlights<input value={form.responsibilities} onChange={(event) => setForm({ ...form, responsibilities: event.target.value })} /></label>
-              <label>Accent Colour<input type="color" value={form.accent || (CERTIFICATE_TYPES.find((t) => t.id === form.typeId)?.color || "#7a5a1f")} onChange={(event) => setForm({ ...form, accent: event.target.value })} /></label>
-              {form.typeId === "Custom" && (
-                <label className="Span-2">Custom Body (HTML, supports {"{{name}}"}, {"{{position}}"}, {"{{joined}}"}, {"{{completion}}"}, {"{{responsibilities}}"})
-                  <textarea rows={6} value={form.customBody} onChange={(event) => setForm({ ...form, customBody: event.target.value })} />
+        <div className="CT" style={{ padding: 0, gap: 20 }}>
+          <div className="CT-Card">
+            <div className="CT-CardHead"><h2><Award size={18} /> Issue Certificates</h2><p>Pick A Type, Choose Recipients, Customise Content, Preview, Then Send.</p></div>
+            <div className="CT-CardBody">
+              <div className="CT-Form">
+                <label>Certificate Type
+                  <select value={form.typeId} onChange={(event) => setForm({ ...form, typeId: event.target.value, templateId: "" })}>
+                    {CERTIFICATE_TYPES.map((type) => <option key={type.id} value={type.id}>{type.label}</option>)}
+                  </select>
                 </label>
-              )}
-            </div>
-          </Panel>
-
-          <Panel title={<span><ShieldCheck size={18} /> Recipients ({form.selectedEmployees.length})</span>} right={(
-            <div className="Button-Pair">
-              <button className="Outline-Button" onClick={() => setShowPreview((value) => !value)}>{showPreview ? "Hide Preview" : "Preview"}</button>
-              <button className="Primary-Button" onClick={submit} disabled={busy || !form.selectedEmployees.length}>
-                {busy ? "Sending…" : `Issue To ${form.selectedEmployees.length || "—"}`}
-              </button>
-            </div>
-          )}>
-            <div className="Recipient-Grid">
-              {employees.map((employee) => {
-                const checked = form.selectedEmployees.includes(employee.id);
-                return (
-                  <label key={employee.id} className={checked ? "Recipient-CardActive" : "Recipient-Card"}>
-                    <input type="checkbox" checked={checked} onChange={() => toggleEmployee(employee.id)} />
-                    <div>
-                      <strong>{employee.display_name || employee.candidate_name || `#${employee.id}`}</strong>
-                      <small>{employee.position_title || "—"} · {employee.candidate_email || ""}</small>
-                    </div>
+                <label>Template (Optional)
+                  <select value={form.templateId} onChange={(event) => setForm({ ...form, templateId: event.target.value })}>
+                    <option value="">— Use Default Body —</option>
+                    {templates.map((tpl) => <option key={tpl.id} value={tpl.id}>{tpl.title || tpl.code}</option>)}
+                  </select>
+                </label>
+                <label>Position / Role<input value={form.position} onChange={(event) => setForm({ ...form, position: event.target.value })} /></label>
+                <label>Issuer<input value={form.issuer} onChange={(event) => setForm({ ...form, issuer: event.target.value })} /></label>
+                <label>Joining Date<input type="date" value={form.joined_on} onChange={(event) => setForm({ ...form, joined_on: event.target.value })} /></label>
+                <label>Completion Date<input type="date" value={form.completion_date} onChange={(event) => setForm({ ...form, completion_date: event.target.value })} /></label>
+                <label className="CT-Span2">Responsibilities / Highlights<input value={form.responsibilities} onChange={(event) => setForm({ ...form, responsibilities: event.target.value })} /></label>
+                <label>Accent Colour<input type="color" value={form.accent || (CERTIFICATE_TYPES.find((t) => t.id === form.typeId)?.color || "#7a5a1f")} onChange={(event) => setForm({ ...form, accent: event.target.value })} /></label>
+                {form.typeId === "Custom" && (
+                  <label className="CT-Span2">Custom Body (HTML, Supports {"{{name}}"}, {"{{position}}"}, {"{{joined}}"}, {"{{completion}}"}, {"{{responsibilities}}"})
+                    <textarea rows={6} value={form.customBody} onChange={(event) => setForm({ ...form, customBody: event.target.value })} />
                   </label>
-                );
-              })}
-              {!employees.length && <p>No Employees Available.</p>}
+                )}
+              </div>
             </div>
-          </Panel>
+          </div>
+
+          <div className="CT-Card">
+            <div className="CT-CardHead">
+              <h2><ShieldCheck size={18} /> Recipients ({form.selectedEmployees.length})</h2>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button className="Outline-Button" onClick={() => setShowPreview((v) => !v)}>{showPreview ? "Hide Preview" : "Preview"}</button>
+                <button className="Primary-Button" onClick={submit} disabled={busy || !form.selectedEmployees.length}>
+                  {busy ? "Sending..." : `Issue To ${form.selectedEmployees.length || "—"}`}
+                </button>
+              </div>
+            </div>
+            <div className="CT-CardBody">
+              <div className="CT-Recipients">
+                {employees.map((employee) => {
+                  const checked = form.selectedEmployees.includes(employee.id);
+                  return (
+                    <label key={employee.id} className={checked ? "CT-RecipCard Active" : "CT-RecipCard"}>
+                      <input type="checkbox" checked={checked} onChange={() => toggleEmployee(employee.id)} />
+                      <div>
+                        <strong>{employee.display_name || employee.candidate_name || `#${employee.id}`}</strong>
+                        <small>{employee.position_title || "—"} &middot; {employee.candidate_email || ""}</small>
+                      </div>
+                    </label>
+                  );
+                })}
+                {!employees.length && <p>No Employees Available.</p>}
+              </div>
+            </div>
+          </div>
 
           {showPreview && (
-            <Panel title="Certificate Preview" right={<button className="Soft-Button Small" onClick={() => setShowPreview(false)}>Close</button>}>
-              <iframe title="CertificatePreview" srcDoc={html} style={{ width: "100%", minHeight: "560px", border: "1pxSolid #E5e7eb", borderRadius: "10px", background: "#fff" }} />
-            </Panel>
+            <div className="CT-Card CT-Preview">
+              <div className="CT-CardHead"><h2>Certificate Preview</h2><button className="Outline-Button" onClick={() => setShowPreview(false)}>Close</button></div>
+              <div className="CT-CardBody"><iframe title="CertificatePreview" srcDoc={html} /></div>
+            </div>
           )}
 
           {results.length > 0 && (
-            <Panel title={`Send Result (${results.filter((row) => row.ok).length}/${results.length})`}>
-              <ul>
-                {results.map((row, index) => (
-                  <li key={index}>{row.ok ? "✅" : "❌"} {row.employee}{row.error ? ` — ${typeof row.error === "string" ? row.error : JSON.stringify(row.error)}` : ""}</li>
-                ))}
-              </ul>
-            </Panel>
+            <div className="CT-Card">
+              <div className="CT-CardHead"><h2>Send Result ({results.filter((r) => r.ok).length}/{results.length})</h2></div>
+              <div className="CT-CardBody">
+                <ul className="CT-Results">
+                  {results.map((row, index) => (
+                    <li key={index}>{row.ok ? "✅" : "❌"} {row.employee}{row.error ? ` — ${typeof row.error === "string" ? row.error : JSON.stringify(row.error)}` : ""}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           )}
-        </>
+        </div>
       )}
 
       {tab === "templates" && (
-        <Panel title={<span><FileSignature size={18} /> Certificate Templates</span>} right={<button className="Primary-Button Small" onClick={() => setCreateTemplateOpen(true)}><Plus size={14} /> New Template</button>}>
-          <table className="Erp-Table">
-            <thead><tr><th>Title</th><th>Category</th><th>Variables</th><th>Updated</th></tr></thead>
-            <tbody>
-              {templates.map((tpl) => (
-                <tr key={tpl.id}>
-                  <td>{tpl.title || tpl.code}</td>
-                  <td>{tpl.category || "Certificate"}</td>
-                  <td>{(tpl.variables || []).join(", ") || "—"}</td>
-                  <td>{tpl.updated_at || "—"}</td>
-                </tr>
-              ))}
-              {!templates.length && <tr><td colSpan={4}>No Certificate Templates Yet. Create One To Make Issuing Repeatable.</td></tr>}
-            </tbody>
-          </table>
-        </Panel>
+        <div className="CT-Card">
+          <div className="CT-CardHead"><h2><FileSignature size={18} /> Certificate Templates</h2><button className="Primary-Button Small" onClick={() => setCreateTemplateOpen(true)}><Plus size={14} /> New Template</button></div>
+          <div className="CT-CardBody">
+            <table className="CT-Table">
+              <thead><tr><th>Title</th><th>Category</th><th>Variables</th><th>Updated</th></tr></thead>
+              <tbody>
+                {templates.map((tpl) => (
+                  <tr key={tpl.id}>
+                    <td>{tpl.title || tpl.code}</td>
+                    <td>{tpl.category || "Certificate"}</td>
+                    <td>{(tpl.variables || []).join(", ") || "—"}</td>
+                    <td>{tpl.updated_at || "—"}</td>
+                  </tr>
+                ))}
+                {!templates.length && <tr><td colSpan={4} className="CT-Empty">No Certificate Templates Yet. Create One To Make Issuing Repeatable.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
       {createTemplateOpen && <CreateCertificateTemplateModal onClose={() => setCreateTemplateOpen(false)} reload={reload} />}

@@ -21,6 +21,7 @@ import {
 import { apiGet, apiPost, PUBLIC_BASE_URL } from "../Api/Client.js";
 import { Disclosure, EmptyState, Modal, Panel, Progress, SimpleTable, StatusPill } from "./Shared/ScreenComponents.jsx";
 import "../Styles/ProjectScreen.css";
+import "../Styles/HrmsModal.css";
 import {
   avatar,
   employeeContact,

@@ -1,12 +1,39 @@
-.Certificate-Page.Screen-Stack .Form-Grid.Two { gap: 14px; }
-.Certificate-Page.Screen-Stack .Form-Grid.Two label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: #374151; }
-.Certificate-Page.Screen-Stack .Form-Grid.Two input, .Certificate-Page.Screen-Stack .Form-Grid.Two select { width: 100%; }
-.Certificate-Page.Screen-Stack .Span-2 { grid-column: 1 / -1; }
-.Certificate-Page.Screen-Stack .Recipient-Grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
-.Certificate-Page.Screen-Stack .Recipient-Card, .Certificate-Page.Screen-Stack .Recipient-CardActive { display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; cursor: pointer; transition: all 0.15s; }
-.Certificate-Page.Screen-Stack .Recipient-Card:hover { border-color: #cbd5e1; }
-.Certificate-Page.Screen-Stack .Recipient-CardActive { border-color: #2563eb; background: #eff6ff; }
-.Certificate-Page.Screen-Stack .Recipient-Card strong, .Certificate-Page.Screen-Stack .Recipient-CardActive strong { display: block; font-size: 14px; color: #0f172a; }
-.Certificate-Page.Screen-Stack .Recipient-Card small, .Certificate-Page.Screen-Stack .Recipient-CardActive small { font-size: 12px; color: #64748b; }
-.Certificate-Page.Screen-Stack .Button-Pair { display: flex; gap: 8px; }
-.Certificate-Page.Screen-Stack .Erp-Table { min-width: 600px; }
+.CT { padding: 28px 32px; display: flex; flex-direction: column; gap: 22px; }
+
+.CT-Tabs { display: flex; gap: 0; border-bottom: 1px solid #e2e8f0; }
+.CT-Tab { border: 0; background: transparent; padding: 12px 22px; font-size: 14px; font-weight: 500; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+.CT-Tab:hover { color: #0f172a; background: #f8fafc; }
+.CT-Tab.Active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 600; }
+
+.CT-Card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.CT-CardHead { padding: 18px 22px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.CT-CardHead h2 { margin: 0; font-size: 16px; font-weight: 600; color: #0f172a; display: inline-flex; align-items: center; gap: 8px; }
+.CT-CardHead p { margin: 4px 0 0; color: #94a3b8; font-size: 13px; }
+.CT-CardBody { padding: 18px 22px; }
+
+.CT-Form { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.CT-Form label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: #374151; }
+.CT-Form input, .CT-Form select, .CT-Form textarea { width: 100%; padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: #f8fafc; transition: border-color 0.2s; }
+.CT-Form input:focus, .CT-Form select:focus, .CT-Form textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); background: #fff; }
+.CT-Span2 { grid-column: 1 / -1; }
+
+.CT-Recipients { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.CT-RecipCard { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 10px; cursor: pointer; transition: all 0.15s; background: #fff; }
+.CT-RecipCard:hover { border-color: #cbd5e1; }
+.CT-RecipCard.Active { border-color: #2563eb; background: #eff6ff; }
+.CT-RecipCard input { width: 16px; height: 16px; }
+.CT-RecipCard strong { display: block; font-size: 14px; color: #0f172a; }
+.CT-RecipCard small { font-size: 12px; color: #64748b; }
+
+.CT-Preview { animation: ctFadeIn 0.3s ease-out; }
+@keyframes ctFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.CT-Preview iframe { width: 100%; min-height: 560px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; }
+
+.CT-Results { display: flex; flex-direction: column; gap: 8px; }
+.CT-Results li { padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; list-style: none; }
+
+.CT-Table { width: 100%; border-collapse: collapse; }
+.CT-Table th { text-align: left; padding: 10px 14px; font-size: 12px; font-weight: 600; color: #64748b; background: #f8fafc; border-bottom: 2px solid #e2e8f0; }
+.CT-Table td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #334155; }
+.CT-Table tbody tr:hover { background: #f8faff; }
+.CT-Empty { padding: 24px; text-align: center; color: #94a3b8; font-size: 14px; }

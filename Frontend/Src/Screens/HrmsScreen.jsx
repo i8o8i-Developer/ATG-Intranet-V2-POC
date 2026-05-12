@@ -9,6 +9,7 @@ import { EmptyState, MilestoneRail, Modal, Panel, Progress, SimpleTable, Tabs } 
 import { apiPatch, apiPost } from "../Api/Client.js";
 import "../Styles/HrmsSanity.css";
 import "../Styles/HrmsFinance.css";
+import "../Styles/HrmsModal.css";
 import {
   calendarDays, filterForEmployee, findDailyStatus, formatDate,
   groupBy, indexById, isCompleted, isoDate, lastDays, money, progressForTask,
