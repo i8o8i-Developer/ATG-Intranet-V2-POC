@@ -426,12 +426,12 @@ class Command(BaseCommand):
             self.upsert(CompensationPlan, {"tenant": self.tenant, "employee": employee, "plan_name": "Monthly Fixed"}, {"base_amount": gross, "frequency": "Monthly", "starts_on": employee.joined_on})
             self.upsert(BankAccount, {"tenant": self.tenant, "employee": employee, "masked_account_number": f"XXXX-{code[-3:]}"}, {"account_holder_name": employee.display_name, "bank_name": "HDFC Bank", "ifsc_code": "HDFC000" + code[-4:], "verification_status": "Verified"})
 
-            last_line = self.upsert(PayrollLineItem, {"tenant": self.tenant, "payroll_run": last_run, "employee": employee}, {"gross_amount": gross, "deduction_amount": deduction, "net_amount": net, "status": status, "metadata": {"period": last_month_name, "components": components}})
-            self.upsert(PayslipDocument, {"tenant": self.tenant, "payroll_line_item": last_line}, {"storage_reference": f"https://docs.example/payslips/{code.lower()}/{last_month_name.replace(' ', '-').lower()}.pdf", "status": status, "metadata": {"period": last_month_name, "components": components}})
+             last_line = self.upsert(PayrollLineItem, {"tenant": self.tenant, "payroll_run": last_run, "employee": employee}, {"gross_amount": gross, "deduction_amount": deduction, "net_amount": net, "status": status, "component_payload": {"period": last_month_name, "components": components}})
+             self.upsert(PayslipDocument, {"tenant": self.tenant, "payroll_line_item": last_line}, {"storage_reference": f"https://docs.example/payslips/{code.lower()}/{last_month_name.replace(' ', '-').lower()}.pdf", "status": status})
 
             if status == "Draft":
-                current_line = self.upsert(PayrollLineItem, {"tenant": self.tenant, "payroll_run": current_run, "employee": employee}, {"gross_amount": gross, "deduction_amount": deduction, "net_amount": net, "status": "Pending", "metadata": {"period": current_month_name, "components": components}})
-                self.upsert(PayslipDocument, {"tenant": self.tenant, "payroll_line_item": current_line}, {"status": "Pending", "metadata": {"period": current_month_name, "components": components}})
+                 current_line = self.upsert(PayrollLineItem, {"tenant": self.tenant, "payroll_run": current_run, "employee": employee}, {"gross_amount": gross, "deduction_amount": deduction, "net_amount": net, "status": "Pending", "component_payload": {"period": current_month_name, "components": components}})
+                self.upsert(PayslipDocument, {"tenant": self.tenant, "payroll_line_item": current_line}, {"status": "Pending"})
 
         self.upsert(ApprovalDecision, {"tenant": self.tenant, "resource_type": "PayrollRun", "resource_id": str(last_run.id), "decision": "Approve"}, {"decided_by": employees["EMP005"], "reason": "Finance Manager Approval Completed"})
         self.upsert(ApprovalDecision, {"tenant": self.tenant, "resource_type": "PayrollRun", "resource_id": str(current_run.id), "decision": "Pending"}, {"decided_by": employees["EMP005"], "reason": "Awaiting Final Review"})
