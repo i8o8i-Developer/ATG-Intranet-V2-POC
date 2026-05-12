@@ -430,8 +430,8 @@ class Command(BaseCommand):
             self.upsert(PayslipDocument, {"tenant": self.tenant, "payroll_line_item": last_line}, {"storage_reference": f"https://docs.example/payslips/{code.lower()}/{last_month_name.replace(' ', '-').lower()}.pdf", "status": status})
 
             if status == "Draft":
-                 current_line = self.upsert(PayrollLineItem, {"tenant": self.tenant, "payroll_run": current_run, "employee": employee}, {"gross_amount": gross, "deduction_amount": deduction, "net_amount": net, "status": "Pending", "component_payload": {"period": current_month_name, "components": components}})
-                 self.upsert(PayslipDocument, {"tenant": self.tenant, "payroll_line_item": current_line}, {"storage_reference": f"https://docs.example/payslips/{code.lower()}/{current_month_name.replace(' ', '-').lower()}.pdf", "status": "Pending"})
+                current_line = self.upsert(PayrollLineItem, {"tenant": self.tenant, "payroll_run": current_run, "employee": employee}, {"gross_amount": gross, "deduction_amount": deduction, "net_amount": net, "status": "Pending", "component_payload": {"period": current_month_name, "components": components}})
+                self.upsert(PayslipDocument, {"tenant": self.tenant, "payroll_line_item": current_line}, {"storage_reference": f"https://docs.example/payslips/{code.lower()}/{current_month_name.replace(' ', '-').lower()}.pdf", "status": "Pending"})
         self.upsert(ApprovalDecision, {"tenant": self.tenant, "resource_type": "PayrollRun", "resource_id": str(last_run.id), "decision": "Approve"}, {"decided_by": employees["EMP005"], "reason": "Finance Manager Approval Completed"})
         self.upsert(ApprovalDecision, {"tenant": self.tenant, "resource_type": "PayrollRun", "resource_id": str(current_run.id), "decision": "Pending"}, {"decided_by": employees["EMP005"], "reason": "Awaiting Final Review"})
         self.upsert(PayoutExecution, {"tenant": self.tenant, "payroll_run": last_run, "provider": "Razorpay"}, {"status": "Completed", "amount": Decimal("140600"), "currency": "INR", "executed_at": self.now - timezone.timedelta(days=5)})
