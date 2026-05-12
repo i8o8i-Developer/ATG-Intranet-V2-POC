@@ -10,6 +10,7 @@ from Backend.Apps.AtgDocs.models import DriveFile, DriveFolder, DocumentVersion,
 from Backend.Apps.Banao.models import AuditArtifact, LeadAccount, LeadActivity, LeadContact, LeadNote, LeadTag, LeadTest, ProposalArtifact, WorkflowStatusHistory, WorkflowTransition
 from Backend.Apps.Git.models import GitActivitySnapshot, GitRepositorySnapshot, RepositoryUtilityRequest
 from Backend.Apps.GithubExtension.models import BranchReviewerAssignment, BranchTestingAssignment, GitHubRepository, RepositoryBranchStatus
+from Backend.Apps.FinanceAndPayroll.models import ApprovalDecision, CompensationPlan, PayPeriod, PayrollLineItem, PayrollRun, PaymentOrder, PayoutExecution, PayslipDocument
 from Backend.Apps.HtmlTemplate.models import ContentTemplate, GenericHtmlTemplate, OfferMacro, OfferTemplate, TemplateVariable
 from Backend.Apps.HtmlTemplate.services import TemplateRenderService
 from Backend.Apps.IntegrationHub.models import IntegrationAttempt, IntegrationConnection, IntegrationProvider, IntegrationSyncJob, WebhookInboxEvent
@@ -77,6 +78,7 @@ class Command(BaseCommand):
         self.seed_assessments(employees)
         self.seed_l3(employees)
         self.seed_git(employees, projects)
+        self.seed_finance(employees)
         self.seed_templates()
         self.seed_integrations()
         self.seed_mcp(employees)
@@ -435,6 +437,21 @@ class Command(BaseCommand):
         self.upsert(BranchReviewerAssignment, {"tenant": self.tenant, "repository": gh_repo, "branch_name": "feature/react-old-pages", "reviewer": employees["EMP001"]}, {"status": "Assigned", "is_pass": "Pending", "comment": "Review UI Parity"})
         self.upsert(BranchTestingAssignment, {"tenant": self.tenant, "repository": gh_repo, "branch_name": "feature/react-old-pages", "tester": employees["EMP007"]}, {"status": "Pending", "is_pass": "Pending", "comment": "Run Old-Page Smoke"})
         self.upsert(RepositoryBranchStatus, {"tenant": self.tenant, "repository": gh_repo, "branch_name": "feature/react-old-pages"}, {"last_commit_sha": "demo456", "review_status": "Pending", "testing_status": "Pending"})
+
+    def seed_finance(self, employees):
+        period = self.upsert(PayPeriod, {"tenant": self.tenant, "name": f"{self.today.strftime('%b %Y')} Payroll"}, {"starts_on": self.today.replace(day=1), "ends_on": self.today, "status": "Closed"})
+        run = self.upsert(PayrollRun, {"tenant": self.tenant, "pay_period": period}, {"status": "Approved", "gross_amount": Decimal("300000"), "deduction_amount": Decimal("10000"), "net_amount": Decimal("290000")})
+        for emp_code, employee in employees.items():
+            base_pay = employee.department.base_pay if employee.department else Decimal("30000")
+            self.upsert(CompensationPlan, {"tenant": self.tenant, "employee": employee, "plan_name": "Standard Salary Plan"}, {"base_amount": base_pay, "starts_on": self.today - timezone.timedelta(days=120), "frequency": "Monthly", "component_payload": [{"name": "Basic", "amount": str(base_pay / 2)}, {"name": "HRA", "amount": str(base_pay / 2)}]})
+            line_item = self.upsert(PayrollLineItem, {"tenant": self.tenant, "payroll_run": run, "employee": employee}, {"gross_amount": base_pay, "deduction_amount": Decimal("1000"), "net_amount": base_pay - Decimal("1000"), "status": "Paid", "component_payload": [{"name": "Basic", "amount": str(base_pay / 2)}]})
+            self.upsert(PayslipDocument, {"tenant": self.tenant, "payroll_line_item": line_item}, {"storage_reference": f"demo://payslips/{emp_code}_may.pdf", "status": "Generated"})
+            self.upsert(PaymentOrder, {"tenant": self.tenant, "employee": employee, "provider_order_id": f"order_demo_{emp_code}"}, {"amount": base_pay - Decimal("1000"), "status": "Paid", "provider": "Razorpay"})
+        
+        self.upsert(PayoutExecution, {"tenant": self.tenant, "payroll_run": run, "provider": "Razorpay"}, {"amount": run.net_amount, "status": "Processed"})
+        from Backend.Apps.Users.models import EmployeeProfile
+        admin_employee = EmployeeProfile.objects.filter(user=self.admin_user).first()
+        self.upsert(ApprovalDecision, {"tenant": self.tenant, "resource_type": "PayrollRun", "resource_id": str(run.id)}, {"decision": "Approved", "decided_by": admin_employee, "reason": "Monthly automated processing."})
 
     def seed_templates(self):
         candidate = self.upsert(TemplateVariable, {"tenant": self.tenant, "key": "candidate_name"}, {"label": "Candidate Name", "default_value": "Demo Candidate"})
