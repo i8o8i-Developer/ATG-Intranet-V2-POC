@@ -22,7 +22,6 @@ from Backend.Apps.McpAccessLayer.models import AgentPrincipal, DraftAgentAction,
 from Backend.Apps.Project.models import ComplianceAssignment, ComplianceCampaign, DefaultCheckpoint, DeliveryAlert, DeliveryDocument, DeliveryMilestone, MilestoneComponent, ProjectContact, ProjectDelay, ProjectWorkspace, RepositoryLink, TeamAssignment
 from Backend.Apps.TasksDashboard.models import ClickUpProjectMapping, DailyStatusEntry, ExternalWorkMapping, ManagerAbbreviation, SlackDeliveryMessage, SlackDeliveryThread, TaskActivity, WorkEntry, WorkItem
 from Backend.Apps.Users.models import BenchPeriod, Department, DepartmentMembership, Domain, EmployeeBankAccount, EmployeeCertificate, EmployeeFeedback, EmployeePaymentSnapshot, EmployeeProfile, EmployeeRating, Goal, GoalFeedback, InterviewProgress, LeaveBalance, LeavePolicy, LeaveTransaction, PayProfile, Position, ResignationRequest, Skill, SubDepartment, UserEffortReport, UserSkill, UserStatusSnapshot
-from Backend.Apps.WorkflowIntelligence.models import BusinessWorkflowMap, RouteUsageAggregate, WorkflowReport
 from Backend.EnterpriseCore.models import AccessAuditLog, BusinessUnit, Capability, IdempotencyKey, Organization, OutboxEvent, ResourcePolicy, Role, RoleAssignment, RoleCapability, Tenant, Workspace
 from Backend.EnterpriseCore.services import TenantContext
 
@@ -83,7 +82,6 @@ class Command(BaseCommand):
         self.seed_templates()
         self.seed_integrations()
         self.seed_mcp(employees)
-        self.seed_workflow_intelligence()
         self.seed_legacy_bridge(projects, leads)
         self.seed_enterprise_audit()
 
@@ -170,6 +168,8 @@ class Command(BaseCommand):
             ("aditi", "Aditi", "Design", "aditi@example.com", "EMP006", "Aditi Design", departments["Design"], positions["Designer"], "Full-Time"),
             ("hema", "Hema", "QA", "hema@example.com", "EMP007", "Hema QA", departments["Manual Testing"], positions["QA Engineer"], "Full-Time"),
             ("tanmay", "Tanmay", "Wagh", "tanmay@example.com", "EMP008", "Tanmay Arun Wagh", departments["L3 Team"], positions["Intern"], "Intern"),
+            ("priya", "Priya", "Sharma", "priya@example.com", "EMP009", "Priya Sharma", departments["Manual Testing"], positions["QA Engineer"], "Full-Time"),
+            ("arjun", "Arjun", "Verma", "arjun@example.com", "EMP010", "Arjun Verma", departments["Design"], positions["Designer"], "Full-Time"),
         ]
         employees = {}
         manager = None
@@ -190,13 +190,16 @@ class Command(BaseCommand):
                     "leaves_wallet": Decimal("8"),
                     "leaves_per_month": Decimal("1.5"),
                     "onboarding_completed": True,
+                    "contact_number": f"+91-987654{code[-3:]}",
                     "github_username": username,
                     "profile_payload": {
                         "demo_credentials": {
                             "user_id": user.id,
                             "username": username,
                             "password": EMPLOYEE_DEMO_PASSWORD,
-                        }
+                        },
+                        "address": f"Block-{code[-1]}, Tech Park, Bengaluru, Karnataka 560001",
+                        "emergency_contact": f"Mother - +91-987654{9 - int(code[-1]):03d}",
                     },
                 },
             )
@@ -223,11 +226,14 @@ class Command(BaseCommand):
             skill = skill_objects[index % len(skill_objects)]
             self.upsert(UserSkill, {"tenant": self.tenant, "employee": employee, "skill": skill}, {"proficiency": 4, "rating": 4, "assigned_from_department": True})
             goal = self.upsert(Goal, {"tenant": self.tenant, "employee": employee, "title": "Complete AI-Ready ERP Workflow"}, {"assigned_by": self.admin_user, "description": "Operate One Mapped Module In The React ERP", "due_on": self.today + timezone.timedelta(days=14), "status": "Open"})
-            self.upsert(GoalFeedback, {"tenant": self.tenant, "goal": goal, "feedback_type": "ManagerNote"}, {"author": self.admin_user, "rating": 4, "note": "Demo Feedback For Migrated HRMS View"})
-            self.upsert(UserStatusSnapshot, {"tenant": self.tenant, "employee": employee, "status": "Active", "effective_from": self.today - timezone.timedelta(days=30)}, {"reason": "Demo Active Status"})
-        self.upsert(BenchPeriod, {"tenant": self.tenant, "employee": employees["EMP006"], "started_on": self.today - timezone.timedelta(days=10)}, {"reason": "Available For AI Design Pilot"})
+            self.upsert(GoalFeedback, {"tenant": self.tenant, "goal": goal, "feedback_type": "ManagerNote"}, {"author": self.admin_user, "rating": 4, "note": "Positive Progress On Migrated HRMS View"})
+            if employee.employee_code in ("EMP009", "EMP010"):
+                self.upsert(UserStatusSnapshot, {"tenant": self.tenant, "employee": employee, "status": "Active", "effective_from": self.today - timezone.timedelta(days=15)}, {"reason": "Active - Pending Project Assignment"})
+            else:
+                self.upsert(UserStatusSnapshot, {"tenant": self.tenant, "employee": employee, "status": "Active", "effective_from": self.today - timezone.timedelta(days=30)}, {"reason": "Active - Engaged On Projects"})
+        self.upsert(BenchPeriod, {"tenant": self.tenant, "employee": employees["EMP006"], "started_on": self.today - timezone.timedelta(days=10)}, {"reason": "Available For Design Pilot Assignment"})
         self.upsert(EmployeeCertificate, {"tenant": self.tenant, "employee": employees["EMP002"], "position_title": "Django Developer"}, {"manager": employees["EMP001"], "issued_on": self.today - timezone.timedelta(days=20), "storage_reference": "demo://certificate/faraz"})
-        self.upsert(EmployeeFeedback, {"tenant": self.tenant, "employee": employees["EMP002"], "feedback_type": "Project", "project_name": "Intranet Rebuild"}, {"submitted_by": self.admin_user, "feedback_text": "Solid Progress On API Parity And React Screens."})
+        self.upsert(EmployeeFeedback, {"tenant": self.tenant, "employee": employees["EMP002"], "feedback_type": "Project", "project_name": "Intranet Rebuild"}, {"submitted_by": self.admin_user, "feedback_text": "Consistent Progress On API Integration And Frontend Screens."})
         self.upsert(InterviewProgress, {"tenant": self.tenant, "employee": employees["EMP008"]}, {"candidate_id": "IG-DEMO-001", "status": "InProgress", "level": "L1", "job_id": "L3-INTERN"})
         return employees
 
@@ -238,7 +244,7 @@ class Command(BaseCommand):
             self.upsert(LeaveTransaction, {"tenant": self.tenant, "balance": balance, "transaction_type": "Accrual", "amount": Decimal("1.5")}, {"reason": "Monthly accrual"})
         self.upsert(LeaveRequest, {"tenant": self.tenant, "employee": employees["EMP002"], "starts_on": self.today + timezone.timedelta(days=3)}, {"leave_type": "Casual", "ends_on": self.today + timezone.timedelta(days=4), "status": "Submitted", "requested_days": Decimal("2"), "reason": "Family function"})
         self.upsert(OnboardingOffer, {"tenant": self.tenant, "candidate_email": "new.dev@example.com"}, {"candidate_name": "New Dev Candidate", "company_name": "Banao", "position_title": "React Developer", "offer_type": "Intern", "token": "demo-offer-token", "status": "Issued", "issued_at": self.now})
-        self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP001"].user, "title": "Project Dashboard Review Due"}, {"message": "Review Delayed Milestones And Repo Access", "category": "Project", "resource_type": "ProjectWorkspace", "resource_id": "demo", "delivered_at": self.now})
+        self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP001"].user, "title": "Project Dashboard Review Due"}, {"message": "Review Overdue Milestones And Repository Access", "category": "Project", "resource_type": "ProjectWorkspace", "resource_id": "demo", "delivered_at": self.now})
         self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP002"].user, "title": "New Pull Request Opened"}, {"message": "PR #345: Add User Authentication Flow - Ready For Review", "category": "github", "resource_type": "pull_request", "resource_id": "345", "is_read": False, "metadata": {"repo": "intranet-v2", "author": "faraz-dev", "branch": "feature/auth"}})
         self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP003"].user, "title": "Code Review Requested"}, {"message": "Your Review Is Requested On PR #345 - Authentication flow", "category": "github", "resource_type": "pull_request", "resource_id": "345", "is_read": False, "metadata": {"repo": "intranet-v2"}})
         self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP001"].user, "title": "Skill Updated: React"}, {"message": "Your Skill Level For React Has Been Updated To Advanced.", "category": "hrms", "resource_type": "skill", "resource_id": "1", "is_read": True, "metadata": {"proficiency": 3}})
@@ -247,7 +253,7 @@ class Command(BaseCommand):
         self.upsert(CredentialShareGrant, {"tenant": self.tenant, "credential": credential, "grantee": employees["EMP001"].user}, {"permission": "Read", "expires_at": self.now + timezone.timedelta(days=14), "reason": "Project access"})
         self.upsert(ExternalIssueReference, {"tenant": self.tenant, "provider": "Mantis", "title": "Demo blocker on old dashboard"}, {"issue_type": "Bug", "priority": "P2", "status": "Open", "assigned_to": employees["EMP007"].user})
         self.upsert(ManagerScope, {"tenant": self.tenant, "manager": employees["EMP001"], "department": employees["EMP002"].department}, {"scope_type": "Department", "status": "Active"})
-        self.upsert(ResignationRequest, {"tenant": self.tenant, "employee": employees["EMP008"], "requested_on": self.today - timezone.timedelta(days=5)}, {"reason": "Demo Resignation Workflow", "status": "InReview", "last_working_day": self.today + timezone.timedelta(days=30)})
+        self.upsert(ResignationRequest, {"tenant": self.tenant, "employee": employees["EMP008"], "requested_on": self.today - timezone.timedelta(days=5)}, {"reason": "Standard Resignation Processing", "status": "InReview", "last_working_day": self.today + timezone.timedelta(days=30)})
         self.upsert(EmployeePaymentSnapshot, {"tenant": self.tenant, "employee": employees["EMP002"], "month": self.today.month, "year": self.today.year}, {"normal_pay": Decimal("35000"), "bonus": Decimal("2500"), "bounty": Decimal("4"), "task_count": 4, "manager_status": "Approved", "finance_status": "Pending"})
         self.upsert(UserEffortReport, {"tenant": self.tenant, "employee": employees["EMP002"], "report_month": self.today.month, "report_year": self.today.year}, {"project_reference": "Intranet Rebuild", "effort_percent": Decimal("80")})
 
@@ -271,7 +277,7 @@ class Command(BaseCommand):
                 self.upsert(TeamAssignment, {"tenant": self.tenant, "project": project, "employee": employees["EMP002"], "role": "Developer"}, {"allocation_percent": 100, "status": "Active", "github_access_status": "AccessRequested"})
             self.upsert(RepositoryLink, {"tenant": self.tenant, "project": project, "name": project.code.lower()}, {"owner": "atg-world", "full_name": f"atg-world/{project.code.lower()}", "provider": "GitHub", "default_branch": "main", "access_status": "Linked"})
             self.upsert(DeliveryDocument, {"tenant": self.tenant, "project": project, "title": "Project SOW"}, {"document_type": "SOW", "storage_reference": f"demo://docs/{project.code}/sow", "is_pinned": True, "status": "Active"})
-            self.upsert(DeliveryAlert, {"tenant": self.tenant, "project": project, "title": "UI Parity Review"}, {"severity": "Warning", "description": "Old Pages Must Be Visible In React", "status": "Open"})
+            self.upsert(DeliveryAlert, {"tenant": self.tenant, "project": project, "title": "UI Parity Review"}, {"severity": "Warning", "description": "All Legacy Pages Must Be Accessible In React", "status": "Open"})
         campaign = self.upsert(ComplianceCampaign, {"tenant": self.tenant, "name": "Weekly Anti Phishing Demo"}, {"project": project_a, "campaign_type": "AntiPhishing", "status": "Scheduled", "scheduled_for": self.now + timezone.timedelta(days=2)})
         self.upsert(ComplianceAssignment, {"tenant": self.tenant, "campaign": campaign, "employee": employees["EMP002"]}, {"token": "demo-phishing-token", "status": "Assigned", "score": Decimal("0")})
         return {"project_a": project_a, "project_b": project_b}
@@ -284,7 +290,7 @@ class Command(BaseCommand):
             {"tenant": self.tenant, "delay_type": "Project", "item_id": projects["project_a"].id},
             {
                 "days": 2,
-                "reason": "Client Feedback Delayed - Waiting For SOW Approval",
+                "reason": "Client Feedback Is Pending - Waiting For SOW Approval",
                 "status": "Active",
             }
         )
@@ -293,7 +299,7 @@ class Command(BaseCommand):
             {"tenant": self.tenant, "delay_type": "Project", "item_id": projects["project_b"].id},
             {
                 "days": 1,
-                "reason": "Marketing Campaign Dependencies Not Ready",
+                "reason": "Marketing Campaign Dependencies Are Not Ready",
                 "status": "Resolved",
                 "resolved_at": self.now - timezone.timedelta(days=3),
                 "resolved_by": self.admin_user,
@@ -306,7 +312,7 @@ class Command(BaseCommand):
             {"tenant": self.tenant, "delay_type": "Employee", "item_id": employees["EMP002"].id},
             {
                 "days": 1,
-                "reason": "On Sick Leave - Medical Emergency",
+                "reason": "On Medical Leave - Medical Emergency",
                 "status": "Active",
             }
         )
@@ -315,7 +321,7 @@ class Command(BaseCommand):
             {"tenant": self.tenant, "delay_type": "Employee", "item_id": employees["EMP005"].id},
             {
                 "days": 3,
-                "reason": "Training Session - Python Advanced Course",
+                "reason": "Training - Python Advanced - Python Advanced Course",
                 "status": "Resolved",
                 "resolved_at": self.now - timezone.timedelta(days=1),
                 "resolved_by": self.admin_user,
@@ -326,7 +332,7 @@ class Command(BaseCommand):
             {"tenant": self.tenant, "delay_type": "Employee", "item_id": employees["EMP007"].id},
             {
                 "days": 2,
-                "reason": "Hardware Issues - Laptop Repair In Progress",
+                "reason": "Hardware Issue - Laptop Repair - Laptop Repair In Progress",
                 "status": "Active",
             }
         )
@@ -362,10 +368,10 @@ class Command(BaseCommand):
             for index, (title, owner, status, priority, bounty_number, progress) in enumerate(spec["entries"]):
                 item = self.upsert(WorkItem, {"tenant": self.tenant, "title": title}, {"project": project, "owner": owner, "description": f"Demo Task For {title}", "status": status, "priority": priority, "order_index": index, "bounty": Decimal(str(bounty_number)), "due_at": self.now + timezone.timedelta(days=index + 1), "metadata": {"progress": progress}})
                 self.upsert(WorkEntry, {"tenant": self.tenant, "work_item": item, "employee": owner, "entry_date": self.today, "entry_type": "WorkLog"}, {"minutes": 120, "summary": f"Worked On {title}"})
-                self.upsert(TaskActivity, {"tenant": self.tenant, "work_item": item, "activity_type": "StatusChange"}, {"actor": owner, "message": "Moved through demo workflow"})
+                self.upsert(TaskActivity, {"tenant": self.tenant, "work_item": item, "activity_type": "StatusChange"}, {"actor": owner, "message": "Moved Through Standard Approval Workflow"})
                 self.upsert(ExternalWorkMapping, {"tenant": self.tenant, "work_item": item, "provider": "ClickUp"}, {"remote_status": "open", "sync_status": "Linked", "last_synced_at": self.now})
             self.upsert(ClickUpProjectMapping, {"tenant": self.tenant, "project_name": project.name}, {"project": project, "space_id": spec["space_id"], "list_id": spec["list_id"], "sync_status": "Linked"})
-        status = self.upsert(DailyStatusEntry, {"tenant": self.tenant, "employee": employees["EMP002"], "status_date": self.today}, {"summary": "Mapped Old Screens Into React", "blockers": "Need Dummy Records For Every Module", "next_plan": "Run Docker Seed And Smoke Tests", "submitted_to_slack": True, "submitted_at": self.now, "slack_thread": thread, "slack_message_ts": "1700000000.001"})
+        status = self.upsert(DailyStatusEntry, {"tenant": self.tenant, "employee": employees["EMP002"], "status_date": self.today}, {"summary": "Mapped Old Screens Into React", "blockers": "Need Complete Data For Every Module", "next_plan": "Execute Docker Seed And Smoke Tests", "submitted_to_slack": True, "submitted_at": self.now, "slack_thread": thread, "slack_message_ts": "1700000000.001"})
         self.upsert(SlackDeliveryMessage, {"tenant": self.tenant, "thread": thread, "employee": employees["EMP002"]}, {"daily_status": status, "slack_message_ts": "1700000000.001", "status": "Delivered"})
         self.upsert(ManagerAbbreviation, {"tenant": self.tenant, "employee": employees["EMP001"]}, {"abbreviation": "SB"})
 
@@ -392,28 +398,56 @@ class Command(BaseCommand):
         self.upsert(RevenuePerformanceSnapshot, {"tenant": self.tenant, "employee": employees["EMP003"], "snapshot_date": self.today}, {"lead_count": 18, "converted_count": 2, "proposal_count": 5, "score": Decimal("84")})
 
     def seed_finance(self, employees):
-        period = self.upsert(PayPeriod, {"tenant": self.tenant, "name": self.today.strftime("%B %Y")}, {"starts_on": self.today.replace(day=1), "ends_on": self.today, "status": "Open"})
-        run = self.upsert(PayrollRun, {"tenant": self.tenant, "pay_period": period, "status": "Draft"}, {"gross_amount": Decimal("92000"), "deduction_amount": Decimal("2000"), "net_amount": Decimal("90000")})
-        for employee in [employees["EMP002"], employees["EMP003"], employees["EMP007"]]:
-            self.upsert(CompensationPlan, {"tenant": self.tenant, "employee": employee, "plan_name": "Monthly Fixed"}, {"base_amount": Decimal("35000"), "frequency": "Monthly", "starts_on": self.today - timezone.timedelta(days=90)})
-            self.upsert(BankAccount, {"tenant": self.tenant, "employee": employee, "masked_account_number": f"XXXX-{employee.employee_code}"}, {"account_holder_name": employee.display_name, "bank_name": "Demo Bank", "ifsc_code": "DEMO0001", "verification_status": "Verified"})
-            line = self.upsert(PayrollLineItem, {"tenant": self.tenant, "payroll_run": run, "employee": employee}, {"gross_amount": Decimal("35000"), "deduction_amount": Decimal("500"), "net_amount": Decimal("34500"), "status": "ManagerApproved"})
-            self.upsert(PayslipDocument, {"tenant": self.tenant, "payroll_line_item": line}, {"storage_reference": f"demo://payslips/{employee.employee_code}", "status": "Generated"})
-        self.upsert(ApprovalDecision, {"tenant": self.tenant, "resource_type": "PayrollRun", "resource_id": str(run.id), "decision": "Approve"}, {"decided_by": employees["EMP005"], "reason": "Demo Finance Approval"})
-        self.upsert(PayoutExecution, {"tenant": self.tenant, "payroll_run": run, "provider": "Razorpay"}, {"status": "Queued", "amount": Decimal("90000"), "currency": "INR"})
-        self.upsert(PaymentOrder, {"tenant": self.tenant, "provider_order_id": "order_demo_001"}, {"provider": "Razorpay", "employee": employees["EMP002"], "amount": Decimal("34500"), "currency": "INR", "status": "Created", "receipt": "demo-receipt"})
-        self.upsert(PaymentWebhookEvent, {"tenant": self.tenant, "external_event_id": "evt_demo_001"}, {"provider": "Razorpay", "event_type": "payout.queued", "verified": True, "processed_at": self.now})
+        previous_month = self.today.replace(day=1) - timezone.timedelta(days=1)
+        last_month_name = previous_month.strftime("%B %Y")
+        current_month_name = self.today.strftime("%B %Y")
+
+        last_period = self.upsert(PayPeriod, {"tenant": self.tenant, "name": last_month_name}, {"starts_on": previous_month.replace(day=1), "ends_on": previous_month.replace(day=28), "status": "Closed"})
+        current_period = self.upsert(PayPeriod, {"tenant": self.tenant, "name": current_month_name}, {"starts_on": self.today.replace(day=1), "ends_on": self.today, "status": "Open"})
+
+        last_run = self.upsert(PayrollRun, {"tenant": self.tenant, "pay_period": last_period, "status": "Issued"}, {"gross_amount": Decimal("148000"), "deduction_amount": Decimal("7400"), "net_amount": Decimal("140600")})
+        current_run = self.upsert(PayrollRun, {"tenant": self.tenant, "pay_period": current_period, "status": "Draft"}, {"gross_amount": Decimal("148000"), "deduction_amount": Decimal("7400"), "net_amount": Decimal("140600")})
+
+        pay_data = [
+            ("EMP001", Decimal("45000"), Decimal("2500"), Decimal("42500"), "Issued", {"Basic": 25000, "HRA": 12000, "Travel Allowance": 3000, "Special Allowance": 5000}),
+            ("EMP002", Decimal("25000"), Decimal("1200"), Decimal("23800"), "Issued", {"Basic": 15000, "HRA": 6000, "Travel Allowance": 2000, "Special Allowance": 2000}),
+            ("EMP003", Decimal("30000"), Decimal("1500"), Decimal("28500"), "Issued", {"Basic": 18000, "HRA": 7000, "Travel Allowance": 2500, "Special Allowance": 2500}),
+            ("EMP004", Decimal("28000"), Decimal("1400"), Decimal("26600"), "Issued", {"Basic": 16000, "HRA": 6500, "Travel Allowance": 2500, "Special Allowance": 3000}),
+            ("EMP005", Decimal("36000"), Decimal("1800"), Decimal("34200"), "Issued", {"Basic": 20000, "HRA": 9000, "Travel Allowance": 3000, "Special Allowance": 4000}),
+            ("EMP006", Decimal("32000"), Decimal("1500"), Decimal("30500"), "Issued", {"Basic": 18000, "HRA": 8000, "Travel Allowance": 2500, "Special Allowance": 3500}),
+            ("EMP007", Decimal("27000"), Decimal("1300"), Decimal("25700"), "Draft", {"Basic": 15000, "HRA": 6500, "Travel Allowance": 2500, "Special Allowance": 3000}),
+            ("EMP008", Decimal("15000"), Decimal("800"), Decimal("14200"), "Draft", {"Basic": 10000, "HRA": 3000, "Travel Allowance": 1000, "Special Allowance": 1000}),
+            ("EMP009", Decimal("27000"), Decimal("1300"), Decimal("25700"), "Draft", {"Basic": 15000, "HRA": 6500, "Travel Allowance": 2500, "Special Allowance": 3000}),
+            ("EMP010", Decimal("32000"), Decimal("1500"), Decimal("30500"), "Draft", {"Basic": 18000, "HRA": 8000, "Travel Allowance": 2500, "Special Allowance": 3500}),
+        ]
+
+        for code, gross, deduction, net, status, components in pay_data:
+            employee = employees[code]
+            self.upsert(CompensationPlan, {"tenant": self.tenant, "employee": employee, "plan_name": "Monthly Fixed"}, {"base_amount": gross, "frequency": "Monthly", "starts_on": employee.joined_on})
+            self.upsert(BankAccount, {"tenant": self.tenant, "employee": employee, "masked_account_number": f"XXXX-{code[-3:]}"}, {"account_holder_name": employee.display_name, "bank_name": "HDFC Bank", "ifsc_code": "HDFC000" + code[-4:], "verification_status": "Verified"})
+
+            last_line = self.upsert(PayrollLineItem, {"tenant": self.tenant, "payroll_run": last_run, "employee": employee}, {"gross_amount": gross, "deduction_amount": deduction, "net_amount": net, "status": status, "metadata": {"period": last_month_name, "components": components}})
+            self.upsert(PayslipDocument, {"tenant": self.tenant, "payroll_line_item": last_line}, {"storage_reference": f"https://docs.example/payslips/{code.lower()}/{last_month_name.replace(' ', '-').lower()}.pdf", "status": status, "metadata": {"period": last_month_name, "components": components}})
+
+            if status == "Draft":
+                current_line = self.upsert(PayrollLineItem, {"tenant": self.tenant, "payroll_run": current_run, "employee": employee}, {"gross_amount": gross, "deduction_amount": deduction, "net_amount": net, "status": "Pending", "metadata": {"period": current_month_name, "components": components}})
+                self.upsert(PayslipDocument, {"tenant": self.tenant, "payroll_line_item": current_line}, {"status": "Pending", "metadata": {"period": current_month_name, "components": components}})
+
+        self.upsert(ApprovalDecision, {"tenant": self.tenant, "resource_type": "PayrollRun", "resource_id": str(last_run.id), "decision": "Approve"}, {"decided_by": employees["EMP005"], "reason": "Finance Manager Approval Completed"})
+        self.upsert(ApprovalDecision, {"tenant": self.tenant, "resource_type": "PayrollRun", "resource_id": str(current_run.id), "decision": "Pending"}, {"decided_by": employees["EMP005"], "reason": "Awaiting Final Review"})
+        self.upsert(PayoutExecution, {"tenant": self.tenant, "payroll_run": last_run, "provider": "Razorpay"}, {"status": "Completed", "amount": Decimal("140600"), "currency": "INR", "executed_at": self.now - timezone.timedelta(days=5)})
+        self.upsert(PaymentOrder, {"tenant": self.tenant, "provider_order_id": "order_pay_001"}, {"provider": "Razorpay", "employee": employees["EMP001"], "amount": Decimal("42500"), "currency": "INR", "status": "Paid", "receipt": "receipt-mar-001"})
 
     def seed_docs(self, employees):
         folder = self.upsert(DriveFolder, {"tenant": self.tenant, "path": "/Delivery", "name": "Delivery"}, {"drive_folder_id": "drive-folder-demo"})
-        doc = self.upsert(KnowledgeDocument, {"tenant": self.tenant, "slug": "react-erp-old-page-map"}, {"title": "React ERP Old Page Map", "document_type": "Runbook", "status": "Published", "body": "Mapped Old Intranet Templates Into React Workbenches.", "owner": employees["EMP001"]})
+        doc = self.upsert(KnowledgeDocument, {"tenant": self.tenant, "slug": "react-erp-old-page-map"}, {"title": "React ERP Old Page Map", "document_type": "Runbook", "status": "Published", "body": "Migrated Old Intranet Templates To React Workbenches.", "owner": employees["EMP001"]})
         self.upsert(KnowledgePermission, {"tenant": self.tenant, "document": doc, "subject_type": "Department", "subject_id": str(employees["EMP002"].department_id)}, {"permission": "Read"})
         self.upsert(KnowledgeActivity, {"tenant": self.tenant, "document": doc, "activity_type": "Viewed"}, {"actor": employees["EMP002"], "payload": {"screen": "Docs Home"}})
         self.upsert(DriveFile, {"tenant": self.tenant, "document": doc, "title": "React ERP Old Page Map"}, {"folder": folder, "mime_type": "text/html", "drive_file_id": "drive-file-demo", "web_view_link": "https://docs.example/demo", "is_public": False})
         self.upsert(DocumentVersion, {"tenant": self.tenant, "document": doc, "version": 1}, {"title": doc.title, "body": doc.body, "changed_by": employees["EMP001"]})
 
     def seed_assessments(self, employees):
-        template = self.upsert(AssessmentTemplate, {"tenant": self.tenant, "code": "ASSESS-DEMO-1"}, {"title": "React ERP Navigation Check", "assessment_type": "Compliance", "department": employees["EMP002"].department, "sequence_number": 1, "status": AssessmentTemplate.STATUS_ACTIVE, "instructions": "Open Each Old-Page Mapped Screen.", "passing_score": Decimal("70"), "duration_minutes": 20, "question_payload": [{"q": "Can you find payroll?"}]})
+        template = self.upsert(AssessmentTemplate, {"tenant": self.tenant, "code": "ASSESS-DEMO-1"}, {"title": "React ERP Navigation Check", "assessment_type": "Compliance", "department": employees["EMP002"].department, "sequence_number": 1, "status": AssessmentTemplate.STATUS_ACTIVE, "instructions": "Verify Each Migrated Screen In React.", "passing_score": Decimal("70"), "duration_minutes": 20, "question_payload": [{"q": "Can you find payroll?"}]})
         assignment = self.upsert(AssessmentAssignment, {"tenant": self.tenant, "assessment": template, "employee": employees["EMP002"]}, {"status": AssessmentAssignment.STATUS_SUBMITTED, "due_at": self.now + timezone.timedelta(days=3), "submitted_at": self.now, "score": Decimal("82"), "percentage": Decimal("82"), "is_pass": True, "note": "Completed"})
         self.upsert(AssessmentSubmission, {"tenant": self.tenant, "assignment": assignment, "attempt_number": 1}, {"score": Decimal("82"), "percentage": Decimal("82"), "passed": True, "status": "Submitted"})
         self.upsert(AssessmentActivity, {"tenant": self.tenant, "assignment": assignment, "activity_type": "Submitted"}, {"title": "Assessment submitted", "message": "Demo Submission Recorded", "actor": self.admin_user})
@@ -421,10 +455,10 @@ class Command(BaseCommand):
     def seed_l3(self, employees):
         college = self.upsert(CollegePipelineRecord, {"tenant": self.tenant, "college_name": "Demo Institute of Technology"}, {"city": "Pune", "state": "Maharashtra", "category": "Tier 2", "contact_email": "placement@demo.edu", "status": "Open", "workflow_status": "FollowUp", "owner": employees["EMP008"], "follow_up_at": self.now + timezone.timedelta(days=2)})
         self.upsert(CollegeContact, {"tenant": self.tenant, "college": college, "email": "placement@demo.edu"}, {"name": "Placement Officer", "role": "TPO", "phone": "+91-9222222222", "is_primary": True})
-        self.upsert(CollegeAssignment, {"tenant": self.tenant, "college": college, "assigned_to": employees["EMP008"]}, {"workflow_status": "Assigned", "assigned_at": self.now, "follow_up_at": self.now + timezone.timedelta(days=2), "notes": "Demo Campus Outreach"})
+        self.upsert(CollegeAssignment, {"tenant": self.tenant, "college": college, "assigned_to": employees["EMP008"]}, {"workflow_status": "Assigned", "assigned_at": self.now, "follow_up_at": self.now + timezone.timedelta(days=2), "notes": "Campus Outreach - Demo University"})
         candidate = self.upsert(CandidateProfile, {"tenant": self.tenant, "email": "candidate@demo.edu"}, {"college": college, "full_name": "Demo Candidate", "phone": "+91-9333333333", "status": "Interview"})
         self.upsert(TalentAssignment, {"tenant": self.tenant, "candidate": candidate, "assigned_to": employees["EMP008"], "assignment_type": "Screening"}, {"status": "Assigned", "due_at": self.now + timezone.timedelta(days=3)})
-        self.upsert(CollegeEmailTemplate, {"tenant": self.tenant, "name": "Campus Intro"}, {"subject": "Banao Internship Drive", "body_text": "Demo Campus Outreach Email", "status": "Active"})
+        self.upsert(CollegeEmailTemplate, {"tenant": self.tenant, "name": "Campus Intro"}, {"subject": "Banao Internship Drive", "body_text": "Campus Outreach - Demo University Email", "status": "Active"})
         self.upsert(TalentEmail, {"tenant": self.tenant, "candidate": candidate, "subject": "Interview Invite"}, {"college": college, "sent_to": candidate.email, "status": "Sent"})
         self.upsert(TalentPerformanceSnapshot, {"tenant": self.tenant, "employee": employees["EMP008"], "snapshot_date": self.today}, {"assigned_count": 14, "completed_count": 9, "conversion_count": 3})
 
@@ -471,19 +505,6 @@ class Command(BaseCommand):
         self.upsert(McpAccessGrant, {"tenant": self.tenant, "agent": agent, "tool": tool, "resource": resource}, {"permission": "Read", "constraints": {"workspace": self.workspace.id}})
         self.upsert(McpInvocationAudit, {"tenant": self.tenant, "agent": agent, "tool": tool, "action": "summarize", "decision": "Allowed"}, {"resource": resource, "reason": "Demo Read-Only Invocation"})
         self.upsert(DraftAgentAction, {"tenant": self.tenant, "agent": agent, "action_type": "CreateProjectAlert", "target_resource_type": "ProjectWorkspace"}, {"target_resource_id": "demo", "status": "Draft", "payload": {"title": "AI detected delay"}})
-
-    def seed_workflow_intelligence(self):
-        workflows = [
-            ("People Operations And Hrms", "Users", ["home/", "attendance/", "api/user/<int:user_id>/feedback/"]),
-            ("Projects And Delivery", "Project", ["project/dashboard/<int:pk>/<str:name>/", "project/get_user_repo/<int:member_id>/<int:project_id>/"]),
-            ("Revenue Operations And Lms", "Banao", ["api/leads/", "banao/lead-create/"]),
-            ("Payments And Payroll", "FinanceAndPayroll", ["payments/", "payroll/"]),
-        ]
-        for name, module, patterns in workflows:
-            self.upsert(BusinessWorkflowMap, {"tenant": self.tenant, "workflow_name": name, "owning_module": module}, {"description": f"Demo workflow map for {name}", "route_patterns": patterns})
-        self.upsert(RouteUsageAggregate, {"tenant": self.tenant, "route_pattern": "project/get_user_repo/<int:member_id>/<int:project_id>/", "username": "faraz", "usage_date": self.today}, {"route_name": "get_user_repo", "workflow_name": "Projects And Delivery", "hit_count": 1429, "last_hit_at": self.now})
-        self.upsert(RouteUsageAggregate, {"tenant": self.tenant, "route_pattern": "api/leads/", "username": "tamanna", "usage_date": self.today}, {"route_name": "lead_list", "workflow_name": "Revenue Operations And Lms", "hit_count": 245, "last_hit_at": self.now})
-        self.upsert(WorkflowReport, {"tenant": self.tenant, "title": "Demo Workflow Intelligence Report"}, {"report_type": "Manual", "status": "Generated", "generated_for": str(self.today), "markdown_body": "# Demo Workflow Report\n\nProject And HR Routes Are The Current Hot Paths.", "data_payload": {"hits": 5602}})
 
     def seed_legacy_bridge(self, projects, leads):
         self.upsert(LegacyApplicationMap, {"tenant": self.tenant, "legacy_app_label": "Project", "backend_app_label": "Project"}, {"target_domain": "Delivery", "route_prefix": "Project/", "migration_status": "Mapped"})
