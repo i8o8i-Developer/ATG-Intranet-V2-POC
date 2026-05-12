@@ -31,15 +31,18 @@ services:
       dockerfile: Backend/Dockerfile
     image: intranet-v2-backend
     restart: "no"
-    command: >
-      sh -c "python Backend/manage.py migrate &&
-             if python Backend/manage.py shell -c 'import os, sys; from django.contrib.auth import get_user_model; sys.exit(0 if get_user_model().objects.filter(username=os.environ.get(\"BOOTSTRAP_USERNAME\", \"anubhav1608\")).exists() else 1)'; then
-               echo 'Bootstrap User Already Exists, Skipping Bootstrap And Demo Seed.';
-             elif [ \"$${SEED_DEMO_DATA}\" = \"1\" ]; then
-               python Backend/manage.py Seed_Demo_Erp --tenant \"$${BOOTSTRAP_TENANT}\" --workspace \"$${BOOTSTRAP_WORKSPACE}\" --username \"$${BOOTSTRAP_USERNAME}\" --password \"$${BOOTSTRAP_PASSWORD}\" --email \"$${BOOTSTRAP_EMAIL}\";
-             else
-               python Backend/manage.py Bootstrap_Backend --tenant \"$${BOOTSTRAP_TENANT}\" --workspace \"$${BOOTSTRAP_WORKSPACE}\" --username \"$${BOOTSTRAP_USERNAME}\" --password \"$${BOOTSTRAP_PASSWORD}\" --email \"$${BOOTSTRAP_EMAIL}\" --first-name \"$${BOOTSTRAP_FIRST_NAME}\" --last-name \"$${BOOTSTRAP_LAST_NAME}\" --display-name \"$${BOOTSTRAP_DISPLAY_NAME}\" --employee-code \"$${BOOTSTRAP_EMPLOYEE_CODE}\";
-             fi"
+    command:
+      - sh
+      - -c
+      - |
+        python Backend/manage.py migrate &&
+        if python Backend/manage.py shell -c 'import os, sys; from django.contrib.auth import get_user_model; sys.exit(0 if get_user_model().objects.filter(username=os.environ.get("BOOTSTRAP_USERNAME", "anubhav1608")).exists() else 1)'; then
+          echo 'Bootstrap User Already Exists, Skipping Bootstrap And Demo Seed.'
+        elif [ "$${SEED_DEMO_DATA}" = "1" ]; then
+          python Backend/manage.py Seed_Demo_Erp --tenant "$${BOOTSTRAP_TENANT}" --workspace "$${BOOTSTRAP_WORKSPACE}" --username "$${BOOTSTRAP_USERNAME}" --password "$${BOOTSTRAP_PASSWORD}" --email "$${BOOTSTRAP_EMAIL}"
+        else
+          python Backend/manage.py Bootstrap_Backend --tenant "$${BOOTSTRAP_TENANT}" --workspace "$${BOOTSTRAP_WORKSPACE}" --username "$${BOOTSTRAP_USERNAME}" --password "$${BOOTSTRAP_PASSWORD}" --email "$${BOOTSTRAP_EMAIL}" --first-name "$${BOOTSTRAP_FIRST_NAME}" --last-name "$${BOOTSTRAP_LAST_NAME}" --display-name "$${BOOTSTRAP_DISPLAY_NAME}" --employee-code "$${BOOTSTRAP_EMPLOYEE_CODE}"
+        fi
     environment:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-Rebuild-Development-Only}
       DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
