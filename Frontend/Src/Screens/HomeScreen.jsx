@@ -83,8 +83,6 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
 
   const quickLinks = [
     { label: "Getting Started", onClick: () => navigate("/docs/") },
-    { label: "Onboarding", onClick: () => navigate("/Project/onboarding/") },
-    { label: "Workflow Reports", onClick: () => navigate("/workflow/") },
   ];
 
   const statusTone = (status = "") => {

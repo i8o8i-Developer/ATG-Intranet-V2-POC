@@ -137,18 +137,21 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ALLOWED_ORIGINS = env_list(
     "CORS_ALLOWED_ORIGINS",
-    "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:4173,http://127.0.0.1:4173",
+    "http://localhost:5173,http://127.0.0.1:5173,http://localhost:4787,http://127.0.0.1:4787,http://localhost:5466,http://127.0.0.1:5466",
 )
 CORS_ALLOWED_ORIGIN_REGEXES = env_list(
     "CORS_ALLOWED_ORIGIN_REGEXES",
-    r"^http://localhost:\d+$,^http://127\.0\.0\.1:\d+$",
+    r"^http://localhost:\d+$,^http://127\.0\.0\.1:\d+$,^https://.*\.durgaaisolutions\.in$",
 )
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_HEADERS = (*default_headers, "x-tenant-id", "x-workspace-id")
+CORS_ALLOW_HEADERS = (*default_headers, "x-tenant-id", "x-workspace-id", "x-csrf-token")
 CSRF_TRUSTED_ORIGINS = env_list(
     "CSRF_TRUSTED_ORIGINS",
-    "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:8000,http://127.0.0.1:8000",
+    "http://localhost:5173,http://127.0.0.1:5173,http://localhost:4787,http://127.0.0.1:4787,http://localhost:5466,http://127.0.0.1:5466,https://intranetatg.durgaaisolutions.in",
 )
+CSRF_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_HTTPONLY = False  
 
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)

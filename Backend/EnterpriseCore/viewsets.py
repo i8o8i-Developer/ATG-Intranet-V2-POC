@@ -16,7 +16,11 @@ class TenantScopedModelViewSet(viewsets.ModelViewSet):
         tenant_id = self.request.headers.get(self.tenant_header)
         if not tenant_id:
             return None
-        return Tenant.objects.filter(id=tenant_id).first()
+        try:
+            tid = int(tenant_id)
+            return Tenant.objects.filter(id=tid).first()
+        except (ValueError, TypeError):
+            return None
 
     def get_request_workspace(self):
         workspace = getattr(self.request, "workspace", None)
@@ -25,11 +29,15 @@ class TenantScopedModelViewSet(viewsets.ModelViewSet):
         workspace_id = self.request.headers.get(self.workspace_header)
         if not workspace_id:
             return None
-        tenant = self.get_request_tenant()
-        queryset = Workspace.objects.filter(id=workspace_id)
-        if tenant:
-            queryset = queryset.filter(tenant=tenant)
-        return queryset.first()
+        try:
+            wid = int(workspace_id)
+            tenant = self.get_request_tenant()
+            queryset = Workspace.objects.filter(id=wid)
+            if tenant:
+                queryset = queryset.filter(tenant=tenant)
+            return queryset.first()
+        except (ValueError, TypeError):
+            return None
 
     def get_tenant_context(self):
         return TenantContext(

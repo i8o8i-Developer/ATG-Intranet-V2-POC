@@ -49,10 +49,10 @@ services:
        retries: 20
 
    PgBouncer:
-     image: pgbouncer/pgbouncer:1.21.0
+     image: versus/pgbouncer:1.21.0
      restart: unless-stopped
      ports:
-       - "6432:6432"
+       - "8790:5432"
      environment:
        DATABASES: "${POSTGRES_DB:-intranet_rebuild}=host=Database port=5432 dbname=${POSTGRES_DB:-intranet_rebuild} user=${POSTGRES_USER:-intranet} password=${POSTGRES_PASSWORD:-intranet}"
        USERS: "${POSTGRES_USER:-intranet}=pool_mode=transaction max_user_connections=50"
@@ -65,7 +65,7 @@ services:
        Database:
          condition: service_healthy
      healthcheck:
-       test: ["CMD-SHELL", "pg_isready -h Database -p 5432 -U intranet -d intranet_rebuild || exit 1"]
+       test: ["CMD-SHELL", "pg_isready -h localhost -p 5432 -U $${POSTGRES_USER:-intranet} -d $${POSTGRES_DB:-intranet_rebuild} || exit 1"]
        interval: 5s
        timeout: 5s
        retries: 10
@@ -161,7 +161,7 @@ services:
        POSTGRES_USER: ${POSTGRES_USER:-intranet}
        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
        POSTGRES_HOST: PgBouncer
-       POSTGRES_PORT: 6432
+       POSTGRES_PORT: 5432
        DIRECT_DB_HOST: Database
        DIRECT_DB_PORT: 5432
        DB_POOL_SIZE: 10
@@ -203,7 +203,7 @@ services:
        POSTGRES_USER: ${POSTGRES_USER:-intranet}
        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
        POSTGRES_HOST: PgBouncer
-       POSTGRES_PORT: 6432
+       POSTGRES_PORT: 5432
        DB_POOL_SIZE: 4
        DB_MAX_OVERFLOW: 4
        DB_POOL_TIMEOUT: 30
@@ -241,7 +241,7 @@ services:
        POSTGRES_USER: ${POSTGRES_USER:-intranet}
        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
        POSTGRES_HOST: PgBouncer
-       POSTGRES_PORT: 6432
+       POSTGRES_PORT: 5432
        DB_POOL_SIZE: 2
        DB_MAX_OVERFLOW: 2
        DB_POOL_TIMEOUT: 30

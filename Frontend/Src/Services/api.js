@@ -6,7 +6,7 @@
 import axios from 'axios';
 
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 const DEFAULT_TIMEOUT = 30000; // 30 Seconds
 
 // Request Queue with Concurrency Limit
@@ -39,11 +39,19 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 });
 
 // ============================================================================
 // Request Interceptor
 // ============================================================================
+// Helper to get CSRF token from cookie
+function getCsrfToken() {
+  const match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+  return match ? match[1] : "";
+}
+
+// Update interceptor
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('authToken');
@@ -59,6 +67,14 @@ apiClient.interceptors.request.use(
     const workspaceId = localStorage.getItem('workspaceId');
     if (workspaceId) {
       config.headers['X-Workspace-Id'] = workspaceId;
+    }
+
+    // CSRF Handling
+    if (config.method?.toUpperCase() !== 'GET') {
+      const csrfToken = getCsrfToken();
+      if (csrfToken) {
+        config.headers['X-CSRFToken'] = csrfToken;
+      }
     }
 
     // 
