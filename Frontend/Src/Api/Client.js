@@ -6,9 +6,15 @@ const AUTH_KEY = "intranet.basicAuth";
 const DEFAULT_API_BASE = "/api";
 export const PUBLIC_BASE_URL = window.location.origin;
 
-//
+console.log("API Client initialized with base:", DEFAULT_API_BASE);
+
+// 
 if (localStorage.getItem(API_BASE_KEY)) {
-  localStorage.removeItem(API_BASE_KEY);
+  const current = localStorage.getItem(API_BASE_KEY);
+  if (current.startsWith("http")) {
+    console.warn("Removing Old Absolute API Base From Storage:", current);
+    localStorage.removeItem(API_BASE_KEY);
+  }
 }
 
 export function getApiSettings() {
