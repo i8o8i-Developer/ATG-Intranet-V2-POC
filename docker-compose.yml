@@ -49,18 +49,22 @@ services:
        retries: 20
 
    PgBouncer:
-     image: versus/pgbouncer:1.21.0
+     image: edoburu/pgbouncer:latest
      restart: unless-stopped
      ports:
        - "8790:5432"
      environment:
-       DATABASES: "${POSTGRES_DB:-intranet_rebuild}=host=Database port=5432 dbname=${POSTGRES_DB:-intranet_rebuild} user=${POSTGRES_USER:-intranet} password=${POSTGRES_PASSWORD:-intranet}"
-       USERS: "${POSTGRES_USER:-intranet}=pool_mode=transaction max_user_connections=50"
+       DB_USER: "${POSTGRES_USER:-intranet}"
+       DB_PASSWORD: "${POSTGRES_PASSWORD:-intranet}"
+       DB_HOST: "Database"
+       DB_NAME: "${POSTGRES_DB:-intranet_rebuild}"
        POOL_MODE: transaction
        SERVER_IDLE_TIMEOUT: 300
        SERVER_CONNECT_TIMEOUT: 10
        SERVER_LOGIN_RETRY: 5
        ADMIN_USERS: "${POSTGRES_USER:-intranet}"
+       MAX_CLIENT_CONN: 1000
+       DEFAULT_POOL_SIZE: 20
      depends_on:
        Database:
          condition: service_healthy
