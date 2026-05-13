@@ -30,6 +30,10 @@ if not SECRET_KEY:
 DEBUG = env_bool("DJANGO_DEBUG", False)
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "*")
 
+# Force allow the production domain
+if "intranetatg.durgaaisolutions.in" not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append("intranetatg.durgaaisolutions.in")
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
