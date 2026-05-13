@@ -49,7 +49,7 @@ services:
        retries: 20
 
    PgBouncer:
-     image: edoburu/pgbouncer:1.22.0
+     image: pgbouncer/pgbouncer:1.21.0
      restart: unless-stopped
      ports:
        - "6432:6432"
@@ -65,7 +65,7 @@ services:
        Database:
          condition: service_healthy
      healthcheck:
-       test: ["CMD", "pg_isready", "-h", "Database", "-U", "intranet", "-d", "intranet_rebuild"]
+       test: ["CMD-SHELL", "pg_isready -h Database -p 5432 -U intranet -d intranet_rebuild || exit 1"]
        interval: 5s
        timeout: 5s
        retries: 10
