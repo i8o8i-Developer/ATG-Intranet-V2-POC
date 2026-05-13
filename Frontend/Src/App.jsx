@@ -381,7 +381,7 @@ function App() {
   // Public Offer Acceptance Route — No Auth Needed
   const isPublicOfferRoute = path.startsWith("/offer/accept/");
   const hasAuth = Boolean(settings.basicAuth?.username && settings.basicAuth?.password);
-  const { data, loading, errors, apiOnline, reload } = useIntranetData(reloadKey, hasAuth && !isLoginRoute && !isPublicOfferRoute);
+  const { data, loading, errors, apiOnline, reload, loadMissing } = useIntranetData(reloadKey, hasAuth && !isLoginRoute && !isPublicOfferRoute);
 
   useEffect(() => {
     const onPop = () => setRoute(window.location.pathname + window.location.search);
