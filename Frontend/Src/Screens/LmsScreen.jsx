@@ -727,7 +727,7 @@ function LeadDetailWorkspace({ data, lead, navigate, refresh, stageOptions }) {
                   <p>{item.body}</p>
                 </article>
               ))}
-              {!lead.notes.length && <EmptyState label="No Notes On This Lead Yet." />}
+              {!((lead.notes) || []).length && <EmptyState label="No Notes On This Lead Yet." />}
             </div>
           </section>
 

@@ -12,7 +12,7 @@ export function Disclosure({ title, subtitle, children, defaultOpen = true }) {
   return <section className="Panel Disclosure Glass Fade-In"><header onClick={() => setOpen(!open)} style={{ cursor: "pointer" }}><div><h2>{title}</h2>{subtitle && <p>{subtitle}</p>}</div>{open ? <ChevronDown size={18} /> : <ChevronRight size={18} />}</header>{open && <div>{children}</div>}</section>;
 }
 
-export function Tabs({ value, onChange, items }) {
+export function Tabs({ value, onChange, items = [] }) {
   return <div className="Tabs">{items.map(([id, label]) => <button key={id} className={value === id ? "Active" : ""} onClick={() => onChange(id)}>{label}</button>)}</div>;
 }
 
@@ -48,7 +48,7 @@ export function EmptyState({ label }) {
   return <div className="Empty-State">{label}</div>;
 }
 
-export function SimpleTable({ columns, rows }) {
+export function SimpleTable({ columns = [], rows = [] }) {
   return (
     <div className="Table-Wrap">
       <table className="Erp-Table">
@@ -59,7 +59,7 @@ export function SimpleTable({ columns, rows }) {
   );
 }
 
-export function MilestoneRail({ milestones }) {
+export function MilestoneRail({ milestones = [] }) {
   const visible = milestones.length ? milestones : [{ id: "Empty-1", status: "Open" }, { id: "Empty-2", status: "Completed" }, { id: "Empty-3", status: "Delayed" }];
   return <div className="Milestone-Rail">{visible.slice(0, 12).map((milestone) => <span key={milestone.id} className={isCompleted(milestone.status) ? "done" : milestone.status === "Delayed" ? "late" : "open"} />)}</div>;
 }

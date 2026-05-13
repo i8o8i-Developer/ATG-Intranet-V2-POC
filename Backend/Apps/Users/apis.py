@@ -61,7 +61,12 @@ class CalculatePreviousPaymentData(TenantContextAPIView):
         employee = EmployeeProfile.objects.filter(tenant=context.tenant, id=request.query_params.get("employee") or request.query_params.get("user")).first()
         if not employee:
             return Response({"employee": "Employee Not Found."}, status=404)
-        rows = get_previous_payment_data(employee, int(request.query_params.get("month", 0)), int(request.query_params.get("year", 0)))
+        try:
+            month = int(request.query_params.get("month", 0))
+            year = int(request.query_params.get("year", 0))
+        except (ValueError, TypeError):
+            return Response({"error": "Month And Year Must Be Numeric."}, status=400)
+        rows = get_previous_payment_data(employee, month, year)
         return Response({"data": rows})
 
 
@@ -93,13 +98,16 @@ class ExportPayrollAsyncAPIView(TenantContextAPIView):
             if (int(report_year), int(report_month)) > (current_date.year, current_date.month):
                 return Response({"error": "No Payroll Export Exists For Future Months.", "status": "error"}, status=400)
 
-        task = generate_payroll_excel_task.delay(
-            context.tenant.id,
-            context.workspace.id if context.workspace else None,
-            report_month,
-            report_year,
-            pay_type,
-        )
+        try:
+            task = generate_payroll_excel_task.delay(
+                context.tenant.id,
+                context.workspace.id if context.workspace else None,
+                report_month,
+                report_year,
+                pay_type,
+            )
+        except Exception as celery_error:
+            return Response({"error": f"Failed To Start Export Task: {str(celery_error)}"}, status=503)
         return Response(
             {
                 "task_id": task.id,

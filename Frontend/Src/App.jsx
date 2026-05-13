@@ -197,7 +197,7 @@ const endpointMap = [
 const LAZY_KEYS = new Set([
   "subDepartments", "payProfiles", "bankAccounts", "paymentSnapshots",
   "leavePolicies", "employeeFeedback", "projectDocuments", "repositories",
-  "workEntries", "taskActivities", "offers", "issues",
+  "offers", "issues",
   "leadAccounts", "leadTags", "leadContacts", "leadActivities", "leadNotes",
   "leadTests", "leadProposals", "leadAudits", "leadTransitions",
   "lmsLeads", "learningPaths", "learningModules", "learningAssignments",

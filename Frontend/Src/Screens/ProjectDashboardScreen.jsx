@@ -36,7 +36,7 @@ import {
 } from "./Shared/ScreenUtils.jsx";
 
 export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "project" }) {
-  const routeParts = route.split("?")[0].split("/").filter(Boolean);
+  const routeParts = (route || "").split("?")[0].split("/").filter(Boolean);
   const routeProjectId = routeParts[2] && /^\d+$/.test(routeParts[2]) ? routeParts[2] : "";
   const routeBase = kind === "marketing" ? "/marketing-project/dashboard" : "/project/dashboard";
   const [selectedProjectId, setSelectedProjectId] = useState(routeProjectId || String(data.projects?.[0]?.id || ""));

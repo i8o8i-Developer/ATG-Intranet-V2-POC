@@ -78,6 +78,10 @@ class LeadManagementService:
             leads = leads.order_by(sort_by if sort_field in allowed_sorts else "-created_at")
         else:
             leads = leads.order_by("-created_at")
+        try:
+            result_limit = int(str(filters.get("limit", "100")))
+        except (ValueError, TypeError):
+            result_limit = 100
         rows = [
             {
                 "id": lead.id,
@@ -92,7 +96,7 @@ class LeadManagementService:
                 "tags": [{"id": tag.id, "name": tag.name, "color": tag.color} for tag in lead.tags.all()],
                 "notes_count": lead.notes.count(),
             }
-            for lead in leads[: int(filters.get("limit", 100))]
+            for lead in leads[: max(1, min(result_limit, 500))]
         ]
         origin_counts = {item["source"] or "": item["count"] for item in leads.values("source").annotate(count=Count("id"))}
         return ServiceResult.success({"count": leads.count(), "results": rows, "origin_counts": origin_counts})
@@ -210,7 +214,8 @@ class LeadManagementService:
         since = timezone.now() - timezone.timedelta(days=int(days))
         closed = LeadAccount.objects.filter(tenant=context.tenant, stage__in=["ClosedWon", "ClosedLost"], updated_at__gte=since)
         by_owner = list(closed.values("owner_id", "owner__display_name", "stage").annotate(count=Count("id")).order_by("owner_id", "stage"))
-        return ServiceResult.success({"days": int(days), "count": closed.count(), "estimated_value": str(sum(lead.estimated_value for lead in closed)), "rows": by_owner})
+        total_value = sum(lead.estimated_value or 0 for lead in closed)
+        return ServiceResult.success({"days": int(days), "count": closed.count(), "estimated_value": str(total_value), "rows": by_owner})
 
     @staticmethod
     def lead_detail(context, lead_id):

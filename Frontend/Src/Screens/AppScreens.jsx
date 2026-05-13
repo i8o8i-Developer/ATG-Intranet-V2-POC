@@ -53,7 +53,7 @@ function LazyLoader({ screen, loadMissing, children }) {
 }
 
 export function RouteRenderer(props) {
-  const path = props.route.split("?")[0];
+  const path = (props.route || "").split("?")[0];
   const { loadMissing } = props;
   let screen = null;
   let component = null;

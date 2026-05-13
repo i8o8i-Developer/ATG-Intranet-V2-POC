@@ -460,6 +460,8 @@ class MainAppLegacyService:
         is_admin = LeaveApprovalService.is_leave_admin(context)
         if not (is_admin or (actor_employee and actor_employee.id == employee.id)):
             return ServiceResult.failure({"permission": "You Cannot Create Leave For Another Employee."}, status_code=403)
+        if not starts_on or not ends_on:
+            return ServiceResult.failure({"dates": "Start Date And End Date Are Required."}, status_code=400)
         requested_days = (ends_on - starts_on).days + 1
         leave = LeaveRequest.objects.create(
             tenant=context.tenant,
@@ -1202,9 +1204,11 @@ body {{ margin:0; padding:28px; background:#fff; color:#111827; font-family:Aria
     def api_testing(context, branch_name="master", live=False):
         try:
             result = PartyRemoteAutomationProvider(live=live).run_branch_api_tests(branch_name)
-        except PartyRemoteAutomationError as exc:
+        except (PartyRemoteAutomationError, KeyError, TypeError) as exc:
             return ServiceResult.failure({"automation": str(exc)}, status_code=502)
-        OutboxService.publish(context, "RemoteAutomation", branch_name or "master", "LegacyApiAutomationRequested", {"live": live, "failedCount": result["api_testing"].get("failed_count", 0)})
+        if not isinstance(result, dict):
+            return ServiceResult.failure({"automation": "Invalid Response From Automation Provider."}, status_code=502)
+        OutboxService.publish(context, "RemoteAutomation", branch_name or "master", "LegacyApiAutomationRequested", {"live": live, "failedCount": result.get("api_testing", {}).get("failed_count", 0)})
         return ServiceResult.success({"status": "ok", "tenant": context.tenant.slug, "workspace": context.workspace.code if context.workspace else None, "automation": result})
 
     @staticmethod

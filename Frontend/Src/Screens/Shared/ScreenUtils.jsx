@@ -15,6 +15,7 @@ export function indexById(items = []) {
 }
 
 export function findById(items = [], id) {
+  if (id === undefined || id === null) return undefined;
   return items.find((item) => String(item.id) === String(id));
 }
 
@@ -66,6 +67,7 @@ export function projectName(data, id) {
 }
 
 export function employeeName(data, id) {
+  if (!id) return "-";
   return findById(data.employees || [], id)?.display_name || findById(data.employees || [], id)?.username || "-";
 }
 
