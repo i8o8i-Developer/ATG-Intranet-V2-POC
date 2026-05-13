@@ -100,6 +100,7 @@ services:
          export POSTGRES_HOST=Database
          export POSTGRES_PORT=5432
          python Backend/manage.py migrate --noinput
+         python Backend/manage.py collectstatic --noinput
          if [ "$${SEED_DEMO_DATA:-1}" = "1" ]; then
            echo "Running Seed Demo Erp..."
            python Backend/manage.py Seed_Demo_Erp --tenant "$${BOOTSTRAP_TENANT}" --workspace "$${BOOTSTRAP_WORKSPACE}" --username "$${BOOTSTRAP_USERNAME}" --password "$${BOOTSTRAP_PASSWORD}" --email "$${BOOTSTRAP_EMAIL}" --first-name "$${BOOTSTRAP_FIRST_NAME}" --last-name "$${BOOTSTRAP_LAST_NAME}" --display-name "$${BOOTSTRAP_DISPLAY_NAME}" --employee-code "$${BOOTSTRAP_EMPLOYEE_CODE}"
@@ -112,24 +113,11 @@ services:
        DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-Rebuild-Development-Only}
        DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
        DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend,0.0.0.0,intranetatg.durgaaisolutions.in}
-       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4787,http://127.0.0.1:4787,https://intranetatg.durgaaisolutions.in}
-       CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:4787,http://127.0.0.1:4787,http://localhost:5466,http://127.0.0.1:5466,https://intranetatg.durgaaisolutions.in}
        POSTGRES_DB: ${POSTGRES_DB:-intranet_rebuild}
        POSTGRES_USER: ${POSTGRES_USER:-intranet}
        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
        DIRECT_DB_HOST: Database
        DIRECT_DB_PORT: 5432
-       CELERY_BROKER_URL: redis://Redis:6379/0
-       CELERY_RESULT_BACKEND: redis://Redis:6379/0
-       EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.smtp.EmailBackend}
-       EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
-       EMAIL_PORT: ${EMAIL_PORT:-587}
-       EMAIL_USE_TLS: ${EMAIL_USE_TLS:-1}
-       EMAIL_USE_SSL: ${EMAIL_USE_SSL:-0}
-       EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
-       EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
-       DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-}
-       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:5466}
        BOOTSTRAP_TENANT: "${BOOTSTRAP_TENANT:-Banao}"
        BOOTSTRAP_WORKSPACE: "${BOOTSTRAP_WORKSPACE:-Default Workspace}"
        BOOTSTRAP_USERNAME: "${BOOTSTRAP_USERNAME:-AtgIntranet}"
@@ -142,6 +130,7 @@ services:
        SEED_DEMO_DATA: ${SEED_DEMO_DATA:-1}
      volumes:
        - backend_media:/app/Backend/media
+       - backend_static:/app/Backend/staticfiles
      depends_on:
        Database:
          condition: service_healthy
@@ -187,6 +176,7 @@ services:
        - "5466:8000"
      volumes:
        - backend_media:/app/Backend/media
+       - backend_static:/app/Backend/staticfiles
      depends_on:
        - PgBouncer
        - Backend-Init
@@ -282,4 +272,5 @@ services:
 volumes:
    postgres_data:
    backend_media:
+   backend_static:
    frontend_node_modules:

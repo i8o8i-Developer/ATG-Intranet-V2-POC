@@ -30,6 +30,11 @@ if not SECRET_KEY:
 DEBUG = env_bool("DJANGO_DEBUG", False)
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "*")
 
+# Proxy Settings
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
+
 # 
 if "intranetatg.durgaaisolutions.in" not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append("intranetatg.durgaaisolutions.in")

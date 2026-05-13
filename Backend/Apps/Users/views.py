@@ -72,8 +72,19 @@ from rest_framework.views import APIView
 
 
 def _first_available_context(user, tenant_id=None, workspace_id=None):
-    employees = EmployeeProfile.objects.select_related("tenant", "workspace", "department", "position").filter(user=user, is_active=True)
-    assignments = RoleAssignment.objects.select_related("tenant", "workspace", "role").filter(user=user, is_active=True)
+    # Ensure IDs are integers or None
+    try:
+        tenant_id = int(tenant_id) if tenant_id and str(tenant_id).isdigit() else None
+    except (ValueError, TypeError):
+        tenant_id = None
+
+    try:
+        workspace_id = int(workspace_id) if workspace_id and str(workspace_id).isdigit() else None
+    except (ValueError, TypeError):
+        workspace_id = None
+
+    employees = EmployeeProfile.objects.select_related("tenant", "workspace", "department", "position").filter(user=user.id if user.is_authenticated else None, is_active=True)
+    assignments = RoleAssignment.objects.select_related("tenant", "workspace", "role").filter(user=user.id if user.is_authenticated else None, is_active=True)
     if tenant_id:
         employees = employees.filter(tenant_id=tenant_id)
         assignments = assignments.filter(tenant_id=tenant_id)
@@ -98,16 +109,28 @@ def _first_available_context(user, tenant_id=None, workspace_id=None):
 
 def _current_user_payload(user, tenant_id=None, workspace_id=None):
     tenant, workspace = _first_available_context(user, tenant_id=tenant_id, workspace_id=workspace_id)
-    full_name = user.get_full_name().strip() if getattr(user, "is_authenticated", False) else ""
-    employee_qs = EmployeeProfile.objects.select_related("tenant", "workspace", "department", "position").filter(user=user, is_active=True)
+    is_authenticated = getattr(user, "is_authenticated", False)
+    full_name = ""
+    if is_authenticated:
+        try:
+            full_name = user.get_full_name().strip()
+        except AttributeError:
+            full_name = getattr(user, "username", "")
+
+    user_id = user.id if is_authenticated else None
+    employee_qs = EmployeeProfile.objects.select_related("tenant", "workspace", "department", "position").filter(user_id=user_id, is_active=True)
     if tenant:
         employee_qs = employee_qs.filter(tenant=tenant)
-    role_qs = RoleAssignment.objects.select_related("tenant", "workspace", "role").filter(user=user, is_active=True)
+    role_qs = RoleAssignment.objects.select_related("tenant", "workspace", "role").filter(user_id=user_id, is_active=True)
     if tenant:
         role_qs = role_qs.filter(tenant=tenant)
     if workspace:
         role_qs = role_qs.filter(workspace__in=[workspace, None])
-    capabilities = sorted(CapabilityService.list_user_capabilities(tenant, user, workspace)) if tenant else []
+    
+    capabilities = []
+    if is_authenticated and tenant:
+        capabilities = sorted(CapabilityService.list_user_capabilities(tenant, user, workspace))
+    
     employees = [
         {
             "id": employee.id,
@@ -133,16 +156,16 @@ def _current_user_payload(user, tenant_id=None, workspace_id=None):
         for assignment in role_qs
     ]
     return {
-        "authenticated": user.is_authenticated,
+        "authenticated": is_authenticated,
         "user": {
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "firstName": user.first_name,
-            "lastName": user.last_name,
-            "fullName": full_name or user.username,
-            "isStaff": user.is_staff,
-            "isSuperuser": user.is_superuser,
+            "id": user_id,
+            "username": getattr(user, "username", ""),
+            "email": getattr(user, "email", ""),
+            "firstName": getattr(user, "first_name", ""),
+            "lastName": getattr(user, "last_name", ""),
+            "fullName": full_name or getattr(user, "username", ""),
+            "isStaff": getattr(user, "is_staff", False),
+            "isSuperuser": getattr(user, "is_superuser", False),
         },
         "activeTenant": {"id": tenant.id, "name": tenant.name, "slug": tenant.slug} if tenant else None,
         "activeWorkspace": {"id": workspace.id, "name": workspace.name, "code": workspace.code} if workspace else None,
