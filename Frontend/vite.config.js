@@ -11,10 +11,10 @@ export default defineConfig({
     allowedHosts: ["intranetatg.durgaaisolutions.in"],
     proxy: {
       '/api': {
-        target: process.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000',
+        target: 'http://Backend:8000',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path,
+        rewrite: (path) => path.replace(/^\/api/, ''),
       }
     },
     cors: true,

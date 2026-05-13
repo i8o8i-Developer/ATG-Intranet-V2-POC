@@ -3,8 +3,13 @@ const TENANT_KEY = "intranet.tenantId";
 const WORKSPACE_KEY = "intranet.workspaceId";
 const AUTH_KEY = "intranet.basicAuth";
 
-const DEFAULT_API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/";
-export const PUBLIC_BASE_URL = (import.meta.env.VITE_BASE_URL || "").replace(/\/$/, "") || window.location.origin;
+const DEFAULT_API_BASE = "/api";
+export const PUBLIC_BASE_URL = window.location.origin;
+
+//
+if (localStorage.getItem(API_BASE_KEY)) {
+  localStorage.removeItem(API_BASE_KEY);
+}
 
 export function getApiSettings() {
   return {
@@ -118,4 +123,4 @@ function safeJson(text) {
   } catch (_error) {
     return { raw: text };
   }
-}
+}
