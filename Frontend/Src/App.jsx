@@ -450,6 +450,7 @@ function useIntranetData(reloadKey, enabled) {
   const [state, setState] = useState({ data: {}, loading: false, errors: [], apiOnline: false });
   const hasInitiallyLoaded = useRef(false);
   const loadedLazyKeys = useRef(new Set());
+  const loadVersion = useRef(0);
 
   const applyPayload = (nextData, key, mode, payload) => {
     if (key === "assessmentLegacy") {
@@ -471,6 +472,7 @@ const REALTIME_KEYS = ["dailyStatus", "me", "notifications", "employees", "tasks
 
 const load = useCallback(async (keysFilter) => {
      if (!enabled) { setState({ data: {}, loading: false, errors: [], apiOnline: false }); hasInitiallyLoaded.current = false; return; }
+     const myVersion = ++loadVersion.current;
      let effectiveFilter = keysFilter;
      if (keysFilter === undefined && hasInitiallyLoaded.current) {
        effectiveFilter = REALTIME_KEYS;
@@ -504,16 +506,17 @@ const load = useCallback(async (keysFilter) => {
      }
 
      setState((cur) => {
-       const nextData = isPartial ? { ...cur.data } : {};
-       const requestErrors = isPartial ? cur.errors.filter((err) => !effectiveFilter.includes(err.key)) : [];
-       results.forEach((result, i) => {
-         const [key, , mode] = subset[i];
-         if (result.status === "fulfilled") applyPayload(nextData, key, mode, result.value.payload);
-         else { requestErrors.push({ key, status: result.reason?.status, message: result.reason?.message || "Request Failed" }); if (!isPartial) nextData[key] = mode === "list" ? [] : null; }
-       });
-       return { data: nextData, loading: false, errors: requestErrors, apiOnline: isPartial ? cur.apiOnline : requestErrors.length < subset.length };
-     });
-     if (!isPartial) hasInitiallyLoaded.current = true;
+        if (loadVersion.current !== myVersion) return { ...cur, loading: false };
+        const nextData = isPartial ? { ...cur.data } : {};
+        const requestErrors = isPartial ? cur.errors.filter((err) => !effectiveFilter.includes(err.key)) : [];
+        results.forEach((result, i) => {
+          const [key, , mode] = subset[i];
+          if (result.status === "fulfilled") applyPayload(nextData, key, mode, result.value.payload);
+          else { requestErrors.push({ key, status: result.reason?.status, message: result.reason?.message || "Request Failed" }); if (!isPartial) nextData[key] = mode === "list" ? [] : null; }
+        });
+        return { data: nextData, loading: false, errors: requestErrors, apiOnline: isPartial ? cur.apiOnline : requestErrors.length < subset.length };
+      });
+      if (!isPartial) hasInitiallyLoaded.current = true;
    }, [enabled]);
 
    const loadMissing = useCallback(async (keys) => {
