@@ -277,18 +277,30 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
         </div>
         <SimpleTable
           columns={["Name", "Role", "Availability", "Contact", "Repos / GitHub", "Action", "EOD"]}
-          rows={team.map((assignment) => [
-            assignment.employee_name || employeeName(data, assignment.employee_id || assignment.employee),
-            assignment.role,
-            assignment.is_absent ? "Absent" : assignment.status === "Active" ? "Available" : assignment.status,
-            employeeContact(data, assignment.employee_id || assignment.employee),
-            <MemberRepoIcon key="repo" assignment={assignment} repos={repos} data={data} />,
-            <span className="Table-Actions" key="action">
-              <button className="Soft-Button Small" onClick={() => markAbsent(assignment)}>{assignment.is_absent ? <UserCheck size={13} /> : <UserX size={13} />}{assignment.is_absent ? " Mark Available" : " Mark Absent"}</button>
-              <button className="Soft-Button Small Danger" onClick={() => removeMember(assignment)}><X size={13} /></button>
-            </span>,
-            <button className="Primary-Button Small" key="eod" onClick={() => setEodEmployee(assignment)}><CalendarDays size={13} /> View</button>,
-          ])}
+          rows={team.map((assignment) => {
+            const empId = assignment.employee_id || assignment.employee;
+            const upcomingLeave = (data.leaveRequests || []).find((lr) => {
+              const match = String(lr.employee || lr.employee_id) === String(empId);
+              const approved = String(lr.status || "").toLowerCase() === "approved";
+              const future = lr.starts_on && new Date(lr.starts_on) >= new Date(new Date().toDateString());
+              return match && approved && future;
+            });
+            return [
+              <span key="name" className="Member-Name-Wrap">
+                {upcomingLeave && <span className="Leave-Dot" title={`Leave: ${upcomingLeave.starts_on}`}><CalendarDays size={12} /></span>}
+                {assignment.employee_name || employeeName(data, empId)}
+              </span>,
+              assignment.role,
+              assignment.is_absent ? "Absent" : assignment.status === "Active" ? "Available" : assignment.status,
+              employeeContact(data, empId),
+              <MemberRepoIcon key="repo" assignment={assignment} repos={repos} data={data} />,
+              <span className="Table-Actions" key="action">
+                <button className="Soft-Button Small" onClick={() => markAbsent(assignment)}>{assignment.is_absent ? <UserCheck size={13} /> : <UserX size={13} />}{assignment.is_absent ? " Mark Available" : " Mark Absent"}</button>
+                <button className="Soft-Button Small Danger" onClick={() => removeMember(assignment)}><X size={13} /></button>
+              </span>,
+              <button className="Primary-Button Small" key="eod" onClick={() => setEodEmployee(assignment)}><CalendarDays size={13} /> View</button>,
+            ];
+          })}
         />
       </Disclosure>
 

@@ -149,6 +149,11 @@ class LeaveApprovalService:
         return leave_request.employee.manager_id == employee.id and leave_request.employee_id != employee.id
 
     @staticmethod
+    def _notify_leave_actor(context, leave_request, title, message):
+        if leave_request.employee and leave_request.employee.user:
+            NotificationService.notify(context, leave_request.employee.user, title, message=message, category="leave", resource_type="LeaveRequest", resource_id=str(leave_request.id))
+
+    @staticmethod
     def approve(context, leave_request_id):
         leave_request = LeaveApprovalService.visible_queryset(context).filter(id=leave_request_id).first()
         if not leave_request:
@@ -161,6 +166,7 @@ class LeaveApprovalService:
         leave_request.approval_payload = {**leave_request.approval_payload, "approvedAt": timezone.now().isoformat()}
         leave_request.updated_by = context.actor
         leave_request.save(update_fields=["status", "approved_by", "approved_at", "approval_payload", "updated_by", "updated_at"])
+        LeaveApprovalService._notify_leave_actor(context, leave_request, "Leave Approved", f"Your Leave ({leave_request.starts_on} - {leave_request.ends_on}) Has Been Approved.")
         OutboxService.publish(context, "LeaveRequest", leave_request.id, "LeaveRequestApproved", {"leaveRequestId": leave_request.id})
         return ServiceResult.success(leave_request)
 
@@ -176,6 +182,7 @@ class LeaveApprovalService:
         leave_request.approval_payload = {**leave_request.approval_payload, "rejectedAt": timezone.now().isoformat(), "reason": reason}
         leave_request.updated_by = context.actor
         leave_request.save(update_fields=["status", "rejected_at", "approval_payload", "updated_by", "updated_at"])
+        LeaveApprovalService._notify_leave_actor(context, leave_request, "Leave Rejected", f"Your Leave ({leave_request.starts_on} - {leave_request.ends_on}) Has Been Rejected. Reason: {reason}")
         OutboxService.publish(context, "LeaveRequest", leave_request.id, "LeaveRequestRejected", {"leaveRequestId": leave_request.id})
         return ServiceResult.success(leave_request)
 

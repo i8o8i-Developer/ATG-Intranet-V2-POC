@@ -55,7 +55,7 @@ function getCsrfToken() {
 }
 
 // ─── Request Queue With Concurrency Limit (Prevents DB Connection Exhaustion) ───
-const MAX_CONCURRENT_REQUESTS = parseInt(localStorage.getItem("intranet.maxConcurrentRequests") || "6", 10);
+const MAX_CONCURRENT_REQUESTS = parseInt(localStorage.getItem("intranet.maxConcurrentRequests") || "20", 10);
 const REQUEST_QUEUE = [];
 let ACTIVE_COUNT = 0;
 
@@ -94,11 +94,11 @@ async function executeRequest(path, options = {}) {
   }
 
   // 
-  const maxRetries = 2;
+  const maxRetries = 0;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
 
       const response = await fetch(makeUrl(path), {
         method,
@@ -115,8 +115,6 @@ async function executeRequest(path, options = {}) {
       if (!response.ok) {
         // 
         if ([500, 502, 503, 504].includes(response.status) && attempt < maxRetries) {
-          const delayMs = 500 * Math.pow(2, attempt);
-          await new Promise((r) => setTimeout(r, delayMs));
           continue;
         }
         const error = new Error(payload?.detail || payload?.message || `${response.status} ${response.statusText}`);

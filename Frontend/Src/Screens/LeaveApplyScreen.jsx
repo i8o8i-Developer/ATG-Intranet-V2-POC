@@ -35,13 +35,13 @@ export function LeaveApplyScreen({ data, selectedEmployeeId, reload }) {
   const submit = async () => {
     const response = await apiPost("/MainApp/leave/apply/", form);
     setResult(response);
-    reload();
+    reload(["leaveRequests", "leaveBalances", "leaveOverview", "notifications", "employees"]);
   };
 
   const reviewLeave = async (id, action) => {
     if (!id) return;
     await apiPost(`/MainApp/LeaveRequests/${id}/${action}/`, action === "reject" ? { reason: "Rejected From Leave Console" } : {});
-    reload();
+    reload(["leaveRequests", "leaveBalances", "leaveOverview", "notifications", "employees"]);
   };
 
   const leaveTone = (status = "") => {

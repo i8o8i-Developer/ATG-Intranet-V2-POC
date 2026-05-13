@@ -194,6 +194,47 @@ const endpointMap = [
   ["accessAuditLogs", "/EnterpriseCore/AccessAuditLogs/", "list"],
 ];
 
+const LAZY_KEYS = new Set([
+  "subDepartments", "payProfiles", "bankAccounts", "paymentSnapshots",
+  "leavePolicies", "employeeFeedback", "projectDocuments", "repositories",
+  "workEntries", "taskActivities", "offers", "issues",
+  "leadAccounts", "leadTags", "leadContacts", "leadActivities", "leadNotes",
+  "leadTests", "leadProposals", "leadAudits", "leadTransitions",
+  "lmsLeads", "learningPaths", "learningModules", "learningAssignments",
+  "leadQueueSnapshots", "revenueSnapshots",
+  "docs", "docPermissions", "driveFiles", "docVersions",
+  "assessmentLegacy", "assessmentAssignments", "assessmentTemplates",
+  "financeDashboard", "payPeriods", "payrollRuns", "payrollLineItems",
+  "payslipDocuments", "paymentOrders",
+  "domains", "departmentMemberships",
+  "userStatusSnapshots", "benchPeriods", "employeeRatings",
+  "employeeCertificates", "leaveTransactions", "resignationRequests",
+  "userEffortReports", "interviewProgress",
+  "credentialVaultItems", "credentialShareGrants", "notificationSnoozeRecords",
+  "managerScopes", "projectContacts", "defaultCheckpoints",
+  "milestoneComponents", "complianceCampaigns", "complianceAssignments", "delays",
+  "slackThreads", "slackMessages", "externalWorkMappings", "clickupMappings",
+  "managerAbbreviations", "leadStatusHistory", "knowledgeActivities", "driveFolders",
+  "compensationPlans", "financeBankAccounts", "approvalDecisions",
+  "payoutExecutions", "paymentWebhookEvents",
+  "gitRepoSnapshots", "gitActivitySnapshots", "repoUtilityRequests",
+  "githubRepositories", "branchReviewers", "branchTesters", "repoBranchStatuses",
+  "templateVariables", "offerMacros", "contentTemplates", "offerTemplates",
+  "genericHtmlTemplates",
+  "collegePipelines", "collegeContacts", "collegeAssignments",
+  "collegeEmailTemplates", "candidateProfiles", "talentAssignments",
+  "talentEmails", "talentPerformanceSnapshots",
+  "integrationProviders", "integrationConnections", "webhookInboxEvents",
+  "integrationSyncJobs", "integrationAttempts",
+  "agentPrincipals", "mcpToolDefinitions", "mcpResourceDefinitions",
+  "mcpAccessGrants", "mcpInvocationAudits", "draftAgentActions",
+  "legacyApplicationMaps", "legacyModelCrosswalks", "migrationRuns",
+  "legacyMigrationIssues",
+  "enterpriseTenants", "enterpriseOrganizations", "enterpriseBusinessUnits",
+  "enterpriseWorkspaces", "enterpriseRoles", "enterpriseRoleAssignments",
+  "accessAuditLogs",
+]);
+
 // ─── Nav Structure — Maps Figma Items To Your Existing Paths ─────────────────
 function buildNavItems(activePath) {
   return [
@@ -394,10 +435,10 @@ function App() {
 
   if (!hasAuth || path.startsWith("/login")) return <LoginScreen settings={settings} onLogin={login} />;
 
-  const commonProps = { data, settings, selectedEmployeeId, reload, navigate };
+  const commonProps = { data, settings, selectedEmployeeId, reload, navigate, loadMissing };
 
   return (
-    <AppShell route={route} navigate={navigate} data={data} apiOnline={apiOnline} loading={loading} logout={logout} errors={errors} reloadData={reload}>
+    <AppShell route={route} navigate={navigate} data={data} apiOnline={apiOnline} loading={loading} logout={logout} errors={errors} reloadData={reload} loadMissing={loadMissing}>
       {path.startsWith("/profile")
         ? <ProfileScreen data={data} onLogout={logout} reload={reload} />
         : <RouteRenderer route={route} {...commonProps} />}
@@ -409,6 +450,7 @@ function App() {
 function useIntranetData(reloadKey, enabled) {
   const [state, setState] = useState({ data: {}, loading: false, errors: [], apiOnline: false });
   const hasInitiallyLoaded = useRef(false);
+  const loadedLazyKeys = useRef(new Set());
 
   const applyPayload = (nextData, key, mode, payload) => {
     if (key === "assessmentLegacy") {
@@ -426,12 +468,22 @@ function useIntranetData(reloadKey, enabled) {
     }
   };
 
+const REALTIME_KEYS = ["dailyStatus", "me", "notifications", "employees", "tasks", "projects", "leaveRequests", "leaveBalances", "teamAssignments", "milestones", "alerts", "userSkills", "goals", "goalFeedback", "workEntries"];
+
 const load = useCallback(async (keysFilter) => {
      if (!enabled) { setState({ data: {}, loading: false, errors: [], apiOnline: false }); hasInitiallyLoaded.current = false; return; }
      let effectiveFilter = keysFilter;
-     if (keysFilter === undefined && hasInitiallyLoaded.current) effectiveFilter = ["me", "notifications", "employees", "tasks", "projects", "leaveRequests"];
-     else if (keysFilter === true || keysFilter === "__all__") effectiveFilter = undefined;
-     const subset = Array.isArray(effectiveFilter) && effectiveFilter.length ? endpointMap.filter(([key]) => effectiveFilter.includes(key)) : endpointMap;
+     if (keysFilter === undefined && hasInitiallyLoaded.current) {
+       effectiveFilter = REALTIME_KEYS;
+     } else if (keysFilter === true || keysFilter === "__all__") {
+       effectiveFilter = undefined;
+     } else if (Array.isArray(keysFilter)) {
+       effectiveFilter = keysFilter;
+       keysFilter.forEach((k) => loadedLazyKeys.current.add(k));
+     }
+     const subset = Array.isArray(effectiveFilter) && effectiveFilter.length
+       ? endpointMap.filter(([key]) => effectiveFilter.includes(key))
+       : endpointMap.filter(([key]) => !LAZY_KEYS.has(key));
      const isPartial = subset.length !== endpointMap.length;
      setState((cur) => ({ ...cur, loading: !isPartial ? true : cur.loading, errors: isPartial ? cur.errors : [] }));
 
@@ -465,12 +517,19 @@ const load = useCallback(async (keysFilter) => {
      if (!isPartial) hasInitiallyLoaded.current = true;
    }, [enabled]);
 
-  useEffect(() => { load("__all__"); }, [load, reloadKey]);
-  return { ...state, reload: load };
+   const loadMissing = useCallback(async (keys) => {
+     if (!enabled || !Array.isArray(keys) || !keys.length) return;
+     const missing = keys.filter((k) => LAZY_KEYS.has(k) && !loadedLazyKeys.current.has(k));
+     if (!missing.length) return;
+     await load(missing);
+   }, [enabled, load]);
+
+   useEffect(() => { load("__all__"); }, [load, reloadKey]);
+   return { ...state, reload: load, loadMissing };
 }
 
 // ─── App Shell — Figma Builder Sidebar + Existing Topbar Logic ──────────────
-function AppShell({ children, route, navigate, data, apiOnline, loading, logout, errors, reloadData }) {
+function AppShell({ children, route, navigate, data, apiOnline, loading, logout, errors, reloadData, loadMissing }) {
   const activePath = route.split("?")[0];
   const activeItem = navItems.find((item) => activePath === item.path || (item.path !== "/home/" && activePath.startsWith(item.path.replace(/\/$/, ""))));
   const pageTitle = activePath.startsWith("/profile") ? "Profile" : activeItem?.label || "Home";

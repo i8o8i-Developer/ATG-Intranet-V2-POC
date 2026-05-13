@@ -36,3 +36,5 @@
 .Repo-List li { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; }
 .Repo-List li span:first-child { flex: 1; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: #0f172a; }
 .Modal-Actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+.Member-Name-Wrap { display: inline-flex; align-items: center; gap: 6px; }
+.Leave-Dot { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: #fef3c7; color: #d97706; font-size: 11px; cursor: help; }

@@ -78,7 +78,8 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
       metadata: { source: "React Home", task_id: expandedTaskId },
     });
     setSummary("");
-    reload();
+    setExpandedTaskId("");
+    reload(["dailyStatus", "tasks", "notifications", "employees"]);
   };
 
   const quickLinks = [
