@@ -23,7 +23,12 @@ class TenantContextMiddleware:
         request.tenant = self.resolve_tenant(request)
         request.workspace = self.resolve_workspace(request, request.tenant)
         if request.tenant and getattr(request, "user", None) and request.user.is_authenticated:
-            request.capabilities = CapabilityService.list_user_capabilities(request.tenant, request.user, request.workspace)
+            try:
+                request.capabilities = CapabilityService.list_user_capabilities(request.tenant, request.user, request.workspace)
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error(f"Capability Lookup Error: {str(e)}", exc_info=True)
+                request.capabilities = set()
         else:
             request.capabilities = set()
         return self.get_response(request)
@@ -52,7 +57,12 @@ class TenantContextMiddleware:
             return None
 
         def _lookup():
-            return Tenant.objects.filter(id=tid, status=Tenant.STATUS_ACTIVE).first()
+            try:
+                return Tenant.objects.filter(id=tid, status=Tenant.STATUS_ACTIVE).first()
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error(f"Tenant Lookup Error: {str(e)}", exc_info=True)
+                return None
 
         return self._cached_lookup(self._tenant_cache, self._tenant_cache_ts, tid, _lookup)
 
@@ -69,6 +79,11 @@ class TenantContextMiddleware:
         cache_key = f"{tenant.id}:{wid}"
 
         def _lookup():
-            return Workspace.objects.filter(id=wid, tenant=tenant).first()
+            try:
+                return Workspace.objects.filter(id=wid, tenant=tenant).first()
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error(f"Workspace Lookup Error: {str(e)}", exc_info=True)
+                return None
 
         return self._cached_lookup(self._workspace_cache, self._workspace_cache_ts, cache_key, _lookup)
