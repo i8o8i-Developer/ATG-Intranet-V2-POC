@@ -1,4 +1,6 @@
 from django.contrib.auth import authenticate, login as session_login, logout as session_logout
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 
 from Backend.Apps.Users.models import (
     BenchPeriod,
@@ -195,6 +197,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+@method_decorator(csrf_exempt, name="dispatch")
 class LoginAPIView(APIView):
     permission_classes = [permissions.AllowAny]
     authentication_classes = []
@@ -207,12 +210,16 @@ class LoginAPIView(APIView):
             user = authenticate(request, username=login_name, password=serializer.validated_data["password"])
             if not user:
                 return Response({"detail": "Invalid UserName/Email Or Password."}, status=status.HTTP_401_UNAUTHORIZED)
-            session_login(request, user)
             payload = _current_user_payload(
                 user,
                 tenant_id=serializer.validated_data.get("tenant_id"),
                 workspace_id=serializer.validated_data.get("workspace_id"),
             )
+            try:
+                session_login(request, user)
+            except Exception as session_error:
+                # 
+                logger.warning("Session Login Failed; Continuing With Basic Auth: %s", session_error, exc_info=True)
             return Response(payload)
         except Exception as e:
             logger.error(f"Login Error: {str(e)}", exc_info=True)
