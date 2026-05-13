@@ -9,7 +9,6 @@ export function FinanceScreen({ data, reload }) {
   const rows = data.financeRows || [];
   const departments = data.financeDashboard?.departments || data.departments || [];
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedDeptNames, setSelectedDeptNames] = useState(new Set());
   const [showApprovedOnly, setShowApprovedOnly] = useState(false);
 
