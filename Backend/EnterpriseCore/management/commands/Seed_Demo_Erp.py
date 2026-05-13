@@ -26,7 +26,7 @@ from Backend.EnterpriseCore.models import AccessAuditLog, BusinessUnit, Capabili
 from Backend.EnterpriseCore.services import TenantContext
 
 
-EMPLOYEE_DEMO_PASSWORD = "demo1234"
+EMPLOYEE_DEMO_PASSWORD = "Demo1234"
 
 
 class Command(BaseCommand):
@@ -464,7 +464,7 @@ class Command(BaseCommand):
         self.upsert(TalentPerformanceSnapshot, {"tenant": self.tenant, "employee": employees["EMP008"], "snapshot_date": self.today}, {"assigned_count": 14, "completed_count": 9, "conversion_count": 3})
 
     def seed_git(self, employees, projects):
-        repo = self.upsert(GitRepositorySnapshot, {"tenant": self.tenant, "provider": "GitHub", "organization": "atg-world", "repository_name": "intranet-v2"}, {"repository_full_name": "atg-world/intranet-v2", "default_branch": "main", "latest_commit_sha": "demo123", "status": "Active"})
+        repo = self.upsert(GitRepositorySnapshot, {"tenant": self.tenant, "provider": "GitHub", "organization": "atg-world", "repository_name": "intranet-v2"}, {"repository_full_name": "atg-world/intranet-v2", "default_branch": "main", "latest_commit_sha": "Demo123", "status": "Active"})
         self.upsert(GitActivitySnapshot, {"tenant": self.tenant, "repository": repo, "snapshot_date": self.today}, {"commit_count": 18, "pull_request_count": 4, "review_count": 6})
         self.upsert(RepositoryUtilityRequest, {"tenant": self.tenant, "repository": repo, "request_type": "CollaboratorAccess"}, {"requested_by": employees["EMP002"], "status": "Queued", "payload": {"username": "faraz"}})
         gh_repo = self.upsert(GitHubRepository, {"tenant": self.tenant, "owner": "atg-world", "name": "intranet-v2"}, {"project": projects["project_a"], "default_branch": "main", "status": "Active"})

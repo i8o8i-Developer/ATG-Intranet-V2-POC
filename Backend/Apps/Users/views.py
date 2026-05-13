@@ -401,9 +401,9 @@ class GoalViewSet(TenantScopedModelViewSet):
     serializer_class = GoalSerializer
     
     def perform_create(self, serializer):
+        super().perform_create(serializer)
+        goal = serializer.instance
         from Backend.Apps.MainApp.services import NotificationService
-        goal = serializer.save()
-        
         if goal.employee and goal.employee.user:
             NotificationService.notify(
                 self.get_tenant_context(),

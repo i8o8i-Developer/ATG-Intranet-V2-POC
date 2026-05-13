@@ -1,8 +1,20 @@
-from functools import lru_cache
 from django.utils import timezone
 
 from Backend.EnterpriseCore.models import Tenant, Workspace
 from Backend.EnterpriseCore.services import CapabilityService
+
+
+class ApiCsrfExemptMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        return self.get_response(request)
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        if not request.path.startswith("/admin/"):
+            request.csrf_processing_done = True
+        return None
 
 
 class TenantContextMiddleware:
