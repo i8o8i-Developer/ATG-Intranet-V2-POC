@@ -36,7 +36,7 @@ services:
       - -c
       - |
         python Backend/manage.py migrate &&
-        if python Backend/manage.py shell -c 'import os, sys; from django.contrib.auth import get_user_model; sys.exit(0 if get_user_model().objects.filter(username=os.environ.get("BOOTSTRAP_USERNAME", "anubhav1608")).exists() else 1)'; then
+        if python Backend/manage.py shell --command 'import os, sys; from django.contrib.auth import get_user_model; sys.exit(0 if get_user_model().objects.filter(username=os.environ.get("BOOTSTRAP_USERNAME", "anubhav1608")).exists() else 1)'; then
           echo 'Bootstrap User Already Exists, Skipping Bootstrap And Demo Seed.'
         elif [ "$${SEED_DEMO_DATA}" = "1" ]; then
           python Backend/manage.py Seed_Demo_Erp --tenant "$${BOOTSTRAP_TENANT}" --workspace "$${BOOTSTRAP_WORKSPACE}" --username "$${BOOTSTRAP_USERNAME}" --password "$${BOOTSTRAP_PASSWORD}" --email "$${BOOTSTRAP_EMAIL}"
@@ -76,7 +76,6 @@ services:
       BOOTSTRAP_EMPLOYEE_CODE: "${BOOTSTRAP_EMPLOYEE_CODE:-EMP-001}"
       SEED_DEMO_DATA: ${SEED_DEMO_DATA:-1}
     volumes:
-      - ./Backend:/app/Backend
       - backend_media:/app/Backend/media
     depends_on:
       Database:
@@ -116,7 +115,6 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./Backend:/app/Backend
       - backend_media:/app/Backend/media
     depends_on:
       Database:
@@ -153,7 +151,6 @@ services:
       DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
     volumes:
-      - ./Backend:/app/Backend
       - backend_media:/app/Backend/media
     depends_on:
       Backend-Init:
@@ -187,8 +184,6 @@ services:
       EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
       DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
-    volumes:
-      - ./Backend:/app/Backend
     depends_on:
       Backend-Init:
         condition: service_completed_successfully
@@ -207,11 +202,11 @@ services:
     ports:
       - "5173:5173"
     volumes:
-      - ./Frontend:/app
       - frontend_node_modules:/app/node_modules
     depends_on:
       Backend:
         condition: service_started
+
 
 volumes:
   postgres_data:

@@ -19,6 +19,11 @@ CAPABILITY_MODULES = {
     "FinanceAndPayroll": ["finance.view", "finance.approve"],
     "IntegrationHub": ["integration.view", "integration.manage"],
     "McpAccessLayer": ["mcp.view", "mcp.manage"],
+    "AtgDocs": ["docs.view", "docs.manage"],
+    "LegacyBridge": ["migration.view", "migration.manage"],
+    "GithubExtension": ["github.view", "github.manage"],
+    "Git": ["git.view", "git.manage"],
+    "HtmlTemplate": ["template.view", "template.manage"],
 }
 
 
