@@ -426,27 +426,44 @@ function useIntranetData(reloadKey, enabled) {
     }
   };
 
-  const load = useCallback(async (keysFilter) => {
-    if (!enabled) { setState({ data: {}, loading: false, errors: [], apiOnline: false }); hasInitiallyLoaded.current = false; return; }
-    let effectiveFilter = keysFilter;
-    if (keysFilter === undefined && hasInitiallyLoaded.current) effectiveFilter = ["me", "notifications", "employees", "tasks", "projects", "leaveRequests"];
-    else if (keysFilter === true || keysFilter === "__all__") effectiveFilter = undefined;
-    const subset = Array.isArray(effectiveFilter) && effectiveFilter.length ? endpointMap.filter(([key]) => effectiveFilter.includes(key)) : endpointMap;
-    const isPartial = subset.length !== endpointMap.length;
-    setState((cur) => ({ ...cur, loading: !isPartial ? true : cur.loading, errors: isPartial ? cur.errors : [] }));
-    const results = await Promise.allSettled(subset.map(([key, p, mode]) => apiGet(p).then((payload) => ({ key, payload, mode }))));
-    setState((cur) => {
-      const nextData = isPartial ? { ...cur.data } : {};
-      const requestErrors = isPartial ? cur.errors.filter((err) => !effectiveFilter.includes(err.key)) : [];
-      results.forEach((result, i) => {
-        const [key, , mode] = subset[i];
-        if (result.status === "fulfilled") applyPayload(nextData, key, mode, result.value.payload);
-        else { requestErrors.push({ key, status: result.reason?.status, message: result.reason?.message || "Request Failed" }); if (!isPartial) nextData[key] = mode === "list" ? [] : null; }
-      });
-      return { data: nextData, loading: false, errors: requestErrors, apiOnline: isPartial ? cur.apiOnline : requestErrors.length < endpointMap.length };
-    });
-    if (!isPartial) hasInitiallyLoaded.current = true;
-  }, [enabled]);
+const load = useCallback(async (keysFilter) => {
+     if (!enabled) { setState({ data: {}, loading: false, errors: [], apiOnline: false }); hasInitiallyLoaded.current = false; return; }
+     let effectiveFilter = keysFilter;
+     if (keysFilter === undefined && hasInitiallyLoaded.current) effectiveFilter = ["me", "notifications", "employees", "tasks", "projects", "leaveRequests"];
+     else if (keysFilter === true || keysFilter === "__all__") effectiveFilter = undefined;
+     const subset = Array.isArray(effectiveFilter) && effectiveFilter.length ? endpointMap.filter(([key]) => effectiveFilter.includes(key)) : endpointMap;
+     const isPartial = subset.length !== endpointMap.length;
+     setState((cur) => ({ ...cur, loading: !isPartial ? true : cur.loading, errors: isPartial ? cur.errors : [] }));
+
+     // Wave loading: critical endpoints (auth/me) first, then the rest in batches
+     const criticalKeys = ["me", "enterprises", "departments", "positions", "skills"];
+     const critical = subset.filter(([key]) => criticalKeys.includes(key));
+     const rest = subset.filter(([key]) => !criticalKeys.includes(key));
+
+     const results = [];
+     // Wave 1: Critical endpoints (immediate)
+     if (critical.length > 0) {
+       const wave1 = await Promise.allSettled(critical.map(([key, p, mode]) => apiGet(p).then((payload) => ({ key, payload, mode }))));
+       results.push(...wave1);
+     }
+     // Wave 2: Remaining endpoints (after critical resolve, reduces burst)
+     if (rest.length > 0) {
+       const wave2 = await Promise.allSettled(rest.map(([key, p, mode]) => apiGet(p).then((payload) => ({ key, payload, mode }))));
+       results.push(...wave2);
+     }
+
+     setState((cur) => {
+       const nextData = isPartial ? { ...cur.data } : {};
+       const requestErrors = isPartial ? cur.errors.filter((err) => !effectiveFilter.includes(err.key)) : [];
+       results.forEach((result, i) => {
+         const [key, , mode] = subset[i];
+         if (result.status === "fulfilled") applyPayload(nextData, key, mode, result.value.payload);
+         else { requestErrors.push({ key, status: result.reason?.status, message: result.reason?.message || "Request Failed" }); if (!isPartial) nextData[key] = mode === "list" ? [] : null; }
+       });
+       return { data: nextData, loading: false, errors: requestErrors, apiOnline: isPartial ? cur.apiOnline : requestErrors.length < subset.length };
+     });
+     if (!isPartial) hasInitiallyLoaded.current = true;
+   }, [enabled]);
 
   useEffect(() => { load("__all__"); }, [load, reloadKey]);
   return { ...state, reload: load };

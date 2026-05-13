@@ -1,221 +1,287 @@
 name: intranet-v2
 
 services:
-  Database:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    ports:
-      - "6758:5432"
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-intranet_rebuild}
-      POSTGRES_USER: ${POSTGRES_USER:-intranet}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-intranet} -d $${POSTGRES_DB:-intranet_rebuild}"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
+   Database:
+     image: postgres:16-alpine
+     restart: unless-stopped
+     ports:
+       - "6758:5432"
+     environment:
+       POSTGRES_DB: ${POSTGRES_DB:-intranet_rebuild}
+       POSTGRES_USER: ${POSTGRES_USER:-intranet}
+       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
+     command:
+       - "postgres"
+       - "-c"
+       - "max_connections=500"
+       - "-c"
+       - "shared_buffers=512MB"
+       - "-c"
+       - "work_mem=64MB"
+       - "-c"
+       - "effective_cache_size=1536MB"
+       - "-c"
+       - "idle_in_transaction_session_timeout=60000"
+       - "-c"
+       - "statement_timeout=120000"
+       - "-c"
+       - "temp_buffers=16MB"
+       - "-c"
+       - "maintenance_work_mem=128MB"
+       - "-c"
+       - "checkpoint_completion_target=0.9"
+       - "-c"
+       - "wal_buffers=16MB"
+       - "-c"
+       - "default_statistics_target=100"
+       - "-c"
+       - "random_page_cost=1.1"
+       - "-c"
+       - "max_wal_size=1GB"
+       - "-c"
+       - "min_wal_size=80MB"
+     volumes:
+       - postgres_data:/var/lib/postgresql/data
+     healthcheck:
+       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-intranet} -d $${POSTGRES_DB:-intranet_rebuild}"]
+       interval: 5s
+       timeout: 5s
+       retries: 20
 
-  Redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    ports:
-      - "9876:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
+   PgBouncer:
+     image: edoburu/pgbouncer:1.22.0
+     restart: unless-stopped
+     ports:
+       - "6432:6432"
+     environment:
+       DATABASES: "${POSTGRES_DB:-intranet_rebuild}=host=Database port=5432 dbname=${POSTGRES_DB:-intranet_rebuild} user=${POSTGRES_USER:-intranet} password=${POSTGRES_PASSWORD:-intranet}"
+       USERS: "${POSTGRES_USER:-intranet}=pool_mode=transaction max_user_connections=50"
+       POOL_MODE: transaction
+       SERVER_IDLE_TIMEOUT: 300
+       SERVER_CONNECT_TIMEOUT: 10
+       SERVER_LOGIN_RETRY: 5
+       ADMIN_USERS: "${POSTGRES_USER:-intranet}"
+     depends_on:
+       Database:
+         condition: service_healthy
+     healthcheck:
+       test: ["CMD", "pg_isready", "-h", "Database", "-U", "intranet", "-d", "intranet_rebuild"]
+       interval: 5s
+       timeout: 5s
+       retries: 10
 
-  Backend-Init:
-    build:
-      context: .
-      dockerfile: Backend/Dockerfile
-    image: intranet-v2-backend
-    restart: "no"
-    command:
-      - sh
-      - -c
-      - |
-        set -e
-        echo "Starting Initialization..."
-        python Backend/manage.py migrate --noinput
-        if [ "$${SEED_DEMO_DATA:-1}" = "1" ]; then
-          echo "Running Seed Demo Erp..."
-          python Backend/manage.py Seed_Demo_Erp --tenant "$${BOOTSTRAP_TENANT}" --workspace "$${BOOTSTRAP_WORKSPACE}" --username "$${BOOTSTRAP_USERNAME}" --password "$${BOOTSTRAP_PASSWORD}" --email "$${BOOTSTRAP_EMAIL}" --first-name "$${BOOTSTRAP_FIRST_NAME}" --last-name "$${BOOTSTRAP_LAST_NAME}" --display-name "$${BOOTSTRAP_DISPLAY_NAME}" --employee-code "$${BOOTSTRAP_EMPLOYEE_CODE}"
-        else
-          echo "Running Bootstrap Backend..."
-          python Backend/manage.py Bootstrap_Backend --tenant "$${BOOTSTRAP_TENANT}" --workspace "$${BOOTSTRAP_WORKSPACE}" --username "$${BOOTSTRAP_USERNAME}" --password "$${BOOTSTRAP_PASSWORD}" --email "$${BOOTSTRAP_EMAIL}" --first-name "$${BOOTSTRAP_FIRST_NAME}" --last-name "$${BOOTSTRAP_LAST_NAME}" --display-name "$${BOOTSTRAP_DISPLAY_NAME}" --employee-code "$${BOOTSTRAP_EMPLOYEE_CODE}"
-        fi
-        echo "Initialization Successful."
-    environment:
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-Rebuild-Development-Only}
-      DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
-      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend,0.0.0.0}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4787,http://127.0.0.1:4787}
-      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:4787,http://127.0.0.1:4787,http://localhost:5466,http://127.0.0.1:5466}
-      POSTGRES_DB: ${POSTGRES_DB:-intranet_rebuild}
-      POSTGRES_USER: ${POSTGRES_USER:-intranet}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
-      POSTGRES_HOST: Database
-      POSTGRES_PORT: 5432
-      CELERY_BROKER_URL: redis://Redis:6379/0
-      CELERY_RESULT_BACKEND: redis://Redis:6379/0
-      EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.smtp.EmailBackend}
-      EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
-      EMAIL_PORT: ${EMAIL_PORT:-587}
-      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-1}
-      EMAIL_USE_SSL: ${EMAIL_USE_SSL:-0}
-      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
-      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
-      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-}
-      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:5466}
-      BOOTSTRAP_TENANT: "${BOOTSTRAP_TENANT:-Banao}"
-      BOOTSTRAP_WORKSPACE: "${BOOTSTRAP_WORKSPACE:-Default Workspace}"
-      BOOTSTRAP_USERNAME: "${BOOTSTRAP_USERNAME:-AtgIntranet}"
-      BOOTSTRAP_PASSWORD: "${BOOTSTRAP_PASSWORD:-TestBuildAtgIntranet1608}"
-      BOOTSTRAP_EMAIL: "${BOOTSTRAP_EMAIL:-admin@atgintranet.in}"
-      BOOTSTRAP_FIRST_NAME: "${BOOTSTRAP_FIRST_NAME:-Atg}"
-      BOOTSTRAP_LAST_NAME: "${BOOTSTRAP_LAST_NAME:-Intranet}"
-      BOOTSTRAP_DISPLAY_NAME: "${BOOTSTRAP_DISPLAY_NAME:-Atg Intranet}"
-      BOOTSTRAP_EMPLOYEE_CODE: "${BOOTSTRAP_EMPLOYEE_CODE:-EMP-001}"
-      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-1}
-    volumes:
-      - backend_media:/app/Backend/media
-    depends_on:
-      Database:
-        condition: service_healthy
-      Redis:
-        condition: service_healthy
+   Redis:
+     image: redis:7-alpine
+     restart: unless-stopped
+     ports:
+       - "9876:6379"
+     healthcheck:
+       test: ["CMD", "redis-cli", "ping"]
+       interval: 5s
+       timeout: 5s
+       retries: 20
 
-  Backend:
-    build:
-      context: .
-      dockerfile: Backend/Dockerfile
-    image: intranet-v2-backend
-    restart: unless-stopped
-    command: python Backend/manage.py runserver 0.0.0.0:8000
-    environment:
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-Rebuild-Development-Only}
-      DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
-      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend,0.0.0.0}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4787,http://127.0.0.1:4787}
-      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:4787,http://127.0.0.1:4787,http://localhost:5466,http://127.0.0.1:5466}
-      POSTGRES_DB: ${POSTGRES_DB:-intranet_rebuild}
-      POSTGRES_USER: ${POSTGRES_USER:-intranet}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
-      POSTGRES_HOST: Database
-      POSTGRES_PORT: 5432
-      CELERY_BROKER_URL: redis://Redis:6379/0
-      CELERY_RESULT_BACKEND: redis://Redis:6379/0
-      EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.smtp.EmailBackend}
-      EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
-      EMAIL_PORT: ${EMAIL_PORT:-587}
-      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-1}
-      EMAIL_USE_SSL: ${EMAIL_USE_SSL:-0}
-      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
-      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
-      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-}
-      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:5466}
-    ports:
-      - "5466:8000"
-    volumes:
-      - backend_media:/app/Backend/media
-    depends_on:
-      Database:
-        condition: service_healthy
-      Redis:
-        condition: service_healthy
-      Backend-Init:
-        condition: service_completed_successfully
+   Backend-Init:
+     build:
+       context: .
+       dockerfile: Backend/Dockerfile
+     image: intranet-v2-backend
+     restart: "no"
+     command:
+       - sh
+       - -c
+       - |
+         set -e
+         echo "Starting Initialization..."
+         export POSTGRES_HOST=Database
+         export POSTGRES_PORT=5432
+         python Backend/manage.py migrate --noinput
+         if [ "$${SEED_DEMO_DATA:-1}" = "1" ]; then
+           echo "Running Seed Demo Erp..."
+           python Backend/manage.py Seed_Demo_Erp --tenant "$${BOOTSTRAP_TENANT}" --workspace "$${BOOTSTRAP_WORKSPACE}" --username "$${BOOTSTRAP_USERNAME}" --password "$${BOOTSTRAP_PASSWORD}" --email "$${BOOTSTRAP_EMAIL}" --first-name "$${BOOTSTRAP_FIRST_NAME}" --last-name "$${BOOTSTRAP_LAST_NAME}" --display-name "$${BOOTSTRAP_DISPLAY_NAME}" --employee-code "$${BOOTSTRAP_EMPLOYEE_CODE}"
+         else
+           echo "Running Bootstrap Backend..."
+           python Backend/manage.py Bootstrap_Backend --tenant "$${BOOTSTRAP_TENANT}" --workspace "$${BOOTSTRAP_WORKSPACE}" --username "$${BOOTSTRAP_USERNAME}" --password "$${BOOTSTRAP_PASSWORD}" --email "$${BOOTSTRAP_EMAIL}" --first-name "$${BOOTSTRAP_FIRST_NAME}" --last-name "$${BOOTSTRAP_LAST_NAME}" --display-name "$${BOOTSTRAP_DISPLAY_NAME}" --employee-code "$${BOOTSTRAP_EMPLOYEE_CODE}"
+         fi
+         echo "Initialization Successful."
+     environment:
+       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-Rebuild-Development-Only}
+       DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
+       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend,0.0.0.0}
+       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4787,http://127.0.0.1:4787}
+       CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:4787,http://127.0.0.1:4787,http://localhost:5466,http://127.0.0.1:5466}
+       POSTGRES_DB: ${POSTGRES_DB:-intranet_rebuild}
+       POSTGRES_USER: ${POSTGRES_USER:-intranet}
+       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
+       DIRECT_DB_HOST: Database
+       DIRECT_DB_PORT: 5432
+       CELERY_BROKER_URL: redis://Redis:6379/0
+       CELERY_RESULT_BACKEND: redis://Redis:6379/0
+       EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.smtp.EmailBackend}
+       EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
+       EMAIL_PORT: ${EMAIL_PORT:-587}
+       EMAIL_USE_TLS: ${EMAIL_USE_TLS:-1}
+       EMAIL_USE_SSL: ${EMAIL_USE_SSL:-0}
+       EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+       EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+       DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-}
+       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:5466}
+       BOOTSTRAP_TENANT: "${BOOTSTRAP_TENANT:-Banao}"
+       BOOTSTRAP_WORKSPACE: "${BOOTSTRAP_WORKSPACE:-Default Workspace}"
+       BOOTSTRAP_USERNAME: "${BOOTSTRAP_USERNAME:-AtgIntranet}"
+       BOOTSTRAP_PASSWORD: "${BOOTSTRAP_PASSWORD:-TestBuildAtgIntranet1608}"
+       BOOTSTRAP_EMAIL: "${BOOTSTRAP_EMAIL:-admin@atgintranet.in}"
+       BOOTSTRAP_FIRST_NAME: "${BOOTSTRAP_FIRST_NAME:-Atg}"
+       BOOTSTRAP_LAST_NAME: "${BOOTSTRAP_LAST_NAME:-Intranet}"
+       BOOTSTRAP_DISPLAY_NAME: "${BOOTSTRAP_DISPLAY_NAME:-Atg Intranet}"
+       BOOTSTRAP_EMPLOYEE_CODE: "${BOOTSTRAP_EMPLOYEE_CODE:-EMP-001}"
+       SEED_DEMO_DATA: ${SEED_DEMO_DATA:-1}
+     volumes:
+       - backend_media:/app/Backend/media
+     depends_on:
+       Database:
+         condition: service_healthy
+       Redis:
+         condition: service_healthy
 
-  Celery-Worker:
-    build:
-      context: .
-      dockerfile: Backend/Dockerfile
-    image: intranet-v2-celery-worker
-    restart: unless-stopped
-    command: celery -A Backend.celery_app worker -l info
-    environment:
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-Rebuild-Development-Only}
-      DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
-      POSTGRES_DB: ${POSTGRES_DB:-intranet_rebuild}
-      POSTGRES_USER: ${POSTGRES_USER:-intranet}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
-      POSTGRES_HOST: Database
-      POSTGRES_PORT: 5432
-      CELERY_BROKER_URL: redis://Redis:6379/0
-      CELERY_RESULT_BACKEND: redis://Redis:6379/0
-      EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.smtp.EmailBackend}
-      EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
-      EMAIL_PORT: ${EMAIL_PORT:-587}
-      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-1}
-      EMAIL_USE_SSL: ${EMAIL_USE_SSL:-0}
-      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
-      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
-      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-}
-      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:5466}
-    volumes:
-      - backend_media:/app/Backend/media
-    depends_on:
-      Backend-Init:
-        condition: service_completed_successfully
-      Redis:
-        condition: service_healthy
+   Backend:
+     build:
+       context: .
+       dockerfile: Backend/Dockerfile
+     image: intranet-v2-backend
+     restart: unless-stopped
+     command: python Backend/manage.py runserver 0.0.0.0:8000
+     environment:
+       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-Rebuild-Development-Only}
+       DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
+       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend,0.0.0.0}
+       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4787,http://127.0.0.1:4787}
+       CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:4787,http://127.0.0.1:4787,http://localhost:5466,http://127.0.0.1:5466}
+       POSTGRES_DB: ${POSTGRES_DB:-intranet_rebuild}
+       POSTGRES_USER: ${POSTGRES_USER:-intranet}
+       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
+       POSTGRES_HOST: PgBouncer
+       POSTGRES_PORT: 6432
+       DIRECT_DB_HOST: Database
+       DIRECT_DB_PORT: 5432
+       DB_POOL_SIZE: 10
+       DB_MAX_OVERFLOW: 20
+       DB_POOL_TIMEOUT: 30
+       DB_POOL_RECYCLE: 1800
+       CELERY_BROKER_URL: redis://Redis:6379/0
+       CELERY_RESULT_BACKEND: redis://Redis:6379/0
+       EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.smtp.EmailBackend}
+       EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
+       EMAIL_PORT: ${EMAIL_PORT:-587}
+       EMAIL_USE_TLS: ${EMAIL_USE_TLS:-1}
+       EMAIL_USE_SSL: ${EMAIL_USE_SSL:-0}
+       EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+       EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+       DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-}
+       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:5466}
+     ports:
+       - "5466:8000"
+     volumes:
+       - backend_media:/app/Backend/media
+     depends_on:
+       PgBouncer:
+         condition: service_healthy
+       Backend-Init:
+         condition: service_completed_successfully
 
-  Celery-Beat:
-    build:
-      context: .
-      dockerfile: Backend/Dockerfile
-    image: intranet-v2-celery-beat
-    restart: unless-stopped
-    command: celery -A Backend.celery_app beat -l info
-    environment:
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-Rebuild-Development-Only}
-      DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
-      POSTGRES_DB: ${POSTGRES_DB:-intranet_rebuild}
-      POSTGRES_USER: ${POSTGRES_USER:-intranet}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
-      POSTGRES_HOST: Database
-      POSTGRES_PORT: 5432
-      CELERY_BROKER_URL: redis://Redis:6379/0
-      CELERY_RESULT_BACKEND: redis://Redis:6379/0
-      EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.smtp.EmailBackend}
-      EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
-      EMAIL_PORT: ${EMAIL_PORT:-587}
-      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-1}
-      EMAIL_USE_SSL: ${EMAIL_USE_SSL:-0}
-      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
-      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
-      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-}
-      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:5466}
-    depends_on:
-      Backend-Init:
-        condition: service_completed_successfully
-      Redis:
-        condition: service_healthy
+   Celery-Worker:
+     build:
+       context: .
+       dockerfile: Backend/Dockerfile
+     image: intranet-v2-celery-worker
+     restart: unless-stopped
+     command: celery -A Backend.celery_app worker -l info --concurrency=4
+     environment:
+       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-Rebuild-Development-Only}
+       DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
+       POSTGRES_DB: ${POSTGRES_DB:-intranet_rebuild}
+       POSTGRES_USER: ${POSTGRES_USER:-intranet}
+       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
+       POSTGRES_HOST: PgBouncer
+       POSTGRES_PORT: 6432
+       DB_POOL_SIZE: 4
+       DB_MAX_OVERFLOW: 4
+       DB_POOL_TIMEOUT: 30
+       DB_POOL_RECYCLE: 1800
+       CELERY_BROKER_URL: redis://Redis:6379/0
+       CELERY_RESULT_BACKEND: redis://Redis:6379/0
+       EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.smtp.EmailBackend}
+       EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
+       EMAIL_PORT: ${EMAIL_PORT:-587}
+       EMAIL_USE_TLS: ${EMAIL_USE_TLS:-1}
+       EMAIL_USE_SSL: ${EMAIL_USE_SSL:-0}
+       EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+       EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+       DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-}
+       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:5466}
+     volumes:
+       - backend_media:/app/Backend/media
+     depends_on:
+       Backend-Init:
+         condition: service_completed_successfully
+       PgBouncer:
+         condition: service_healthy
 
-  Frontend:
-    build:
-      context: ./Frontend
-      dockerfile: Dockerfile
-    image: intranet-v2-frontend
-    restart: unless-stopped
-    command: npm run dev -- --host 0.0.0.0
-    environment:
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
-    ports:
-      - "4787:5173"
-    volumes:
-      - frontend_node_modules:/app/node_modules
-    depends_on:
-      Backend:
-        condition: service_started
+   Celery-Beat:
+     build:
+       context: .
+       dockerfile: Backend/Dockerfile
+     image: intranet-v2-celery-beat
+     restart: unless-stopped
+     command: celery -A Backend.celery_app beat -l info
+     environment:
+       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-Rebuild-Development-Only}
+       DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
+       POSTGRES_DB: ${POSTGRES_DB:-intranet_rebuild}
+       POSTGRES_USER: ${POSTGRES_USER:-intranet}
+       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
+       POSTGRES_HOST: PgBouncer
+       POSTGRES_PORT: 6432
+       DB_POOL_SIZE: 2
+       DB_MAX_OVERFLOW: 2
+       DB_POOL_TIMEOUT: 30
+       DB_POOL_RECYCLE: 1800
+       CELERY_BROKER_URL: redis://Redis:6379/0
+       CELERY_RESULT_BACKEND: redis://Redis:6379/0
+       EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.smtp.EmailBackend}
+       EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
+       EMAIL_PORT: ${EMAIL_PORT:-587}
+       EMAIL_USE_TLS: ${EMAIL_USE_TLS:-1}
+       EMAIL_USE_SSL: ${EMAIL_USE_SSL:-0}
+       EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+       EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+       DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-}
+       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:5466}
+     depends_on:
+       Backend-Init:
+         condition: service_completed_successfully
+       PgBouncer:
+         condition: service_healthy
+
+   Frontend:
+     build:
+       context: ./Frontend
+       dockerfile: Dockerfile
+     image: intranet-v2-frontend
+     restart: unless-stopped
+     command: npm run dev -- --host 0.0.0.0
+     environment:
+       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
+     ports:
+       - "4787:5173"
+     volumes:
+       - frontend_node_modules:/app/node_modules
+     depends_on:
+       Backend:
+         condition: service_started
 
 
 volumes:
-  postgres_data:
-  backend_media:
-  frontend_node_modules:
+   postgres_data:
+   backend_media:
+   frontend_node_modules:

@@ -100,17 +100,18 @@ POSTGRES_HOST = os.getenv("POSTGRES_HOST") or os.getenv("SQL_HOST")
 POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
 
 if POSTGRES_DB and POSTGRES_USER and POSTGRES_PASSWORD and POSTGRES_HOST:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": POSTGRES_DB,
-            "USER": POSTGRES_USER,
-            "PASSWORD": POSTGRES_PASSWORD,
-            "HOST": POSTGRES_HOST,
-            "PORT": POSTGRES_PORT,
-            "CONN_MAX_AGE": int(os.getenv("POSTGRES_CONN_MAX_AGE", "60")),
-        }
-    }
+     DATABASES = {
+         "default": {
+             "ENGINE": "django.db.backends.postgresql",
+             "NAME": POSTGRES_DB,
+             "USER": POSTGRES_USER,
+             "PASSWORD": POSTGRES_PASSWORD,
+             "HOST": POSTGRES_HOST,
+             "PORT": POSTGRES_PORT,
+             # 
+             "CONN_MAX_AGE": 0,
+         }
+     }
 else:
     DATABASES = {
         "default": {

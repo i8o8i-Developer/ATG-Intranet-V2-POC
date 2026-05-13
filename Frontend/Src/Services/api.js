@@ -1,6 +1,6 @@
 /* *
  * API Service Layer - Banao Intranet v2
- * Centralized API Integration With Axios
+ * Centralized API Integration With Axios + Request Queuing
  * */
 
 import axios from 'axios';
@@ -8,6 +8,29 @@ import axios from 'axios';
 // API Configuration
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 const DEFAULT_TIMEOUT = 30000; // 30 Seconds
+
+// Request Queue with Concurrency Limit
+const MAX_CONCURRENT_REQUESTS = parseInt(localStorage.getItem("intranet.maxConcurrentRequests") || "6", 10);
+let activeCount = 0;
+const requestQueue = [];
+
+function processAxiosQueue() {
+  while (activeCount < MAX_CONCURRENT_REQUESTS && requestQueue.length > 0) {
+    const { resolve, reject, config } = requestQueue.shift();
+    activeCount++;
+    axios.request(config).then(resolve).catch(reject).finally(() => {
+      activeCount--;
+      processAxiosQueue();
+    });
+  }
+}
+
+function enqueueAxiosRequest(config) {
+  return new Promise((resolve, reject) => {
+    requestQueue.push({ resolve, reject, config });
+    processAxiosQueue();
+  });
+}
 
 // Create Axios Instance
 const apiClient = axios.create({
@@ -36,6 +59,11 @@ apiClient.interceptors.request.use(
     const workspaceId = localStorage.getItem('workspaceId');
     if (workspaceId) {
       config.headers['X-Workspace-Id'] = workspaceId;
+    }
+
+    // 
+    if (config.method?.toUpperCase() === 'GET') {
+      return enqueueAxiosRequest(config);
     }
 
     if (import.meta.env.DEV) {

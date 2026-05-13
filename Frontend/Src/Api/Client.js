@@ -54,13 +54,37 @@ function getCsrfToken() {
   return match ? match[1] : "";
 }
 
-export async function apiRequest(path, options = {}) {
+// ─── Request Queue With Concurrency Limit (Prevents DB Connection Exhaustion) ───
+const MAX_CONCURRENT_REQUESTS = parseInt(localStorage.getItem("intranet.maxConcurrentRequests") || "6", 10);
+const REQUEST_QUEUE = [];
+let ACTIVE_COUNT = 0;
+
+function processQueue() {
+  while (ACTIVE_COUNT < MAX_CONCURRENT_REQUESTS && REQUEST_QUEUE.length > 0) {
+    const { resolve, reject, path, options } = REQUEST_QUEUE.shift();
+    ACTIVE_COUNT++;
+    executeRequest(path, options).then(resolve).catch(reject).finally(() => {
+      ACTIVE_COUNT--;
+      processQueue();
+    });
+  }
+}
+
+function enqueueRequest(path, options = {}) {
+  return new Promise((resolve, reject) => {
+    REQUEST_QUEUE.push({ resolve, reject, path, options });
+    processQueue();
+  });
+}
+
+async function executeRequest(path, options = {}) {
   const method = options.method || "GET";
   const body = options.body;
   const headers = new Headers(options.headers || {});
   const settings = getApiSettings();
   headers.set("X-Tenant-Id", String(settings.tenantId || "1"));
   headers.set("X-Workspace-Id", String(settings.workspaceId || "1"));
+  headers.set("X-Request-Id", `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`);
   const auth = authHeader();
   if (auth) headers.set("Authorization", auth);
   if (body !== undefined && !(body instanceof FormData)) headers.set("Content-Type", "application/json");
@@ -69,22 +93,57 @@ export async function apiRequest(path, options = {}) {
     if (csrf) headers.set("X-CSRFToken", csrf);
   }
 
-  const response = await fetch(makeUrl(path), {
-    method,
-    headers,
-    credentials: "include",
-    body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body),
-  });
+  // 
+  const maxRetries = 2;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-  const text = await response.text();
-  const payload = text ? safeJson(text) : null;
-  if (!response.ok) {
-    const error = new Error(payload?.detail || payload?.message || `${response.status} ${response.statusText}`);
-    error.status = response.status;
-    error.payload = payload;
-    throw error;
+      const response = await fetch(makeUrl(path), {
+        method,
+        headers,
+        credentials: "include",
+        body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      const text = await response.text();
+      const payload = text ? safeJson(text) : null;
+
+      if (!response.ok) {
+        // 
+        if ([500, 502, 503, 504].includes(response.status) && attempt < maxRetries) {
+          const delayMs = 500 * Math.pow(2, attempt);
+          await new Promise((r) => setTimeout(r, delayMs));
+          continue;
+        }
+        const error = new Error(payload?.detail || payload?.message || `${response.status} ${response.statusText}`);
+        error.status = response.status;
+        error.payload = payload;
+        throw error;
+      }
+      return payload;
+    } catch (err) {
+      if (err.name === "AbortError" && attempt < maxRetries) {
+        const delayMs = 500 * Math.pow(2, attempt);
+        await new Promise((r) => setTimeout(r, delayMs));
+        continue;
+      }
+      throw err;
+    }
   }
-  return payload;
+  throw new Error("Max Retries Exceeded");
+}
+
+export async function apiRequest(path, options = {}) {
+  // 
+  const method = (options.method || "GET").toUpperCase();
+  if (method === "GET") {
+    return enqueueRequest(path, options);
+  }
+  return executeRequest(path, options);
 }
 
 export function apiGet(path) {
