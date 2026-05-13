@@ -307,7 +307,8 @@ class Command(BaseCommand):
             milestone_title = "Campaign Rollout" if is_marketing else "Old Page Parity"
             acceptance_criteria = ["Lead Funnel Live", "Campaign Dashboard Updated"] if is_marketing else ["Old Pages Visible", "Demo Data Loaded"]
             self.upsert(ProjectContact, {"tenant": self.tenant, "project": project, "email": f"client.{project.code.lower()}@example.com"}, {"name": f"{project.client_name} Owner", "phone": "+91-9000000000", "role": "Client Owner", "is_primary": True})
-            self.upsert(DefaultCheckpoint, {"tenant": self.tenant, "project_type": project.project_type, "title": "Architecture And UX Sign-Off"}, {"sequence": 1, "bounty": Decimal("1500"), "acceptance_criteria": ["API Mapped", "React Page Usable"]})
+            for cp_title, cp_seq in [("Architecture And UX Sign-Off", 1), ("Sprint 1 Delivery", 2), ("Mid-Project Review", 3), ("Client Demo", 4), ("Handover & Sign-Off", 5)]:
+                self.upsert(DefaultCheckpoint, {"tenant": self.tenant, "project_type": project.project_type, "title": cp_title}, {"sequence": cp_seq, "bounty": Decimal("1500"), "acceptance_criteria": ["API Mapped", "React Page Usable"]})
             component = self.upsert(MilestoneComponent, {"tenant": self.tenant, "project": project, "name": component_name}, {"sequence": 1, "status": "InProgress"})
             self.upsert(DeliveryMilestone, {"tenant": self.tenant, "project": project, "title": milestone_title}, {"component": component, "sequence": 1, "status": "InProgress", "due_on": self.today + timezone.timedelta(days=7), "bounty": Decimal("3000"), "delayed_days": 1, "acceptance_criteria": acceptance_criteria})
             self.upsert(TeamAssignment, {"tenant": self.tenant, "project": project, "employee": employees["EMP001"], "role": "Project Manager"}, {"allocation_percent": 50, "status": "Active", "github_access_status": "Granted"})

@@ -17,13 +17,14 @@ class ProjectDeliveryService:
         project = ProjectWorkspace.objects.filter(tenant=context.tenant, id=project_id).first()
         if not project:
             return ServiceResult.failure({"project": "Project Not Found."}, status_code=404)
-        defaults = DefaultCheckpoint.objects.filter(tenant=context.tenant).filter(project_type__in=[project.project_type, ""]).order_by("sequence")
-        if not defaults.exists():
+        checkpoints = DefaultCheckpoint.objects.filter(tenant=context.tenant).filter(project_type__in=[project.project_type, ""]).order_by("sequence")
+        if not checkpoints.exists():
             seed_titles = ["Discovery", "Planning", "Implementation", "Review", "Handover"]
             for index, title in enumerate(seed_titles, start=1):
-                defaults = list(defaults) + [DefaultCheckpoint.objects.create(tenant=context.tenant, workspace=context.workspace, title=title, sequence=index, project_type=project.project_type, created_by=context.actor)]
+                DefaultCheckpoint.objects.create(tenant=context.tenant, workspace=context.workspace, title=title, sequence=index, project_type=project.project_type, created_by=context.actor)
+            checkpoints = DefaultCheckpoint.objects.filter(tenant=context.tenant).filter(project_type__in=[project.project_type, ""]).order_by("sequence")
         created = []
-        for checkpoint in defaults:
+        for checkpoint in checkpoints:
             milestone, _created = DeliveryMilestone.objects.get_or_create(
                 tenant=context.tenant,
                 project=project,
@@ -32,6 +33,7 @@ class ProjectDeliveryService:
                     "workspace": context.workspace or project.workspace,
                     "sequence": checkpoint.sequence,
                     "bounty": checkpoint.bounty,
+                    "delayed_days": 0,
                     "acceptance_criteria": checkpoint.acceptance_criteria,
                     "created_by": context.actor,
                     "updated_by": context.actor,
@@ -730,7 +732,8 @@ class ProjectDeliveryService:
         milestone = DeliveryMilestone.objects.filter(tenant=context.tenant, id=milestone_id).first()
         if not milestone:
             return ServiceResult.failure({"milestone": "Milestone Not Found."}, status_code=404)
-        milestone.delayed_days += int(delayed_days or 1)
+        current = milestone.delayed_days or 0
+        milestone.delayed_days = current + int(delayed_days or 1)
         milestone.updated_by = context.actor
         milestone.save(update_fields=["delayed_days", "updated_by", "updated_at"])
         return ServiceResult.success(milestone)

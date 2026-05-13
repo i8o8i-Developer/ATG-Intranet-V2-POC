@@ -46,6 +46,14 @@ class ProjectWorkspaceViewSet(TenantScopedModelViewSet):
     queryset = ProjectWorkspace.objects.select_related("tenant", "workspace").all()
     serializer_class = ProjectWorkspaceSerializer
 
+    def perform_create(self, serializer):
+        super().perform_create(serializer)
+        try:
+            ProjectDeliveryService.create_default_checkpoints(self.get_tenant_context(), serializer.instance.id)
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception("Failed To Auto-Create Default Milestones")
+
     @action(detail=True, methods=["post"], url_path="raise-alert")
     def raise_alert(self, request, pk=None):
         result = ProjectDeliveryService.raise_delivery_alert(
