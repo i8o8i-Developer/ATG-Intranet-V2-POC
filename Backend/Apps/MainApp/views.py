@@ -1,3 +1,6 @@
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+
 from Backend.Apps.MainApp.models import CredentialShareGrant, CredentialVaultItem, ExternalIssueReference, LeaveRequest, ManagerScope, NotificationItem, NotificationSnoozeRecord, OnboardingOffer
 from Backend.Apps.MainApp.serializers import (
     CredentialShareGrantSerializer,
@@ -223,6 +226,7 @@ class MainAppLegacyMixin:
         return parse_datetime(str(value))
 
 
+@method_decorator(csrf_exempt, name="dispatch")
 class MainAppLegacyActionAPIView(MainAppLegacyMixin, APIView):
     action_name = ""
     response_serializer = None

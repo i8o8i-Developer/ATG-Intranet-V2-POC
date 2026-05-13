@@ -48,7 +48,10 @@ class DomainSerializer(serializers.ModelSerializer):
 
 
 class DepartmentSerializer(serializers.ModelSerializer):
-    domain_name = serializers.CharField(source="domain.name", read_only=True)
+    domain_name = serializers.SerializerMethodField()
+
+    def get_domain_name(self, obj):
+        return obj.domain.name if obj.domain else None
 
     class Meta:
         model = Department
@@ -56,7 +59,10 @@ class DepartmentSerializer(serializers.ModelSerializer):
 
 
 class SubDepartmentSerializer(serializers.ModelSerializer):
-    department_name = serializers.CharField(source="department.name", read_only=True)
+    department_name = serializers.SerializerMethodField()
+
+    def get_department_name(self, obj):
+        return obj.department.name if obj.department else None
 
     class Meta:
         model = SubDepartment
@@ -70,7 +76,10 @@ class PositionSerializer(serializers.ModelSerializer):
 
 
 class SkillSerializer(serializers.ModelSerializer):
-    department_name = serializers.CharField(source="department.name", read_only=True)
+    department_name = serializers.SerializerMethodField()
+
+    def get_department_name(self, obj):
+        return obj.department.name if obj.department else None
 
     class Meta:
         model = Skill
@@ -80,8 +89,14 @@ class SkillSerializer(serializers.ModelSerializer):
 class EmployeeProfileSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source="user.username", read_only=True)
     email = serializers.EmailField(source="user.email", read_only=True)
-    department_name = serializers.CharField(source="department.name", read_only=True)
-    position_title = serializers.CharField(source="position.title", read_only=True)
+    department_name = serializers.SerializerMethodField()
+    position_title = serializers.SerializerMethodField()
+
+    def get_department_name(self, obj):
+        return obj.department.name if obj.department else None
+
+    def get_position_title(self, obj):
+        return obj.position.title if obj.position else None
 
     class Meta:
         model = EmployeeProfile
@@ -90,7 +105,10 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
 
 class DepartmentMembershipSerializer(serializers.ModelSerializer):
     employee_name = serializers.CharField(source="employee.display_name", read_only=True)
-    department_name = serializers.CharField(source="department.name", read_only=True)
+    department_name = serializers.SerializerMethodField()
+
+    def get_department_name(self, obj):
+        return obj.department.name if obj.department else None
 
     class Meta:
         model = DepartmentMembership
@@ -143,7 +161,11 @@ class EmployeeCertificateSerializer(serializers.ModelSerializer):
 
 
 class EmployeeFeedbackSerializer(serializers.ModelSerializer):
-    employee_display_name = serializers.CharField(source="employee.display_name", read_only=True)
+    employee_display_name = serializers.SerializerMethodField()
+
+    def get_employee_display_name(self, obj):
+        return obj.employee.display_name if obj.employee else None
+
     class Meta:
         model = EmployeeFeedback
         fields = "__all__"

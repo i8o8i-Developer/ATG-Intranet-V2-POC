@@ -1,3 +1,6 @@
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+
 from Backend.EnterpriseCore.models import Tenant, Workspace
 from Backend.EnterpriseCore.services import TenantContext
 from rest_framework import serializers
@@ -5,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework import viewsets
 
 
+@method_decorator(csrf_exempt, name="dispatch")
 class TenantScopedModelViewSet(viewsets.ModelViewSet):
     tenant_header = "X-Tenant-Id"
     workspace_header = "X-Workspace-Id"

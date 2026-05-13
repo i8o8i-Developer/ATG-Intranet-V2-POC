@@ -4,7 +4,10 @@ from Backend.Apps.Assesment.models import AssessmentActivity, AssessmentAssignme
 
 
 class AssessmentTemplateSerializer(serializers.ModelSerializer):
-    department_name = serializers.CharField(source="department.name", read_only=True)
+    department_name = serializers.SerializerMethodField()
+
+    def get_department_name(self, obj):
+        return obj.department.name if obj.department else None
 
     class Meta:
         model = AssessmentTemplate

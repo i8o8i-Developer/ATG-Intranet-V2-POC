@@ -237,15 +237,41 @@ class Command(BaseCommand):
             self.upsert(EmployeeBankAccount, {"tenant": self.tenant, "employee": employee, "masked_account_number": f"XXXX{code[-3:]}"}, {"account_holder_name": display_name, "ifsc_code": "HDFC0001234", "upi_id": f"{username}@upi", "verification_status": "Verified"})
             employees[code] = employee
 
+        goal_titles = [
+            ("Complete AI-Ready ERP Workflow", "Operate One Mapped Module In The React ERP"),
+            ("Migrate Legacy Dashboard To React", "Rewrite Old Django Template Dashboard In React With DRF API"),
+            ("Achieve 90% Test Coverage On APIs", "Write Unit & Integration Tests For All New DRF Endpoints"),
+            ("Deliver BA Documentation For Q3", "Complete BRD, FRD And User Stories For The Growth Campaign Engine"),
+            ("Onboard 3 New Interns To The Team", "Complete Induction, Buddy Assignment And First Sprint Shadowing"),
+            ("Close Monthly Payroll By 5th", "Verify Timesheets, Process Payouts And Resolve Discrepancies"),
+            ("Redesign User Profile Page", "Create Figma Mockups For The New Employee Profile Screen"),
+            ("QA Regression Suite For Release v2.1", "Execute Full Regression Suite And Log All Blockers"),
+            ("Build L3 Campus Pipeline For IITs", "Contact 5 College TPOs And Schedule First Interview Slot"),
+            ("Complete Anti-Phishing Campaign", "Assign, Track And Report On Anti-Phishing Assessment For All Members"),
+        ]
         for index, employee in enumerate(employees.values()):
             skill = skill_objects[index % len(skill_objects)]
             self.upsert(UserSkill, {"tenant": self.tenant, "employee": employee, "skill": skill}, {"proficiency": 4, "rating": 4, "assigned_from_department": True})
-            goal = self.upsert(Goal, {"tenant": self.tenant, "employee": employee, "title": "Complete AI-Ready ERP Workflow"}, {"assigned_by": self.admin_user, "description": "Operate One Mapped Module In The React ERP", "due_on": self.today + timezone.timedelta(days=14), "status": "Open"})
+            gt = goal_titles[index % len(goal_titles)]
+            goal = self.upsert(Goal, {"tenant": self.tenant, "employee": employee, "title": gt[0]}, {"assigned_by": self.admin_user, "description": gt[1], "due_on": self.today + timezone.timedelta(days=14), "status": "Open"})
             self.upsert(GoalFeedback, {"tenant": self.tenant, "goal": goal, "feedback_type": "ManagerNote"}, {"author": self.admin_user, "rating": 4, "note": "Positive Progress On Migrated HRMS View"})
             if employee.employee_code in ("EMP009", "EMP010"):
                 self.upsert(UserStatusSnapshot, {"tenant": self.tenant, "employee": employee, "status": "Active", "effective_from": self.today - timezone.timedelta(days=15)}, {"reason": "Active - Pending Project Assignment"})
             else:
                 self.upsert(UserStatusSnapshot, {"tenant": self.tenant, "employee": employee, "status": "Active", "effective_from": self.today - timezone.timedelta(days=30)}, {"reason": "Active - Engaged On Projects"})
+        admin_emp = EmployeeProfile.objects.filter(tenant=self.tenant, user=self.admin_user).first()
+        if admin_emp:
+            py_dept = departments["Python Django"]
+            admin_emp.department = py_dept
+            admin_emp.position = positions["Project Manager"]
+            admin_emp.display_name = admin_emp.display_name or self.admin_user.username
+            admin_emp.save(update_fields=["department", "position", "display_name", "updated_at"])
+            employees["ADMIN"] = admin_emp
+            self.upsert(UserSkill, {"tenant": self.tenant, "employee": admin_emp, "skill": skill_objects[0]}, {"proficiency": 5, "rating": 5, "assigned_from_department": True})
+            gt = goal_titles[0]
+            admin_goal = self.upsert(Goal, {"tenant": self.tenant, "employee": admin_emp, "title": gt[0]}, {"assigned_by": self.admin_user, "description": gt[1], "due_on": self.today + timezone.timedelta(days=14), "status": "Open"})
+            self.upsert(GoalFeedback, {"tenant": self.tenant, "goal": admin_goal, "feedback_type": "ManagerNote"}, {"author": self.admin_user, "rating": 5, "note": "Leading The ERP Migration Effectively"})
+
         self.upsert(BenchPeriod, {"tenant": self.tenant, "employee": employees["EMP006"], "started_on": self.today - timezone.timedelta(days=10)}, {"reason": "Available For Design Pilot Assignment"})
         self.upsert(EmployeeCertificate, {"tenant": self.tenant, "employee": employees["EMP002"], "position_title": "Django Developer"}, {"manager": employees["EMP001"], "issued_on": self.today - timezone.timedelta(days=20), "storage_reference": "demo://certificate/faraz"})
         self.upsert(EmployeeFeedback, {"tenant": self.tenant, "employee": employees["EMP002"], "feedback_type": "Project", "project_name": "Intranet Rebuild"}, {"submitted_by": self.admin_user, "feedback_text": "Consistent Progress On API Integration And Frontend Screens."})

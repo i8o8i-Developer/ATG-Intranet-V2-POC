@@ -118,7 +118,7 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
   };
 
   const deleteTask = async (taskId) => {
-    await apiPost("/Project/delete_task/", { task_id: taskId });
+    await apiPost("/Project/delete-task/", { task_id: taskId });
     refresh();
   };
 
@@ -658,6 +658,11 @@ function TaskDetailModal({ task, data, onClose, reload }) {
   const [linkUrl, setLinkUrl] = useState(task.metadata?.task_link || "");
   const [prForm, setPrForm] = useState({ name: "", url: "" });
   const [status, setStatus] = useState(task.status || "Open");
+  const [dueDate, setDueDate] = useState(task.due_at ? task.due_at.split("T")[0] : "");
+  const [priority, setPriority] = useState(task.priority || "Normal");
+  const [bounty, setBounty] = useState(task.bounty || 0);
+  const [assignee, setAssignee] = useState(task.owner || task.owner_id || "");
+  const team = (data.teamAssignments || []).filter((item) => String(item.project) === String(task.project));
   const activities = (data.taskActivities || []).filter((item) => String(item.work_item) === String(task.id));
   const prLinks = useMemo(() => (Array.isArray(task.metadata?.prs) ? task.metadata.prs : []), [task.metadata]);
   const subs = (data.tasks || []).filter((item) => String(item.parent) === String(task.id));
@@ -688,6 +693,26 @@ function TaskDetailModal({ task, data, onClose, reload }) {
     reload();
   };
 
+  const saveDueDate = async () => {
+    await apiPost("/Project/update-duedate/", { task_id: task.id, due_date: dueDate });
+    reload();
+  };
+
+  const saveAssignee = async () => {
+    await apiPost("/Project/save-assignee/", { task_id: task.id, employee: assignee || null });
+    reload();
+  };
+
+  const savePriority = async () => {
+    await apiPost("/Project/update-priority/", { task_id: task.id, priority });
+    reload();
+  };
+
+  const saveBounty = async () => {
+    await apiPost("/Project/update-bounty/", { task_id: task.id, bounty: Number(bounty) || 0 });
+    reload();
+  };
+
   return (
     <Modal onClose={onClose} wide title={<><a>{projectName(data, task.project) || "Project"}</a> / Task</>}>
       <div className="Task-Modal-Grid">
@@ -702,8 +727,39 @@ function TaskDetailModal({ task, data, onClose, reload }) {
               </span>
             </dd></div>
             <div><dt>Created</dt><dd>{formatDate(task.created_at)}</dd></div>
-            <div><dt>Due Date</dt><dd>{formatDate(task.due_at)}</dd></div>
-            <div><dt>Assignee</dt><dd>{employeeName(data, task.owner || task.owner_id)}</dd></div>
+            <div><dt>Due Date</dt><dd>
+              <span className="Inline-Form-Row">
+                <input type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
+                <button className="Soft-Button Small" onClick={saveDueDate}>Save</button>
+              </span>
+            </dd></div>
+            <div><dt>Assignee</dt><dd>
+              <span className="Inline-Form-Row">
+                <select value={assignee} onChange={(event) => setAssignee(event.target.value)}>
+                  <option value="">Not Assigned</option>
+                  {team.map((item) => (
+                    <option key={item.id} value={item.employee_id || item.employee}>
+                      {item.employee_name || employeeName(data, item.employee_id || item.employee)}
+                    </option>
+                  ))}
+                </select>
+                <button className="Soft-Button Small" onClick={saveAssignee}>Save</button>
+              </span>
+            </dd></div>
+            <div><dt>Priority</dt><dd>
+              <span className="Inline-Form-Row">
+                <select value={priority} onChange={(event) => setPriority(event.target.value)}>
+                  <option>Low</option><option>Normal</option><option>High</option><option>Urgent</option>
+                </select>
+                <button className="Soft-Button Small" onClick={savePriority}>Save</button>
+              </span>
+            </dd></div>
+            <div><dt>Bounty</dt><dd>
+              <span className="Inline-Form-Row">
+                <input type="number" value={bounty} onChange={(event) => setBounty(event.target.value)} style={{ width: "80px" }} />
+                <button className="Soft-Button Small" onClick={saveBounty}>Save</button>
+              </span>
+            </dd></div>
           </dl>
           <label>Description<textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Add A Description..." /></label>
           <button className="Primary-Button" onClick={saveDescription}>Save Description</button>

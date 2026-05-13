@@ -226,6 +226,7 @@ class LoginAPIView(APIView):
             return Response({"detail": f"Internal Server Error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@method_decorator(csrf_exempt, name="dispatch")
 class LogoutAPIView(APIView):
     def post(self, request):
         session_logout(request)
@@ -243,6 +244,7 @@ class CurrentUserAPIView(APIView):
         )
 
 
+@method_decorator(csrf_exempt, name="dispatch")
 class ChangePasswordAPIView(APIView):
     authentication_classes = [BasicAuthentication]
 

@@ -1,4 +1,6 @@
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 
 from Backend.Apps.Project.models import (
     ComplianceAssignment,
@@ -235,6 +237,7 @@ class ProjectLegacyMixin:
         return str(value).strip().lower() in {"1", "true", "yes", "y"}
 
 
+@method_decorator(csrf_exempt, name="dispatch")
 class ProjectLegacyActionAPIView(ProjectLegacyMixin, APIView):
     action_name = ""
     response_serializer = None

@@ -743,13 +743,16 @@ function NotificationBell({ notifications = [], navigate, reloadData }) {
     if (markAllBusy) return;
     setMarkAllBusy(true);
     setOptimisticRead(true);
-    setTimeout(() => setOptimisticRead(false), 7000);
     try {
       await apiPost("/MainApp/Notifications/mark-all-read/", {});
+      setOptimisticRead(false);
+      if (reloadData) reloadData(["notifications"]);
     } catch (err) {
       console.warn("Mark All Read API Error:", err);
+      setOptimisticRead(false);
+      if (reloadData) reloadData(["notifications"]);
     }
-    if (reloadData) reloadData(["notifications"]);
+    setMarkAllBusy(false);
   };
 
   return (

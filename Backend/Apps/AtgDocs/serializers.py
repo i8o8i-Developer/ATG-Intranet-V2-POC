@@ -4,8 +4,14 @@ from Backend.Apps.AtgDocs.models import DocumentVersion, DriveFile, DriveFolder,
 
 
 class KnowledgeDocumentSerializer(serializers.ModelSerializer):
-    owner_name = serializers.CharField(source="owner.display_name", read_only=True)
-    department_name = serializers.CharField(source="department.name", read_only=True)
+    owner_name = serializers.SerializerMethodField()
+    department_name = serializers.SerializerMethodField()
+
+    def get_owner_name(self, obj):
+        return obj.owner.display_name if obj.owner else None
+
+    def get_department_name(self, obj):
+        return obj.department.name if obj.department else None
 
     class Meta:
         model = KnowledgeDocument

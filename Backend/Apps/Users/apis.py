@@ -3,6 +3,8 @@ from zoneinfo import ZoneInfo
 from celery.result import AsyncResult
 from django.http import Http404, HttpResponse
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 
 from Backend.Apps.Users.logics import get_previous_payment_data, get_user_issues
 from Backend.Apps.Users.models import EmployeeProfile
@@ -15,6 +17,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 
+@method_decorator(csrf_exempt, name="dispatch")
 class TenantContextAPIView(APIView):
     def get_context(self, request):
         tenant = Tenant.objects.filter(id=request.headers.get("X-Tenant-Id") or request.data.get("tenant") or request.query_params.get("tenant")).first()
