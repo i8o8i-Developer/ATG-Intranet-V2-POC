@@ -28,7 +28,7 @@ export function PayrollDownloadsScreen({ data }) {
 
   const downloadSheet = () =>
     downloadCsv(
-      `payroll-${monthLabel}-${yearLabel}.csv`,
+      `Payroll${monthLabel}${yearLabel}.csv`,
       ["Employee", "Username", "Department", "Employment Type", "Pay Type", "Base Pay", "Pay Per Task", "Manager Status", "Finance Status", "Payment Status"],
       filtered.map((row) => [
         row.display_name,

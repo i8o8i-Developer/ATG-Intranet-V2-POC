@@ -24,17 +24,19 @@ import { SendOfferScreen } from "./SendOfferScreen.jsx";
 import { FeedbackScreen } from "./FeedbackScreen.jsx";
 
 const SCREEN_DATA = {
-  hrms: ["domains", "departmentMemberships", "userStatusSnapshots", "benchPeriods", "employeeRatings", "employeeCertificates", "leaveTransactions", "resignationRequests", "userEffortReports", "interviewProgress"],
-  lms: ["lmsLeads", "learningPaths", "learningModules", "learningAssignments", "leadQueueSnapshots", "revenueSnapshots"],
+  hrms: ["userSkills", "goals", "goalFeedback", "userStatusSnapshots", "benchPeriods", "employeeRatings", "employeeCertificates", "employeeFeedback", "leaveBalances", "leaveTransactions", "resignationRequests", "userEffortReports", "interviewProgress", "projectDocuments", "repositories"],
+  lms: ["lmsLeads", "learningPaths", "learningModules", "learningAssignments", "leadQueueSnapshots", "revenueSnapshots", "leadAccounts", "leadTags", "leadContacts", "leadActivities", "leadNotes", "leadTests", "leadProposals", "leadAudits", "leadTransitions", "leadStatusHistory"],
   docs: ["docs", "docPermissions", "driveFiles", "docVersions", "knowledgeActivities", "driveFolders"],
   assessment: ["assessmentLegacy", "assessmentAssignments", "assessmentTemplates"],
   payments: ["financeDashboard", "payPeriods", "payrollRuns", "payrollLineItems", "payslipDocuments", "paymentOrders", "compensationPlans", "financeBankAccounts", "approvalDecisions", "payoutExecutions", "paymentWebhookEvents"],
+  feedback: ["employeeFeedback", "goals", "goalFeedback"],
+  deactivate: [],
   bank: ["bankAccounts"],
   payslips: ["payslipDocuments", "payrollLineItems", "payrollRuns"],
-  payroll: ["payPeriods", "payrollRuns", "payrollLineItems", "payslipDocuments", "paymentOrders"],
-  offers: ["offers", "templateVariables", "offerMacros", "contentTemplates", "offerTemplates", "genericHtmlTemplates"],
-  registrar: ["subDepartments", "payProfiles", "positions", "leavePolicies"],
-  project: ["projectDocuments", "repositories", "workEntries", "taskActivities", "projectContacts", "defaultCheckpoints", "milestoneComponents", "complianceCampaigns", "complianceAssignments", "delays", "slackThreads", "slackMessages", "externalWorkMappings", "clickupMappings", "managerAbbreviations"],
+  payroll: ["payPeriods", "payrollRuns", "payrollLineItems", "payslipDocuments", "paymentOrders", "financeDashboard"],
+  offers: ["offers", "templateVariables", "offerMacros", "contentTemplates", "offerTemplates", "genericHtmlTemplates", "subDepartments", "employeeFeedback", "employeeCertificates"],
+  registrar: ["subDepartments", "payProfiles", "positions", "leavePolicies", "credentialVaultItems", "departmentMemberships"],
+  project: ["projectDocuments", "repositories", "workEntries", "taskActivities", "projectContacts", "defaultCheckpoints", "milestoneComponents", "complianceCampaigns", "complianceAssignments", "delays", "slackThreads", "slackMessages", "externalWorkMappings", "clickupMappings", "managerAbbreviations", "dailyStatus"],
   l3: ["collegePipelines", "collegeContacts", "collegeAssignments", "collegeEmailTemplates", "candidateProfiles", "talentAssignments", "talentEmails", "talentPerformanceSnapshots"],
   github: ["githubRepositories", "branchReviewers", "branchTesters", "repoBranchStatuses", "gitRepoSnapshots", "gitActivitySnapshots", "repoUtilityRequests"],
   integrations: ["integrationProviders", "integrationConnections", "webhookInboxEvents", "integrationSyncJobs", "integrationAttempts"],
@@ -67,7 +69,7 @@ export function RouteRenderer(props) {
   else if (path.startsWith("/docs")) { screen = "docs"; component = path.includes("post-detail") ? <DocsDetailScreen {...props} /> : <DocsScreen {...props} />; }
   else if (path.startsWith("/Bankdetails") || path.startsWith("/bank")) { screen = "bank"; component = <BankDetailsScreen {...props} />; }
   else if (path.startsWith("/Onboard/Send_Offer") || path.startsWith("/send-certificate")) { screen = "offers"; component = path.startsWith("/Onboard") ? <SendOfferScreen {...props} /> : <SendCertificateScreen {...props} />; }
-  else if (path.startsWith("/deactivate")) { screen = null; component = <DeactivateEmployeeScreen {...props} />; }
+  else if (path.startsWith("/deactivate")) { screen = "deactivate"; component = <DeactivateEmployeeScreen {...props} />; }
   else if (path.startsWith("/assessment")) { screen = "assessment"; component = <AssessmentScreen {...props} />; }
   else if (path.startsWith("/payroll-downloads") || path.startsWith("/Payroll")) { screen = "payroll"; component = <PayrollDownloadsScreen {...props} />; }
   else if (path.startsWith("/payslips")) { screen = "payslips"; component = <PayslipsScreen {...props} />; }
@@ -75,7 +77,7 @@ export function RouteRenderer(props) {
   else if (path.startsWith("/notifications")) { screen = null; component = <NotificationsScreen {...props} />; }
   else if (path.startsWith("/change-password")) { screen = null; component = <AdminChangePasswordScreen {...props} />; }
   else if (path.startsWith("/mcp")) { screen = "mcp"; component = <McpScreen {...props} />; }
-  else if (path.startsWith("/feedback")) { screen = null; component = <FeedbackScreen {...props} />; }
+  else if (path.startsWith("/feedback")) { screen = "feedback"; component = <FeedbackScreen {...props} />; }
   else if (path.startsWith("/lms")) { screen = "lms"; component = <LmsScreen {...props} />; }
   else { screen = null; component = <HomeScreen {...props} />; }
 

@@ -122,7 +122,6 @@ const endpointMap = [
   ["benchPeriods", "/Users/BenchPeriods/", "list"],
   ["employeeRatings", "/Users/EmployeeRatings/", "list"],
   ["employeeCertificates", "/Users/EmployeeCertificates/", "list"],
-  ["employeeFeedback", "/Users/EmployeeFeedback/", "list"],
   ["leaveTransactions", "/Users/LeaveTransactions/", "list"],
   ["resignationRequests", "/Users/ResignationRequests/", "list"],
   ["userEffortReports", "/Users/UserEffortReports/", "list"],
