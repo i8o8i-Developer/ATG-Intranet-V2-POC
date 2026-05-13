@@ -69,7 +69,7 @@ services:
        Database:
          condition: service_healthy
      healthcheck:
-       test: ["CMD-SHELL", "pg_isready -h localhost -p 5432 -U $${POSTGRES_USER:-intranet} -d $${POSTGRES_DB:-intranet_rebuild} || exit 1"]
+       test: ["CMD-SHELL", "nc -z localhost 5432 || exit 1"]
        interval: 5s
        timeout: 5s
        retries: 10
@@ -111,9 +111,9 @@ services:
      environment:
        DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-Rebuild-Development-Only}
        DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
-       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend,0.0.0.0}
-       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4787,http://127.0.0.1:4787}
-       CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:4787,http://127.0.0.1:4787,http://localhost:5466,http://127.0.0.1:5466}
+       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend,0.0.0.0,intranetatg.durgaaisolutions.in}
+       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4787,http://127.0.0.1:4787,https://intranetatg.durgaaisolutions.in}
+       CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:4787,http://127.0.0.1:4787,http://localhost:5466,http://127.0.0.1:5466,https://intranetatg.durgaaisolutions.in}
        POSTGRES_DB: ${POSTGRES_DB:-intranet_rebuild}
        POSTGRES_USER: ${POSTGRES_USER:-intranet}
        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
@@ -154,13 +154,13 @@ services:
        dockerfile: Backend/Dockerfile
      image: intranet-v2-backend
      restart: unless-stopped
-     command: python Backend/manage.py runserver 0.0.0.0:8000
+     command: gunicorn Backend.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 120
      environment:
        DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-Rebuild-Development-Only}
        DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
-       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend,0.0.0.0}
-       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4787,http://127.0.0.1:4787}
-       CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:4787,http://127.0.0.1:4787,http://localhost:5466,http://127.0.0.1:5466}
+       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend,0.0.0.0,intranetatg.durgaaisolutions.in}
+       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4787,http://127.0.0.1:4787,https://intranetatg.durgaaisolutions.in}
+       CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:4787,http://127.0.0.1:4787,http://localhost:5466,http://127.0.0.1:5466,https://intranetatg.durgaaisolutions.in}
        POSTGRES_DB: ${POSTGRES_DB:-intranet_rebuild}
        POSTGRES_USER: ${POSTGRES_USER:-intranet}
        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
@@ -188,10 +188,8 @@ services:
      volumes:
        - backend_media:/app/Backend/media
      depends_on:
-       PgBouncer:
-         condition: service_healthy
-       Backend-Init:
-         condition: service_completed_successfully
+       - PgBouncer
+       - Backend-Init
 
    Celery-Worker:
      build:
@@ -226,10 +224,8 @@ services:
      volumes:
        - backend_media:/app/Backend/media
      depends_on:
-       Backend-Init:
-         condition: service_completed_successfully
-       PgBouncer:
-         condition: service_healthy
+       - Backend-Init
+       - PgBouncer
 
    Celery-Beat:
      build:
@@ -262,10 +258,8 @@ services:
        DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-}
        PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:5466}
      depends_on:
-       Backend-Init:
-         condition: service_completed_successfully
-       PgBouncer:
-         condition: service_healthy
+       - Backend-Init
+       - PgBouncer
 
    Frontend:
      build:
