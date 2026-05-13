@@ -149,7 +149,7 @@ CORS_ALLOWED_ORIGIN_REGEXES = env_list(
     r"^http://localhost:\d+$,^http://127\.0\.0\.1:\d+$,^https://.*\.durgaaisolutions\.in$",
 )
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_HEADERS = (*default_headers, "x-tenant-id", "x-workspace-id", "x-csrf-token")
+CORS_ALLOW_HEADERS = (*default_headers, "x-tenant-id", "x-workspace-id", "x-csrftoken", "x-csrf-token")
 CSRF_TRUSTED_ORIGINS = env_list(
     "CSRF_TRUSTED_ORIGINS",
     "http://localhost:5173,http://127.0.0.1:5173,http://localhost:4787,http://127.0.0.1:4787,http://localhost:5466,http://127.0.0.1:5466,https://intranetatg.durgaaisolutions.in",
@@ -157,6 +157,14 @@ CSRF_TRUSTED_ORIGINS = env_list(
 CSRF_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_HTTPONLY = False  
+
+# Secure Cookie Settings for Production
+if not DEBUG:
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_DOMAIN = ".durgaaisolutions.in"
+    SESSION_COOKIE_DOMAIN = ".durgaaisolutions.in"
+    CSRF_TRUSTED_ORIGINS += ["https://intranetatg.durgaaisolutions.in"]
 
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)

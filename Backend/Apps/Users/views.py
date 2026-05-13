@@ -108,53 +108,68 @@ def _first_available_context(user, tenant_id=None, workspace_id=None):
 
 
 def _current_user_payload(user, tenant_id=None, workspace_id=None):
-    tenant, workspace = _first_available_context(user, tenant_id=tenant_id, workspace_id=workspace_id)
     is_authenticated = getattr(user, "is_authenticated", False)
+    
+    tenant, workspace = _first_available_context(user, tenant_id=tenant_id, workspace_id=workspace_id)
+    
     full_name = ""
     if is_authenticated:
         try:
             full_name = user.get_full_name().strip()
-        except AttributeError:
+        except Exception:
             full_name = getattr(user, "username", "")
 
-    user_id = user.id if is_authenticated else None
-    employee_qs = EmployeeProfile.objects.select_related("tenant", "workspace", "department", "position").filter(user_id=user_id, is_active=True)
-    if tenant:
-        employee_qs = employee_qs.filter(tenant=tenant)
-    role_qs = RoleAssignment.objects.select_related("tenant", "workspace", "role").filter(user_id=user_id, is_active=True)
-    if tenant:
-        role_qs = role_qs.filter(tenant=tenant)
-    if workspace:
-        role_qs = role_qs.filter(workspace__in=[workspace, None])
+    user_id = getattr(user, "id", None) if is_authenticated else None
     
+    # Safely query profiles and roles
+    employees = []
+    roles = []
     capabilities = []
-    if is_authenticated and tenant:
-        capabilities = sorted(CapabilityService.list_user_capabilities(tenant, user, workspace))
     
-    employees = [
-        {
-            "id": employee.id,
-            "displayName": employee.display_name,
-            "employeeCode": employee.employee_code,
-            "tenantId": employee.tenant_id,
-            "workspaceId": employee.workspace_id,
-            "departmentId": employee.department_id,
-            "departmentName": employee.department.name if employee.department_id else "",
-            "positionTitle": employee.position.title if employee.position_id else "",
-            "status": employee.status,
-        }
-        for employee in employee_qs
-    ]
-    roles = [
-        {
-            "id": assignment.role_id,
-            "code": assignment.role.code,
-            "name": assignment.role.name,
-            "tenantId": assignment.tenant_id,
-            "workspaceId": assignment.workspace_id,
-        }
-        for assignment in role_qs
-    ]
+    if is_authenticated and user_id:
+        employee_qs = EmployeeProfile.objects.select_related("tenant", "workspace", "department", "position").filter(user_id=user_id, is_active=True)
+        if tenant:
+            employee_qs = employee_qs.filter(tenant=tenant)
+        
+        employees = [
+            {
+                "id": emp.id,
+                "displayName": emp.display_name,
+                "employeeCode": emp.employee_code,
+                "tenantId": emp.tenant_id,
+                "workspaceId": emp.workspace_id,
+                "departmentId": emp.department_id,
+                "departmentName": emp.department.name if emp.department_id and emp.department else "",
+                "positionTitle": emp.position.title if emp.position_id and emp.position else "",
+                "status": emp.status,
+            }
+            for emp in employee_qs
+        ]
+        
+        role_qs = RoleAssignment.objects.select_related("tenant", "workspace", "role").filter(user_id=user_id, is_active=True)
+        if tenant:
+            role_qs = role_qs.filter(tenant=tenant)
+        if workspace:
+            role_qs = role_qs.filter(workspace__in=[workspace, None])
+            
+        roles = [
+            {
+                "id": assignment.role_id,
+                "code": assignment.role.code,
+                "name": assignment.role.name,
+                "tenantId": assignment.tenant_id,
+                "workspaceId": assignment.workspace_id,
+            }
+            for assignment in role_qs
+        ]
+        
+        if tenant:
+            try:
+                capabilities = sorted(list(CapabilityService.list_user_capabilities(tenant, user, workspace)))
+            except Exception as e:
+                logger.error(f"Error listing capabilities: {str(e)}")
+                capabilities = []
+
     return {
         "authenticated": is_authenticated,
         "user": {
@@ -163,7 +178,7 @@ def _current_user_payload(user, tenant_id=None, workspace_id=None):
             "email": getattr(user, "email", ""),
             "firstName": getattr(user, "first_name", ""),
             "lastName": getattr(user, "last_name", ""),
-            "fullName": full_name or getattr(user, "username", ""),
+            "fullName": full_name or getattr(user, "username", "Guest"),
             "isStaff": getattr(user, "is_staff", False),
             "isSuperuser": getattr(user, "is_superuser", False),
         },
@@ -175,25 +190,33 @@ def _current_user_payload(user, tenant_id=None, workspace_id=None):
     }
 
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 class LoginAPIView(APIView):
     permission_classes = [permissions.AllowAny]
     authentication_classes = []
 
     def post(self, request):
-        serializer = LoginSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        login_name = serializer.validated_data.get("username") or serializer.validated_data.get("email")
-        user = authenticate(request, username=login_name, password=serializer.validated_data["password"])
-        if not user:
-            return Response({"detail": "Invalid UserName/Email Or Password."}, status=status.HTTP_401_UNAUTHORIZED)
-        session_login(request, user)
-        return Response(
-            _current_user_payload(
+        try:
+            serializer = LoginSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            login_name = serializer.validated_data.get("username") or serializer.validated_data.get("email")
+            user = authenticate(request, username=login_name, password=serializer.validated_data["password"])
+            if not user:
+                return Response({"detail": "Invalid UserName/Email Or Password."}, status=status.HTTP_401_UNAUTHORIZED)
+            session_login(request, user)
+            payload = _current_user_payload(
                 user,
                 tenant_id=serializer.validated_data.get("tenant_id"),
                 workspace_id=serializer.validated_data.get("workspace_id"),
             )
-        )
+            return Response(payload)
+        except Exception as e:
+            logger.error(f"Login Error: {str(e)}", exc_info=True)
+            return Response({"detail": f"Internal Server Error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class LogoutAPIView(APIView):
