@@ -59,7 +59,14 @@ class Command(BaseCommand):
             verbosity=0,
         )
         self.tenant = Tenant.objects.get(slug=options["tenant"].lower().replace(" ", "-"))
-        self.workspace = Workspace.objects.get(tenant=self.tenant, name=options["workspace"])
+        # 
+        self.workspace = Workspace.objects.filter(tenant=self.tenant, name=options["workspace"]).first()
+        if not self.workspace:
+            self.workspace = Workspace.objects.filter(tenant=self.tenant, code="DEFAULT").first()
+        
+        if not self.workspace:
+            raise ValueError(f"Could Not Find Or Create Workspace '{options['workspace']}' or 'DEFAULT'")
+
         self.created = 0
         self.updated = 0
         self.today = timezone.localdate()
