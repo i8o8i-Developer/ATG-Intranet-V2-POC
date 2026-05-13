@@ -259,7 +259,7 @@ export function EmployeeRegistrarScreen({ data, reload }) {
           <div className="RG-CardBody">
             <table className="RG-Table">
               <thead><tr><th>Code</th><th>Name</th><th>Department</th><th>Position</th><th>Status</th><th>Joined</th></tr></thead>
-              <tbody>{(data.employees || []).slice(0, 12).map((item) => <tr key={item.id}><td>{item.employee_code}</td><td>{item.display_name}</td><td>{item.department_name}</td><td>{item.position_title}</td><td>{item.status}</td><td>{formatDate(item.joined_on)}</td></tr>)}</tbody>
+              <tbody>{[...(data.employees || [])].sort((a, b) => (b.id || 0) - (a.id || 0)).slice(0, 12).map((item) => <tr key={item.id}><td>{item.employee_code}</td><td>{item.display_name}</td><td>{item.department_name}</td><td>{item.position_title}</td><td>{item.status}</td><td>{formatDate(item.joined_on)}</td></tr>)}</tbody>
             </table>
           </div>
         </div>

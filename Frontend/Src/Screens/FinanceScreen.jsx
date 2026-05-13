@@ -9,7 +9,8 @@ export function FinanceScreen({ data, reload }) {
   const rows = data.financeRows || [];
   const departments = data.financeDashboard?.departments || data.departments || [];
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedDepts, setSelectedDepts] = useState(new Set());
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedDeptNames, setSelectedDeptNames] = useState(new Set());
   const [showApprovedOnly, setShowApprovedOnly] = useState(false);
 
   const filtered = useMemo(() => {
@@ -19,20 +20,22 @@ export function FinanceScreen({ data, reload }) {
         const name = (row.display_name || row.username || "").toLowerCase();
         if (!name.includes(q)) return false;
       }
-      if (selectedDepts.size > 0 && !selectedDepts.has(String(row.department_id || row.department))) return false;
+      const rowDept = String(row.department || row.department_name || "").toLowerCase();
+      if (selectedDeptNames.size > 0 && !selectedDeptNames.has(rowDept)) return false;
       if (showApprovedOnly) {
         const status = String(row.manager_status || row.finance_status || "").toLowerCase();
         if (status !== "approved") return false;
       }
       return true;
     });
-  }, [rows, searchQuery, selectedDepts, showApprovedOnly]);
+  }, [rows, searchQuery, selectedDeptNames, showApprovedOnly]);
 
-  const toggleDept = (deptId) => {
-    setSelectedDepts((prev) => {
+  const toggleDeptName = (name) => {
+    const key = String(name || "").toLowerCase();
+    setSelectedDeptNames((prev) => {
       const next = new Set(prev);
-      if (next.has(String(deptId))) next.delete(String(deptId));
-      else next.add(String(deptId));
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   };
@@ -46,12 +49,15 @@ export function FinanceScreen({ data, reload }) {
     <section className="Finance-Screen">
       <aside>
         <h2>All<br />Teams</h2>
-        {departments.map((department) => (
-          <label key={department.id}>
-            <input type="checkbox" checked={selectedDepts.has(String(department.id))} onChange={() => toggleDept(department.id)} />
-            {department.name}
-          </label>
-        ))}
+        {departments.map((department) => {
+            const deptKey = String(department.name || department.code || department.id || "").toLowerCase();
+            return (
+              <label key={department.id}>
+                <input type="checkbox" checked={selectedDeptNames.has(deptKey)} onChange={() => toggleDeptName(department.name || department.code || "")} />
+                {department.name}
+              </label>
+            );
+          })}
       </aside>
       <main>
         <h1>Showing Payroll For {data.financeDashboard?.month_name || "May"}</h1>
