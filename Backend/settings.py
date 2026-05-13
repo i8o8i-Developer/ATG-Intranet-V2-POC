@@ -23,14 +23,14 @@ def env_list(name, default=""):
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 if not SECRET_KEY:
     if env_bool("DJANGO_DEBUG", False):
-        SECRET_KEY = "backend-development-only-not-for-production"
+        SECRET_KEY = "Backend-Development-Only-Not-For-Production"
     else:
-        raise ValueError("DJANGO_SECRET_KEY environment variable must be set in production")
+        raise ValueError("DJANGO_SECRET_KEY Environment Variable Must Be Set In Production")
 
 DEBUG = env_bool("DJANGO_DEBUG", False)
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "*")
 
-# Force allow the production domain
+# 
 if "intranetatg.durgaaisolutions.in" not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append("intranetatg.durgaaisolutions.in")
 

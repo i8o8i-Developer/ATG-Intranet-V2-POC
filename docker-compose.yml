@@ -39,14 +39,25 @@ services:
       - sh
       - -c
       - |
-        python Backend/manage.py migrate &&
-        if python Backend/manage.py shell --command 'import os, sys; from django.contrib.auth import get_user_model; sys.exit(0 if get_user_model().objects.filter(username=os.environ.get("BOOTSTRAP_USERNAME", "anubhav1608")).exists() else 1)'; then
-          echo 'Bootstrap User Already Exists, Skipping Bootstrap And Demo Seed.'
-        elif [ "$${SEED_DEMO_DATA}" = "1" ]; then
-          python Backend/manage.py Seed_Demo_Erp --tenant "$${BOOTSTRAP_TENANT}" --workspace "$${BOOTSTRAP_WORKSPACE}" --username "$${BOOTSTRAP_USERNAME}" --password "$${BOOTSTRAP_PASSWORD}" --email "$${BOOTSTRAP_EMAIL}"
-        else
-          python Backend/manage.py Bootstrap_Backend --tenant "$${BOOTSTRAP_TENANT}" --workspace "$${BOOTSTRAP_WORKSPACE}" --username "$${BOOTSTRAP_USERNAME}" --password "$${BOOTSTRAP_PASSWORD}" --email "$${BOOTSTRAP_EMAIL}" --first-name "$${BOOTSTRAP_FIRST_NAME}" --last-name "$${BOOTSTRAP_LAST_NAME}" --display-name "$${BOOTSTRAP_DISPLAY_NAME}" --employee-code "$${BOOTSTRAP_EMPLOYEE_CODE}"
-        fi
+        set -e
+        echo "Starting Backend-Init..."
+        python Backend/manage.py migrate --noinput
+        
+        # Check if bootstrap user exists
+         USER_EXISTS=$(python Backend/manage.py shell --command "from django.contrib.auth import get_user_model; print(get_user_model().objects.filter(username='$${BOOTSTRAP_USERNAME:-AtgIntranet}').exists())")
+         
+         if [ "$$USER_EXISTS" = "True" ]; then
+           echo "Bootstrap User Already Exists, Skipping Seeding."
+         else
+           if [ "$${SEED_DEMO_DATA:-1}" = "1" ]; then
+             echo "Seeding Demo Data..."
+             python Backend/manage.py Seed_Demo_Erp --tenant "$${BOOTSTRAP_TENANT:-Banao}" --workspace "$${BOOTSTRAP_WORKSPACE:-Default Workspace}" --username "$${BOOTSTRAP_USERNAME:-AtgIntranet}" --password "$${BOOTSTRAP_PASSWORD:-TestBuildAtgIntranet1608}" --email "$${BOOTSTRAP_EMAIL:-admin@durgaaisolutions.in}"
+           else
+             echo "Bootstrapping Backend..."
+             python Backend/manage.py Bootstrap_Backend --tenant "$${BOOTSTRAP_TENANT:-Banao}" --workspace "$${BOOTSTRAP_WORKSPACE:-Default Workspace}" --username "$${BOOTSTRAP_USERNAME:-AtgIntranet}" --password "$${BOOTSTRAP_PASSWORD:-TestBuildAtgIntranet1608}" --email "$${BOOTSTRAP_EMAIL:-admin@durgaaisolutions.in}"
+           fi
+         fi
+        echo "Backend-Init Completed Successfully."
     environment:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-Rebuild-Development-Only}
       DJANGO_DEBUG: ${DJANGO_DEBUG:-1}

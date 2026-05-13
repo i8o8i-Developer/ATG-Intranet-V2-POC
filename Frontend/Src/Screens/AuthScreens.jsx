@@ -18,6 +18,8 @@ export function LoginScreen({ settings, onLogin }) {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [showDisclaimer, setShowDisclaimer] = useState(true);
+
   useEffect(() => {
     setForm((current) => ({
       ...current,
@@ -77,6 +79,31 @@ export function LoginScreen({ settings, onLogin }) {
   return (
     <main className="Login-Page">
       <div className="Login-Bg" />
+      {showDisclaimer && (
+        <div className="Login-Disclaimer-Overlay">
+          <div className="Login-Disclaimer-Card">
+            <div className="Login-Disclaimer-Header">
+              <ShieldCheck size={24} className="Disclaimer-Icon" />
+              <h2>System Ownership Disclaimer</h2>
+            </div>
+            <div className="Login-Disclaimer-Body">
+              <p>
+                This Property, Its Underlying Code, And Intellectual Rights Belong Exclusively To 
+                <strong> Banao Technologies</strong>, Not DurgaAI Solutions.
+              </p>
+              <p className="Disclaimer-Note">
+                It Is Currently Deployed Here For <strong>Internal Testing Purposes Only</strong>.
+              </p>
+            </div>
+            <button 
+              className="Login-Disclaimer-Btn" 
+              onClick={() => setShowDisclaimer(false)}
+            >
+              I Understand & Proceed
+            </button>
+          </div>
+        </div>
+      )}
       <div className="Login-Container">
         <div className="Login-Brand">
           <div className="Login-Logo">
