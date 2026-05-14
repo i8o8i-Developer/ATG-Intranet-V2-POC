@@ -193,46 +193,7 @@ const endpointMap = [
   ["accessAuditLogs", "/EnterpriseCore/AccessAuditLogs/", "list"],
 ];
 
-const LAZY_KEYS = new Set([
-  "subDepartments", "payProfiles", "bankAccounts", "paymentSnapshots",
-  "leavePolicies", "employeeFeedback", "projectDocuments", "repositories",
-  "offers", "issues",
-  "leadAccounts", "leadTags", "leadContacts", "leadActivities", "leadNotes",
-  "leadTests", "leadProposals", "leadAudits", "leadTransitions",
-  "lmsLeads", "learningPaths", "learningModules", "learningAssignments",
-  "leadQueueSnapshots", "revenueSnapshots",
-  "docs", "docPermissions", "driveFiles", "docVersions",
-  "assessmentLegacy", "assessmentAssignments", "assessmentTemplates",
-  "financeDashboard", "payPeriods", "payrollRuns", "payrollLineItems",
-  "payslipDocuments", "paymentOrders",
-  "domains", "departmentMemberships",
-  "userStatusSnapshots", "benchPeriods", "employeeRatings",
-  "employeeCertificates", "leaveTransactions", "resignationRequests",
-  "userEffortReports", "interviewProgress",
-  "credentialVaultItems", "credentialShareGrants", "notificationSnoozeRecords",
-  "managerScopes", "projectContacts", "defaultCheckpoints",
-  "milestoneComponents", "complianceCampaigns", "complianceAssignments", "delays",
-  "slackThreads", "slackMessages", "externalWorkMappings", "clickupMappings",
-  "managerAbbreviations", "leadStatusHistory", "knowledgeActivities", "driveFolders",
-  "compensationPlans", "financeBankAccounts", "approvalDecisions",
-  "payoutExecutions", "paymentWebhookEvents",
-  "gitRepoSnapshots", "gitActivitySnapshots", "repoUtilityRequests",
-  "githubRepositories", "branchReviewers", "branchTesters", "repoBranchStatuses",
-  "templateVariables", "offerMacros", "contentTemplates", "offerTemplates",
-  "genericHtmlTemplates",
-  "collegePipelines", "collegeContacts", "collegeAssignments",
-  "collegeEmailTemplates", "candidateProfiles", "talentAssignments",
-  "talentEmails", "talentPerformanceSnapshots",
-  "integrationProviders", "integrationConnections", "webhookInboxEvents",
-  "integrationSyncJobs", "integrationAttempts",
-  "agentPrincipals", "mcpToolDefinitions", "mcpResourceDefinitions",
-  "mcpAccessGrants", "mcpInvocationAudits", "draftAgentActions",
-  "legacyApplicationMaps", "legacyModelCrosswalks", "migrationRuns",
-  "legacyMigrationIssues",
-  "enterpriseTenants", "enterpriseOrganizations", "enterpriseBusinessUnits",
-  "enterpriseWorkspaces", "enterpriseRoles", "enterpriseRoleAssignments",
-  "accessAuditLogs",
-]);
+
 
 // ─── Nav Structure — Maps Figma Items To Your Existing Paths ─────────────────
 function buildNavItems(activePath) {
@@ -380,7 +341,7 @@ function App() {
   // Public Offer Acceptance Route — No Auth Needed
   const isPublicOfferRoute = path.startsWith("/offer/accept/");
   const hasAuth = Boolean(settings.basicAuth?.username && settings.basicAuth?.password);
-  const { data, loading, errors, apiOnline, reload, loadMissing } = useIntranetData(reloadKey, hasAuth && !isLoginRoute && !isPublicOfferRoute);
+  const { data, loading, errors, apiOnline, reload } = useIntranetData(reloadKey, hasAuth && !isLoginRoute && !isPublicOfferRoute);
 
   useEffect(() => {
     const onPop = () => setRoute(window.location.pathname + window.location.search);
@@ -434,10 +395,10 @@ function App() {
 
   if (!hasAuth || path.startsWith("/login")) return <LoginScreen settings={settings} onLogin={login} />;
 
-  const commonProps = { data, settings, selectedEmployeeId, reload, navigate, loadMissing };
+  const commonProps = { data, settings, selectedEmployeeId, reload, navigate };
 
   return (
-    <AppShell route={route} navigate={navigate} data={data} apiOnline={apiOnline} loading={loading} logout={logout} errors={errors} reloadData={reload} loadMissing={loadMissing}>
+    <AppShell route={route} navigate={navigate} data={data} apiOnline={apiOnline} loading={loading} logout={logout} errors={errors} reloadData={reload}>
       {path.startsWith("/profile")
         ? <ProfileScreen data={data} onLogout={logout} reload={reload} />
         : <RouteRenderer route={route} {...commonProps} />}
@@ -449,7 +410,6 @@ function App() {
 function useIntranetData(reloadKey, enabled) {
   const [state, setState] = useState({ data: {}, loading: false, errors: [], apiOnline: false });
   const hasInitiallyLoaded = useRef(false);
-  const loadedLazyKeys = useRef(new Set());
   const loadVersion = useRef(0);
 
   const applyPayload = (nextData, key, mode, payload) => {
@@ -473,33 +433,26 @@ const REALTIME_KEYS = ["dailyStatus", "me", "notifications", "employees", "tasks
 const load = useCallback(async (keysFilter) => {
      if (!enabled) { setState({ data: {}, loading: false, errors: [], apiOnline: false }); hasInitiallyLoaded.current = false; return; }
      const myVersion = ++loadVersion.current;
-     let effectiveFilter = keysFilter;
-     if (keysFilter === undefined && hasInitiallyLoaded.current) {
-       effectiveFilter = REALTIME_KEYS;
-     } else if (keysFilter === true || keysFilter === "__all__") {
-       effectiveFilter = undefined;
-     } else if (Array.isArray(keysFilter)) {
-       effectiveFilter = keysFilter;
-       keysFilter.forEach((k) => loadedLazyKeys.current.add(k));
+     let subset;
+     if (Array.isArray(keysFilter) && keysFilter.length) {
+       subset = endpointMap.filter(([key]) => keysFilter.includes(key));
+     } else if (keysFilter === undefined && hasInitiallyLoaded.current) {
+       subset = endpointMap.filter(([key]) => REALTIME_KEYS.includes(key));
+     } else {
+       subset = endpointMap;
      }
-     const subset = Array.isArray(effectiveFilter) && effectiveFilter.length
-       ? endpointMap.filter(([key]) => effectiveFilter.includes(key))
-       : endpointMap.filter(([key]) => !LAZY_KEYS.has(key));
      const isPartial = subset.length !== endpointMap.length;
      setState((cur) => ({ ...cur, loading: !isPartial ? true : cur.loading, errors: isPartial ? cur.errors : [] }));
 
-     // Wave loading: critical endpoints (auth/me) first, then the rest in batches
      const criticalKeys = ["me", "enterprises", "departments", "positions", "skills"];
      const critical = subset.filter(([key]) => criticalKeys.includes(key));
      const rest = subset.filter(([key]) => !criticalKeys.includes(key));
 
      const results = [];
-     // Wave 1: Critical endpoints (immediate)
      if (critical.length > 0) {
        const wave1 = await Promise.allSettled(critical.map(([key, p, mode]) => apiGet(p).then((payload) => ({ key, payload, mode }))));
        results.push(...wave1);
      }
-     // Wave 2: Remaining endpoints (after critical resolve, reduces burst)
      if (rest.length > 0) {
        const wave2 = await Promise.allSettled(rest.map(([key, p, mode]) => apiGet(p).then((payload) => ({ key, payload, mode }))));
        results.push(...wave2);
@@ -508,7 +461,7 @@ const load = useCallback(async (keysFilter) => {
      setState((cur) => {
         if (loadVersion.current !== myVersion) return { ...cur, loading: false };
         const nextData = isPartial ? { ...cur.data } : {};
-        const requestErrors = isPartial ? cur.errors.filter((err) => !effectiveFilter.includes(err.key)) : [];
+        const requestErrors = isPartial && Array.isArray(keysFilter) ? cur.errors.filter((err) => !keysFilter.includes(err.key)) : [];
         results.forEach((result, i) => {
           const [key, , mode] = subset[i];
           if (result.status === "fulfilled") applyPayload(nextData, key, mode, result.value.payload);
@@ -519,19 +472,12 @@ const load = useCallback(async (keysFilter) => {
       if (!isPartial) hasInitiallyLoaded.current = true;
    }, [enabled]);
 
-   const loadMissing = useCallback(async (keys) => {
-     if (!enabled || !Array.isArray(keys) || !keys.length) return;
-     const missing = keys.filter((k) => LAZY_KEYS.has(k) && !loadedLazyKeys.current.has(k));
-     if (!missing.length) return;
-     await load(missing);
-   }, [enabled, load]);
-
    useEffect(() => { load("__all__"); }, [load, reloadKey]);
-   return { ...state, reload: load, loadMissing };
+   return { ...state, reload: load };
 }
 
 // ─── App Shell — Figma Builder Sidebar + Existing Topbar Logic ──────────────
-function AppShell({ children, route, navigate, data, apiOnline, loading, logout, errors, reloadData, loadMissing }) {
+function AppShell({ children, route, navigate, data, apiOnline, loading, logout, errors, reloadData }) {
   const activePath = route.split("?")[0];
   const activeItem = navItems.find((item) => activePath === item.path || (item.path !== "/home/" && activePath.startsWith(item.path.replace(/\/$/, ""))));
   const pageTitle = activePath.startsWith("/profile") ? "Profile" : activeItem?.label || "Home";
