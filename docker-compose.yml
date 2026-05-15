@@ -98,15 +98,10 @@ services:
         - |
           set -e
           echo "Starting Initialization..."
-          export POSTGRES_DB="${POSTGRES_DB:-intranet_rebuild}"
-          export POSTGRES_USER="${POSTGRES_USER:-intranet}"
-          export POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-intranet}"
-          export POSTGRES_HOST=Database
-          export POSTGRES_PORT=5432
-          echo "Waiting for PostgreSQL on $POSTGRES_HOST:$POSTGRES_PORT..."
-          for i in $(seq 1 30); do
-            pg_isready -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" && break
-            echo "Waiting... attempt $i"
+          echo "Waiting For PostgreSQL On $${DIRECT_DB_HOST:-Database}:$${DIRECT_DB_PORT:-5432}..."
+          for i in $$(seq 1 30); do
+            pg_isready -h "$${DIRECT_DB_HOST:-Database}" -p "$${DIRECT_DB_PORT:-5432}" -U "$${POSTGRES_USER:-intranet}" -d "$${POSTGRES_DB:-intranet_rebuild}" && break
+            echo "Waiting... Attempt $$i"
             sleep 2
           done
           echo "Running Migrations..."

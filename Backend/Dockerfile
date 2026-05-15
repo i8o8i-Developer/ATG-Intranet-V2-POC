@@ -11,6 +11,7 @@ RUN apt-get update \
         build-essential \
         libpq-dev \
         curl \
+        postgresql-client \
         pkg-config \
         libcairo2-dev \
         libgirepository1.0-dev \
