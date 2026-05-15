@@ -251,11 +251,20 @@ export function ProfileScreen({ data, onLogout, reload }) {
 function ProfileEditModal({ employee, onClose, reload }) {
   const [form, setForm] = useState({
     display_name: employee.display_name || "",
-    phone: employee.phone || "",
-    address: employee.address || "",
-    department_name: employee.department_name || "",
-    position_title: employee.position_title || "",
+    contact_number: employee.contact_number || "",
+    github_username: employee.github_username || "",
+    city: employee.city || "",
+    college_name: employee.college_name || "",
+    year_of_graduation: employee.year_of_graduation || "",
+    availability_hours: employee.availability_hours || 40,
+    slack_username: employee.slack_username || "",
+    calendar_id: employee.calendar_id || "",
+    employment_type: employee.employment_type || "",
+    leaves_wallet: employee.leaves_wallet || 0,
+    leaves_per_month: employee.leaves_per_month || 0,
     joined_on: employee.joined_on || "",
+    profile_payload: employee.profile_payload || {},
+    address: employee.profile_payload?.address || "",
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -268,7 +277,22 @@ function ProfileEditModal({ employee, onClose, reload }) {
     setBusy(true);
     setError("");
     try {
-      const payload = { ...form };
+      const payload = {
+        display_name: form.display_name,
+        contact_number: form.contact_number,
+        github_username: form.github_username,
+        city: form.city,
+        college_name: form.college_name,
+        year_of_graduation: Number(form.year_of_graduation) || null,
+        availability_hours: Number(form.availability_hours) || 40,
+        slack_username: form.slack_username,
+        calendar_id: form.calendar_id,
+        employment_type: form.employment_type,
+        leaves_wallet: Number(form.leaves_wallet) || 0,
+        leaves_per_month: Number(form.leaves_per_month) || 0,
+        joined_on: form.joined_on || null,
+        profile_payload: { ...form.profile_payload, address: form.address },
+      };
       if (!payload.joined_on) delete payload.joined_on;
       await apiPatch(`/Users/EmployeeProfiles/${employee.id}/`, payload);
       if (reload) reload(["employees", "me"]);
@@ -284,13 +308,21 @@ function ProfileEditModal({ employee, onClose, reload }) {
     <Modal title="Edit Profile" onClose={onClose} wide>
       {error && <div className="Login-Error"><AlertTriangle size={14} /> {error}</div>}
       <div className="Form-Grid Two Modal-Form">
-        <label>Display Name<input value={form.display_name} onChange={(event) => setForm({ ...form, display_name: event.target.value })} /></label>
-        <label>Phone<input value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} /></label>
-        <label>Department<input value={form.department_name} onChange={(event) => setForm({ ...form, department_name: event.target.value })} /></label>
-        <label>Position<input value={form.position_title} onChange={(event) => setForm({ ...form, position_title: event.target.value })} /></label>
-        <label>Joined On<input type="date" value={form.joined_on ? String(form.joined_on).slice(0, 10) : ""} onChange={(event) => setForm({ ...form, joined_on: event.target.value })} /></label>
+        <label>Display Name<input value={form.display_name} onChange={(e) => setForm({ ...form, display_name: e.target.value })} /></label>
+        <label>Contact Number<input value={form.contact_number} onChange={(e) => setForm({ ...form, contact_number: e.target.value })} /></label>
+        <label>GitHub Username<input value={form.github_username} onChange={(e) => setForm({ ...form, github_username: e.target.value })} /></label>
+        <label>City<input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /></label>
+        <label>College Name<input value={form.college_name} onChange={(e) => setForm({ ...form, college_name: e.target.value })} /></label>
+        <label>Year of Graduation<input type="number" min="2000" max="2030" value={form.year_of_graduation} onChange={(e) => setForm({ ...form, year_of_graduation: e.target.value })} /></label>
+        <label>Availability (hrs/week)<input type="number" min="0" max="168" value={form.availability_hours} onChange={(e) => setForm({ ...form, availability_hours: e.target.value })} /></label>
+        <label>Slack Username<input value={form.slack_username} onChange={(e) => setForm({ ...form, slack_username: e.target.value })} /></label>
+        <label>Calendar ID<input value={form.calendar_id} onChange={(e) => setForm({ ...form, calendar_id: e.target.value })} /></label>
+        <label>Employment Type<select value={form.employment_type} onChange={(e) => setForm({ ...form, employment_type: e.target.value })}><option value="">Select</option><option>Full-Time</option><option>Part-Time</option><option>Intern</option><option>Contract</option></select></label>
+        <label>Leave Wallet<input type="number" min="0" value={form.leaves_wallet} onChange={(e) => setForm({ ...form, leaves_wallet: e.target.value })} /></label>
+        <label>Leaves Per Month<input type="number" min="0" step="0.5" value={form.leaves_per_month} onChange={(e) => setForm({ ...form, leaves_per_month: e.target.value })} /></label>
+        <label>Joined On<input type="date" value={form.joined_on ? String(form.joined_on).slice(0, 10) : ""} onChange={(e) => setForm({ ...form, joined_on: e.target.value })} /></label>
       </div>
-      <label>Address<textarea rows={3} value={form.address} onChange={(event) => setForm({ ...form, address: event.target.value })} /></label>
+      <label>Address<textarea rows={3} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></label>
       <button className="Primary-Button" onClick={save} disabled={busy}>Save Profile</button>
     </Modal>
   );

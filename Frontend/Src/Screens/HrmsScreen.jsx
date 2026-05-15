@@ -126,11 +126,11 @@ export function HrmsScreen({ data, reload }) {
                   >
                     <div className="Hrms-Dept-Left">
                       <span className="Hrms-Dept-Icon"><Users size={16} /></span>
-                      <div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                         <strong>{deptName}</strong>
                         {(() => {
-                          const lead = rows.find((e) => !e.manager) || rows[0];
-                          return lead ? <span className="Hrms-Dept-Lead">Lead: {employeeName(data, lead.id)}</span> : null;
+                          const lead = rows.find((e) => !e.manager) || rows.find((e) => e.manager && (data.employees || []).some((m) => String(m.id) === String(e.manager) && rows.some((r) => String(r.id) === String(m.id)))) || rows[0];
+                          return lead ? <span className="Hrms-Dept-Lead" style={{ fontSize: 11, color: "#64748b" }}>Lead: {employeeName(data, lead.id)}</span> : null;
                         })()}
                       </div>
                       <span className="Hrms-Dept-Badge">{rows.length}</span>
@@ -841,7 +841,7 @@ function HrmsGoalsWorkspace({ data, setGoalEmployee, reload }) {
                   formatDate(goal.due_on),
                   feedbackCount,
                   <span key={`action-${goal.id}`} className="Table-Actions">
-                    <button className="Soft-Button Small" onClick={async () => { await apiPost(`/Users/Goals/${goal.id}/`, { ...goal, status: "InProgress" }); if (reload) reload(["goals", "goalFeedback"]); }}>Start</button>
+                    <button className="Soft-Button Small" onClick={async () => { await apiPatch(`/Users/Goals/${goal.id}/`, { status: "InProgress" }); if (reload) reload(["goals", "goalFeedback"]); }}>Start</button>
                     <button className="Soft-Button Small" onClick={async () => { await apiPost("/Users/GoalFeedback/", { goal: goal.id, feedback_type: "ManagerApproval", rating: 5, note: "Goal Approved." }); if (reload) reload(["goals", "goalFeedback"]); }}>Approve</button>
                     <button className="Soft-Button Small" onClick={() => employee && setGoalEmployee(employee)}>View</button>
                   </span>,
@@ -1260,86 +1260,212 @@ function EodSummaryModal({ employee, data, onClose, reload }) {
 /* ─── Project Sanity ──────────────────────────────────────────── */
 function ProjectSanity({ data }) {
   const byProject = groupBy(data.milestones || [], (m) => String(m.project));
+  const byTaskProject = groupBy(data.tasks || [], (t) => String(t.project));
   return (
-    <div className="HS">
+    <div className="HS" style={{ display: "grid", gap: 16 }}>
+      {/* Summary KPI Cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+        {[
+          { label: "Total Projects", value: (data.projects || []).length, color: "#3b82f6" },
+          { label: "Active Milestones", value: (data.milestones || []).filter((m) => !isCompleted(m.status)).length, color: "#f59e0b" },
+          { label: "Completed Milestones", value: (data.milestones || []).filter((m) => isCompleted(m.status)).length, color: "#10b981" },
+          { label: "Open Alerts", value: (data.alerts || []).filter((a) => a.status !== "Resolved").length, color: "#ef4444" },
+        ].map(({ label, value, color }) => (
+          <div key={label} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "14px 18px", display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 8, background: `${color}15`, display: "flex", alignItems: "center", justifyContent: "center", color, fontWeight: 700, fontSize: 16 }}>{value}</div>
+            <div><span style={{ fontSize: 12, color: "#64748b" }}>{label}</span></div>
+          </div>
+        ))}
+      </div>
+
+      {/* Project Cards */}
       {(data.projects || []).map((project) => {
         const milestones = byProject.get(String(project.id)) || [];
+        const tasks = byTaskProject.get(String(project.id)) || [];
         const done = milestones.filter((m) => isCompleted(m.status)).length;
-        const pct  = milestones.length
-          ? Math.round((done / milestones.length) * 100)
-          : 0;
+        const taskDone = tasks.filter((t) => isCompleted(t.status)).length;
+        const pct = milestones.length ? Math.round((done / milestones.length) * 100) : 0;
+        const taskPct = tasks.length ? Math.round((taskDone / tasks.length) * 100) : 0;
+        const alerts = (data.alerts || []).filter((a) => String(a.project) === String(project.id));
+        const delays = (data.delays || []).filter((d) => String(d.item_id) === String(project.id));
         return (
-          <div className="HS-Card" key={project.id}>
-            <div className="HS-Left">
-              <span className="HS-Priority">P{project.priority}</span>
-              <div className="HS-Meta">
-                <strong>{project.name}</strong>
-                <small>{project.project_type || project.status || "—"}</small>
+          <div key={project.id} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden" }}>
+            {/* Project Header */}
+            <div style={{ padding: "14px 18px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: project.priority === "P1" ? "#fef2f2" : "#f8fafc", color: project.priority === "P1" ? "#dc2626" : "#64748b" }}>{project.priority || "P3"}</span>
+                <strong style={{ fontSize: 15 }}>{project.name}</strong>
+                <span style={{ fontSize: 12, color: "#64748b" }}>{project.project_type || "—"}</span>
+                <span style={{ padding: "2px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: project.health === "Good" || project.health === "OnTrack" ? "#f0fdf4" : project.health === "Watch" || project.health === "Escalated" ? "#fef2f2" : "#f8fafc", color: project.health === "Good" || project.health === "OnTrack" ? "#16a34a" : project.health === "Watch" || project.health === "Escalated" ? "#dc2626" : "#64748b" }}>{project.health || "Unknown"}</span>
+              </div>
+              <div style={{ display: "flex", gap: 6 }}>
+                {project.starts_on && <span style={{ fontSize: 11, color: "#94a3b8" }}>{formatDate(project.starts_on)} → {formatDate(project.ends_on)}</span>}
               </div>
             </div>
-            <div className="HS-Mid">
-              <MilestoneRail milestones={milestones} />
-              <span className="HS-Count">{done}/{milestones.length} Milestones</span>
+
+            {/* Progress Bars */}
+            <div style={{ padding: "12px 18px", borderBottom: "1px solid #e2e8f0", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}><span style={{ color: "#64748b" }}>Milestones ({done}/{milestones.length})</span><strong>{pct}%</strong></div>
+                <div style={{ height: 6, background: "#e2e8f0", borderRadius: 3, overflow: "hidden" }}><div style={{ width: `${pct}%`, height: "100%", background: pct === 100 ? "#10b981" : "#3b82f6", borderRadius: 3 }} /></div>
+              </div>
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}><span style={{ color: "#64748b" }}>Tasks ({taskDone}/{tasks.length})</span><strong>{taskPct}%</strong></div>
+                <div style={{ height: 6, background: "#e2e8f0", borderRadius: 3, overflow: "hidden" }}><div style={{ width: `${taskPct}%`, height: "100%", background: taskPct === 100 ? "#10b981" : "#8b5cf6", borderRadius: 3 }} /></div>
+              </div>
             </div>
-            <div className="HS-Right">
-              <span className="HS-Pct">{pct}%</span>
-              <span className={`HS-Health ${
-                project.health === "Escalated" ? "danger" :
-                project.health === "On Track"  ? "ok"     : "null"
-              }`}>
-                {project.health || "Null"}
-              </span>
+
+            {/* Details Row */}
+            <div style={{ padding: "12px 18px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+              <div style={{ textAlign: "center" }}><span style={{ display: "block", fontSize: 18, fontWeight: 700, color: "#0f172a" }}>{(data.teamAssignments || []).filter((a) => String(a.project) === String(project.id)).length}</span><span style={{ fontSize: 11, color: "#94a3b8" }}>Team</span></div>
+              <div style={{ textAlign: "center" }}><span style={{ display: "block", fontSize: 18, fontWeight: 700, color: "#0f172a" }}>{tasks.reduce((s, t) => s + Math.max(0, Number(t.bounty || 0)), 0)}</span><span style={{ fontSize: 11, color: "#94a3b8" }}>Bounty</span></div>
+              <div style={{ textAlign: "center" }}><span style={{ display: "block", fontSize: 18, fontWeight: 700, color: alerts.length > 0 ? "#ef4444" : "#10b981" }}>{alerts.length}</span><span style={{ fontSize: 11, color: "#94a3b8" }}>Alerts</span></div>
+              <div style={{ textAlign: "center" }}><span style={{ display: "block", fontSize: 18, fontWeight: 700, color: delays.length > 0 ? "#f59e0b" : "#10b981" }}>{delays.length}</span><span style={{ fontSize: 11, color: "#94a3b8" }}>Delays</span></div>
             </div>
+
+            {/* Alerts List */}
+            {alerts.length > 0 && <div style={{ padding: "8px 18px 12px", borderTop: "1px solid #e2e8f0" }}>
+              <span style={{ fontSize: 11, color: "#64748b", fontWeight: 600, textTransform: "uppercase" }}>Recent Alerts</span>
+              {alerts.slice(0, 3).map((a) => (
+                <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, padding: "4px 0" }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: a.severity === "High" || a.severity === "Critical" ? "#ef4444" : a.severity === "Warning" ? "#f59e0b" : "#10b981" }} />
+                  <span>{a.title}</span>
+                  <span style={{ marginLeft: "auto", color: "#94a3b8" }}>{a.severity}</span>
+                </div>
+              ))}
+            </div>}
           </div>
         );
       })}
+      {!(data.projects || []).length && <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>No Projects Found.</div>}
     </div>
   );
 }
 
 /* ─── Project Finance ─────────────────────────────────────────── */
 function ProjectFinance({ data }) {
-  const totalBounty = (data.tasks || []).reduce(
-    (sum, t) => sum + Number(t.bounty || 0), 0,
-  );
+  const [expandedRows, setExpandedRows] = useState({});
+  const [financeBonus, setFinanceBonus] = useState({});
+  const employees = data.employees || [];
+  const projects = data.projects || [];
+  const tasks = data.tasks || [];
+  const payProfiles = data.payProfiles || [];
+  const bankAccounts = data.bankAccounts || [];
+  const assignMap = indexById(data.teamAssignments || []);
+
+  const toggleExpand = (id) => setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
+
+  // 
+  const rows = [];
+  const seen = new Set();
+  (data.teamAssignments || []).forEach((ta) => {
+    const emp = employees.find((e) => String(e.id) === String(ta.employee));
+    if (!emp || seen.has(String(emp.id))) return;
+    seen.add(String(emp.id));
+    const pay = payProfiles.find((p) => String(p.employee) === String(emp.id));
+    const empTasks = tasks.filter((t) => String(t.owner || t.owner_id) === String(emp.id));
+    const totalBounty = empTasks.reduce((s, t) => s + Math.max(0, Number(t.bounty || 0)), 0);
+    const completedBounty = empTasks.filter((t) => isCompleted(t.status)).reduce((s, t) => s + Math.max(0, Number(t.bounty || 0)), 0);
+    const hasBank = bankAccounts.some((b) => String(b.employee) === String(emp.id) && b.verification_status === "Verified");
+    const assign = assignMap.get(String(emp.id));
+    rows.push({
+      id: emp.id,
+      name: emp.display_name || "-",
+      dept: emp.department_name || "-",
+      basePay: Number(pay?.base_pay || 0),
+      payPerTask: Number(pay?.pay_per_task || 0),
+      payType: pay?.pay_type || "N/A",
+      bounty: totalBounty,
+      completedBounty,
+      taskCount: empTasks.length,
+      hasBank,
+      empType: emp.employment_type || "-",
+      role: assign?.role || "Member",
+    });
+  });
+
+  const totalBase = rows.reduce((s, r) => s + r.basePay, 0);
+  const totalBountyAll = rows.reduce((s, r) => s + r.bounty, 0);
+  const totalBonusAll = Object.values(financeBonus).reduce((s, v) => s + (Number(v) || 0), 0);
+
   return (
     <div className="HF">
-      <div className="HF-Kpis">
+      {/* KPI Summary */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 16 }}>
         {[
-          { icon: <Briefcase size={20} />, label: "Total Projects",    value: (data.projects || []).length },
-          { icon: <CheckCircle size={20} />, label: "Total Tasks",     value: (data.tasks || []).length },
-          { icon: <TrendingUp size={20} />, label: "Total Bounty",     value: Math.round(totalBounty) },
-          { icon: <Users size={20} />,      label: "Team Assignments", value: (data.teamAssignments || []).length },
-        ].map(({ icon, label, value }) => (
-          <div key={label} className="HF-Kpi">
-            <div className="HF-KpiIcon">{icon}</div>
-            <strong>{value}</strong>
-            <span>{label}</span>
+          { label: "Total Employees", value: rows.length, color: "#3b82f6" },
+          { label: "Total Base Pay", value: `₹${totalBase.toLocaleString()}`, color: "#10b981" },
+          { label: "Total Bounty Pool", value: `₹${totalBountyAll.toLocaleString()}`, color: "#f59e0b" },
+          { label: "Total With Bonus", value: `₹${(totalBase + totalBountyAll + totalBonusAll).toLocaleString()}`, color: "#8b5cf6" },
+        ].map(({ label, value, color }) => (
+          <div key={label} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: 12, display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 8, background: `${color}15`, display: "flex", alignItems: "center", justifyContent: "center", color, fontWeight: 700 }}>{typeof value === "number" ? value : "₹"}</div>
+            <div><div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>{value}</div><div style={{ fontSize: 11, color: "#64748b" }}>{label}</div></div>
           </div>
         ))}
       </div>
-      <div className="HF-TableWrap">
-        <div className="HF-TableHead"><h2>Project Finance Breakdown</h2></div>
-        <table className="HF-Table">
+
+      {/* Employee Finance Table */}
+      <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
-            <tr>
-              <th>Project</th><th>Health</th><th>Team Size</th><th>Tasks</th><th>Bounty Pool</th>
+            <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+              <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 600, color: "#475569" }}>Name</th>
+              <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 600, color: "#475569" }}>Department</th>
+              <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 600, color: "#475569" }}>Type</th>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: "#475569" }}>Base Pay</th>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: "#475569" }}>Per Task Pay</th>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: "#475569" }}>Bounty</th>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: "#475569" }}>Bonus</th>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: "#475569" }}>Total</th>
+              <th style={{ padding: "10px 12px", textAlign: "center", fontWeight: 600, color: "#475569" }}>Bank</th>
+              <th style={{ padding: "10px 12px", textAlign: "center", fontWeight: 600, color: "#475569" }} />
             </tr>
           </thead>
           <tbody>
-            {(data.projects || []).map((project) => (
-              <tr key={project.id}>
-                <td>{project.name}</td>
-                <td>{project.health || "—"}</td>
-                <td>{(data.teamAssignments || []).filter((a) => a.project === project.id).length}</td>
-                <td>{(data.tasks || []).filter((t) => t.project === project.id).length}</td>
-                <td>{"₹" + money(
-                  (data.tasks || [])
-                    .filter((t) => t.project === project.id)
-                    .reduce((sum, t) => sum + Number(t.bounty || 0), 0),
-                )}</td>
-              </tr>
-            ))}
+            {rows.map((row, i) => {
+              const bonus = Number(financeBonus[row.id] || 0);
+              const total = row.basePay + row.bounty + bonus;
+              return (
+                <React.Fragment key={row.id}>
+                  <tr style={{ borderBottom: "1px solid #f1f5f9", background: i % 2 === 0 ? "#fff" : "#fafafa", cursor: "pointer" }} onClick={() => toggleExpand(row.id)}>
+                    <td style={{ padding: "8px 12px", fontWeight: 500 }}>{row.name}</td>
+                    <td style={{ padding: "8px 12px", color: "#64748b" }}>{row.dept}</td>
+                    <td style={{ padding: "8px 12px" }}><span style={{ padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600, background: row.empType === "Intern" ? "#eef2ff" : row.empType === "Full-Time" ? "#f0fdf4" : "#fefce8", color: row.empType === "Intern" ? "#3b82f6" : row.empType === "Full-Time" ? "#16a34a" : "#ca8a04" }}>{row.empType}</span></td>
+                    <td style={{ padding: "8px 12px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>₹{row.basePay.toLocaleString()}</td>
+                    <td style={{ padding: "8px 12px", textAlign: "right", color: "#64748b" }}>₹{row.payPerTask.toLocaleString()}</td>
+                    <td style={{ padding: "8px 12px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>₹{row.bounty.toLocaleString()}</td>
+                    <td style={{ padding: "8px 12px", textAlign: "right" }}>
+                      <input type="number" min="0" value={financeBonus[row.id] || 0} onClick={(e) => e.stopPropagation()} onChange={(e) => setFinanceBonus({ ...financeBonus, [row.id]: e.target.value })} style={{ width: 70, padding: "4px 6px", border: "1px solid #e2e8f0", borderRadius: 4, fontSize: 12, textAlign: "right" }} />
+                    </td>
+                    <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600, color: "#059669" }}>₹{total.toLocaleString()}</td>
+                    <td style={{ padding: "8px 12px", textAlign: "center" }}>{row.hasBank ? <span style={{ color: "#10b981" }}>✓</span> : <span style={{ color: "#ef4444" }}>✗</span>}</td>
+                    <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                      <button className="Primary-Button Small" onClick={async (e) => { e.stopPropagation(); try { await apiPost("/FinanceAndPayroll/payment-approval/", { employee: row.id, normalPay: row.basePay, bonus: Number(financeBonus[row.id] || 0), bounty: row.bounty }); if (reload) reload(["financeDashboard"]); } catch (err) { alert(err?.payload?.detail || "Approval Failed."); } }}>Approve</button>
+                    </td>
+                  </tr>
+                  {expandedRows[row.id] && (
+                    <tr><td colSpan="10" style={{ padding: "12px 16px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                        <div><strong style={{ fontSize: 12, color: "#64748b", textTransform: "uppercase" }}>Payment Details</strong>
+                          <div style={{ marginTop: 6, display: "grid", gap: 4, fontSize: 13 }}>
+                            <div><span style={{ color: "#64748b" }}>Role: </span>{row.role}</div>
+                            <div><span style={{ color: "#64748b" }}>Pay Type: </span>{row.payType}</div>
+                            <div><span style={{ color: "#64748b" }}>Base Pay: </span>₹{row.basePay.toLocaleString()}</div>
+                            <div><span style={{ color: "#64748b" }}>Per Task Pay: </span>₹{row.payPerTask}</div>
+                            <div><span style={{ color: "#64748b" }}>Bounty Tasks: </span>{row.taskCount} ({row.completedBounty} completed)</div>
+                          </div>
+                        </div>
+                        <div><strong style={{ fontSize: 12, color: "#64748b", textTransform: "uppercase" }}>Payment History</strong>
+                          <div style={{ marginTop: 6, fontSize: 13, color: "#94a3b8" }}>No Previous Payment Data Available.</div>
+                        </div>
+                      </div>
+                    </td></tr>
+                  )}
+                </React.Fragment>
+              );
+            })}
+            {!rows.length && <tr><td colSpan="10" style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>No Employees With Team Assignments Found.</td></tr>}
           </tbody>
         </table>
       </div>

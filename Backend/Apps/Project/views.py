@@ -10,11 +10,14 @@ from Backend.Apps.Project.models import (
     DeliveryDocument,
     DeliveryMilestone,
     MilestoneComponent,
+    ProjectBudget,
     ProjectContact,
     ProjectDelay,
     ProjectWorkspace,
     RepositoryLink,
     TeamAssignment,
+    TeamAssignmentHistory,
+    UserRepositoryStatus,
 )
 from Backend.Apps.Project.serializers import (
     ComplianceAssignmentSerializer,

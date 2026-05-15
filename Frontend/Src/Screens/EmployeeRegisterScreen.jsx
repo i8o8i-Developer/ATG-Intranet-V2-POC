@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Search, Download, ChevronDown, ChevronUp, Users, DollarSign, CreditCard, BadgeDollarSign } from "lucide-react";
 import { Panel, SimpleTable, StatusPill, Modal } from "./Shared/ScreenComponents.jsx";
-import { employeeName, formatDate, money } from "./Shared/ScreenUtils.jsx";
+import { downloadCsv, employeeName, formatDate, money } from "./Shared/ScreenUtils.jsx";
 import "../Styles/ProjectScreen.css";
 
 export function EmployeeRegisterScreen({ data, reload }) {
@@ -73,6 +73,7 @@ export function EmployeeRegisterScreen({ data, reload }) {
             <Search size={16} />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search By Name, ID, Or Department…" style={{ border: 0, outline: "none", flex: 1, fontSize: 13 }} />
           </div>
+          <button className="Outline-Button" onClick={() => downloadCsv(`EmployeeRegister.csv`, ["ATG ID", "Employee Name", "Department", "Type", "Base Pay", "Pay Type", "Gross Pay", "PTRC Deducted", "Net Salary", "Status"], sorted.map((r) => [r.employee_code, r.display_name, r.department, r.employment_type, r.base_pay, r.pay_type, r.gross, r.deduction, r.net, r.status]))}><Download size={14} /> Export CSV</button>
         </div>
       </div>
 

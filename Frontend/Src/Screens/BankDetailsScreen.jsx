@@ -17,5 +17,36 @@ export function BankDetailsScreen({ data, selectedEmployeeId, reload }) {
     reload();
   };
 
-  return <section className="Form-Page"><h1>Bank Details</h1><label>Employee<input value={employee.display_name || ""} readOnly /></label><label>Account IFSC<input value={form.ifsc} onChange={(event) => setForm({ ...form, ifsc: event.target.value })} /></label><label>Account Number<input type="password" value={form.account} onChange={(event) => setForm({ ...form, account: event.target.value })} /></label><label>Confirm Account Number<input value={form.confirm} onChange={(event) => setForm({ ...form, confirm: event.target.value })} placeholder="Confirm Bank Account Number" /></label><label>UPI<input value={form.upi} onChange={(event) => setForm({ ...form, upi: event.target.value })} /></label><button className="Primary-Button" onClick={save} disabled={!selectedEmployeeId || (form.confirm && form.confirm !== form.account)}>Update</button><Panel title="Current Bank Details"><SimpleTable columns={["Account Number", "IFSC Code", "UPI Address", "Status"]} rows={(data.bankAccounts || []).filter((item) => !selectedEmployeeId || String(item.employee) === String(selectedEmployeeId)).map((item) => [item.masked_account_number, item.ifsc_code, item.upi_id, item.verification_status])} /></Panel></section>;
+  return (
+    <section className="Form-Page" style={{ padding: "24px 28px" }}>
+      <h1 style={{ marginBottom: 20, fontSize: 22, fontWeight: 700 }}>Bank Details</h1>
+      <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 20, maxWidth: 500 }}>
+        <label style={{ display: "block", marginBottom: 12 }}>
+          <span style={{ fontSize: 12, color: "#64748b", fontWeight: 600, textTransform: "uppercase" }}>Employee</span>
+          <input value={employee.display_name || ""} readOnly style={{ width: "100%", padding: "8px 10px", marginTop: 4, border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 14, background: "#f8fafc" }} />
+        </label>
+        <label style={{ display: "block", marginBottom: 12 }}>
+          <span style={{ fontSize: 12, color: "#64748b", fontWeight: 600, textTransform: "uppercase" }}>IFSC Code</span>
+          <input value={form.ifsc} onChange={(e) => setForm({ ...form, ifsc: e.target.value })} style={{ width: "100%", padding: "8px 10px", marginTop: 4, border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 14 }} />
+        </label>
+        <label style={{ display: "block", marginBottom: 12 }}>
+          <span style={{ fontSize: 12, color: "#64748b", fontWeight: 600, textTransform: "uppercase" }}>Account Number</span>
+          <input type="password" value={form.account} onChange={(e) => setForm({ ...form, account: e.target.value })} style={{ width: "100%", padding: "8px 10px", marginTop: 4, border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 14 }} />
+        </label>
+        <label style={{ display: "block", marginBottom: 12 }}>
+          <span style={{ fontSize: 12, color: "#64748b", fontWeight: 600, textTransform: "uppercase" }}>Confirm Account Number</span>
+          <input value={form.confirm} onChange={(e) => setForm({ ...form, confirm: e.target.value })} placeholder="Re-Enter Account Number" style={{ width: "100%", padding: "8px 10px", marginTop: 4, border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 14 }} />
+          {form.confirm && form.confirm !== form.account && <span style={{ fontSize: 11, color: "#ef4444" }}>Account Numbers Do Not Match</span>}
+        </label>
+        <label style={{ display: "block", marginBottom: 16 }}>
+          <span style={{ fontSize: 12, color: "#64748b", fontWeight: 600, textTransform: "uppercase" }}>UPI ID</span>
+          <input value={form.upi} onChange={(e) => setForm({ ...form, upi: e.target.value })} style={{ width: "100%", padding: "8px 10px", marginTop: 4, border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 14 }} />
+        </label>
+        <button className="Primary-Button" onClick={save} disabled={!selectedEmployeeId || (form.confirm && form.confirm !== form.account)}>Update Bank Details</button>
+      </div>
+      <Panel title="Current Bank Details">
+        <SimpleTable columns={["Account Number", "IFSC Code", "UPI Address", "Status"]} rows={(data.bankAccounts || []).filter((item) => !selectedEmployeeId || String(item.employee) === String(selectedEmployeeId)).map((item) => [item.masked_account_number, item.ifsc_code, item.upi_id, item.verification_status])} />
+      </Panel>
+    </section>
+  );
 }

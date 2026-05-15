@@ -12,6 +12,7 @@ class AssessmentTemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = AssessmentTemplate
         fields = "__all__"
+        read_only_fields = ["code", "sequence_number"]
 
 
 class AssessmentAssignmentSerializer(serializers.ModelSerializer):
@@ -65,7 +66,7 @@ class ProviderLinkSerializer(serializers.Serializer):
 
 
 class ProviderStatusSerializer(serializers.Serializer):
-    provider_payload = serializers.JSONField()
+    provider_payload = serializers.JSONField(required=False, default=dict)
 
 
 class AssessmentDashboardQuerySerializer(serializers.Serializer):

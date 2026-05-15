@@ -97,7 +97,7 @@ class AssessmentAssignmentViewSet(TenantScopedModelViewSet):
     def sync_provider_status(self, request, pk=None):
         serializer = ProviderStatusSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        result = AssessmentAssignmentService.sync_provider_status(self.get_tenant_context(), pk, serializer.validated_data["provider_payload"])
+        result = AssessmentAssignmentService.sync_provider_status(self.get_tenant_context(), pk, serializer.validated_data.get("provider_payload", {}))
         return self.service_response(result, AssessmentAssignmentSerializer)
 
     @action(detail=True, methods=["post"], url_path="mark-overdue")

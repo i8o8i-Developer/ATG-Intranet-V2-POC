@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import "../Styles/LeaveScreen.css";
 
 import { apiPost } from "../Api/Client.js";
@@ -26,6 +27,23 @@ export function LeaveApplyScreen({ data, selectedEmployeeId, reload }) {
     ? data.leaveBalances || []
     : (data.leaveBalances || []).filter((item) => String(item.employee) === String(currentEmployeeId));
   const employee = findById(data.employees, form.employee_id || selectedEmployeeId) || data.employees?.[0] || {};
+  const [calMonth, setCalMonth] = useState(new Date().getMonth());
+  const [calYear, setCalYear] = useState(new Date().getFullYear());
+
+  const calendarDays = useMemo(() => {
+    const days = [];
+    const firstDay = new Date(calYear, calMonth, 1).getDay();
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    const today = new Date();
+    for (let i = 0; i < firstDay; i++) days.push(null);
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(calYear, calMonth, d);
+      const iso = isoDate(date);
+      const leaves = (data.leaveRequests || []).filter((lr) => iso >= String(lr.starts_on).slice(0, 10) && iso <= String(lr.ends_on).slice(0, 10));
+      days.push({ day: d, iso, isToday: iso === isoDate(today), isPast: date < new Date(today.getFullYear(), today.getMonth(), today.getDate()), leaves });
+    }
+    return days;
+  }, [calMonth, calYear, data.leaveRequests]);
 
   useEffect(() => {
     const fallbackEmployeeId = selectedEmployeeId || data.employees?.[0]?.id;
@@ -78,10 +96,28 @@ export function LeaveApplyScreen({ data, selectedEmployeeId, reload }) {
           </div>
           <label>Reason<textarea value={form.reason} onChange={(event) => setForm({ ...form, reason: event.target.value })} /></label>
           <button className="Primary-Button" onClick={submit} disabled={!form.employee_id || !form.starts_on || !form.ends_on}>Submit Leave</button>
-          {result && <pre>{JSON.stringify(result, null, 2)}</pre>}
+          {result && <div className="error-banner">{result?.detail || result?.message || (result?.status === "Success" ? "Leave Submitted Successfully." : "Leave Submission Completed.")}</div>}
         </Panel>
         <Panel title="Leave Wallets"><SimpleTable columns={["Employee", "Balance", "Accrued", "Used"]} rows={visibleBalances.slice(0, isSuperAdmin ? 50 : 8).map((item) => [employeeName(data, item.employee), item.balance || item.available_balance || item.amount, item.accrued || "-", item.used || "-"])} /></Panel>
       </section>
+      <Panel title="Leave Calendar" subtitle={`${calMonth + 1}/${calYear}`}
+        right={
+          <span style={{ display: "flex", gap: 6 }}>
+            <button className="Soft-Button Small" onClick={() => { if (calMonth === 0) { setCalMonth(11); setCalYear(calYear - 1); } else setCalMonth(calMonth - 1); }}><ChevronLeft size={14} /></button>
+            <button className="Soft-Button Small" onClick={() => { if (calMonth === 11) { setCalMonth(0); setCalYear(calYear + 1); } else setCalMonth(calMonth + 1); }}><ChevronRight size={14} /></button>
+          </span>
+        }
+      >
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, textAlign: "center" }}>
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => <strong key={d} style={{ fontSize: 11, color: "#64748b", padding: "4px 0" }}>{d}</strong>)}
+          {calendarDays.map((day, i) => !day ? <span key={i} /> : (
+            <div key={i} style={{ padding: "6px 0", borderRadius: 6, fontSize: 12, fontWeight: day.isToday ? 700 : 400, background: day.isToday ? "#eef2ff" : day.leaves.length > 0 ? "#fef2f2" : "transparent", color: day.leaves.length > 0 ? "#dc2626" : day.isPast ? "#94a3b8" : "#0f172a" }}>
+              <div>{day.day}</div>
+              {day.leaves.length > 0 && <div style={{ fontSize: 9, color: "#dc2626" }}>{day.leaves.length} leave{day.leaves.length > 1 ? "s" : ""}</div>}
+            </div>
+          ))}
+        </div>
+      </Panel>
       <Panel title="Leave Requests"><SimpleTable columns={requestColumns} rows={requestRows} /></Panel>
     </section>
   );

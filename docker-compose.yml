@@ -93,23 +93,34 @@ services:
      image: intranet-v2-backend
      restart: "no"
      command:
-       - sh
-       - -c
-       - |
-         set -e
-         echo "Starting Initialization..."
-         export POSTGRES_HOST=Database
-         export POSTGRES_PORT=5432
-         python Backend/manage.py migrate --noinput
-         python Backend/manage.py collectstatic --noinput
-         if [ "$${SEED_DEMO_DATA:-1}" = "1" ]; then
-           echo "Running Seed Demo Erp..."
-           python Backend/manage.py Seed_Demo_Erp --tenant "$${BOOTSTRAP_TENANT}" --workspace "$${BOOTSTRAP_WORKSPACE}" --username "$${BOOTSTRAP_USERNAME}" --password "$${BOOTSTRAP_PASSWORD}" --email "$${BOOTSTRAP_EMAIL}" --first-name "$${BOOTSTRAP_FIRST_NAME}" --last-name "$${BOOTSTRAP_LAST_NAME}" --display-name "$${BOOTSTRAP_DISPLAY_NAME}" --employee-code "$${BOOTSTRAP_EMPLOYEE_CODE}"
-         else
-           echo "Running Bootstrap Backend..."
-           python Backend/manage.py Bootstrap_Backend --tenant "$${BOOTSTRAP_TENANT}" --workspace "$${BOOTSTRAP_WORKSPACE}" --username "$${BOOTSTRAP_USERNAME}" --password "$${BOOTSTRAP_PASSWORD}" --email "$${BOOTSTRAP_EMAIL}" --first-name "$${BOOTSTRAP_FIRST_NAME}" --last-name "$${BOOTSTRAP_LAST_NAME}" --display-name "$${BOOTSTRAP_DISPLAY_NAME}" --employee-code "$${BOOTSTRAP_EMPLOYEE_CODE}"
-         fi
-         echo "Initialization Successful."
+        - sh
+        - -c
+        - |
+          set -e
+          echo "Starting Initialization..."
+          export POSTGRES_DB="${POSTGRES_DB:-intranet_rebuild}"
+          export POSTGRES_USER="${POSTGRES_USER:-intranet}"
+          export POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-intranet}"
+          export POSTGRES_HOST=Database
+          export POSTGRES_PORT=5432
+          echo "Waiting for PostgreSQL on $POSTGRES_HOST:$POSTGRES_PORT..."
+          for i in $(seq 1 30); do
+            pg_isready -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" && break
+            echo "Waiting... attempt $i"
+            sleep 2
+          done
+          echo "Running Migrations..."
+          python Backend/manage.py migrate --noinput
+          echo "Collecting Static Files..."
+          python Backend/manage.py collectstatic --noinput
+          if [ "$${SEED_DEMO_DATA:-1}" = "1" ]; then
+            echo "Running Seed Demo Erp..."
+            python Backend/manage.py Seed_Demo_Erp --tenant "$${BOOTSTRAP_TENANT}" --workspace "$${BOOTSTRAP_WORKSPACE}" --username "$${BOOTSTRAP_USERNAME}" --password "$${BOOTSTRAP_PASSWORD}" --email "$${BOOTSTRAP_EMAIL}" --first-name "$${BOOTSTRAP_FIRST_NAME}" --last-name "$${BOOTSTRAP_LAST_NAME}" --display-name "$${BOOTSTRAP_DISPLAY_NAME}" --employee-code "$${BOOTSTRAP_EMPLOYEE_CODE}"
+          else
+            echo "Running Bootstrap Backend..."
+            python Backend/manage.py Bootstrap_Backend --tenant "$${BOOTSTRAP_TENANT}" --workspace "$${BOOTSTRAP_WORKSPACE}" --username "$${BOOTSTRAP_USERNAME}" --password "$${BOOTSTRAP_PASSWORD}" --email "$${BOOTSTRAP_EMAIL}" --first-name "$${BOOTSTRAP_FIRST_NAME}" --last-name "$${BOOTSTRAP_LAST_NAME}" --display-name "$${BOOTSTRAP_DISPLAY_NAME}" --employee-code "$${BOOTSTRAP_EMPLOYEE_CODE}"
+          fi
+          echo "Initialization Successful."
      environment:
        DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-Rebuild-Development-Only}
        DJANGO_DEBUG: ${DJANGO_DEBUG:-1}

@@ -71,6 +71,7 @@ class Command(BaseCommand):
         self.today = timezone.localdate()
         self.now = timezone.now()
         self.admin_user = get_user_model().objects.get(username=options["username"])
+        self.admin_password = options["password"]
         self.employee_credentials = []
 
         employees = self.seed_people()
@@ -84,6 +85,7 @@ class Command(BaseCommand):
         self.seed_assessments(employees)
         self.seed_l3(employees)
         self.seed_git(employees, projects)
+        self.seed_permissions(employees)
         self.seed_finance(employees)
         self.seed_templates()
         self.seed_integrations()
@@ -170,6 +172,8 @@ class Command(BaseCommand):
             ("Payroll Review", "Finance", departments["Finance"]),
             ("UI Layout", "Design", departments["Design"]),
             ("Regression Testing", "QA", departments["Manual Testing"]),
+            ("Talent Sourcing", "Talent", departments["L3 Team"]),
+            ("HR Operations", "People", departments["Human Resources"]),
         ]
         skill_objects = [self.upsert(Skill, {"tenant": self.tenant, "name": name}, {"category": category, "department": dept}) for name, category, dept in skills]
 
@@ -273,12 +277,35 @@ class Command(BaseCommand):
             admin_emp.department = py_dept
             admin_emp.position = positions["Project Manager"]
             admin_emp.display_name = admin_emp.display_name or self.admin_user.username
-            admin_emp.save(update_fields=["department", "position", "display_name", "updated_at"])
+            admin_emp.contact_number = "+91-9876543200"
+            admin_emp.github_username = "admin_atg"
+            admin_emp.city = "Bengaluru"
+            admin_emp.college_name = "IIT Bombay"
+            admin_emp.year_of_graduation = 2018
+            admin_emp.availability_hours = 45
+            admin_emp.slack_username = "admin_atg"
+            admin_emp.calendar_id = "admin@calendar.atg.com"
+            admin_emp.joined_on = self.today - timezone.timedelta(days=365)
+            admin_emp.employment_type = "Full-Time"
+            admin_emp.leaves_wallet = Decimal("12")
+            admin_emp.leaves_per_month = Decimal("2")
+            admin_emp.profile_payload = {
+                "demo_credentials": {"user_id": admin_emp.user.id, "username": self.admin_user.username, "password": EMPLOYEE_DEMO_PASSWORD},
+                "address": "Block-A, Tech Park, Bengaluru, Karnataka 560001",
+                "emergency_contact": "Spouse - +91-9876543210",
+                "pay_type": "Monthly",
+                "skills": ["Django", "React", "Project Management", "Team Leadership"],
+            }
+            admin_emp.save(update_fields=["department", "position", "display_name", "contact_number", "github_username", "city", "college_name", "year_of_graduation", "availability_hours", "slack_username", "calendar_id", "joined_on", "employment_type", "leaves_wallet", "leaves_per_month", "profile_payload", "updated_at"])
             employees["ADMIN"] = admin_emp
-            self.upsert(UserSkill, {"tenant": self.tenant, "employee": admin_emp, "skill": skill_objects[0]}, {"proficiency": 5, "rating": 5, "assigned_from_department": True})
+            for si, skill_obj in enumerate(skill_objects[:3]):
+                self.upsert(UserSkill, {"tenant": self.tenant, "employee": admin_emp, "skill": skill_obj}, {"proficiency": 5 - si, "rating": 5, "assigned_from_department": True})
             gt = goal_titles[0]
             admin_goal = self.upsert(Goal, {"tenant": self.tenant, "employee": admin_emp, "title": gt[0]}, {"assigned_by": self.admin_user, "description": gt[1], "due_on": self.today + timezone.timedelta(days=14), "status": "Open"})
             self.upsert(GoalFeedback, {"tenant": self.tenant, "goal": admin_goal, "feedback_type": "ManagerNote"}, {"author": self.admin_user, "rating": 5, "note": "Leading The ERP Migration Effectively"})
+            self.upsert(EmployeeBankAccount, {"tenant": self.tenant, "employee": admin_emp, "masked_account_number": "XXXX0001"}, {"account_holder_name": admin_emp.display_name, "ifsc_code": "HDFC0001234", "upi_id": "admin@upi", "verification_status": "Verified"})
+            self.upsert(PayProfile, {"tenant": self.tenant, "employee": admin_emp, "effective_at": self.now.replace(microsecond=0)}, {"base_pay": Decimal("85000"), "pay_type": "Monthly", "pay_per_task": Decimal("0"), "performance_pay": Decimal("5000")})
+            self.employee_credentials.append({"employee_code": "ADMIN", "display_name": admin_emp.display_name, "user_id": admin_emp.user.id, "username": self.admin_user.username, "password": self.admin_password})
 
         self.upsert(BenchPeriod, {"tenant": self.tenant, "employee": employees["EMP006"], "started_on": self.today - timezone.timedelta(days=10)}, {"reason": "Available For Design Pilot Assignment"})
         self.upsert(EmployeeCertificate, {"tenant": self.tenant, "employee": employees["EMP002"], "position_title": "Django Developer"}, {"manager": employees["EMP001"], "issued_on": self.today - timezone.timedelta(days=20), "storage_reference": "demo://certificate/faraz"})
@@ -309,8 +336,8 @@ class Command(BaseCommand):
         self.upsert(UserEffortReport, {"tenant": self.tenant, "employee": employees["EMP002"], "report_month": self.today.month, "report_year": self.today.year}, {"project_reference": "Intranet Rebuild", "effort_percent": Decimal("80")})
 
     def seed_projects(self, employees):
-        project_a = self.upsert(ProjectWorkspace, {"tenant": self.tenant, "code": "INTRA-REACT"}, {"name": "Intranet React Rebuild", "client_name": "Banao", "description": "React Rewrite Of Old Intranet Screens", "project_type": "Development", "priority": "P1", "status": "Active", "starts_on": self.today - timezone.timedelta(days=20), "ends_on": self.today + timezone.timedelta(days=45), "health": "Watch", "github_organization": "atg-world", "clickup_sync_enabled": True, "terms_required": True, "anti_phishing_enabled": True, "metadata": {"category": "Development", "tracks": ["Frontend", "API"]}})
-        project_b = self.upsert(ProjectWorkspace, {"tenant": self.tenant, "code": "VIKAAS-CRM"}, {"name": "Vikaas Growth Campaign Engine", "client_name": "Internal Growth", "description": "Marketing Campaign Execution, Landing Pages, Lead Capture, And CRM Follow-Up Automation.", "project_type": "Marketing", "priority": "P2", "status": "Active", "starts_on": self.today - timezone.timedelta(days=5), "ends_on": self.today + timezone.timedelta(days=60), "health": "Good", "github_organization": "atg-world", "clickup_sync_enabled": True, "metadata": {"category": "Marketing", "channels": ["Email", "CRM", "Landing Pages"], "tags": ["growth", "campaign"]}})
+        project_a = self.upsert(ProjectWorkspace, {"tenant": self.tenant, "code": "INTRA-REACT"}, {"name": "Intranet React Rebuild", "client_name": "Banao", "description": "React Rewrite Of Old Intranet Screens", "project_type": "Development", "priority": "P1", "status": "Active", "starts_on": self.today - timezone.timedelta(days=20), "ends_on": self.today + timezone.timedelta(days=45), "health": "Watch", "github_organization": "atg-world", "clickup_sync_enabled": True, "terms_required": True, "anti_phishing_enabled": True, "metadata": {"category": "Development", "tracks": ["Frontend", "API"], "company_name": "Banao Technologies", "address": "Block-1, Tech Park, Bengaluru", "gstin": "29AABCB1234C1Z5", "pan": "AABCB1234C", "proposal_url": "https://docs.example/proposals/intra-react", "tech_stack": ["Django", "React", "PostgreSQL", "Redis", "Docker"], "client_token": "demo-client-token-intra", "budget_breakdown": {"development": 350000, "design": 100000, "testing": 50000}}})
+        project_b = self.upsert(ProjectWorkspace, {"tenant": self.tenant, "code": "VIKAAS-CRM"}, {"name": "Vikaas Growth Campaign Engine", "client_name": "Internal Growth", "description": "Marketing Campaign Execution, Landing Pages, Lead Capture, And CRM Follow-Up Automation.", "project_type": "Marketing", "priority": "P2", "status": "Active", "starts_on": self.today - timezone.timedelta(days=5), "ends_on": self.today + timezone.timedelta(days=60), "health": "Good", "github_organization": "atg-world", "clickup_sync_enabled": True, "metadata": {"category": "Marketing", "channels": ["Email", "CRM", "Landing Pages"], "tags": ["growth", "campaign"], "company_name": "ATG Internal", "address": "Block-2, Tech Park, Bengaluru", "gstin": "29AADEF5678D1Z5", "pan": "AADEF5678D", "proposal_url": "https://docs.example/proposals/vikaas-crm", "tech_stack": ["React", "Node.js", "MongoDB", "AWS"], "budget_breakdown": {"development": 200000, "marketing": 150000, "operations": 50000}}})
         for project in [project_a, project_b]:
             is_marketing = project.project_type == "Marketing"
             component_name = "Campaign Ops" if is_marketing else "Frontend Workbench"
@@ -448,7 +475,7 @@ class Command(BaseCommand):
         lead.tags.set([hot, ai])
         self.upsert(LeadContact, {"tenant": self.tenant, "lead": lead, "email": "buyer@acme.example"}, {"name": "Acme Buyer", "phone": "+91-9111111111", "role": "CEO", "is_primary": True})
         self.upsert(LeadActivity, {"tenant": self.tenant, "lead": lead, "title": "Discovery Follow-Up"}, {"actor": employees["EMP003"], "activity_type": "Call", "note": "Asked for AI-Ready Intranet Demo", "scheduled_at": self.now + timezone.timedelta(days=1)})
-        self.upsert(LeadNote, {"tenant": self.tenant, "lead": lead, "title": "Pain Summary"}, {"author": employees["EMP003"], "body": "Client wants one operator to control multiple delivery pods."})
+        self.upsert(LeadNote, {"tenant": self.tenant, "lead": lead, "title": "Pain Summary"}, {"author": employees["EMP003"], "body": "Client Wants One Operator To Control Multiple Delivery Pods."})
         self.upsert(LeadTest, {"tenant": self.tenant, "lead": lead, "title": "Technical Fit Check"}, {"status": "Passed", "score": Decimal("82"), "completed_at": self.now})
         self.upsert(ProposalArtifact, {"tenant": self.tenant, "lead": lead, "title": "AI ERP Rebuild Proposal"}, {"status": "Sent", "amount": Decimal("450000"), "sent_at": self.now})
         self.upsert(AuditArtifact, {"tenant": self.tenant, "lead": lead, "title": "Legacy ERP Audit"}, {"status": "Open", "findings": ["Template Sprawl", "Missing Decision Layer"]})
@@ -499,6 +526,36 @@ class Command(BaseCommand):
         self.upsert(BranchReviewerAssignment, {"tenant": self.tenant, "repository": gh_repo, "branch_name": "feature/react-old-pages", "reviewer": employees["EMP001"]}, {"status": "Assigned", "is_pass": "Pending", "comment": "Review UI Parity"})
         self.upsert(BranchTestingAssignment, {"tenant": self.tenant, "repository": gh_repo, "branch_name": "feature/react-old-pages", "tester": employees["EMP007"]}, {"status": "Pending", "is_pass": "Pending", "comment": "Run Old-Page Smoke"})
         self.upsert(RepositoryBranchStatus, {"tenant": self.tenant, "repository": gh_repo, "branch_name": "feature/react-old-pages"}, {"last_commit_sha": "demo456", "review_status": "Pending", "testing_status": "Pending"})
+
+    def seed_permissions(self, employees):
+        role_map = {}
+        for role in Role.objects.filter(tenant=self.tenant):
+            role_map[role.code] = role
+        dept_to_role_code = {
+            "Python Django": "SENIOR_PROJECT_MANAGER",
+            "MERN Stack": "MANAGER",
+            "Business Analysis": "BUSINESS_ANALYST",
+            "Human Resources": "HR",
+            "Finance": "FINANCE_MANAGER",
+            "Design": "DOCS_EDIT",
+            "Manual Testing": "BUSINESS_ANALYST",
+            "L3 Team": "L3_CALLER",
+        }
+        assigned = 0
+        for code, employee in employees.items():
+            if code == "ADMIN":
+                continue
+            dept_name = employee.department.name if employee.department else None
+            role_code = dept_to_role_code.get(dept_name, "MANAGER")
+            role = role_map.get(role_code)
+            if role and employee.user:
+                _, created = RoleAssignment.objects.get_or_create(
+                    tenant=self.tenant, workspace=self.workspace, user=employee.user, role=role,
+                    defaults={"is_active": True},
+                )
+                if created:
+                    assigned += 1
+        self.stdout.write(f"Role Assignments: {assigned}")
 
     def seed_finance(self, employees):
         period = self.upsert(PayPeriod, {"tenant": self.tenant, "name": f"{self.today.strftime('%b %Y')} Payroll"}, {"starts_on": self.today.replace(day=1), "ends_on": self.today, "status": "Closed"})

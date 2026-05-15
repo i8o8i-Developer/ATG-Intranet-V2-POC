@@ -34,22 +34,55 @@ export function AssessmentScreen({ data, reload }) {
     });
   }, [data.assessmentRows, data.assessmentAssignments, search]);
 
+  const [takeAssessment, setTakeAssessment] = useState(null);
+  const [answers, setAnswers] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const [assessmentResult, setAssessmentResult] = useState(null);
+
   const startAssignment = async (id) => {
     if (!id) return;
-    await apiPost(`/Assesment/AssessmentAssignments/${id}/start/`, {});
-    reload(["assessmentAssignments", "assessmentLegacy"]);
+    try {
+      await apiPost(`/Assesment/AssessmentAssignments/${id}/start/`, {});
+      reload(["assessmentAssignments", "assessmentLegacy"]);
+    } catch (e) { /**/ }
   };
-  const submitAssignment = async (id) => {
-    if (!id) return;
-    const score = window.prompt("Enter score (0-100):", "70");
-    const parsed = Math.max(0, Math.min(100, Number(score) || 0));
-    await apiPost(`/Assesment/AssessmentAssignments/${id}/submit/`, { score: parsed, percentage: parsed, status: "Submitted" });
-    reload(["assessmentAssignments", "assessmentLegacy"]);
+
+  const openTakeAssessment = async (row) => {
+    const templates = data.assessmentTemplates || [];
+    const template = templates.find((t) => String(t.id) === String(row.assessment || row.assessment_id));
+    if (!template) { alert("No Questions Available For TThis Assessment."); return; }
+    setAnswers({});
+    setTakeAssessment({ assignmentId: row.assignment_id, questions: template.question_payload || [], title: template.title || "Assessment" });
   };
+
+  const submitAnswers = async () => {
+    if (!takeAssessment) return;
+    setSubmitting(true);
+    const questions = takeAssessment.questions;
+    let correct = 0;
+    const details = questions.map((q, i) => {
+      const isCorrect = Number(answers[i]) === Number(q.correct);
+      if (isCorrect) correct++;
+      return { question: q.question || q.q || "", selected: answers[i], correct: q.correct, isCorrect, options: q.options || [] };
+    });
+    const score = questions.length > 0 ? Math.round((correct / questions.length) * 100) : 0;
+    try {
+      await apiPost(`/Assesment/AssessmentAssignments/${takeAssessment.assignmentId}/submit/`, { score, percentage: score, status: "Submitted", answer_payload: answers });
+      setAssessmentResult({ score, correct, total: questions.length, details });
+      reload(["assessmentAssignments", "assessmentLegacy"]);
+    } catch (err) {
+      alert("Submit failed: " + (err?.payload?.detail || err?.message));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const syncAssignment = async (id) => {
     if (!id) return;
-    await apiPost(`/Assesment/AssessmentAssignments/${id}/sync-provider-status/`, {});
-    reload(["assessmentAssignments", "assessmentLegacy"]);
+    try {
+      await apiPost(`/Assesment/AssessmentAssignments/${id}/sync-provider-status/`, {});
+      reload(["assessmentAssignments", "assessmentLegacy"]);
+    } catch (e) { /* Sync Failed */ }
   };
 
   return (
@@ -88,13 +121,15 @@ export function AssessmentScreen({ data, reload }) {
                     <td>{row.assessment_sequence_number || row.assessment_number || row.attempts_count || 1}</td>
                     <td><StatusPill tone={isCompleted(row.status || row.note) ? "green" : "gold"}>{row.note || row.status || "Incomplete"}</StatusPill></td>
                     <td className="Table-Actions">
-                      {!status.includes("progress") && !isCompleted(row.status || row.note) && assignmentId && (
+                      {!isCompleted(row.status || row.note) && !status.includes("progress") && assignmentId && (
                         <button className="Soft-Button Small" onClick={() => startAssignment(assignmentId)}>Start</button>
                       )}
-                      {!isCompleted(row.status || row.note) && assignmentId && (
-                        <button className="Soft-Button Small" onClick={() => submitAssignment(assignmentId)}>Submit</button>
+                      {!isCompleted(row.status || row.note) && !status.includes("submitted") && assignmentId && (
+                        <button className="Soft-Button Small" onClick={() => openTakeAssessment(row)}>Take Assessment</button>
                       )}
-                      {assignmentId ? (
+                      {isCompleted(row.status || row.note) ? (
+                        <span className="Muted-Text" style={{ color: "#10b981", fontWeight: 600 }}>Completed</span>
+                      ) : assignmentId ? (
                         <button className="Soft-Button Small" onClick={() => syncAssignment(assignmentId)}>Sync</button>
                       ) : (
                         <span className="Muted-Text">No Assignment ID</span>
@@ -140,6 +175,56 @@ export function AssessmentScreen({ data, reload }) {
       )}
       {assignOpen && <AssignModal data={data} onClose={() => setAssignOpen(false)} reload={reload} />}
       {createOpen && <CreateTemplateModal data={data} onClose={() => setCreateOpen(false)} reload={reload} />}
+      {takeAssessment && !assessmentResult && (
+        <div className="Modal-Backdrop" onClick={() => { setTakeAssessment(null); setAnswers({}); }}>
+          <section className="Modal Wide" onClick={(e) => e.stopPropagation()} style={{ width: "min(700px, calc(100vw - 56px))" }}>
+            <div className="Modal-Body" style={{ maxHeight: "80vh", overflow: "auto" }}>
+              <h2>{takeAssessment.title}</h2>
+              <p style={{ color: "#64748b", marginBottom: 16, fontSize: 13 }}>Answer The Questions Below And Submit To Complete The Assessment.</p>
+              {takeAssessment.questions.map((q, qi) => (
+                <div key={qi} style={{ marginBottom: 16, padding: 14, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fafafa" }}>
+                  <p style={{ fontWeight: 600, marginBottom: 8, fontSize: 14 }}>Q{qi + 1}. {q.question || q.q || ""}</p>
+                  {(q.options || []).map((opt, oi) => (
+                    <label key={oi} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", marginBottom: 4, borderRadius: 6, cursor: "pointer", background: Number(answers[qi]) === oi ? "#eef2ff" : "#fff", border: "1px solid", borderColor: Number(answers[qi]) === oi ? "#3b82f6" : "#e2e8f0" }}>
+                      <input type="radio" name={`q-${qi}`} checked={Number(answers[qi]) === oi} onChange={() => setAnswers({ ...answers, [qi]: oi })} />
+                      <span style={{ fontSize: 13 }}>{opt}</span>
+                    </label>
+                  ))}
+                </div>
+              ))}
+              {!takeAssessment.questions.length && <p style={{ color: "#94a3b8" }}>No Questions Configured For This Assessment Template.</p>}
+              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                <button className="Primary-Button" onClick={submitAnswers} disabled={submitting || !takeAssessment.questions.length}>{submitting ? "Submitting..." : "Submit Answers"}</button>
+                <button className="Soft-Button" onClick={() => { setTakeAssessment(null); setAnswers({}); }}>Cancel</button>
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
+      {assessmentResult && (
+        <div className="Modal-Backdrop" onClick={() => { setAssessmentResult(null); setAnswers({}); }}>
+          <section className="Modal" onClick={(e) => e.stopPropagation()} style={{ width: "min(600px, calc(100vw - 56px))" }}>
+            <div className="Modal-Body" style={{ maxHeight: "80vh", overflow: "auto" }}>
+              <h2>Assessment Results</h2>
+              <div style={{ textAlign: "center", padding: "24px 0" }}>
+                <div style={{ fontSize: 48, fontWeight: 700, color: assessmentResult.score >= 70 ? "#10b981" : "#ef4444" }}>{assessmentResult.score}%</div>
+                <p style={{ color: "#64748b", fontSize: 14 }}>{assessmentResult.correct} of {assessmentResult.total} Correct Answers</p>
+              </div>
+              {assessmentResult.details.map((d, i) => (
+                <div key={i} style={{ marginBottom: 12, padding: 12, borderRadius: 8, border: "1px solid", borderColor: d.isCorrect ? "#bbf7d0" : "#fecaca", background: d.isCorrect ? "#f0fdf4" : "#fef2f2" }}>
+                  <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>Q{i + 1}. {d.question}</p>
+                  {d.options.map((opt, oi) => (
+                    <div key={oi} style={{ fontSize: 12, padding: "3px 8px", marginBottom: 2, borderRadius: 4, background: oi === d.correct ? "#bbf7d0" : oi === Number(d.selected) && !d.isCorrect ? "#fecaca" : "transparent" }}>
+                      {opt} {oi === d.correct ? " ✓" : ""} {oi === Number(d.selected) && !d.isCorrect ? " ✗" : ""}
+                    </div>
+                  ))}
+                </div>
+              ))}
+              <button className="Primary-Button" onClick={() => { setAssessmentResult(null); setTakeAssessment(null); setAnswers({}); }} style={{ marginTop: 12 }}>Close</button>
+            </div>
+          </section>
+        </div>
+      )}
     </section>
   );
 }
@@ -159,20 +244,28 @@ function CreateTemplateModal({ data, onClose, reload }) {
     if (!form.title.trim()) { setError("Title is required."); return; }
     setBusy(true); setError("");
     try {
-      await apiPost("/Assesment/AssessmentTemplates/", {
+      const payload = {
         title: form.title,
         assessment_type: form.assessment_type,
-        department: form.department || null,
         status: form.status,
         instructions: form.instructions,
         passing_score: Number(form.passing_score) || 0,
         duration_minutes: Number(form.duration_minutes) || 0,
         question_payload: form.questions,
-      });
+      };
+      if (form.department) payload.department = form.department;
+      await apiPost("/Assesment/AssessmentTemplates/", payload);
       reload(["assessmentTemplates", "assessmentAssignments", "assessmentLegacy"]);
       onClose();
     } catch (err) {
-      setError(err?.payload?.title?.[0] || err?.payload?.detail || err?.message || "Failed To Create Template.");
+      const codeErr = err?.payload?.code?.[0];
+      const titleErr = err?.payload?.title?.[0];
+      const typeErr = err?.payload?.assessment_type?.[0];
+      const deptErr = err?.payload?.department?.[0];
+      const qpErr = err?.payload?.question_payload?.[0];
+      console.error("Assessment 400 Payload:", JSON.stringify(err?.payload, null, 2));
+      const detail = codeErr || titleErr || typeErr || deptErr || qpErr || err?.payload?.detail || err?.message || "Failed To Create Template.";
+      setError(detail);
     } finally {
       setBusy(false);
     }

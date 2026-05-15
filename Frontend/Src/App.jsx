@@ -211,10 +211,10 @@ function buildNavItems(activePath) {
     { label: "Assessments",          icon: <IconAssessments />,      path: "/assessment/" },
     { label: "Bank Details",         icon: <IconBank />,             path: "/Bankdetails/" },
     { label: "Payslips",             icon: <IconPayslip />,          path: "/payslips/" },
+    { label: "Employee Register",    icon: <IconManageEmployees />,   path: "/employee-register/" },
     {
-      label: "Manage Employees",
+      label: "HR Actions",
       icon: <IconManageEmployees />,
-      path: "/employee-register/",
       children: [
         { label: "Send Offer Letter",  path: "/Onboard/Send_Offer" },
         { label: "Send Certificate",   path: "/send-certificate" },
@@ -365,7 +365,7 @@ function App() {
   useEffect(() => {
     if (!hasAuth || isLoginRoute) return;
     const unauthorized = errors.some((e) => e.status === 401);
-    const offline = !loading && !apiOnline && errors.length > 0;
+    const offline = false;
     if (unauthorized || offline) {
       clearApiAuth();
       setSettings(getApiSettings());
@@ -424,10 +424,10 @@ function useIntranetData(reloadKey, enabled) {
     }
   };
 
-const REALTIME_KEYS = ["dailyStatus", "me", "notifications", "employees", "tasks", "projects", "leaveRequests", "leaveBalances", "teamAssignments", "milestones", "alerts", "userSkills", "goals", "goalFeedback", "workEntries", "bankAccounts", "assessmentTemplates", "assessmentAssignments", "payProfiles", "financeDashboard", "payrollRuns", "payrollLineItems", "payslipDocuments"];
+const REALTIME_KEYS = ["dailyStatus", "me", "notifications", "employees", "departments", "positions", "skills", "tasks", "projects", "leaveRequests", "leaveBalances", "teamAssignments", "milestones", "alerts", "userSkills", "goals", "goalFeedback", "workEntries", "bankAccounts", "assessmentTemplates", "assessmentAssignments", "payProfiles", "financeDashboard", "payrollRuns", "payrollLineItems", "payslipDocuments", "payPeriods", "paymentSnapshots", "delays", "projectBudgets", "teamAssignmentHistory", "userRepositoryStatus", "defaultCheckpoints", "docs", "lmsLeads", "leadAccounts", "leadTags", "leadContacts", "leadActivities", "leadNotes", "leadTests", "leadProposals", "leadAudits", "workflowTransitions", "leadStatusHistory", "learningPaths", "learningModules", "learningAssignments", "leadQueueSnapshots", "revenueSnapshots", "knowledgeActivities", "driveFolders", "assessmentLegacy", "offers", "issues", "managerScopes", "projectContacts", "milestoneComponents", "complianceCampaigns", "complianceAssignments", "slackThreads", "slackMessages", "externalWorkMappings", "clickupMappings", "managerAbbreviations", "subDepartments", "userStatusSnapshots", "benchPeriods", "employeeCertificates", "leaveTransactions", "resignationRequests", "userEffortReports", "interviewProgress", "credentialVaultItems", "notificationSnoozeRecords", "docPermissions", "driveFiles", "docVersions", "paymentOrders", "compensationPlans", "approvalDecisions", "payoutExecutions", "gitRepoSnapshots", "gitActivitySnapshots", "repoUtilityRequests", "githubRepositories", "branchReviewers", "branchTesters", "repoBranchStatuses", "collegePipelines", "collegeContacts", "collegeAssignments", "candidateProfiles", "talentAssignments", "talentPerformanceSnapshots", "integrationProviders", "integrationConnections", "webhookInboxEvents", "agentPrincipals", "mcpToolDefinitions", "mcpResourceDefinitions", "mcpAccessGrants", "enterpriseRoles", "enterpriseRoleAssignments", "accessAuditLogs", "leadTransitions"];
 
 const load = useCallback(async (keysFilter) => {
-     if (!enabled) { setState({ data: {}, loading: false, errors: [], apiOnline: false }); hasInitiallyLoaded.current = false; return; }
+     if (!enabled) { hasInitiallyLoaded.current = false; return; }
      const myVersion = ++loadVersion.current;
      let subset;
      if (Array.isArray(keysFilter) && keysFilter.length) {
@@ -465,10 +465,10 @@ const load = useCallback(async (keysFilter) => {
         });
         return { data: nextData, loading: false, errors: requestErrors, apiOnline: isPartial ? cur.apiOnline : requestErrors.length < subset.length };
       });
-      if (!isPartial) hasInitiallyLoaded.current = true;
+      hasInitiallyLoaded.current = true;
    }, [enabled]);
 
-   useEffect(() => { load("__all__"); }, [load, reloadKey]);
+   useEffect(() => { if (enabled) load(REALTIME_KEYS); }, [load, reloadKey]);
    return { ...state, reload: load };
 }
 
@@ -652,7 +652,7 @@ function AppShell({ children, route, navigate, data, apiOnline, loading, logout,
               <ATGLogo />
               <span className="Atg-Brand-Name">Intranet</span>
             </div>
-            <button className="Atg-Collapse-Btn" onClick={() => setCollapsed((v) => !v)} title="Collapse sidebar">
+            <button className="Atg-Collapse-Btn" onClick={() => setCollapsed((v) => !v)} title={collapsed ? "Expand sidebar" : "Collapse sidebar"} style={{ transform: collapsed ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
               <ChevronLeft size={18} />
             </button>
           </div>
@@ -680,7 +680,7 @@ function AppShell({ children, route, navigate, data, apiOnline, loading, logout,
             </div>
             <div className="Atg-Topbar-Actions">
               {loading && <span className="Sync-Badge">Syncing</span>}
-              {!loading && !apiOnline && <span className="Sync-Badge-Danger">Offline</span>}
+              {!loading && errors.length >= 10 && <span className="Sync-Badge-Danger">Connection Issues</span>}
               <NotificationBell notifications={data.notifications || []} navigate={navigate} reloadData={reloadData} />
               <button className={activePath.startsWith("/profile") ? "Atg-User-Chip Active" : "Atg-User-Chip"} onClick={() => navigate("/profile/")}>
                 <span className="Chip-Avatar">{initials}</span>

@@ -8,13 +8,17 @@ import { money } from "./Shared/ScreenUtils.jsx";
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 export function FinanceScreen({ data, reload }) {
-  const rows = data.financeRows || [];
+  const rows = localRows || data.financeRows || [];
   const departments = data.financeDashboard?.departments || data.departments || [];
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDeptNames, setSelectedDeptNames] = useState(new Set());
   const [showApprovedOnly, setShowApprovedOnly] = useState(false);
+  const [bulkSelected, setBulkSelected] = useState(new Set());
   const [monthIndex, setMonthIndex] = useState(new Date().getMonth());
   const [year, setYear] = useState(new Date().getFullYear());
+  const [localRows, setLocalRows] = useState(null);
+  const [prevRows, setPrevRows] = useState(null);
+  const [prevMonthLabel, setPrevMonthLabel] = useState("");
   const [approvalData, setApprovalData] = useState(null);
   const [error, setError] = useState("");
 
@@ -45,6 +49,8 @@ export function FinanceScreen({ data, reload }) {
     });
   };
 
+  const fetchMonth = (m, y) => apiGet(`/FinanceAndPayroll/payments/?pay_month=${m + 1}&month_name=${MONTH_NAMES[m]}&year=${y}`).then((p) => p?.user_list || []);
+
   const changeMonth = (delta) => {
     let m = monthIndex + delta;
     let y = year;
@@ -52,9 +58,12 @@ export function FinanceScreen({ data, reload }) {
     if (m > 11) { m = 0; y += 1; }
     setMonthIndex(m);
     setYear(y);
-    apiGet(`/FinanceAndPayroll/payments/?pay_month=${m + 1}&month_name=${MONTH_NAMES[m]}&year=${y}`).then((payload) => {
-      if (reload) reload(["financeDashboard", "financeRows", "payrollRuns", "payrollLineItems"]);
-    });
+    fetchMonth(m, y).then((list) => setLocalRows(list));
+    // 
+    let pm = m - 1;
+    let py = y;
+    if (pm < 0) { pm = 11; py -= 1; }
+    fetchMonth(pm, py).then((list) => { setPrevRows(list); setPrevMonthLabel(MONTH_NAMES[pm]); });
   };
 
   const openApproval = (row) => setApprovalData({ ...row, bonus: "0", note: "" });
@@ -95,18 +104,43 @@ export function FinanceScreen({ data, reload }) {
           <button className="Soft-Button Small" onClick={() => changeMonth(-1)}><ChevronLeft size={16} /></button>
           <strong style={{ minWidth: 140, textAlign: "center" }}>{MONTH_NAMES[monthIndex]} {year}</strong>
           <button className="Soft-Button Small" onClick={() => changeMonth(1)}><ChevronRight size={16} /></button>
+          {prevRows && prevRows.length > 0 && (() => {
+            const currTotal = filtered.reduce((s, r) => s + Number(r.base_pay || 0) + Number(r.bonus || 0), 0);
+            const prevTotal = prevRows.reduce((s, r) => s + Number(r.base_pay || 0) + Number(r.bonus || 0), 0);
+            const diff = currTotal - prevTotal;
+            const pct = prevTotal ? Math.round((diff / prevTotal) * 100) : 0;
+            return <span style={{ fontSize: 12, color: diff >= 0 ? "#059669" : "#dc2626", fontWeight: 600 }}>vs {prevMonthLabel}: {diff >= 0 ? "+" : ""}₹{diff.toLocaleString()} ({pct}%)</span>;
+          })()}
         </div>
         <div className="Finance-Search">
           <input placeholder="Search By Name" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           <button className="Primary-Button" onClick={() => {}}><SearchIcon size={16} /> Search</button>
         </div>
-        <label style={{ marginBottom: 12, display: "inline-flex", alignItems: "center", gap: 6 }}>
-          <input type="checkbox" checked={showApprovedOnly} onChange={() => setShowApprovedOnly((v) => !v)} />
-          Show Approved Only
-        </label>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+          <label style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <input type="checkbox" checked={showApprovedOnly} onChange={() => setShowApprovedOnly((v) => !v)} />
+            Show Approved Only
+          </label>
+          {bulkSelected.size > 0 && (
+            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <strong style={{ fontSize: 12 }}>{bulkSelected.size} selected</strong>
+              <button className="Primary-Button Small" onClick={async () => {
+                const ids = Array.from(bulkSelected);
+                for (const id of ids) {
+                  const row = filtered.find((r) => String(r.id) === String(id));
+                  if (row) await apiPost("/FinanceAndPayroll/payment-approval/", { employee: row.id, normalPay: row.base_pay || 0, bonus: Number(financeBonus[row.id] || 0), bounty: row.bounty || 0 }).catch(() => {});
+                }
+                setBulkSelected(new Set());
+                reload(["financeDashboard", "financeRows", "payrollRuns", "payrollLineItems"]);
+              }}>Approve All Selected</button>
+              <button className="Soft-Button Small" onClick={() => setBulkSelected(new Set())}>Clear</button>
+            </span>
+          )}
+        </div>
         <table className="Erp-Table">
           <thead>
             <tr>
+              <th><input type="checkbox" checked={bulkSelected.size === filtered.length && filtered.length > 0} onChange={() => { if (bulkSelected.size === filtered.length) setBulkSelected(new Set()); else setBulkSelected(new Set(filtered.map((r) => String(r.id)))); }} /></th>
               <th>Name</th><th>Department</th><th>Status</th><th>Bank</th>
               <th>Base Pay</th><th>Bonus</th><th>Bounty</th><th>Total</th><th />
             </tr>
@@ -116,6 +150,7 @@ export function FinanceScreen({ data, reload }) {
               const isPaid = String(row.manager_status || row.finance_status || "").toLowerCase() === "approved";
               return (
                 <tr key={row.id}>
+                  <td><input type="checkbox" checked={bulkSelected.has(String(row.id))} onChange={() => setBulkSelected((prev) => { const next = new Set(prev); if (next.has(String(row.id))) next.delete(String(row.id)); else next.add(String(row.id)); return next; })} /></td>
                   <td>{row.display_name || row.username}</td>
                   <td>{row.department}</td>
                   <td className={isPaid ? "" : "Danger-Text"}>{row.manager_status || row.finance_status || "Pending"}</td>
@@ -134,7 +169,7 @@ export function FinanceScreen({ data, reload }) {
                 </tr>
               );
             })}
-            {!filtered.length && <tr><td colSpan="9" style={{ textAlign: "center", padding: "24px", color: "#94a3b8" }}>No Payroll Entries Found.</td></tr>}
+            {!filtered.length && <tr><td colSpan="10" style={{ textAlign: "center", padding: "24px", color: "#94a3b8" }}>No Payroll Entries Found.</td></tr>}
           </tbody>
         </table>
       </main>

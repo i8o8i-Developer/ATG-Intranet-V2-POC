@@ -2313,8 +2313,9 @@ select optgroup { color: #0f172a; background: #f8fafc; font-weight: 600; }
 
 .Modal-Body { padding: 20px 22px; }
 .Modal-Body > label, .Modal-Body > div > label { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; color: #374151; font-size: 13px; font-weight: 500; }
-.Modal-Body input, .Modal-Body select, .Modal-Body textarea { width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: #f8fafc; transition: border-color 0.2s; }
+.Modal-Body input, .Modal-Body select, .Modal-Body textarea { width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: #fff; color: #0f172a; transition: border-color 0.2s; }
 .Modal-Body input:focus, .Modal-Body select:focus, .Modal-Body textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); background: #fff; }
+.Modal-Body select option { color: #0f172a; background: #fff; }
 .Modal-Body .Form-Grid { gap: 14px; }
 .Modal-Body .Primary-Button { margin-top: 8px; }
 .Modal-Actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }

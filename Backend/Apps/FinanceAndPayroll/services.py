@@ -566,7 +566,6 @@ class FinanceLegacyService:
                 status_code=payout_result.status_code,
             )
         snapshot.refresh_from_db()
-        FinanceLegacyService._generate_payslip(context, employee, month, year, total_normal_pay, total_bonus, total_bounty, ptrc)
         return ServiceResult.success(
             {
                 "msg": f"Payment Amount Is {snapshot.payment_status or 'Queued'} To ",

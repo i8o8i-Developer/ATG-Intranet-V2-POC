@@ -55,6 +55,12 @@ export function NotificationsScreen({ data, reload, navigate }) {
     if (resourceType.includes("project") && resourceId) navigate(`/project/dashboard/${resourceId}/project/`);
     else if (resourceType.includes("leave")) navigate("/leave/apply/");
     else if (resourceType.includes("assessment")) navigate("/assessment/");
+    else if (resourceType.includes("hrms") || resourceType.includes("skill") || resourceType.includes("goal")) navigate("/hrms/");
+    else if (resourceType.includes("finance") || resourceType.includes("payroll") || resourceType.includes("payment")) navigate("/payments/");
+    else if (resourceType.includes("github") || resourceType.includes("git") || resourceType.includes("pull_request")) navigate("/project/dashboard/");
+    else if (resourceType.includes("doc") || resourceType.includes("knowledge")) navigate("/docs/");
+    else if (resourceType.includes("lms") || resourceType.includes("lead")) navigate("/lms/");
+    else navigate("/notifications/");
   };
 
   return (

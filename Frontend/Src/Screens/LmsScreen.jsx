@@ -179,6 +179,8 @@ export function LmsScreen({ data, reload, navigate, route }) {
   const [moreOpen, setMoreOpen] = useState(false);
   const [addLeadOpen, setAddLeadOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [slideLeadId, setSlideLeadId] = useState(null);
+  const [switchingBA, setSwitchingBA] = useState({});
   const activeLeadId = routeLeadId(route);
 
   const refresh = () => reload(["lmsLeads", "leadAccounts", "leadContacts", "leadNotes", "leadProposals", "leadAudits", "leadActivities", "leadTags", "employees", "learningAssignments", "leadQueueSnapshots", "revenueSnapshots"]);
@@ -371,17 +373,11 @@ export function LmsScreen({ data, reload, navigate, route }) {
           <strong>Intranet</strong>
           <button onClick={() => navigate?.("/home/")}>Home</button>
           <span>/</span>
-          <button onClick={() => navigate?.("/lms/")}>Banao</button>
+          <button onClick={() => navigate?.("/lms/")}>Leads</button>
           <span>/</span>
           <b>{activeLeadId}</b>
         </div>
-        <section className="Lms-Detail-Shell">
-          <div className="Lms-Detail-Topbar">
-            <button className="Outline-Button" onClick={() => navigate?.("/lms/")}><ArrowLeft size={16} /> Back To Leads</button>
-            <button className="Outline-Button" onClick={refresh}><RefreshCw size={16} /> Refresh</button>
-          </div>
-          <EmptyState label="Lead Not Found In The Current Workspace." />
-        </section>
+
       </section>
     );
   }
@@ -396,7 +392,7 @@ export function LmsScreen({ data, reload, navigate, route }) {
         <strong>Intranet</strong>
         <button onClick={() => navigate?.("/home/")}>Home</button>
         <span>/</span>
-        <button onClick={() => navigate?.("/lms/")}>Banao</button>
+        <button onClick={() => navigate?.("/lms/")}>Leads</button>
         <span>/</span>
         <b>LMS</b>
       </div>
@@ -521,6 +517,7 @@ export function LmsScreen({ data, reload, navigate, route }) {
                 <th>Email</th>
                 <th>Phone Nos</th>
                 <th>Assigned To</th>
+                <th>Switch BA</th>
                 <th>
                   <button className="Lms-Sort-Head" onClick={() => toggleSort("createdAt")}>Created At {renderSortIcon("createdAt")}</button>
                 </th>
@@ -536,7 +533,7 @@ export function LmsScreen({ data, reload, navigate, route }) {
                   <td><input type="checkbox" checked={selected.has(lead.id)} onChange={() => setSelected(toggleSet(selected, lead.id))} aria-label={`Select ${lead.leadName}`} /></td>
                   <td>
                     <div className="Lms-Row-Name">
-                      <button className="Lms-Lead-Open" onClick={() => navigate?.(`/lms/${lead.id}/`)}>
+                      <button className="Lms-Lead-Open" onClick={() => setSlideLeadId(lead.id)}>
                         <strong>{lead.leadName}</strong>
                       </button>
                       <StatusPill tone={priorityTone(lead.priority)}>{lead.priority || "Normal"}</StatusPill>
@@ -551,6 +548,12 @@ export function LmsScreen({ data, reload, navigate, route }) {
                   <td>{lead.email || "-"}</td>
                   <td>{lead.phone || "-"}</td>
                   <td>{lead.ownerName || "-"}</td>
+                  <td>
+                    <select value={switchingBA[lead.id] || ""} onChange={(e) => { const val = e.target.value; if (!val) return; setSwitchingBA({ ...switchingBA, [lead.id]: val }); apiPatch(`/Banao/LeadAccounts/${lead.id}/`, { owner: Number(val) }).then(() => { refresh(); setSwitchingBA({ ...switchingBA, [lead.id]: "" }); }).catch((err) => alert(err?.payload?.detail || "Switch BA Failed")); }} style={{ fontSize: 11, padding: "2px 4px", maxWidth: 100 }}>
+                      <option value="">—</option>
+                      {(data.employees || []).map((emp) => <option key={emp.id} value={emp.id}>{emp.display_name}</option>)}
+                    </select>
+                  </td>
                   <td>{formatDate(lead.createdAt)}</td>
                   <td className="Lms-Last-Note">{lead.lastUpdateNote || "-"}</td>
                   <td>{formatDate(lead.updatedAt)}</td>
@@ -558,7 +561,7 @@ export function LmsScreen({ data, reload, navigate, route }) {
               ))}
               {!filtered.length && (
                 <tr>
-                  <td colSpan={12}>
+                  <td colSpan={13}>
                     <div className="Lms-Empty-Wrap"><EmptyState label="No Leads Match The Current Filters." /></div>
                   </td>
                 </tr>
@@ -571,6 +574,68 @@ export function LmsScreen({ data, reload, navigate, route }) {
       {addLeadOpen && <AddLeadModal data={data} sources={sourceCards} busy={busy} onClose={() => setAddLeadOpen(false)} onSubmit={addLead} />}
       {assignOpen && <AssignLeadModal data={data} count={selected.size} busy={busy} onClose={() => setAssignOpen(false)} onSubmit={assignSelected} />}
       {moreOpen && <BulkStageModal count={selected.size} busy={busy} options={stageOptions} onClose={() => setMoreOpen(false)} onSubmit={bulkMoveStage} />}
+      {slideLeadId && (() => {
+        const slideLead = leads.find((l) => String(l.id) === String(slideLeadId));
+        if (!slideLead) return null;
+        const empOptions = (data.employees || []).map((e) => ({ id: e.id, name: e.display_name }));
+        return (
+          <div className="Modal-Backdrop" onClick={() => setSlideLeadId(null)}>
+            <section className="Modal Wide" onClick={(e) => e.stopPropagation()} style={{ width: "min(900px, calc(100vw - 56px))" }}>
+              <div className="Modal-Body" style={{ maxHeight: "80vh", overflow: "auto" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, paddingBottom: 12, borderBottom: "1px solid #e2e8f0" }}>
+                  <div>
+                    <h2 style={{ margin: 0, fontSize: 18 }}>{slideLead.leadName}</h2>
+                    <span style={{ color: "#64748b", fontSize: 13 }}>{slideLead.companyName || ""} · {slideLead.stageLabel}</span>
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <select value="" onChange={(e) => { const val = e.target.value; if (!val) return; apiPatch(`/Banao/LeadAccounts/${slideLead.id}/`, { owner: Number(val) }).then(() => { refresh(); setSlideLeadId(null); }).catch((err) => console.error("Switch BA:", err)); }} style={{ fontSize: 12, padding: "3px 6px" }}>
+                      <option value="">Switch BA</option>
+                      {(data.employees || []).map((emp) => <option key={emp.id} value={emp.id}>{emp.display_name}</option>)}
+                    </select>
+                    <button className="Soft-Button Small" onClick={() => { setSlideLeadId(null); navigate?.(`/lms/${slideLead.id}/`); }}>Open Full Page</button>
+                    <button className="Soft-Button Small" onClick={() => setSlideLeadId(null)}>Close</button>
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+                  {[
+                    ["Priority", slideLead.priority || "-"],
+                    ["Stage", slideLead.stageLabel],
+                    ["Owner", slideLead.ownerName || "-"],
+                    ["Source", slideLead.sourceLabel || "-"],
+                    ["Email", slideLead.email || "-"],
+                    ["Phone", slideLead.phone || "-"],
+                    ["Company", slideLead.companyName || "-"],
+                    ["Created", formatDate(slideLead.createdAt)],
+                    ["Updated", formatDate(slideLead.updatedAt)],
+                    ["Next Follow-Up", slideLead.nextFollowUpAt ? formatDate(slideLead.nextFollowUpAt) : "-"],
+                    ["Action Item", slideLead.actionItem ? `${slideLead.actionItem.slice(0, 50)}...` : "-"],
+                    ["Tags", (slideLead.tags || []).join(", ") || "-"],
+                  ].map(([label, value]) => (
+                    <div key={label} style={{ padding: "6px 0" }}>
+                      <dt style={{ fontSize: 11, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.04em" }}>{label}</dt>
+                      <dd style={{ margin: 0, fontSize: 13, color: "#0f172a", fontWeight: 500 }}>{value}</dd>
+                    </div>
+                  ))}
+                </div>
+                {/* Action Checklist */}
+                <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 12 }}>
+                  <h4 style={{ margin: "0 0 8px", fontSize: 14 }}>Action Checklist</h4>
+                  {slideLead.actionItem ? (
+                    <div style={{ fontSize: 13, whiteSpace: "pre-wrap", background: "#f8fafc", padding: 12, borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                      {parseChecklist(slideLead.actionItem).map((item) => (
+                        <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "3px 0" }}>
+                          <input type="checkbox" checked={item.done} readOnly style={{ accentColor: "#3b82f6" }} />
+                          <span style={{ textDecoration: item.done ? "line-through" : "none", color: item.done ? "#94a3b8" : "#0f172a" }}>{item.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : <span style={{ color: "#94a3b8", fontSize: 13 }}>No Action Items.</span>}
+                </div>
+              </div>
+            </section>
+          </div>
+        );
+      })()}
     </section>
   );
 }
@@ -662,7 +727,7 @@ function LeadDetailWorkspace({ data, lead, navigate, refresh, stageOptions }) {
         <strong>Intranet</strong>
         <button onClick={() => navigate?.("/home/")}>Home</button>
         <span>/</span>
-        <button onClick={() => navigate?.("/lms/")}>Banao</button>
+        <button onClick={() => navigate?.("/lms/")}>Leads</button>
         <span>/</span>
         <button onClick={() => navigate?.("/lms/")}>LMS</button>
         <span>/</span>
@@ -690,9 +755,10 @@ function LeadDetailWorkspace({ data, lead, navigate, refresh, stageOptions }) {
                 draft.important ? "Lead Unmarked As Important." : "Lead Marked As Important.")}>
               <Star size={17} /> <span>Mark As Important</span>
             </button>
-            <button className="Lms-Detail-Action" onClick={() => { const id = window.prompt("Enter new owner employee ID to switch BA:"); if (id && id.trim()) { apiPatch(`/Banao/LeadAccounts/${activeLeadId}/`, { owner: Number(id) || undefined }).then(() => refresh()).catch((e) => alert(e?.payload?.detail || "Switch BA failed.")); } }}>
-              <Users size={17} /> <span>Switch BA</span>
-            </button>
+            <select className="Lms-Detail-Action" value="" onChange={(e) => { const val = e.target.value; if (!val) return; apiPatch(`/Banao/LeadAccounts/${activeLeadId}/`, { owner: Number(val) }).then(() => refresh()).catch((err) => console.error("Switch BA:", err)); }} style={{ fontSize: 12, padding: "4px 8px", border: "1px solid #e2e8f0", borderRadius: 6, cursor: "pointer" }}>
+              <option value="">Switch BA</option>
+              {(data.employees || []).map((emp) => <option key={emp.id} value={emp.id}>{emp.display_name}</option>)}
+            </select>
             <button className="Lms-Detail-Action" style={{ color: "#ef4444" }} onClick={async () => { if (window.confirm("Delete this lead permanently?")) { await apiPost(`/Banao/LeadAccounts/${activeLeadId}/`, { is_active: false }); refresh(); navigate?.("/lms/"); } }}>
               <Trash2 size={17} /> <span>Delete</span>
             </button>
