@@ -5,13 +5,15 @@ services:
      image: postgres:16-alpine
      restart: unless-stopped
      ports:
-       - "6758:5432"
+       - "6758:6432"
      environment:
        POSTGRES_DB: ${POSTGRES_DB:-intranet_rebuild}
        POSTGRES_USER: ${POSTGRES_USER:-intranet}
        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
      command:
        - "postgres"
+       - "-p"
+       - "6432"
        - "-c"
        - "max_connections=500"
        - "-c"
@@ -43,7 +45,7 @@ services:
      volumes:
        - postgres_data:/var/lib/postgresql/data
      healthcheck:
-       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-intranet} -d $${POSTGRES_DB:-intranet_rebuild}"]
+       test: ["CMD-SHELL", "pg_isready -p 6432 -U $${POSTGRES_USER:-intranet} -d $${POSTGRES_DB:-intranet_rebuild}"]
        interval: 5s
        timeout: 5s
        retries: 20
@@ -52,11 +54,12 @@ services:
      image: edoburu/pgbouncer:latest
      restart: unless-stopped
      ports:
-       - "8790:5432"
+       - "8790:5866"
      environment:
        DB_USER: "${POSTGRES_USER:-intranet}"
        DB_PASSWORD: "${POSTGRES_PASSWORD:-intranet}"
        DB_HOST: "Database"
+       DB_PORT: "6432"
        DB_NAME: "${POSTGRES_DB:-intranet_rebuild}"
        POOL_MODE: transaction
        SERVER_IDLE_TIMEOUT: 300
@@ -66,6 +69,7 @@ services:
        MAX_CLIENT_CONN: 1000
        DEFAULT_POOL_SIZE: 20
        AUTH_TYPE: scram-sha-256
+       LISTEN_PORT: 5866
      depends_on:
        Database:
          condition: service_healthy
@@ -98,15 +102,15 @@ services:
         - |
           set -e
           echo "Starting Initialization..."
-          echo "Waiting For PostgreSQL On $${DIRECT_DB_HOST:-Database}:$${DIRECT_DB_PORT:-5432}..."
+          echo "Waiting For PostgreSQL On $${DIRECT_DB_HOST:-Database}:$${DIRECT_DB_PORT:-6432}..."
           for i in $$(seq 1 30); do
-            pg_isready -h "$${DIRECT_DB_HOST:-Database}" -p "$${DIRECT_DB_PORT:-5432}" -U "$${POSTGRES_USER:-intranet}" -d "$${POSTGRES_DB:-intranet_rebuild}" && break
+            pg_isready -h "$${DIRECT_DB_HOST:-Database}" -p "$${DIRECT_DB_PORT:-6432}" -U "$${POSTGRES_USER:-intranet}" -d "$${POSTGRES_DB:-intranet_rebuild}" && break
             echo "Waiting... Attempt $$i"
             sleep 2
           done
           echo "Running Migrations..."
           export POSTGRES_HOST="$${DIRECT_DB_HOST:-Database}"
-          export POSTGRES_PORT="$${DIRECT_DB_PORT:-5432}"
+          export POSTGRES_PORT="$${DIRECT_DB_PORT:-6432}"
           python Backend/manage.py migrate --noinput
           echo "Collecting Static Files..."
           python Backend/manage.py collectstatic --noinput
@@ -126,7 +130,7 @@ services:
        POSTGRES_USER: ${POSTGRES_USER:-intranet}
        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
        DIRECT_DB_HOST: Database
-       DIRECT_DB_PORT: 5432
+       DIRECT_DB_PORT: 6432
        CELERY_BROKER_URL: redis://Redis:6379/0
        CELERY_RESULT_BACKEND: redis://Redis:6379/0
        BOOTSTRAP_TENANT: "${BOOTSTRAP_TENANT:-Banao}"
@@ -165,9 +169,9 @@ services:
        POSTGRES_USER: ${POSTGRES_USER:-intranet}
        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
        POSTGRES_HOST: PgBouncer
-       POSTGRES_PORT: 5432
+       POSTGRES_PORT: 5866
        DIRECT_DB_HOST: Database
-       DIRECT_DB_PORT: 5432
+       DIRECT_DB_PORT: 6432
        DB_POOL_SIZE: 10
        DB_MAX_OVERFLOW: 20
        DB_POOL_TIMEOUT: 30
@@ -206,7 +210,7 @@ services:
        POSTGRES_USER: ${POSTGRES_USER:-intranet}
        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
        POSTGRES_HOST: PgBouncer
-       POSTGRES_PORT: 5432
+       POSTGRES_PORT: 5866
        DB_POOL_SIZE: 4
        DB_MAX_OVERFLOW: 4
        DB_POOL_TIMEOUT: 30
@@ -242,7 +246,7 @@ services:
        POSTGRES_USER: ${POSTGRES_USER:-intranet}
        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
        POSTGRES_HOST: PgBouncer
-       POSTGRES_PORT: 5432
+       POSTGRES_PORT: 5866
        DB_POOL_SIZE: 2
        DB_MAX_OVERFLOW: 2
        DB_POOL_TIMEOUT: 30
