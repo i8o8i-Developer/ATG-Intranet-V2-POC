@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 from Backend.EnterpriseCore.models import ExternalReference, TenantScopedModel
 
