@@ -43,7 +43,7 @@ services:
      volumes:
        - postgres_data:/var/lib/postgresql/data
      healthcheck:
-       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-intranet} -d $${POSTGRES_DB:-intranet_rebuild}"]
+       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
        interval: 5s
        timeout: 5s
        retries: 20
@@ -54,15 +54,15 @@ services:
      ports:
        - "8790:5432"
      environment:
-       DB_USER: "${POSTGRES_USER:-intranet}"
-       DB_PASSWORD: "${POSTGRES_PASSWORD:-intranet}"
+       DB_USER: "${POSTGRES_USER}"
+       DB_PASSWORD: "${POSTGRES_PASSWORD}"
        DB_HOST: "Database"
-       DB_NAME: "${POSTGRES_DB:-intranet_rebuild}"
+       DB_NAME: "${POSTGRES_DB}"
        POOL_MODE: transaction
        SERVER_IDLE_TIMEOUT: 300
        SERVER_CONNECT_TIMEOUT: 10
        SERVER_LOGIN_RETRY: 5
-       ADMIN_USERS: "${POSTGRES_USER:-intranet}"
+       ADMIN_USERS: "${POSTGRES_USER}"
        MAX_CLIENT_CONN: 1000
        DEFAULT_POOL_SIZE: 20
        AUTH_TYPE: scram-sha-256
@@ -100,7 +100,7 @@ services:
           echo "Starting Initialization..."
           echo "Waiting For PostgreSQL On $${DIRECT_DB_HOST:-Database}:$${DIRECT_DB_PORT:-5432}..."
           for i in $$(seq 1 30); do
-            pg_isready -h "$${DIRECT_DB_HOST:-Database}" -p "$${DIRECT_DB_PORT:-5432}" -U "$${POSTGRES_USER:-intranet}" -d "$${POSTGRES_DB:-intranet_rebuild}" && break
+            pg_isready -h "$${DIRECT_DB_HOST:-Database}" -p "$${DIRECT_DB_PORT:-5432}" -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}" && break
             echo "Waiting... Attempt $$i"
             sleep 2
           done
@@ -119,12 +119,12 @@ services:
           fi
           echo "Initialization Successful."
      environment:
-       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-Rebuild-Development-Only}
+       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
        DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
        DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend,0.0.0.0,intranetatg.durgaaisolutions.in}
-       POSTGRES_DB: ${POSTGRES_DB:-intranet_rebuild}
-       POSTGRES_USER: ${POSTGRES_USER:-intranet}
-       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
+       POSTGRES_DB: ${POSTGRES_DB}
+       POSTGRES_USER: ${POSTGRES_USER}
+       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
        DIRECT_DB_HOST: Database
        DIRECT_DB_PORT: 5432
        CELERY_BROKER_URL: redis://Redis:6379/0
@@ -156,14 +156,14 @@ services:
      restart: unless-stopped
      command: gunicorn Backend.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 120
      environment:
-       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-Rebuild-Development-Only}
+       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
        DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
        DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend,0.0.0.0,intranetatg.durgaaisolutions.in}
        CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4787,http://127.0.0.1:4787,https://intranetatg.durgaaisolutions.in}
        CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:4787,http://127.0.0.1:4787,http://localhost:5466,http://127.0.0.1:5466,https://intranetatg.durgaaisolutions.in}
-       POSTGRES_DB: ${POSTGRES_DB:-intranet_rebuild}
-       POSTGRES_USER: ${POSTGRES_USER:-intranet}
-       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
+       POSTGRES_DB: ${POSTGRES_DB}
+       POSTGRES_USER: ${POSTGRES_USER}
+       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
        POSTGRES_HOST: PgBouncer
        POSTGRES_PORT: 5432
        DIRECT_DB_HOST: Database
@@ -200,11 +200,11 @@ services:
      restart: unless-stopped
      command: celery -A Backend.celery_app worker -l info --concurrency=4
      environment:
-       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-Rebuild-Development-Only}
+       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
        DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
-       POSTGRES_DB: ${POSTGRES_DB:-intranet_rebuild}
-       POSTGRES_USER: ${POSTGRES_USER:-intranet}
-       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
+       POSTGRES_DB: ${POSTGRES_DB}
+       POSTGRES_USER: ${POSTGRES_USER}
+       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
        POSTGRES_HOST: PgBouncer
        POSTGRES_PORT: 5432
        DB_POOL_SIZE: 4
@@ -236,11 +236,11 @@ services:
      restart: unless-stopped
      command: celery -A Backend.celery_app beat -l info
      environment:
-       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-Rebuild-Development-Only}
+       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
        DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
-       POSTGRES_DB: ${POSTGRES_DB:-intranet_rebuild}
-       POSTGRES_USER: ${POSTGRES_USER:-intranet}
-       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
+       POSTGRES_DB: ${POSTGRES_DB}
+       POSTGRES_USER: ${POSTGRES_USER}
+       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
        POSTGRES_HOST: PgBouncer
        POSTGRES_PORT: 5432
        DB_POOL_SIZE: 2
