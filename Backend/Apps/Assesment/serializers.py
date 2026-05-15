@@ -50,7 +50,7 @@ class AssignAssessmentSerializer(serializers.Serializer):
 
 
 class SubmitAssessmentSerializer(serializers.Serializer):
-    score = serializers.DecimalField(max_digits=8, decimal_places=2, required=False, default=0)
+    score = serializers.DecimalField(max_digits=8, decimal_places=2, required=False, default=0, allow_null=True)
     percentage = serializers.DecimalField(max_digits=6, decimal_places=2, required=False, allow_null=True)
     answer_payload = serializers.JSONField(required=False)
     evaluated_payload = serializers.JSONField(required=False)

@@ -161,6 +161,7 @@ export function ProfileScreen({ data, onLogout, reload }) {
   const initials = String(fullName).split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase() || "U";
   const employeeTasks = (data.tasks || []).filter((task) => String(task.owner || task.owner_id || task.assignee) === String(employee.id));
   const leaveRows = data.leaveOverview?.results?.length ? data.leaveOverview.results : data.leaveRequests || [];
+  const payProfile = (data.payProfiles || []).find((p) => String(p.employee) === String(employee.id));
   const profileRows = [
     ["Username", user.username || employee.username || "-"],
     ["Email", user.email || employee.email || "-"],
@@ -170,6 +171,19 @@ export function ProfileScreen({ data, onLogout, reload }) {
     ["Employment Type", employee.employment_type || "-"],
     ["Status", employee.status || "-"],
     ["Joined", employee.joined_on ? new Date(employee.joined_on).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "-"],
+    ["Contact Number", employee.contact_number || "-"],
+    ["GitHub Username", employee.github_username || "-"],
+    ["City", employee.city || "-"],
+    ["Slack Username", employee.slack_username || "-"],
+    ["Calendar ID", employee.calendar_id || "-"],
+    ["College Name", employee.college_name || "-"],
+    ["Year of Graduation", employee.year_of_graduation || "-"],
+    ["Availability (hrs/week)", employee.availability_hours || "40"],
+    ["Pay Type", payProfile?.pay_type || employee.profile_payload?.pay_type || "-"],
+    ["Pay Per Task", payProfile?.pay_per_task ? `₹${payProfile.pay_per_task}` : "-"],
+    ["Performance Pay", payProfile?.performance_pay ? `₹${payProfile.performance_pay}` : "-"],
+    ["Address", employee.profile_payload?.address || "-"],
+    ["Emergency Contact", employee.profile_payload?.emergency_contact || "-"],
   ];
 
   return (
@@ -214,9 +228,9 @@ export function ProfileScreen({ data, onLogout, reload }) {
       <div className="PProfile-Grid">
         <article className="PProfile-Card">
           <div className="PProfile-CardHead"><UserRound size={18} /><h2>Account Details</h2></div>
-          <div className="PProfile-CardBody">
+          <div className="PProfile-CardBody" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 24px" }}>
             {profileRows.map(([label, value]) => (
-              <dl className="PProfile-Row" key={label}><dt>{label}</dt><dd>{value}</dd></dl>
+              <dl className="PProfile-Row" key={label} style={{ margin: 0, padding: "6px 0" }}><dt style={{ fontSize: 11, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.04em" }}>{label}</dt><dd style={{ margin: 0, fontSize: 14, color: "#0f172a", fontWeight: 500 }}>{value}</dd></dl>
             ))}
           </div>
         </article>

@@ -19,7 +19,7 @@ from Backend.Apps.LegacyBridge.models import LegacyApplicationMap, LegacyMigrati
 from Backend.Apps.Lms.models import LeadQueueSnapshot, LearningAssignment, LearningModule, LearningPath, RevenuePerformanceSnapshot
 from Backend.Apps.MainApp.models import CredentialShareGrant, CredentialVaultItem, ExternalIssueReference, LeaveRequest, ManagerScope, NotificationItem, OnboardingOffer
 from Backend.Apps.McpAccessLayer.models import AgentPrincipal, DraftAgentAction, McpAccessGrant, McpInvocationAudit, McpResourceDefinition, McpToolDefinition
-from Backend.Apps.Project.models import ComplianceAssignment, ComplianceCampaign, DefaultCheckpoint, DeliveryAlert, DeliveryDocument, DeliveryMilestone, MilestoneComponent, ProjectContact, ProjectDelay, ProjectWorkspace, RepositoryLink, TeamAssignment
+from Backend.Apps.Project.models import ComplianceAssignment, ComplianceCampaign, DefaultCheckpoint, DeliveryAlert, DeliveryDocument, DeliveryMilestone, MilestoneComponent, ProjectBudget, ProjectContact, ProjectDelay, ProjectWorkspace, RepositoryLink, TeamAssignment, TeamAssignmentHistory, UserRepositoryStatus
 from Backend.Apps.TasksDashboard.models import ClickUpProjectMapping, DailyStatusEntry, ExternalWorkMapping, ManagerAbbreviation, SlackDeliveryMessage, SlackDeliveryThread, TaskActivity, WorkEntry, WorkItem
 from Backend.Apps.Users.models import BenchPeriod, Department, DepartmentMembership, Domain, EmployeeBankAccount, EmployeeCertificate, EmployeeFeedback, EmployeePaymentSnapshot, EmployeeProfile, EmployeeRating, Goal, GoalFeedback, InterviewProgress, LeaveBalance, LeavePolicy, LeaveTransaction, PayProfile, Position, ResignationRequest, Skill, SubDepartment, UserEffortReport, UserSkill, UserStatusSnapshot
 from Backend.EnterpriseCore.models import AccessAuditLog, BusinessUnit, Capability, IdempotencyKey, Organization, OutboxEvent, ResourcePolicy, Role, RoleAssignment, RoleCapability, Tenant, Workspace
@@ -59,7 +59,6 @@ class Command(BaseCommand):
             verbosity=0,
         )
         self.tenant = Tenant.objects.get(slug=options["tenant"].lower().replace(" ", "-"))
-        # 
         self.workspace = Workspace.objects.filter(tenant=self.tenant, name=options["workspace"]).first()
         if not self.workspace:
             self.workspace = Workspace.objects.filter(tenant=self.tenant, code="DEFAULT").first()
@@ -188,7 +187,10 @@ class Command(BaseCommand):
         ]
         employees = {}
         manager = None
-        for username, first, last, email, code, display_name, dept, position, employment_type in people:
+        colleges = ["MIT Bangalore", "Pune Institute of Technology", "Delhi University", "BITS Pilani", "VIT Vellore", "NIT Trichy", "IIT Bombay", "IIT Delhi", "IIIT Hyderabad", "SRM Chennai"]
+        cities = ["Bengaluru", "Mumbai", "Pune", "Delhi", "Chennai", "Hyderabad", "Kolkata", "Jaipur", "Ahmedabad", "Lucknow"]
+        grads = [2023, 2024, 2024, 2022, 2023, 2025, 2024, 2023, 2025, 2024]
+        for idx, (username, first, last, email, code, display_name, dept, position, employment_type) in enumerate(people):
             user = self.make_user(username, first, last, email)
             employee = self.upsert(
                 EmployeeProfile,
@@ -207,13 +209,19 @@ class Command(BaseCommand):
                     "onboarding_completed": True,
                     "contact_number": f"+91-987654{code[-3:]}",
                     "github_username": username,
+                    "city": cities[idx % len(cities)],
+                    "college_name": colleges[idx % len(colleges)],
+                    "year_of_graduation": grads[idx % len(grads)],
+                    "availability_hours": 40,
+                    "slack_username": username,
+                    "calendar_id": f"{username}@calendar.atg.com",
                     "profile_payload": {
                         "demo_credentials": {
                             "user_id": user.id,
                             "username": username,
                             "password": EMPLOYEE_DEMO_PASSWORD,
                         },
-                        "address": f"Block-{code[-1]}, Tech Park, Bengaluru, Karnataka 560001",
+                        "address": f"Block-{code[-1]}, Tech Park, {cities[idx % len(cities)]}, Karnataka 560001",
                         "emergency_contact": f"Mother - +91-987654{9 - int(code[-1]):03d}",
                     },
                 },
@@ -233,7 +241,7 @@ class Command(BaseCommand):
             )
             self.upsert(DepartmentMembership, {"tenant": self.tenant, "employee": employee, "department": dept}, {"status": DepartmentMembership.STATUS_ACTIVE, "started_on": self.today - timezone.timedelta(days=120)})
             self.upsert(EmployeeRating, {"employee": employee}, {"tenant": self.tenant, "workspace": self.workspace, "rating_value": Decimal("4.20")})
-            self.upsert(PayProfile, {"tenant": self.tenant, "employee": employee, "effective_at": self.now.replace(microsecond=0)}, {"base_pay": dept.base_pay, "pay_type": dept.pay_type, "pay_per_task": dept.pay_per_task})
+            self.upsert(PayProfile, {"tenant": self.tenant, "employee": employee, "effective_at": self.now.replace(microsecond=0)}, {"base_pay": dept.base_pay, "pay_type": dept.pay_type, "pay_per_task": dept.pay_per_task, "performance_pay": Decimal("2000")})
             self.upsert(EmployeeBankAccount, {"tenant": self.tenant, "employee": employee, "masked_account_number": f"XXXX{code[-3:]}"}, {"account_holder_name": display_name, "ifsc_code": "HDFC0001234", "upi_id": f"{username}@upi", "verification_status": "Verified"})
             employees[code] = employee
 
@@ -284,6 +292,8 @@ class Command(BaseCommand):
             balance = self.upsert(LeaveBalance, {"tenant": self.tenant, "employee": employee, "policy": policy}, {"available": Decimal("8"), "accrued": Decimal("12"), "used": Decimal("4")})
             self.upsert(LeaveTransaction, {"tenant": self.tenant, "balance": balance, "transaction_type": "Accrual", "amount": Decimal("1.5")}, {"reason": "Monthly accrual"})
         self.upsert(LeaveRequest, {"tenant": self.tenant, "employee": employees["EMP002"], "starts_on": self.today + timezone.timedelta(days=3)}, {"leave_type": "Casual", "ends_on": self.today + timezone.timedelta(days=4), "status": "Submitted", "requested_days": Decimal("2"), "reason": "Family function"})
+        self.upsert(LeaveRequest, {"tenant": self.tenant, "employee": employees["EMP002"], "starts_on": self.today - timezone.timedelta(days=2)}, {"leave_type": "Sick", "ends_on": self.today, "status": "Approved", "requested_days": Decimal("3"), "reason": "Medical Leave — Shows As On Leave (Red) On Attendance Grid", "approved_by": self.admin_user, "approved_at": self.now - timezone.timedelta(days=3)})
+        self.upsert(LeaveRequest, {"tenant": self.tenant, "employee": employees["EMP005"], "starts_on": self.today - timezone.timedelta(days=1)}, {"leave_type": "Casual", "ends_on": self.today + timezone.timedelta(days=1), "status": "Approved", "requested_days": Decimal("3"), "reason": "Personal Leave — Tests Attendance Leave Coloring", "approved_by": self.admin_user, "approved_at": self.now - timezone.timedelta(days=2)})
         self.upsert(OnboardingOffer, {"tenant": self.tenant, "candidate_email": "new.dev@example.com"}, {"candidate_name": "New Dev Candidate", "company_name": "Banao", "position_title": "React Developer", "offer_type": "Intern", "token": "demo-offer-token", "status": "Issued", "issued_at": self.now})
         self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP001"].user, "title": "Project Dashboard Review Due"}, {"message": "Review Overdue Milestones And Repository Access", "category": "Project", "resource_type": "ProjectWorkspace", "resource_id": "demo", "delivered_at": self.now})
         self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP002"].user, "title": "New Pull Request Opened"}, {"message": "PR #345: Add User Authentication Flow - Ready For Review", "category": "github", "resource_type": "pull_request", "resource_id": "345", "is_read": False, "metadata": {"repo": "intranet-v2", "author": "faraz-dev", "branch": "feature/auth"}})
@@ -310,7 +320,11 @@ class Command(BaseCommand):
             for cp_title, cp_seq in [("Architecture And UX Sign-Off", 1), ("Sprint 1 Delivery", 2), ("Mid-Project Review", 3), ("Client Demo", 4), ("Handover & Sign-Off", 5)]:
                 self.upsert(DefaultCheckpoint, {"tenant": self.tenant, "project_type": project.project_type, "title": cp_title}, {"sequence": cp_seq, "bounty": Decimal("1500"), "acceptance_criteria": ["API Mapped", "React Page Usable"]})
             component = self.upsert(MilestoneComponent, {"tenant": self.tenant, "project": project, "name": component_name}, {"sequence": 1, "status": "InProgress"})
-            self.upsert(DeliveryMilestone, {"tenant": self.tenant, "project": project, "title": milestone_title}, {"component": component, "sequence": 1, "status": "InProgress", "due_on": self.today + timezone.timedelta(days=7), "bounty": Decimal("3000"), "delayed_days": 1, "acceptance_criteria": acceptance_criteria})
+            milestone = self.upsert(DeliveryMilestone, {"tenant": self.tenant, "project": project, "title": milestone_title}, {"component": component, "sequence": 1, "status": "InProgress", "due_on": self.today + timezone.timedelta(days=7), "bounty": Decimal("3000"), "delayed_days": 1, "acceptance_criteria": acceptance_criteria})
+            if is_marketing:
+                self.upsert(DeliveryAlert, {"tenant": self.tenant, "milestone": milestone, "title": "Campaign Design Needs Approval"}, {"project": project, "severity": "High", "status": "Open"})
+            else:
+                self.upsert(DeliveryAlert, {"tenant": self.tenant, "milestone": milestone, "title": "UI Parity Review Pending"}, {"project": project, "severity": "Low", "status": "Open"})
             self.upsert(TeamAssignment, {"tenant": self.tenant, "project": project, "employee": employees["EMP001"], "role": "Project Manager"}, {"allocation_percent": 50, "status": "Active", "github_access_status": "Granted"})
             if is_marketing:
                 self.upsert(TeamAssignment, {"tenant": self.tenant, "project": project, "employee": employees["EMP003"], "role": "Campaign Strategist"}, {"allocation_percent": 100, "status": "Active", "github_access_status": "Granted"})
@@ -320,12 +334,19 @@ class Command(BaseCommand):
             self.upsert(RepositoryLink, {"tenant": self.tenant, "project": project, "name": project.code.lower()}, {"owner": "atg-world", "full_name": f"atg-world/{project.code.lower()}", "provider": "GitHub", "default_branch": "main", "access_status": "Linked"})
             self.upsert(DeliveryDocument, {"tenant": self.tenant, "project": project, "title": "Project SOW"}, {"document_type": "SOW", "storage_reference": f"demo://docs/{project.code}/sow", "is_pinned": True, "status": "Active"})
             self.upsert(DeliveryAlert, {"tenant": self.tenant, "project": project, "title": "UI Parity Review"}, {"severity": "Warning", "description": "All Legacy Pages Must Be Accessible In React", "status": "Open"})
+        for p, p_roles in [(project_a, [{"role": "Project Manager", "budget": 50000}, {"role": "Developer", "budget": 35000}]), (project_b, [{"role": "Campaign Strategist", "budget": 40000}, {"role": "Creative Designer", "budget": 30000}])]:
+            self.upsert(ProjectBudget, {"tenant": self.tenant, "project": p}, {"total_cost": Decimal("500000"), "total_budget": Decimal("750000"), "role_and_budget": p_roles})
+        for ta in TeamAssignment.objects.filter(tenant=self.tenant):
+            self.upsert(TeamAssignmentHistory, {"tenant": self.tenant, "team_assignment": ta, "action": "added", "created_at": self.now - timezone.timedelta(days=30)}, {"comment": "Initial Team Assignment", "changed_by": employees.get("EMP001")})
+        for rl in RepositoryLink.objects.filter(tenant=self.tenant):
+            for emp_code in ["EMP001", "EMP002"]:
+                if emp_code in employees:
+                    self.upsert(UserRepositoryStatus, {"tenant": self.tenant, "repository": rl, "employee": employees[emp_code]}, {"status": "Active", "last_checked": self.now, "days_since": 0})
         campaign = self.upsert(ComplianceCampaign, {"tenant": self.tenant, "name": "Weekly Anti Phishing Demo"}, {"project": project_a, "campaign_type": "AntiPhishing", "status": "Scheduled", "scheduled_for": self.now + timezone.timedelta(days=2)})
         self.upsert(ComplianceAssignment, {"tenant": self.tenant, "campaign": campaign, "employee": employees["EMP002"]}, {"token": "demo-phishing-token", "status": "Assigned", "score": Decimal("0")})
         return {"project_a": project_a, "project_b": project_b}
 
     def seed_delays(self, employees, projects):
-        """Seed Realistic Delay Data For Projects, Tasks, And Employees"""
         # Project Delays
         self.upsert(
             ProjectDelay,
@@ -387,6 +408,8 @@ class Command(BaseCommand):
                 "space_id": "SPACE-DEMO",
                 "list_id": "LIST-DEMO",
                 "entries": [
+                    ("Build Employee Skill Matrix", employees["EMP002"], "Completed", "High", 5, 100),
+                    ("Fix Login Redirect Bug", employees["EMP002"], "Completed", "High", 3, 100),
                     ("Map Old HRMS Pages", employees["EMP002"], "Open", "High", 1, 22),
                     ("Seed Project Dashboard Data", employees["EMP002"], "InProgress", "Normal", 2, 48),
                     ("Validate Banao Lead Tables", employees["EMP002"], "InProgress", "Normal", 3, 72),
@@ -408,7 +431,8 @@ class Command(BaseCommand):
         for spec in project_task_specs:
             project = spec["project"]
             for index, (title, owner, status, priority, bounty_number, progress) in enumerate(spec["entries"]):
-                item = self.upsert(WorkItem, {"tenant": self.tenant, "title": title}, {"project": project, "owner": owner, "description": f"Demo Task For {title}", "status": status, "priority": priority, "order_index": index, "bounty": Decimal(str(bounty_number)), "due_at": self.now + timezone.timedelta(days=index + 1), "metadata": {"progress": progress}})
+                completed_at = self.now - timezone.timedelta(days=1) if status == "Completed" else None
+                item = self.upsert(WorkItem, {"tenant": self.tenant, "title": title}, {"project": project, "owner": owner, "description": f"Demo Task For {title}", "status": status, "priority": priority, "order_index": index, "bounty": Decimal(str(bounty_number)), "due_at": self.now + timezone.timedelta(days=index + 1), "completed_at": completed_at, "metadata": {"progress": progress}})
                 self.upsert(WorkEntry, {"tenant": self.tenant, "work_item": item, "employee": owner, "entry_date": self.today, "entry_type": "WorkLog"}, {"minutes": 120, "summary": f"Worked On {title}"})
                 self.upsert(TaskActivity, {"tenant": self.tenant, "work_item": item, "activity_type": "StatusChange"}, {"actor": owner, "message": "Moved Through Standard Approval Workflow"})
                 self.upsert(ExternalWorkMapping, {"tenant": self.tenant, "work_item": item, "provider": "ClickUp"}, {"remote_status": "open", "sync_status": "Linked", "last_synced_at": self.now})
@@ -420,7 +444,7 @@ class Command(BaseCommand):
     def seed_revenue(self, employees):
         hot = self.upsert(LeadTag, {"tenant": self.tenant, "name": "Hot"}, {"color": "red"})
         ai = self.upsert(LeadTag, {"tenant": self.tenant, "name": "AI ERP"}, {"color": "blue"})
-        lead = self.upsert(LeadAccount, {"tenant": self.tenant, "company_name": "Acme Services"}, {"source": "Vikaas", "stage": "Proposal Sent", "priority": "High", "owner": employees["EMP003"], "estimated_value": Decimal("450000"), "currency": "INR"})
+        lead = self.upsert(LeadAccount, {"tenant": self.tenant, "company_name": "Acme Services"}, {"source": "Vikaas", "stage": "Proposal Sent", "priority": "High", "owner": employees["EMP003"], "estimated_value": Decimal("450000"), "currency": "INR", "call_status": "call_connected", "call_updated_at": self.now - timezone.timedelta(days=2)})
         lead.tags.set([hot, ai])
         self.upsert(LeadContact, {"tenant": self.tenant, "lead": lead, "email": "buyer@acme.example"}, {"name": "Acme Buyer", "phone": "+91-9111111111", "role": "CEO", "is_primary": True})
         self.upsert(LeadActivity, {"tenant": self.tenant, "lead": lead, "title": "Discovery Follow-Up"}, {"actor": employees["EMP003"], "activity_type": "Call", "note": "Asked for AI-Ready Intranet Demo", "scheduled_at": self.now + timezone.timedelta(days=1)})
@@ -448,10 +472,14 @@ class Command(BaseCommand):
         self.upsert(DocumentVersion, {"tenant": self.tenant, "document": doc, "version": 1}, {"title": doc.title, "body": doc.body, "changed_by": employees["EMP001"]})
 
     def seed_assessments(self, employees):
-        template = self.upsert(AssessmentTemplate, {"tenant": self.tenant, "code": "ASSESS-DEMO-1"}, {"title": "React ERP Navigation Check", "assessment_type": "Compliance", "department": employees["EMP002"].department, "sequence_number": 1, "status": AssessmentTemplate.STATUS_ACTIVE, "instructions": "Verify Each Migrated Screen In React.", "passing_score": Decimal("70"), "duration_minutes": 20, "question_payload": [{"q": "Can you find payroll?"}]})
-        assignment = self.upsert(AssessmentAssignment, {"tenant": self.tenant, "assessment": template, "employee": employees["EMP002"]}, {"status": AssessmentAssignment.STATUS_SUBMITTED, "due_at": self.now + timezone.timedelta(days=3), "submitted_at": self.now, "score": Decimal("82"), "percentage": Decimal("82"), "is_pass": True, "note": "Completed"})
-        self.upsert(AssessmentSubmission, {"tenant": self.tenant, "assignment": assignment, "attempt_number": 1}, {"score": Decimal("82"), "percentage": Decimal("82"), "passed": True, "status": "Submitted"})
-        self.upsert(AssessmentActivity, {"tenant": self.tenant, "assignment": assignment, "activity_type": "Submitted"}, {"title": "Assessment submitted", "message": "Demo Submission Recorded", "actor": self.admin_user})
+        template1 = self.upsert(AssessmentTemplate, {"tenant": self.tenant, "code": "ASSESS-DEMO-1"}, {"title": "React ERP Navigation Check", "assessment_type": "Compliance", "department": employees["EMP002"].department, "sequence_number": 1, "status": AssessmentTemplate.STATUS_ACTIVE, "instructions": "Verify Each Migrated Screen In React.", "passing_score": Decimal("70"), "duration_minutes": 20, "question_payload": [{"question": "Can You Find Payroll?", "options": ["HRMS Panel", "Finance Panel", "Settings", "Dashboard"], "correct": 1}, {"question": "Where Is The EOD Entry?", "options": ["Home Page", "Project Page", "HRMS Page", "Settings"], "correct": 0}]})
+        template2 = self.upsert(AssessmentTemplate, {"tenant": self.tenant, "code": "ASSESS-DEMO-2"}, {"title": "Django API Security Basics", "assessment_type": "Technical", "department": employees["EMP001"].department, "sequence_number": 2, "status": AssessmentTemplate.STATUS_ACTIVE, "instructions": "Answer All API Security Questions.", "passing_score": Decimal("60"), "duration_minutes": 15, "question_payload": [{"question": "Which Header Is Used For CSRF Protection?", "options": ["X-CSRFToken", "Authorization", "X-Tenant-Id", "Content-Type"], "correct": 0}, {"question": "What Does DRF Stand For?", "options": ["Django REST Framework", "Dynamic React Frontend", "Data Response Format", "None"], "correct": 0}]})
+        template3 = self.upsert(AssessmentTemplate, {"tenant": self.tenant, "code": "ASSESS-DEMO-3"}, {"title": "UI/UX Design Principles", "assessment_type": "Technical", "department": employees["EMP006"].department, "sequence_number": 1, "status": AssessmentTemplate.STATUS_DRAFT, "instructions": "Basic Design Knowledge Check.", "passing_score": Decimal("50"), "duration_minutes": 10, "question_payload": [{"question": "What Does UX Stand For?", "options": ["User Experience", "Universal XML", "Unix Extension", "None"], "correct": 0}]})
+        assignment1 = self.upsert(AssessmentAssignment, {"tenant": self.tenant, "assessment": template1, "employee": employees["EMP002"]}, {"status": AssessmentAssignment.STATUS_SUBMITTED, "due_at": self.now + timezone.timedelta(days=3), "submitted_at": self.now, "score": Decimal("82"), "percentage": Decimal("82"), "is_pass": True, "note": "Completed"})
+        assignment2 = self.upsert(AssessmentAssignment, {"tenant": self.tenant, "assessment": template2, "employee": employees["EMP001"]}, {"status": AssessmentAssignment.STATUS_ASSIGNED, "due_at": self.now + timezone.timedelta(days=7), "submitted_at": None, "score": Decimal("0"), "percentage": Decimal("0"), "is_pass": False, "note": "Assigned"})
+        self.upsert(AssessmentSubmission, {"tenant": self.tenant, "assignment": assignment1, "attempt_number": 1}, {"score": Decimal("82"), "percentage": Decimal("82"), "passed": True, "status": "Submitted"})
+        self.upsert(AssessmentActivity, {"tenant": self.tenant, "assignment": assignment1, "activity_type": "Submitted"}, {"title": "Assessment Submitted", "message": "Demo Submission Recorded", "actor": self.admin_user})
+        self.upsert(AssessmentActivity, {"tenant": self.tenant, "assignment": assignment2, "activity_type": "Assigned"}, {"title": "Assessment assigned", "message": template2.title, "actor": self.admin_user})
 
     def seed_l3(self, employees):
         college = self.upsert(CollegePipelineRecord, {"tenant": self.tenant, "college_name": "Demo Institute of Technology"}, {"city": "Pune", "state": "Maharashtra", "category": "Tier 2", "contact_email": "placement@demo.edu", "status": "Open", "workflow_status": "FollowUp", "owner": employees["EMP008"], "follow_up_at": self.now + timezone.timedelta(days=2)})

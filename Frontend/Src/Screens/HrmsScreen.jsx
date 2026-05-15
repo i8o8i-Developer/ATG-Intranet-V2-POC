@@ -11,8 +11,8 @@ import "../Styles/HrmsSanity.css";
 import "../Styles/HrmsFinance.css";
 import "../Styles/HrmsModal.css";
 import {
-  calendarDays, filterForEmployee, findDailyStatus, formatDate,
-  groupBy, indexById, isCompleted, isoDate, lastDays, money, progressForTask,
+  calendarDays, employeeName, filterForEmployee, findDailyStatus, formatDate,
+  getAttendanceStatus, groupBy, indexById, isCompleted, isoDate, lastDays, money, progressForTask,
   projectName, toggleSet,
 } from "./Shared/ScreenUtils.jsx";
 
@@ -44,7 +44,7 @@ export function HrmsScreen({ data, reload }) {
 
   const totalEmp   = (data.employees || []).length;
   const activeEmp  = (data.employees || []).filter((e) => e.status === "Active").length;
-  const benchEmp   = (data.employees || []).filter((e) => e.status === "On Bench").length;
+  const benchEmp   = (data.employees || []).filter((e) => e.status === "OnBench").length;
   const deptCount  = new Set((data.employees || []).map((e) => e.department_name).filter(Boolean)).size;
 
   useEffect(() => {
@@ -115,7 +115,7 @@ export function HrmsScreen({ data, reload }) {
           <div className="Hrms-Dept-Stack">
             {Array.from(departments.entries()).map(([deptName, rows]) => {
               const assigned     = rows.filter((e) => e.status === "Active").length;
-              const bench        = rows.filter((e) => e.status === "On Bench").length;
+              const bench        = rows.filter((e) => e.status === "OnBench").length;
               const notAssigned  = Math.max(rows.length - assigned - bench, 0);
               const isOpen       = expanded.has(deptName);
               return (
@@ -126,7 +126,13 @@ export function HrmsScreen({ data, reload }) {
                   >
                     <div className="Hrms-Dept-Left">
                       <span className="Hrms-Dept-Icon"><Users size={16} /></span>
-                      <strong>{deptName}</strong>
+                      <div>
+                        <strong>{deptName}</strong>
+                        {(() => {
+                          const lead = rows.find((e) => !e.manager) || rows[0];
+                          return lead ? <span className="Hrms-Dept-Lead">Lead: {employeeName(data, lead.id)}</span> : null;
+                        })()}
+                      </div>
                       <span className="Hrms-Dept-Badge">{rows.length}</span>
                     </div>
                     <div className="Hrms-Dept-Right">
@@ -292,8 +298,9 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, setShowG
     (item) => !item.department || String(item.department) === String(employee.department),
   );
   
+  const departmentSkillId = skillOptions[0]?.id;
   const serverSkill = (data.userSkills || []).find(
-    (us) => String(us.employee) === String(employee.id) && (us.skill_name?.toLowerCase().includes("department") || us.proficiency)
+    (us) => String(us.employee) === String(employee.id) && String(us.skill) === String(departmentSkillId)
   );
 
   const empProjects = assignments
@@ -305,6 +312,15 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, setShowG
   const profLabel = prof >= 3 ? "Advanced" : prof >= 2 ? "Intermediate" : "Basic";
   const profCls   = prof >= 3 ? "Adv" : prof >= 2 ? "Mid" : "Bas";
   const skillLabel = skill?.skill_name || skillOptions[0]?.name || "Department Skill";
+
+  const now = new Date();
+  const thisMonth = now.getMonth();
+  const thisYear = now.getFullYear();
+  const employeeTasks = (data.tasks || []).filter((t) => String(t.owner) === String(employee.id));
+  const ba = employeeTasks.reduce((sum, t) => sum + Math.max(0, Number(t.bounty || 0)), 0);
+  const bc = employeeTasks
+    .filter((t) => isCompleted(t.status) && t.completed_at && new Date(t.completed_at).getMonth() === thisMonth && new Date(t.completed_at).getFullYear() === thisYear)
+    .reduce((sum, t) => sum + Math.max(0, Number(t.bounty || 0)), 0);
 
   useEffect(() => {
     if (JSON.stringify(employee.profile_payload) !== JSON.stringify(lastPropPayload.current)) {
@@ -372,8 +388,16 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, setShowG
       profile_payload: nextPayload,
     });
     setProfilePayload(response?.profile_payload || nextPayload);
-    if (reload) reload(["employees", "notifications"]);
     return { previousPayload, nextPayload };
+  };
+
+  const changeEmployeeStatus = async (status) => {
+    if (!employee.id) return;
+    try {
+      await apiPost(`/Users/EmployeeProfiles/${employee.id}/change-status/`, { status, reason: "" });
+    } catch {
+      // 
+    }
   };
 
   const savePerformance = async (label) => {
@@ -381,6 +405,14 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, setShowG
     try {
       markUpdated("performance");
       await patchProfilePayload({ performance_tag: label || "" });
+      if (label === "On Bench") {
+        if (employee.status !== "OnBench") {
+          await changeEmployeeStatus("OnBench");
+        }
+      } else if (employee.status === "OnBench") {
+        await changeEmployeeStatus("Active");
+      }
+      if (reload) reload(["employees", "notifications"]);
       setShowPerfMenu(false);
     } catch {
       setProfilePayload(employee.profile_payload || {});
@@ -554,20 +586,21 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, setShowG
       </td>
 
       {/* BA / BC */}
-      <td className="Hrms-Num">0</td>
-      <td className="Hrms-Num">0</td>
+      <td className="Hrms-Num">{ba}</td>
+      <td className="Hrms-Num">{bc}</td>
 
       {/* EOD & Attendance */}
       <td>
         <div className="Hrms-Att-Cell">
           <div className="Hrms-Att-Strip">
             {days.map((day) => {
-              const ds = findDailyStatus(data.dailyStatus, employee.id, day.iso);
+              const { type, entry: ds } = getAttendanceStatus(data.dailyStatus, data.leaveRequests, employee.id, day.iso);
               const isOpen = eodPopover === day.iso;
+              const attClass = type === "leave" ? "leave" : ds ? "submitted" : "missing";
               return (
                 <div key={day.iso} className="Hrms-Att-Wrap" onMouseLeave={() => setEodPopover(null)}>
                   <button
-                    className={`Hrms-Att-Day ${ds ? "submitted" : "missing"}`}
+                    className={`Hrms-Att-Day ${attClass}`}
                     onClick={() => setEodPopover(isOpen ? null : day.iso)}
                     onMouseEnter={() => setEodPopover(day.iso)}
                     title={day.iso}
@@ -583,8 +616,13 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, setShowG
                         <X size={13} />
                       </button>
                       <strong className="Hrms-Eod-Pop-Name">{employee.display_name}</strong>
-                      <small className="Hrms-Eod-Pop-Date">{day.iso} · EOD Report</small>
-                      {ds ? (
+                      <small className="Hrms-Eod-Pop-Date">{day.iso} · {type === "leave" ? "On Leave" : "EOD Report"}</small>
+                      {type === "leave" ? (
+                        <div className="Hrms-Eod-Pop-Project Leave">
+                          <span>On Approved Leave</span>
+                          <p>Employee Is On Approved Leave for this date.</p>
+                        </div>
+                      ) : ds ? (
                         <div className="Hrms-Eod-Pop-Project">
                           <span>{ds.metadata?.project || "Project"}</span>
                           <p>{ds.summary || "No Summary Provided."}</p>
@@ -595,8 +633,8 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, setShowG
                           <p>Use View More To Submit Or Review The Full EOD Calendar.</p>
                         </div>
                       )}
-                      <div className={`Hrms-Eod-Pop-Status ${ds ? "" : "missing"}`}>
-                        <span className="dot" /> {ds ? "Submitted" : "Missing"}
+                      <div className={`Hrms-Eod-Pop-Status ${ds ? "" : type === "leave" ? "leave" : "missing"}`}>
+                        <span className="dot" /> {type === "leave" ? "On Leave" : ds ? "Submitted" : "Missing"}
                       </div>
                     </div>
                   )}
@@ -803,7 +841,9 @@ function HrmsGoalsWorkspace({ data, setGoalEmployee, reload }) {
                   formatDate(goal.due_on),
                   feedbackCount,
                   <span key={`action-${goal.id}`} className="Table-Actions">
-                    <button className="Soft-Button Small" onClick={() => employee && setGoalEmployee(employee)}>View Employee</button>
+                    <button className="Soft-Button Small" onClick={async () => { await apiPost(`/Users/Goals/${goal.id}/`, { ...goal, status: "InProgress" }); if (reload) reload(["goals", "goalFeedback"]); }}>Start</button>
+                    <button className="Soft-Button Small" onClick={async () => { await apiPost("/Users/GoalFeedback/", { goal: goal.id, feedback_type: "ManagerApproval", rating: 5, note: "Goal Approved." }); if (reload) reload(["goals", "goalFeedback"]); }}>Approve</button>
+                    <button className="Soft-Button Small" onClick={() => employee && setGoalEmployee(employee)}>View</button>
                   </span>,
                 ];
               })}
@@ -894,7 +934,7 @@ function GoalAssignModal({ data, defaultEmployeeId, onClose, reload }) {
         {/* Employee Selector */}
         <div>
           <label className="Form-Label">
-            Employee <span style={{ color: "var(--Danger)" }}>*</span>
+            Employee <span style={{ color: "var(--red)" }}>*</span>
           </label>
           <select
             className={`form-input ${errors.employee ? "error" : ""}`}
@@ -914,7 +954,7 @@ function GoalAssignModal({ data, defaultEmployeeId, onClose, reload }) {
         {/* Goal Title */}
         <div>
           <label className="Form-Label">
-            Goal Title <span style={{ color: "var(--Danger)" }}>*</span>
+            Goal Title <span style={{ color: "var(--red)" }}>*</span>
           </label>
           <input
             type="text"
@@ -929,7 +969,7 @@ function GoalAssignModal({ data, defaultEmployeeId, onClose, reload }) {
         {/* Goal Description */}
         <div>
           <label className="Form-Label">
-            Goal Description <span style={{ color: "var(--Danger)" }}>*</span>
+            Goal Description <span style={{ color: "var(--red)" }}>*</span>
           </label>
           <textarea
             className={`form-input ${errors.description ? "error" : ""}`}
@@ -946,7 +986,7 @@ function GoalAssignModal({ data, defaultEmployeeId, onClose, reload }) {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
           <div>
             <label className="Form-Label">
-              Due Date <span style={{ color: "var(--Danger)" }}>*</span>
+              Due Date <span style={{ color: "var(--red)" }}>*</span>
             </label>
             <input
               type="date"
@@ -1305,4 +1345,4 @@ function ProjectFinance({ data }) {
       </div>
     </div>
   );
-}
+}

@@ -44,13 +44,7 @@ const navItems = [
   { label: "Assessments",           path: "/assessment/" },
   { label: "Bank Details",          path: "/Bankdetails/" },
   { label: "Payslips",              path: "/payslips/" },
-  { label: "Manage Employees",      path: "/employee-registrar/" },
-  { label: "Send Offer",            path: "/Onboard/Send_Offer" },
-  { label: "Send Certificate",      path: "/send-certificate" },
-  { label: "Deactivate Employee",   path: "/deactivate-multiple-employee/" },
-  { label: "Documents",             path: "/docs/" },
-  { label: "Finance Department",    path: "/payments/" },
-  { label: "New Employee Register", path: "/employee-registrar/new/" },
+  { label: "Employee Register",     path: "/employee-register/" },
   { label: "MCP Agents",            path: "/mcp/" },
   { label: "Notifications",         path: "/notifications/" },
   { label: "Payroll Downloads",     path: "/payroll-downloads/" },
@@ -136,6 +130,9 @@ const endpointMap = [
   ["complianceCampaigns", "/Project/ComplianceCampaigns/", "list"],
   ["complianceAssignments", "/Project/ComplianceAssignments/", "list"],
   ["delays", "/Project/ProjectDelays/", "list"],
+  ["projectBudgets", "/Project/ProjectBudgets/", "list"],
+  ["teamAssignmentHistory", "/Project/TeamAssignmentHistory/", "list"],
+  ["userRepositoryStatus", "/Project/UserRepositoryStatus/", "list"],
   ["slackThreads", "/TasksDashboard/SlackDeliveryThreads/", "list"],
   ["slackMessages", "/TasksDashboard/SlackDeliveryMessages/", "list"],
   ["externalWorkMappings", "/TasksDashboard/ExternalWorkMappings/", "list"],
@@ -217,7 +214,7 @@ function buildNavItems(activePath) {
     {
       label: "Manage Employees",
       icon: <IconManageEmployees />,
-      path: "/employee-registrar/",
+      path: "/employee-register/",
       children: [
         { label: "Send Offer Letter",  path: "/Onboard/Send_Offer" },
         { label: "Send Certificate",   path: "/send-certificate" },
@@ -227,7 +224,6 @@ function buildNavItems(activePath) {
     { label: "Documents",            icon: <IconDocument />,         path: "/docs/" },
     { label: "Provide Feedbacks",    icon: <IconFeedback />,         path: "/feedback/" },
     { label: "Finance Department",   icon: <IconFinance />,          path: "/payments/?pay_month=current&month_name=May" },
-    { label: "New Employee Register", icon: <IconNewEmployee />,      path: "/employee-registrar/new/" },
     { label: "Delay Management",     icon: <IconDelayManagement />,  path: "/delays/" },
     { label: "Payroll Downloads",    icon: <IconPayrollDownload />,  path: "/payroll-downloads/" },
   ];
@@ -428,7 +424,7 @@ function useIntranetData(reloadKey, enabled) {
     }
   };
 
-const REALTIME_KEYS = ["dailyStatus", "me", "notifications", "employees", "tasks", "projects", "leaveRequests", "leaveBalances", "teamAssignments", "milestones", "alerts", "userSkills", "goals", "goalFeedback", "workEntries"];
+const REALTIME_KEYS = ["dailyStatus", "me", "notifications", "employees", "tasks", "projects", "leaveRequests", "leaveBalances", "teamAssignments", "milestones", "alerts", "userSkills", "goals", "goalFeedback", "workEntries", "bankAccounts", "assessmentTemplates", "assessmentAssignments", "payProfiles", "financeDashboard", "payrollRuns", "payrollLineItems", "payslipDocuments"];
 
 const load = useCallback(async (keysFilter) => {
      if (!enabled) { setState({ data: {}, loading: false, errors: [], apiOnline: false }); hasInitiallyLoaded.current = false; return; }

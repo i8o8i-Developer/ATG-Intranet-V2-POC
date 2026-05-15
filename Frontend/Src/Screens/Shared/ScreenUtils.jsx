@@ -103,13 +103,24 @@ function progressFromStatus(status = "") {
 export function progressForTask(task, allTasks = []) {
   const explicitProgress = boundedProgress(task?.metadata?.progress ?? task?.progress_percent ?? task?.progress ?? task?.percentage);
   if (explicitProgress !== null) return explicitProgress;
-  const subtasks = allTasks.filter((item) => String(item.parent) === String(task.id));
-  if (!subtasks.length) return progressFromStatus(task?.status);
-  return subtasks.reduce((sum, item) => sum + progressForTask(item, allTasks), 0) / subtasks.length;
+  return progressFromStatus(task?.status);
 }
 
 export function findDailyStatus(statuses = [], employeeId, iso) {
   return statuses.find((item) => String(item.employee) === String(employeeId) && String(item.status_date).slice(0, 10) === iso);
+}
+
+export function getAttendanceStatus(dailyStatus, leaveRequests, employeeId, dateIso) {
+  const daily = findDailyStatus(dailyStatus || [], employeeId, dateIso);
+  if (daily) return { type: "present", entry: daily };
+  const onLeave = (leaveRequests || []).some((lr) =>
+    String(lr.employee) === String(employeeId) &&
+    String(lr.status).toLowerCase() === "approved" &&
+    dateIso >= String(lr.starts_on).slice(0, 10) &&
+    dateIso <= String(lr.ends_on).slice(0, 10),
+  );
+  if (onLeave) return { type: "leave", entry: null };
+  return { type: "absent", entry: null };
 }
 
 export function lastDays(count) {
@@ -155,7 +166,7 @@ export function humanDate(value) {
 }
 
 export function money(value) {
-  const number = Number(value || 0);
+  const number = Math.max(0, Number(value || 0));
   return Number.isInteger(number) ? String(number) : number.toFixed(2);
 }
 

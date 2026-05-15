@@ -140,7 +140,7 @@
 .HomeR-TaskCheck.done { background: #6b7280; color: #fff; border-color: #6b7280; }
 .HomeR-TaskName { color: #475467; font-size: 14px; }
 .HomeR-DateCell { display: inline-flex; align-items: center; gap: 8px; color: #475467; }
-.HomeR-MoreBtn { border: 0; background: transparent; color: #94a3b3; padding: 4px; cursor: pointer; }
+
 .HomeR-InlineEditor td { background: #f8faff; padding: 0; }
 .HomeR-EditorShell { padding: 16px 18px 18px; display: grid; gap: 12px; }
 .HomeR-EditorShell strong { font-size: 14px; color: #0f172a; }

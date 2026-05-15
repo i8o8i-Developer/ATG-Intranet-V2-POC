@@ -1,9 +1,11 @@
 import React, { useState, useMemo } from "react";
-import { Check, X, Search as SearchIcon } from "lucide-react";
+import { Check, X, Search as SearchIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import "../Styles/FinanceScreen.css";
 
-import { apiPost } from "../Api/Client.js";
+import { apiGet, apiPost } from "../Api/Client.js";
 import { money } from "./Shared/ScreenUtils.jsx";
+
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 export function FinanceScreen({ data, reload }) {
   const rows = data.financeRows || [];
@@ -11,6 +13,10 @@ export function FinanceScreen({ data, reload }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDeptNames, setSelectedDeptNames] = useState(new Set());
   const [showApprovedOnly, setShowApprovedOnly] = useState(false);
+  const [monthIndex, setMonthIndex] = useState(new Date().getMonth());
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [approvalData, setApprovalData] = useState(null);
+  const [error, setError] = useState("");
 
   const filtered = useMemo(() => {
     return rows.filter((row) => {
@@ -39,9 +45,34 @@ export function FinanceScreen({ data, reload }) {
     });
   };
 
-  const approve = async (row) => {
-    await apiPost("/FinanceAndPayroll/payment-approval/", { employee: row.id, userid: row.user_id, normalPay: row.base_pay || 0, show_month: data.financeDashboard?.month, show_year: data.financeDashboard?.year });
-    reload(["financeDashboard", "financeRows", "payrollRuns", "payrollLineItems"]);
+  const changeMonth = (delta) => {
+    let m = monthIndex + delta;
+    let y = year;
+    if (m < 0) { m = 11; y -= 1; }
+    if (m > 11) { m = 0; y += 1; }
+    setMonthIndex(m);
+    setYear(y);
+    apiGet(`/FinanceAndPayroll/payments/?pay_month=${m + 1}&month_name=${MONTH_NAMES[m]}&year=${y}`).then((payload) => {
+      if (reload) reload(["financeDashboard", "financeRows", "payrollRuns", "payrollLineItems"]);
+    });
+  };
+
+  const openApproval = (row) => setApprovalData({ ...row, bonus: "0", note: "" });
+  const submitApproval = async () => {
+    if (!approvalData) return;
+    setError("");
+    try {
+      await apiPost("/FinanceAndPayroll/payment-approval/", {
+        employee: approvalData.id, userid: approvalData.user_id,
+        normalPay: approvalData.base_pay || 0, bonus: Number(approvalData.bonus) || 0,
+        bounty: approvalData.bounty || 0, payNote: approvalData.note || "",
+        show_month: monthIndex + 1, show_year: year,
+      });
+      reload(["financeDashboard", "financeRows", "payrollRuns", "payrollLineItems", "payslipDocuments"]);
+      setApprovalData(null);
+    } catch (err) {
+      setError(err?.payload?.detail || err?.message || "Approval failed.");
+    }
   };
 
   return (
@@ -59,43 +90,73 @@ export function FinanceScreen({ data, reload }) {
           })}
       </aside>
       <main>
-        <h1>Showing Payroll For {data.financeDashboard?.month_name || "May"}</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+          <h1 style={{ margin: 0 }}>Payroll</h1>
+          <button className="Soft-Button Small" onClick={() => changeMonth(-1)}><ChevronLeft size={16} /></button>
+          <strong style={{ minWidth: 140, textAlign: "center" }}>{MONTH_NAMES[monthIndex]} {year}</strong>
+          <button className="Soft-Button Small" onClick={() => changeMonth(1)}><ChevronRight size={16} /></button>
+        </div>
         <div className="Finance-Search">
           <input placeholder="Search By Name" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           <button className="Primary-Button" onClick={() => {}}><SearchIcon size={16} /> Search</button>
         </div>
-        <label>
+        <label style={{ marginBottom: 12, display: "inline-flex", alignItems: "center", gap: 6 }}>
           <input type="checkbox" checked={showApprovedOnly} onChange={() => setShowApprovedOnly((v) => !v)} />
-          {" "}Show Approved
+          Show Approved Only
         </label>
         <table className="Erp-Table">
           <thead>
             <tr>
-              <th>Name</th><th>Department</th><th>Days Left</th><th>Manager Status</th>
-              <th>Bank Details</th><th>Base Pay</th><th>Per Task Pay</th><th>Bounty</th>
-              <th>Extra Payment</th><th>Total</th><th />
+              <th>Name</th><th>Department</th><th>Status</th><th>Bank</th>
+              <th>Base Pay</th><th>Bonus</th><th>Bounty</th><th>Total</th><th />
             </tr>
           </thead>
           <tbody>
-            {filtered.map((row) => (
-              <tr key={row.id}>
-                <td>{row.display_name || row.username}</td>
-                <td>{row.department}</td>
-                <td>---</td>
-                <td className={String(row.manager_status || "").toLowerCase() === "approved" ? "" : "Danger-Text"}>{row.manager_status}</td>
-                <td>{(data.bankAccounts || []).some((account) => String(account.employee) === String(row.id)) ? <Check className="Ok-Icon" /> : <X className="Bad-Icon" />}</td>
-                <td>{money(row.base_pay)}</td>
-                <td>{money(row.pay_per_task)}</td>
-                <td>0</td>
-                <td><input className="Mini-Input" defaultValue="0" /></td>
-                <td>{money(row.base_pay)}</td>
-                <td><button className="Primary-Button Small" onClick={() => approve(row)}>Approve</button></td>
-              </tr>
-            ))}
-            {!filtered.length && <tr><td colSpan="11" style={{ textAlign: "center", padding: "24px", color: "#94a3b8" }}>No Payroll Entries Found.</td></tr>}
+            {filtered.map((row) => {
+              const isPaid = String(row.manager_status || row.finance_status || "").toLowerCase() === "approved";
+              return (
+                <tr key={row.id}>
+                  <td>{row.display_name || row.username}</td>
+                  <td>{row.department}</td>
+                  <td className={isPaid ? "" : "Danger-Text"}>{row.manager_status || row.finance_status || "Pending"}</td>
+                  <td>{(data.bankAccounts || []).some((a) => String(a.employee) === String(row.id) && a.verification_status === "Verified") ? <Check className="Ok-Icon" /> : <X className="Bad-Icon" />}</td>
+                  <td>{money(row.base_pay)}</td>
+                  <td>{money(row.bonus)}</td>
+                  <td>{money(row.bounty || row.task_bounty)}</td>
+                  <td>{money((row.base_pay || 0) + (row.bonus || 0) + (row.bounty || row.task_bounty || 0))}</td>
+                  <td>
+                    {isPaid ? (
+                      <span style={{ color: "#10b981", fontWeight: 600 }}>Approved</span>
+                    ) : (
+                      <button className="Primary-Button Small" onClick={() => openApproval(row)}>Approve</button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+            {!filtered.length && <tr><td colSpan="9" style={{ textAlign: "center", padding: "24px", color: "#94a3b8" }}>No Payroll Entries Found.</td></tr>}
           </tbody>
         </table>
       </main>
+
+      {approvalData && (
+        <div className="Modal-Backdrop" onClick={() => setApprovalData(null)}>
+          <section className="Modal" onClick={(e) => e.stopPropagation()} style={{ width: "min(500px, calc(100vw - 56px))" }}>
+            <div className="Modal-Body">
+              <h2>Approve Payroll</h2>
+              <p style={{ marginBottom: 16, color: "#64748b" }}>{approvalData.display_name || approvalData.username} — {MONTH_NAMES[monthIndex]} {year}</p>
+              <label>Base Pay<input value={money(approvalData.base_pay)} readOnly /></label>
+              <label>Bonus<input type="number" min="0" value={approvalData.bonus} onChange={(e) => setApprovalData({ ...approvalData, bonus: e.target.value })} /></label>
+              <label>Note<textarea value={approvalData.note} onChange={(e) => setApprovalData({ ...approvalData, note: e.target.value })} placeholder="Approval note..." /></label>
+              {error && <div className="error-banner">{error}</div>}
+              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                <button className="Primary-Button" onClick={submitApproval}>Approve & Generate Payslip</button>
+                <button className="Soft-Button" onClick={() => setApprovalData(null)}>Cancel</button>
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
     </section>
   );
 }

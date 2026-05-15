@@ -114,6 +114,12 @@ class EmployeeProfile(TenantScopedModel, ExternalReference):
     exited_on = models.DateField(null=True, blank=True)
     leaves_wallet = models.DecimalField(max_digits=8, decimal_places=2, default=0)
     leaves_per_month = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    city = models.CharField(max_length=120, blank=True)
+    college_name = models.CharField(max_length=220, blank=True)
+    year_of_graduation = models.PositiveIntegerField(null=True, blank=True)
+    availability_hours = models.PositiveIntegerField(default=40)
+    calendar_id = models.CharField(max_length=180, blank=True)
+    slack_username = models.CharField(max_length=120, blank=True)
     onboarding_completed = models.BooleanField(default=False, db_index=True)
     profile_payload = models.JSONField(default=dict, blank=True)
 
@@ -260,6 +266,7 @@ class PayProfile(TenantScopedModel):
     base_pay = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     pay_type = models.CharField(max_length=80, default="Fixed", db_index=True)
     pay_per_task = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    performance_pay = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     effective_at = models.DateTimeField(default=timezone.now)
     metadata = models.JSONField(default=dict, blank=True)
 

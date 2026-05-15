@@ -1325,8 +1325,9 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: #2454d6; b
   transition: filter .12s, transform .12s;
 }
 .Hrms-Att-Day:hover { filter: brightness(.88); transform: translateY(-1px); }
-.Hrms-Att-Day.Submitted { background: var(--Green); }
-.Hrms-Att-Day.Missing { background: var(--Gold); }
+.Hrms-Att-Day.submitted { background: var(--green); }
+.Hrms-Att-Day.missing { background: var(--gold); }
+.Hrms-Att-Day.leave { background: #ef4444; }
 .Hrms-View-More {
   border: 0; background: transparent; color: #2454d6;
   font-size: 12px; display: inline-flex; align-items: center; gap: 4px;
@@ -1348,7 +1349,7 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: #2454d6; b
 }
 .Hrms-Eod-Pop-Close:hover { color: #374151; }
 .Hrms-Eod-Pop-Name { font-size: 14px; font-weight: 700; color: #111827; display: block; }
-.Hrms-Eod-Pop-Date { font-size: 11px; color: var(--Muted); display: block; }
+.Hrms-Eod-Pop-Date { font-size: 11px; color: var(--muted); display: block; }
 .Hrms-Eod-Pop-Project {
   border-left: 3px solid #10b981; padding-left: 8px; display: grid; gap: 3px;
 }
@@ -1356,10 +1357,15 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: #2454d6; b
 .Hrms-Eod-Pop-Project p { margin: 0; font-size: 12px; color: #374151; line-height: 1.4; }
 .Hrms-Eod-Pop-Project.Missing { border-left-color: #f59e0b; }
 .Hrms-Eod-Pop-Project.Missing span { color: #92400e; }
+.Hrms-Eod-Pop-Project.Leave { border-left-color: #ef4444; }
+.Hrms-Eod-Pop-Project.Leave span { color: #991b1b; }
+.Hrms-Eod-Pop-Project.Leave p { color: #7f1d1d; }
 .Hrms-Eod-Pop-Status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #047857; font-weight: 600; justify-content: flex-end; }
 .Hrms-Eod-Pop-Status .dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; }
 .Hrms-Eod-Pop-Status.Missing { color: #92400e; }
 .Hrms-Eod-Pop-Status.Missing .dot { background: #f59e0b; }
+.Hrms-Eod-Pop-Status.leave { color: #991b1b; }
+.Hrms-Eod-Pop-Status.leave .dot { background: #ef4444; }
 
 /* ── Context menu ── */
 .Hrms-Action-Wrap { position: relative; }
@@ -1511,27 +1517,6 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: #2454d6; b
   font-size: 11px;
   font-weight: 700;
 }
-
-/* EOD Summary List */
-.eod-summary-list { display: grid; gap: 10px; }
-.eod-summary-row {
-  display: grid; grid-template-columns: 100px minmax(0,1fr) 100px;
-  align-items: center; gap: 12px; padding: 12px 14px;
-  border-radius: 8px; border: 1px solid #e5e7eb;
-}
-.eod-summary-row.has { border-color: #bbf7d0; background: #f0fdf4; }
-.eod-summary-row.no  { background: #f9fafb; }
-.eod-sum-date strong { font-size: 12px; color: #374151; }
-.eod-sum-content { display: grid; gap: 2px; }
-.eod-sum-content.empty { color: var(--muted); font-size: 13px; font-style: italic; }
-.eod-sum-proj { font-size: 12px; font-weight: 700; color: #047857; }
-.eod-sum-content p { margin: 0; font-size: 13px; color: #374151; }
-.eod-sum-badge { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; justify-content: flex-end; }
-.eod-sum-badge .dot { width: 7px; height: 7px; border-radius: 50%; }
-.eod-sum-badge.submitted { color: #047857; }
-.eod-sum-badge.submitted .dot { background: #10b981; }
-.eod-sum-badge.missing { color: #9ca3af; }
-.eod-sum-badge.missing .dot { background: #9ca3af; }
 
 /* ── Project Sanity ── */
 .hrms-sanity-list { display: grid; gap: 12px; }

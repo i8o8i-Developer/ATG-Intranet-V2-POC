@@ -52,8 +52,8 @@
 .eod-summary-row.no { border-left: 3px solid #e2e8f0; }
 .Eod-Sum-Date { min-width: 90px; }
 .Eod-Sum-Date strong { font-size: 13px; color: #0f172a; font-weight: 600; }
-.Eod-Sum-Content { flex: 1; min-width: 0; }
-.Eod-Sum-Content p { margin: 4px 0 0; color: #475569; font-size: 13px; line-height: 1.5; }
+.Eod-Sum-Content { flex: 1; min-width: 140px; overflow-wrap: break-word; word-break: break-word; }
+.Eod-Sum-Content p { margin: 4px 0 0; color: #475569; font-size: 13px; line-height: 1.5; overflow-wrap: break-word; word-break: break-word; }
 .Eod-Sum-Content.Empty { color: #94a3b8; font-size: 13px; }
 .Eod-Sum-Proj { font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
 .eod-sum-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; white-space: nowrap; padding: 4px 10px; border-radius: 999px; }

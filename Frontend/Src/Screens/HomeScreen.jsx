@@ -8,7 +8,6 @@ import {
   CircleAlert,
   ClipboardList,
   Clock3,
-  EllipsisVertical,
   Check,
 } from "lucide-react";
 
@@ -22,6 +21,7 @@ import {
   findById,
   findDailyStatus,
   formatDate,
+  getAttendanceStatus,
   groupBy,
   indexById,
   isCompleted,
@@ -52,8 +52,10 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
   const visibleGroups = useMemo(() => groupBy(filteredTasks, (task) => projectMap.get(String(task.project))?.name || "Intranet"), [filteredTasks, projectMap]);
   const primaryNotification = unread[0] || data.notifications?.[0];
   const totalTasks = employeeTasks.length;
+  const myEmployeeId = linkedEmployee?.id || selectedEmployeeId;
   const overdueTasks = employeeTasks.filter((task) => {
     if (isCompleted(task.status) || !task.due_at) return false;
+    if (useWorkspaceScope && String(task.owner || task.owner_id) !== String(myEmployeeId)) return false;
     const dueDate = new Date(task.due_at);
     return !Number.isNaN(dueDate.getTime()) && dueDate < new Date();
   }).length;
@@ -66,7 +68,7 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
     if (!filteredTasks.some((task) => String(task.id) === String(expandedTaskId))) {
       setExpandedTaskId(String(filteredTasks[0].id));
     }
-  }, [filteredTasks, expandedTaskId]);
+  }, [filteredTasks]);
 
   const submitEod = async () => {
     const employeeId = expandedTask?.owner || expandedTask?.owner_id || employee?.id;
@@ -132,10 +134,9 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
           </div>
           <div className="HomeR-AttGrid">
             {days.map((day) => {
-              const status = findDailyStatus(data.dailyStatus, employee?.id, day.iso);
-              const tone = attendanceTone(status);
+              const { type, entry } = getAttendanceStatus(data.dailyStatus, data.leaveRequests, employee?.id, day.iso);
               return (
-                <span key={day.iso} className={`HomeR-AttDay ${tone}`} title={`${day.iso} · ${attendanceLabel(status)}`}>
+                <span key={day.iso} className={`HomeR-AttDay ${type}`} title={`${day.iso} · ${type === "present" ? "Present" : type === "leave" ? "On Leave" : "Absent"}`}>
                   {day.label}
                 </span>
               );
@@ -212,7 +213,6 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
               <th>Status</th>
               <th>Due Date</th>
               <th>Assignee</th>
-              <th />
             </tr>
           </thead>
           <tbody>
@@ -221,7 +221,7 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
               return (
                 <React.Fragment key={name}>
                   <tr className="HomeR-ProjectRow">
-                    <td colSpan="6">
+                    <td colSpan="5">
                       <button type="button" className="HomeR-ProjectToggle" onClick={() => toggleProject(name)}>
                         {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
                         <strong>{name}</strong>
@@ -235,7 +235,7 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
                       <React.Fragment key={task.id}>
                         <tr className={selected ? "HomeR-TaskRow active" : "HomeR-TaskRow"}>
                           <td>
-                            <button className={selected ? "HomeR-TaskCheck active" : completed ? "HomeR-TaskCheck active done" : "HomeR-TaskCheck"} onClick={() => setExpandedTaskId(String(task.id))}>
+                            <button className={selected ? "HomeR-TaskCheck active" : completed ? "HomeR-TaskCheck active done" : "HomeR-TaskCheck"} onClick={() => setExpandedTaskId(selected ? "" : String(task.id))}>
                               <Check size={14} />
                             </button>
                             <span className="HomeR-TaskName">{task.title}</span>
@@ -244,16 +244,16 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
                           <td><span className={`status-pill ${statusTone(task.status)}`}>{task.status || "Not Started"}</span></td>
                           <td><span className="HomeR-DateCell"><CalendarDays size={15} /> {task.due_at ? formatDate(task.due_at) : "Not Set"}</span></td>
                           <td>{avatar(employeeName(data, task.owner || task.owner_id) || employee?.display_name)}</td>
-                          <td><button type="button" className="HomeR-MoreBtn" onClick={() => setExpandedTaskId(String(task.id))}><EllipsisVertical size={16} /></button></td>
                         </tr>
                         {selected && !completed && (
                           <tr className="HomeR-InlineEditor">
-                            <td colSpan="6">
+                            <td colSpan="5">
                               <div className="HomeR-EditorShell">
                                 <strong>Update EOD Report For This Task</strong>
                                 <textarea value={summary} onChange={(event) => setSummary(event.target.value)} placeholder="What Did You Do Today On This Task?" />
                                 <div className="HomeR-EditorActions">
                                   <button className="Primary-Button" onClick={submitEod}>Update EOD Report</button>
+                                  <button className="Outline-Button" onClick={() => { setExpandedTaskId(""); setSummary(""); }}>Cancel</button>
                                 </div>
                               </div>
                             </td>

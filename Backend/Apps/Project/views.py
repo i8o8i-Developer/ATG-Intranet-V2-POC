@@ -24,11 +24,14 @@ from Backend.Apps.Project.serializers import (
     DeliveryDocumentSerializer,
     DeliveryMilestoneSerializer,
     MilestoneComponentSerializer,
+    ProjectBudgetSerializer,
     ProjectContactSerializer,
     ProjectDelaySerializer,
     ProjectWorkspaceSerializer,
     RepositoryLinkSerializer,
+    TeamAssignmentHistorySerializer,
     TeamAssignmentSerializer,
+    UserRepositoryStatusSerializer,
 )
 from Backend.Apps.Project.services import ProjectDeliveryService
 from Backend.Apps.TasksDashboard.serializers import ClickUpProjectMappingSerializer, WorkItemSerializer
@@ -68,7 +71,10 @@ class ProjectWorkspaceViewSet(TenantScopedModelViewSet):
 
     @action(detail=True, methods=["post"], url_path="create-default-milestones")
     def create_default_milestones(self, request, pk=None):
-        result = ProjectDeliveryService.create_default_checkpoints(self.get_tenant_context(), pk)
+        result = ProjectDeliveryService.create_default_checkpoints(
+            self.get_tenant_context(), pk,
+            group=request.data.get("group") or request.data.get("project_type"),
+        )
         return self.service_response(result)
 
     @action(detail=True, methods=["post"], url_path="calculate-health")
@@ -129,6 +135,16 @@ class DeliveryMilestoneViewSet(TenantScopedModelViewSet):
             completed_on=request.data.get("completed_on"),
         )
         return self.service_response(result, DeliveryMilestoneSerializer)
+
+    @action(detail=True, methods=["post"], url_path="raise-flag")
+    def raise_flag(self, request, pk=None):
+        result = ProjectDeliveryService.raise_milestone_flag(
+            self.get_tenant_context(),
+            pk,
+            severity=request.data.get("severity", "High"),
+            title=request.data.get("title", "Milestone Flag"),
+        )
+        return self.service_response(result, DeliveryAlertSerializer)
 
 
 class TeamAssignmentViewSet(TenantScopedModelViewSet):
@@ -430,3 +446,18 @@ class AntiPhishingAssessmentLegacyAPIView(APIView):
         if not result.ok:
             return Response(result.errors, status=result.status_code)
         return Response(ComplianceAssignmentSerializer(result.data).data, status=result.status_code)
+
+
+class ProjectBudgetViewSet(TenantScopedModelViewSet):
+    queryset = ProjectBudget.objects.select_related("tenant", "workspace", "project").all()
+    serializer_class = ProjectBudgetSerializer
+
+
+class TeamAssignmentHistoryViewSet(TenantScopedModelViewSet):
+    queryset = TeamAssignmentHistory.objects.select_related("tenant", "workspace", "team_assignment", "changed_by").all()
+    serializer_class = TeamAssignmentHistorySerializer
+
+
+class UserRepositoryStatusViewSet(TenantScopedModelViewSet):
+    queryset = UserRepositoryStatus.objects.select_related("tenant", "workspace", "repository", "employee").all()
+    serializer_class = UserRepositoryStatusSerializer

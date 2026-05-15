@@ -4,9 +4,10 @@ import { AssessmentScreen } from "./AssessmentScreen.jsx";
 import { AdminChangePasswordScreen } from "./AdminChangePasswordScreen.jsx";
 import { BankDetailsScreen } from "./BankDetailsScreen.jsx";
 import { DeactivateEmployeeScreen } from "./DeactivateEmployeeScreen.jsx";
+import { EmployeeRegisterScreen } from "./EmployeeRegisterScreen.jsx";
 import { DelayManagementScreen } from "./DelayManagementScreen.jsx";
 import { DocsDetailScreen, DocsScreen } from "./DocsScreen.jsx";
-import { EmployeeRegistrarScreen } from "./EmployeeRegistrarScreen.jsx";
+
 import { FinanceScreen } from "./FinanceScreen.jsx";
 import { HomeScreen } from "./HomeScreen.jsx";
 import { HrmsScreen } from "./HrmsScreen.jsx";
@@ -27,7 +28,6 @@ export function RouteRenderer(props) {
   const path = (props.route || "").split("?")[0];
   if (path.startsWith("/onboarding")) return <OnboardingScreen {...props} />;
   if (path.startsWith("/hrms")) return <HrmsScreen {...props} />;
-  if (path.startsWith("/employee-registrar")) return <EmployeeRegistrarScreen {...props} />;
   if (path.startsWith("/leave")) return <LeaveApplyScreen {...props} />;
   if (path.startsWith("/delays")) return <DelayManagementScreen {...props} />;
   if (path.startsWith("/project/dashboard")) return <ProjectDashboardScreen {...props} />;
@@ -38,6 +38,7 @@ export function RouteRenderer(props) {
   if (path.startsWith("/Onboard/Send_Offer")) return <SendOfferScreen {...props} />;
   if (path.startsWith("/send-certificate")) return <SendCertificateScreen {...props} />;
   if (path.startsWith("/deactivate")) return <DeactivateEmployeeScreen {...props} />;
+  if (path.startsWith("/employee-register") || path.startsWith("/employee-registrar")) return <EmployeeRegisterScreen {...props} />;
   if (path.startsWith("/assessment")) return <AssessmentScreen {...props} />;
   if (path.startsWith("/payroll-downloads") || path.startsWith("/Payroll")) return <PayrollDownloadsScreen {...props} />;
   if (path.startsWith("/payslips")) return <PayslipsScreen {...props} />;

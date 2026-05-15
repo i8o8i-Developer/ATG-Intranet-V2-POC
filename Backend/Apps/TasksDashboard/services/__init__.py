@@ -21,7 +21,7 @@ class WorkManagementService:
 			title=title,
 			description=description,
 			priority=priority,
-			bounty=bounty or 0,
+			bounty=max(0, float(bounty or 0)),
 			source_system=provider,
 			external_id=external_id,
 			created_by=context.actor,

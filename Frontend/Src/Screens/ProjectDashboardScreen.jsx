@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   CalendarDays,
+  Check,
   ChevronRight,
   ExternalLink,
   FileText,
@@ -55,6 +56,8 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
   const [addMilestoneOpen, setAddMilestoneOpen] = useState(false);
   const [addTaskFor, setAddTaskFor] = useState(null); 
   const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [manageGroupsOpen, setManageGroupsOpen] = useState(false);
+  const [createGroupOpen, setCreateGroupOpen] = useState(false);
 
   useEffect(() => {
     if (!selectedProjectId && data.projects?.length) setSelectedProjectId(String(data.projects[0].id));
@@ -97,9 +100,9 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
     refresh();
   };
 
-  const createDefaultMilestones = async () => {
+  const createDefaultMilestones = async (group) => {
     if (!selectedProjectId) return;
-    await apiPost(`/Project/ProjectWorkspaces/${selectedProjectId}/create-default-milestones/`, {});
+    await apiPost(`/Project/ProjectWorkspaces/${selectedProjectId}/create-default-milestones/`, { group });
     refresh();
   };
 
@@ -171,6 +174,7 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
             <td>
               <span className="Table-Actions">
                 <button className="Soft-Button Small" onClick={() => setAddTaskFor({ parentTaskId: task.id, milestoneId: task.metadata?.milestone_id || null })} title="Add Sub Task"><Plus size={12} /></button>
+                {!isCompleted(task.status) && <button className="Soft-Button Small" onClick={async () => { await apiPost("/Project/update-task/", { task_id: task.id, status: "Completed" }); refresh(); }} title="Mark Complete"><Check size={12} /></button>}
                 <button className="Soft-Button Small Danger" onClick={() => deleteTask(task.id)} title="Delete"><Trash2 size={12} /></button>
               </span>
             </td>
@@ -211,6 +215,28 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
         <SimpleTable columns={["Code", "Type", "Status", "Start", "End", "Milestones"]} rows={[[project.code, project.project_type, project.status, formatDate(project.starts_on), formatDate(project.ends_on), `${completedMilestones}/${milestones.length} (${milestoneProgress}%)`]]} />
       </Disclosure>
 
+      {(() => {
+        const budget = (data.projectBudgets || []).find((b) => String(b.project) === String(selectedProjectId));
+        if (!budget) return null;
+        return (
+          <Disclosure title={`Budget — ₹${Number(budget.total_budget).toLocaleString()}`} defaultOpen>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <div style={{ padding: 12, background: "#f8fafc", borderRadius: 8 }}>
+                <span style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase" }}>Total Cost</span>
+                <strong style={{ display: "block", fontSize: 18, color: "#0f172a" }}>₹{Number(budget.total_cost).toLocaleString()}</strong>
+              </div>
+              <div style={{ padding: 12, background: "#f0fdf4", borderRadius: 8 }}>
+                <span style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase" }}>Total Budget</span>
+                <strong style={{ display: "block", fontSize: 18, color: "#059669" }}>₹{Number(budget.total_budget).toLocaleString()}</strong>
+              </div>
+            </div>
+            {(budget.role_and_budget || []).length > 0 && (
+              <SimpleTable columns={["Role", "Budget"]} rows={(budget.role_and_budget || []).map((r) => [r.role || r.name, `₹${Number(r.budget || r.amount || 0).toLocaleString()}`])} />
+            )}
+          </Disclosure>
+        );
+      })()}
+
       <Panel
         title="Tasks (Grouped By Milestone)"
         right={
@@ -220,7 +246,7 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
               <option value="completed">Completed Tasks</option>
               <option value="all">All Tasks</option>
             </select>
-            <button className="Soft-Button Small" onClick={createDefaultMilestones}>Create Default Milestones</button>
+            <button className="Soft-Button Small" onClick={() => setManageGroupsOpen(true)}>Create Milestones</button>
             <button className="Primary-Button Small" onClick={() => setAddMilestoneOpen(true)}><Plus size={14} /> New Milestone</button>
           </div>
         }
@@ -232,6 +258,7 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
           const list = tasksByMilestone.get(String(milestone.id)) || [];
           if (!list.length && milestone.id === "__unassigned__") return null;
           const done = list.filter((task) => ["completed", "done", "closed"].includes(String(task.status).toLowerCase())).length;
+          const milestoneFlags = (data.alerts || []).filter((a) => String(a.milestone) === String(milestone.id));
           return (
             <div className="Milestone-Block" key={milestone.id}>
               <div className="Milestone-Block-Head">
@@ -250,6 +277,20 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
                   </span>
                 )}
               </div>
+              {milestoneFlags.length > 0 && (
+                <div style={{ padding: "8px 14px", borderBottom: "1px solid #e5e7eb", background: "#fafafa" }}>
+                  {milestoneFlags.map((f) => {
+                    const isRed = f.severity === "High" || f.severity === "Critical";
+                    return (
+                      <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, padding: "4px 0", cursor: "pointer" }} onClick={() => { setFlagOpen(true); }}>
+                        <Flag size={14} fill={isRed ? "#ef4444" : "#22c55e"} color={isRed ? "#ef4444" : "#22c55e"} />
+                        <span>{f.title}</span>
+                        <span style={{ fontSize: 11, color: "#94a3b8", marginLeft: "auto" }}>{isRed ? "Red Flag" : "Green Flag"} · Click To Preview</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
               <table className="Erp-Table Project-Task-Table">
                 <thead>
                   <tr>
@@ -304,6 +345,22 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
         />
       </Disclosure>
 
+      <Disclosure title="Team History" defaultOpen={false}>
+        {(() => {
+          const teamHistory = (data.teamAssignmentHistory || []).filter((h) => team.some((t) => String(t.id) === String(h.team_assignment))).slice(0, 10);
+          if (!teamHistory.length) return <EmptyState label="No Team History." />;
+          return <SimpleTable columns={["Employee", "Action", "Comment", "Date"]} rows={teamHistory.map((h) => [employeeName(data, h.changed_by) || "-", h.action, h.comment || "-", formatDate(h.created_at)])} />;
+        })()}
+      </Disclosure>
+
+      <Disclosure title="Repository Status" defaultOpen={false}>
+        {(() => {
+          const repoStatuses = (data.userRepositoryStatus || []).filter((rs) => repos.some((r) => String(r.id) === String(rs.repository))).slice(0, 10);
+          if (!repoStatuses.length) return <EmptyState label="No Repository Status." />;
+          return <SimpleTable columns={["Employee", "Repository", "Status", "Last Checked"]} rows={repoStatuses.map((rs) => [employeeName(data, rs.employee), (repos.find((r) => String(r.id) === String(rs.repository))?.name || rs.repository), rs.status || "-", formatDate(rs.last_checked)])} />;
+        })()}
+      </Disclosure>
+
       <Disclosure title="Documents" defaultOpen={false}>
         <SimpleTable
           columns={["Title", "Type", "Pinned", "Reference"]}
@@ -315,14 +372,16 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
       {selectedTask && <TaskDetailModal task={selectedTask} data={data} onClose={() => setSelectedTask(null)} reload={refresh} />}
   {createProjectOpen && <CreateProjectModal defaultProjectType={kind === "marketing" ? "Marketing" : "Development"} data={data} onClose={() => setCreateProjectOpen(false)} reload={(newId, newName) => { refresh(); if (newId) { setSelectedProjectId(String(newId)); navigate(`${routeBase}/${newId}/${encodeURIComponent(newName || "project")}/`); } }} />}
       {editProject && <EditProjectModal project={project} onClose={() => setEditProject(false)} reload={refresh} />}
-      {flagOpen && <FlagProjectModal project={project} onClose={() => setFlagOpen(false)} reload={refresh} />}
+      {flagOpen && <FlagMilestoneModal project={project} milestones={milestones} data={data} onClose={() => setFlagOpen(false)} reload={refresh} />}
       {documentOpen && <DocumentModal project={project} onClose={() => setDocumentOpen(false)} reload={refresh} />}
-      {reposOpen && <RepositoriesModal project={project} repos={repos} onClose={() => setReposOpen(false)} reload={refresh} />}
+      {reposOpen && <RepositoriesModal project={project} repos={repos} data={data} onClose={() => setReposOpen(false)} reload={refresh} />}
       {milestoneToEdit && <MilestoneEditModal milestone={milestoneToEdit} onClose={() => setMilestoneToEdit(null)} reload={refresh} />}
       {addMilestoneOpen && <AddMilestoneModal project={project} onClose={() => setAddMilestoneOpen(false)} reload={refresh} />}
       {addTaskFor && <AddTaskModal project={project} team={team} milestones={milestones} data={data} initial={addTaskFor} onClose={() => setAddTaskFor(null)} reload={refresh} />}
       {addMemberOpen && <AddMemberModal project={project} data={data} onClose={() => setAddMemberOpen(false)} reload={refresh} />}
       {eodEmployee && <TeamEodModal assignment={eodEmployee} data={data} onClose={() => setEodEmployee(null)} />}
+      {manageGroupsOpen && <MilestoneGroupPicker project={project} data={data} onClose={() => setManageGroupsOpen(false)} onSelect={createDefaultMilestones} onCreateGroup={() => { setManageGroupsOpen(false); setCreateGroupOpen(true); }} />}
+      {createGroupOpen && <CreateCheckpointGroupModal project={project} data={data} onClose={() => setCreateGroupOpen(false)} reload={refresh} />}
     </section>
   );
 }
@@ -436,9 +495,11 @@ function AddTaskModal({ project, team, milestones, data, initial, onClose, reloa
     parent: initial?.parentTaskId ? String(initial.parentTaskId) : "",
   });
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
   const save = async () => {
     setBusy(true);
+    setError("");
     try {
       const created = await apiPost("/Project/add_task/", {
         project: project.id,
@@ -447,7 +508,7 @@ function AddTaskModal({ project, team, milestones, data, initial, onClose, reloa
         parent: form.parent || null,
         description: form.description,
         priority: form.priority,
-        bounty: Number(form.bounty) || 0,
+        bounty: Math.max(0, Number(form.bounty) || 0),
       });
       const taskId = created?.task?.id || created?.id;
       if (taskId && (form.due_at || form.milestone_id)) {
@@ -459,6 +520,9 @@ function AddTaskModal({ project, team, milestones, data, initial, onClose, reloa
       }
       reload();
       onClose();
+    } catch (err) {
+      const detail = err?.payload?.title?.[0] || err?.payload?.detail || err?.message || "Failed to save task. Please check the form and try again.";
+      setError(detail);
     } finally {
       setBusy(false);
     }
@@ -472,31 +536,123 @@ function AddTaskModal({ project, team, milestones, data, initial, onClose, reloa
         <label>Milestone<select value={form.milestone_id} onChange={(event) => setForm({ ...form, milestone_id: event.target.value })}><option value="">Not Assigned</option>{milestones.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
         <label>Due Date<input type="date" value={form.due_at} onChange={(event) => setForm({ ...form, due_at: event.target.value })} /></label>
         <label>Priority<select value={form.priority} onChange={(event) => setForm({ ...form, priority: event.target.value })}><option>Low</option><option>Normal</option><option>High</option><option>Urgent</option></select></label>
-        <label>Bounty<input type="number" value={form.bounty} onChange={(event) => setForm({ ...form, bounty: event.target.value })} /></label>
+        <label>Bounty<input type="number" min="0" value={form.bounty} onChange={(event) => setForm({ ...form, bounty: event.target.value })} /></label>
       </div>
       <label>Description<textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label>
+      {error && <div className="error-banner">{error}</div>}
       <button className="Primary-Button" onClick={save} disabled={busy || !form.title}>{initial?.parentTaskId ? "Create Sub Task" : "Create Task"}</button>
     </Modal>
   );
 }
 
-function FlagProjectModal({ project, onClose, reload }) {
-  const [form, setForm] = useState({ severity: "High", title: "Project Risk", description: "" });
+function MilestoneGroupPicker({ project, data, onClose, onSelect, onCreateGroup }) {
+  const [selected, setSelected] = useState("");
+  const groups = [...new Set((data.defaultCheckpoints || []).map((cp) => cp.project_type).filter(Boolean))];
+  return (
+    <Modal title="Create Milestones From Group" onClose={onClose}>
+      {groups.length ? (
+        <>
+          <label>Select Group<select value={selected} onChange={(e) => setSelected(e.target.value)}><option value="">Choose A Group...</option>{groups.map((g) => <option key={g} value={g}>{g}</option>)}</select></label>
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <button className="Primary-Button" onClick={() => { if (selected) onSelect(selected); }} disabled={!selected}>Create Milestones</button>
+            <button className="Soft-Button" onClick={onCreateGroup}>Manage Groups</button>
+          </div>
+        </>
+      ) : (
+        <div style={{ padding: 20, textAlign: "center" }}>
+          <p style={{ marginBottom: 12 }}>No Milestone Groups Defined Yet. Create A Group First.</p>
+          <button className="Primary-Button" onClick={onCreateGroup}>Create Group</button>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+function CreateCheckpointGroupModal({ project, data, onClose, reload }) {
+  const [groupName, setGroupName] = useState("");
+  const [milestones, setMilestones] = useState([{ title: "", sequence: 1, bounty: 0 }]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const addMilestone = () => setMilestones([...milestones, { title: "", sequence: milestones.length + 1, bounty: 0 }]);
+  const removeMilestone = (i) => setMilestones(milestones.filter((_, idx) => idx !== i));
+  const setField = (i, field, val) => {
+    const items = [...milestones];
+    items[i] = { ...items[i], [field]: val };
+    if (field === "title" && i === milestones.length - 1 && val.trim()) setMilestones(items);
+    else setMilestones(items);
+  };
 
   const save = async () => {
-    await apiPost(`/Project/ProjectWorkspaces/${project.id}/raise-alert/`, form);
-    reload();
-    onClose();
+    if (!groupName.trim()) { setError("Group name is required."); return; }
+    if (!milestones.some((m) => m.title.trim())) { setError("At least one milestone title is required."); return; }
+    setBusy(true); setError("");
+    try {
+      for (const ms of milestones) {
+        if (!ms.title.trim()) continue;
+        await apiPost("/Project/DefaultCheckpoints/", {
+          title: ms.title, sequence: ms.sequence, project_type: groupName.trim(), bounty: Math.max(0, Number(ms.bounty) || 0),
+        });
+      }
+      reload();
+      onClose();
+    } catch (err) {
+      setError(err?.payload?.title?.[0] || err?.payload?.detail || err?.message || "Failed to create group.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
-    <Modal title="Flag Project Risk" onClose={onClose}>
-      <div className="Form-Grid Two Modal-Form">
-        <label>Severity<select value={form.severity} onChange={(event) => setForm({ ...form, severity: event.target.value })}><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select></label>
-        <label>Title<input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label>
-      </div>
-      <label>Description<textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label>
-      <button className="Primary-Button" onClick={save} disabled={!form.title}>Create Alert</button>
+    <Modal title="Create Milestone Group" onClose={onClose} wide>
+      <label>Group Name<input value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="e.g. Standard Sprint, HR Onboarding" /></label>
+      <h4>Milestones <button className="Soft-Button Small" onClick={addMilestone}>+ Add</button></h4>
+      {milestones.map((ms, i) => (
+        <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}>
+          <span style={{ fontWeight: 600, minWidth: 24 }}>{i + 1}.</span>
+          <input value={ms.title} onChange={(e) => setField(i, "title", e.target.value)} placeholder="Milestone Title" style={{ flex: 1 }} />
+          <input type="number" min="0" value={ms.bounty} onChange={(e) => setField(i, "bounty", e.target.value)} style={{ width: 80 }} placeholder="Bounty" />
+          {milestones.length > 1 && <button className="Soft-Button Small Danger" onClick={() => removeMilestone(i)}>X</button>}
+        </div>
+      ))}
+      {error && <div className="error-banner">{error}</div>}
+      <button className="Primary-Button" onClick={save} disabled={busy || !groupName.trim()}>Save Group ({milestones.filter(m => m.title.trim()).length} milestones)</button>
+    </Modal>
+  );
+}
+
+function FlagMilestoneModal({ project, milestones, data, onClose, reload }) {
+  const [form, setForm] = useState({ milestone_id: "", severity: "High", title: "" });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const save = async () => {
+    if (!form.milestone_id) { setError("Please Select A Milestone To Flag."); return; }
+    if (!form.title.trim()) { setError("Please Enter A Flag Title."); return; }
+    setBusy(true);
+    setError("");
+    try {
+      await apiPost(`/Project/DeliveryMilestones/${form.milestone_id}/raise-flag/`, {
+        severity: form.severity,
+        title: form.title,
+      });
+      reload();
+      onClose();
+    } catch (err) {
+      const detail = err?.payload?.title?.[0] || err?.payload?.severity?.[0] || err?.payload?.milestone?.[0] || err?.payload?.detail || err?.message || "Failed To Create Flag.";
+      setError(detail);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal title="Flag Milestone" onClose={onClose}>
+      <label>Milestone<select value={form.milestone_id} onChange={(event) => setForm({ ...form, milestone_id: event.target.value, severity: form.severity, title: form.title })}><option value="">Select Milestone</option>{milestones.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
+      <label>Flag Color<select value={form.severity} onChange={(event) => setForm({ ...form, severity: event.target.value })}><option value="High">Red Flag</option><option value="Low">Green Flag</option></select></label>
+      <label>Title<input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="Why Is This Flagged?" /></label>
+      {error && <div className="error-banner">{error}</div>}
+      <button className="Primary-Button" onClick={save} disabled={busy || !form.title || !form.milestone_id}>Create Flag</button>
     </Modal>
   );
 }
@@ -520,8 +676,10 @@ function DocumentModal({ project, onClose, reload }) {
   );
 }
 
-function RepositoriesModal({ project, repos, onClose, reload }) {
+function RepositoriesModal({ project, repos, data, onClose, reload }) {
   const [creating, setCreating] = useState(false);
+  const [assigning, setAssigning] = useState(null);
+  const [assignEmp, setAssignEmp] = useState("");
   const [form, setForm] = useState({ name: "", owner: "", default_branch: "main", provider: "GitHub" });
   const [busy, setBusy] = useState(false);
 
@@ -537,6 +695,21 @@ function RepositoriesModal({ project, repos, onClose, reload }) {
     }
   };
 
+  const assignToRepo = async (repo) => {
+    if (!assignEmp) return;
+    setBusy(true);
+    try {
+      await apiPost("/Project/assign-repo/", { repo_name: repo.name, user_id: assignEmp, projectId: project.id });
+      reload();
+      setAssigning(null);
+      setAssignEmp("");
+    } catch (err) {
+      alert(err?.payload?.detail || err?.payload?.error || "Assignment Failed.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const revoke = async (repo) => {
     await apiPost("/Project/revoke-repo/", { repository_id: repo.id });
     reload();
@@ -544,7 +717,7 @@ function RepositoriesModal({ project, repos, onClose, reload }) {
 
   return (
     <Modal title="Repositories" onClose={onClose} wide>
-      {!creating && (
+      {!creating && !assigning && (
         <>
           <ul className="Repo-List">
             {repos.map((repo) => (
@@ -553,6 +726,7 @@ function RepositoriesModal({ project, repos, onClose, reload }) {
                 <span className="Muted-Text">{repo.access_status}</span>
                 <span className="Table-Actions">
                   {repo.full_name && <a className="Soft-Button Small" href={`https://github.com/${repo.full_name}`} target="_blank" rel="noreferrer"><ExternalLink size={12} /></a>}
+                  <button className="Soft-Button Small" onClick={() => setAssigning(repo)}>Assign</button>
                   <button className="Soft-Button Small Danger" onClick={() => revoke(repo)}>Revoke</button>
                 </span>
               </li>
@@ -562,6 +736,16 @@ function RepositoriesModal({ project, repos, onClose, reload }) {
           <div className="Modal-Actions">
             <button className="Primary-Button" onClick={() => setCreating(true)}><Plus size={14} /> Create New Repository</button>
             <button className="Soft-Button" onClick={onClose}>Close</button>
+          </div>
+        </>
+      )}
+      {assigning && (
+        <>
+          <h3>Assign Employee To: {assigning.full_name || assigning.name}</h3>
+          <label>Employee<select value={assignEmp} onChange={(e) => setAssignEmp(e.target.value)}><option value="">Select Employee</option>{(data.employees || []).map((emp) => <option key={emp.id} value={emp.user}>{emp.display_name} ({emp.employee_code})</option>)}</select></label>
+          <div className="Modal-Actions">
+            <button className="Primary-Button" onClick={() => assignToRepo(assigning)} disabled={busy || !assignEmp}>Assign</button>
+            <button className="Soft-Button" onClick={() => { setAssigning(null); setAssignEmp(""); }}>Back</button>
           </div>
         </>
       )}
@@ -585,11 +769,23 @@ function RepositoriesModal({ project, repos, onClose, reload }) {
 
 function MilestoneEditModal({ milestone, onClose, reload }) {
   const [form, setForm] = useState({ title: milestone.title || "", status: milestone.status || "Open", due_on: milestone.due_on || "", delayed_days: milestone.delayed_days || 0 });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
   const save = async () => {
-    await apiPost("/Project/update_milestone/", { milestone_id: milestone.id, ...form });
-    reload();
-    onClose();
+    setBusy(true);
+    setError("");
+    try {
+      const payload = { milestone_id: milestone.id, ...form, due_on: form.due_on || null };
+      await apiPost("/Project/update_milestone/", payload);
+      reload();
+      onClose();
+    } catch (err) {
+      const detail = err?.payload?.title?.[0] || err?.payload?.due_on?.[0] || err?.payload?.detail || err?.message || "Failed To Save Milestone. Please Check The Form And Try Again.";
+      setError(detail);
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -598,7 +794,8 @@ function MilestoneEditModal({ milestone, onClose, reload }) {
       <label>Status<select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}><option>Open</option><option>In Progress</option><option>Completed</option><option>Delayed</option></select></label>
       <label>Due On<input type="date" value={form.due_on || ""} onChange={(event) => setForm({ ...form, due_on: event.target.value })} /></label>
       <label>Delayed Days<input type="number" value={form.delayed_days} onChange={(event) => setForm({ ...form, delayed_days: event.target.value })} /></label>
-      <button className="Primary-Button" onClick={save} disabled={!form.title}>Save Milestone</button>
+      {error && <div className="error-banner">{error}</div>}
+      <button className="Primary-Button" onClick={save} disabled={busy || !form.title}>Save Milestone</button>
     </Modal>
   );
 }
@@ -606,13 +803,19 @@ function MilestoneEditModal({ milestone, onClose, reload }) {
 function AddMilestoneModal({ project, onClose, reload }) {
   const [form, setForm] = useState({ title: "", status: "Open", due_on: "", project: project.id });
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
   const save = async () => {
     setBusy(true);
+    setError("");
     try {
-      await apiPost("/Project/DeliveryMilestones/", form);
+      const payload = { ...form, due_on: form.due_on || null };
+      await apiPost("/Project/DeliveryMilestones/", payload);
       reload();
       onClose();
+    } catch (err) {
+      const detail = err?.payload?.title?.[0] || err?.payload?.due_on?.[0] || err?.payload?.detail || err?.message || "Failed To Save Milestone. Please Check The Form And Try Again.";
+      setError(detail);
     } finally {
       setBusy(false);
     }
@@ -623,6 +826,7 @@ function AddMilestoneModal({ project, onClose, reload }) {
       <label>Title<input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="M1, 1st Vertical, Etc." /></label>
       <label>Status<select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}><option>Open</option><option>In Progress</option><option>Completed</option><option>Delayed</option></select></label>
       <label>Due On<input type="date" value={form.due_on} onChange={(event) => setForm({ ...form, due_on: event.target.value })} /></label>
+      {error && <div className="error-banner">{error}</div>}
       <button className="Primary-Button" onClick={save} disabled={busy || !form.title}>Create Milestone</button>
     </Modal>
   );
@@ -672,6 +876,7 @@ function TaskDetailModal({ task, data, onClose, reload }) {
   const [status, setStatus] = useState(task.status || "Open");
   const [dueDate, setDueDate] = useState(task.due_at ? task.due_at.split("T")[0] : "");
   const [priority, setPriority] = useState(task.priority || "Normal");
+  const [taskProgress, setTaskProgress] = useState(task.metadata?.progress || task.progress_percent || task.progress || 0);
   const [bounty, setBounty] = useState(task.bounty || 0);
   const [assignee, setAssignee] = useState(task.owner || task.owner_id || "");
   const team = (data.teamAssignments || []).filter((item) => String(item.project) === String(task.project));
@@ -720,8 +925,15 @@ function TaskDetailModal({ task, data, onClose, reload }) {
     reload();
   };
 
+  const saveProgress = async () => {
+    await apiPost("/Project/update-task/", { task_id: task.id, metadata: { ...(task.metadata || {}), progress: Number(taskProgress) } });
+    reload();
+  };
+
   const saveBounty = async () => {
-    await apiPost("/Project/update-bounty/", { task_id: task.id, bounty: Number(bounty) || 0 });
+    const val = Math.max(0, Number(bounty) || 0);
+    setBounty(val);
+    await apiPost("/Project/update-bounty/", { task_id: task.id, bounty: val });
     reload();
   };
 
@@ -738,7 +950,13 @@ function TaskDetailModal({ task, data, onClose, reload }) {
                 <button className="Soft-Button Small" onClick={saveStatus}>Save</button>
               </span>
             </dd></div>
-            <div><dt>Created</dt><dd>{formatDate(task.created_at)}</dd></div>
+            <div><dt>Progress</dt><dd>
+              <span className="Inline-Form-Row">
+                <input type="range" min="0" max="100" value={taskProgress} onChange={(e) => setTaskProgress(e.target.value)} style={{ flex: 1 }} />
+                <span style={{ minWidth: 32, textAlign: "right", fontWeight: 600 }}>{taskProgress}%</span>
+                <button className="Soft-Button Small" onClick={saveProgress}>Save</button>
+              </span>
+            </dd></div>
             <div><dt>Due Date</dt><dd>
               <span className="Inline-Form-Row">
                 <input type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
@@ -768,7 +986,7 @@ function TaskDetailModal({ task, data, onClose, reload }) {
             </dd></div>
             <div><dt>Bounty</dt><dd>
               <span className="Inline-Form-Row">
-                <input type="number" value={bounty} onChange={(event) => setBounty(event.target.value)} style={{ width: "80px" }} />
+                <input type="number" min="0" value={bounty} onChange={(event) => setBounty(event.target.value)} style={{ width: "80px" }} />
                 <button className="Soft-Button Small" onClick={saveBounty}>Save</button>
               </span>
             </dd></div>

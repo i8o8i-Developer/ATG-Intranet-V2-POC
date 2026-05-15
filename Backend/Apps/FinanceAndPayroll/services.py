@@ -333,9 +333,10 @@ class FinanceLegacyService:
             user_account.masked_account_number = masked_number
             user_account.ifsc_code = ifsc_code
             user_account.upi_id = upi_id
+            user_account.verification_status = "Verified"
             user_account.metadata = {**user_account.metadata, "legacy_account_number": account_number}
             user_account.updated_by = context.actor
-            user_account.save(update_fields=["masked_account_number", "ifsc_code", "upi_id", "metadata", "updated_by", "updated_at"])
+            user_account.save(update_fields=["masked_account_number", "ifsc_code", "upi_id", "verification_status", "metadata", "updated_by", "updated_at"])
         else:
             user_account = EmployeeBankAccount.objects.create(
                 tenant=context.tenant,
@@ -345,6 +346,7 @@ class FinanceLegacyService:
                 masked_account_number=masked_number,
                 ifsc_code=ifsc_code,
                 upi_id=upi_id,
+                verification_status="Verified",
                 metadata={"legacy_account_number": account_number},
                 created_by=context.actor,
                 updated_by=context.actor,
@@ -355,9 +357,10 @@ class FinanceLegacyService:
             finance_account.account_holder_name = employee.display_name
             finance_account.masked_account_number = masked_number
             finance_account.ifsc_code = ifsc_code
+            finance_account.verification_status = "Verified"
             finance_account.metadata = {**finance_account.metadata, "upi_id": upi_id, "legacy_account_number": account_number}
             finance_account.updated_by = context.actor
-            finance_account.save(update_fields=["account_holder_name", "masked_account_number", "ifsc_code", "metadata", "updated_by", "updated_at"])
+            finance_account.save(update_fields=["account_holder_name", "masked_account_number", "ifsc_code", "verification_status", "metadata", "updated_by", "updated_at"])
         else:
             finance_account = BankAccount.objects.create(
                 tenant=context.tenant,
@@ -366,6 +369,7 @@ class FinanceLegacyService:
                 account_holder_name=employee.display_name,
                 masked_account_number=masked_number,
                 ifsc_code=ifsc_code,
+                verification_status="Verified",
                 metadata={"upi_id": upi_id, "legacy_account_number": account_number},
                 created_by=context.actor,
                 updated_by=context.actor,
@@ -412,6 +416,69 @@ class FinanceLegacyService:
         )
 
     @staticmethod
+    def _get_ptrc_deduction(normal_pay, bonus):
+        total = (normal_pay or 0) + (bonus or 0)
+        return Decimal("200") if total >= Decimal("25000") else Decimal("0")
+
+    @staticmethod
+    def _generate_payslip(context, employee, month, year, normal_pay, bonus, bounty, deduction):
+        from Backend.Apps.FinanceAndPayroll.models import PayPeriod, PayrollLineItem, PayrollRun, PayslipDocument
+        period_name = f"{month}_{year}"
+        pay_period, _ = PayPeriod.objects.get_or_create(
+            tenant=context.tenant,
+            name=period_name,
+            defaults={
+                "workspace": context.workspace or employee.workspace,
+                "starts_on": timezone.now().replace(month=month, day=1).date(),
+                "ends_on": timezone.now().replace(month=month, day=28).date(),
+                "status": "Closed",
+                "created_by": context.actor,
+            },
+        )
+        run, _ = PayrollRun.objects.get_or_create(
+            tenant=context.tenant,
+            pay_period=pay_period,
+            defaults={
+                "workspace": context.workspace or employee.workspace,
+                "status": "Approved",
+                "gross_amount": Decimal("0"),
+                "deduction_amount": Decimal("0"),
+                "net_amount": Decimal("0"),
+                "created_by": context.actor,
+            },
+        )
+        gross = (normal_pay or 0) + (bonus or 0) + (bounty or 0)
+        net = gross - (deduction or 0)
+        line, _ = PayrollLineItem.objects.get_or_create(
+            tenant=context.tenant,
+            payroll_run=run,
+            employee=employee,
+            defaults={
+                "workspace": context.workspace or employee.workspace,
+                "gross_amount": gross,
+                "deduction_amount": deduction or 0,
+                "net_amount": net,
+                "status": "Paid",
+            },
+        )
+        if not _:
+            line.gross_amount = gross
+            line.deduction_amount = deduction or 0
+            line.net_amount = net
+            line.status = "Paid"
+            line.save(update_fields=["gross_amount", "deduction_amount", "net_amount", "status", "updated_at"])
+        payslip, _ = PayslipDocument.objects.get_or_create(
+            tenant=context.tenant,
+            payroll_line_item=line,
+            defaults={
+                "workspace": context.workspace or employee.workspace,
+                "storage_reference": f"payslip/{employee.employee_code}/{month}_{year}",
+                "status": "Generated",
+            },
+        )
+        return payslip
+
+    @staticmethod
     def approve_payment(
         context,
         role="Finance",
@@ -438,6 +505,7 @@ class FinanceLegacyService:
         total_bonus = FinanceLegacyService._decimal(bonus)
         total_normal_pay = FinanceLegacyService._decimal(normal_pay)
         total_bounty = FinanceLegacyService._decimal(bounty)
+        ptrc = FinanceLegacyService._get_ptrc_deduction(total_normal_pay, total_bonus)
         task_count = FinanceLegacyService._int(task_count)
         snapshot = EmployeePaymentSnapshot.objects.filter(tenant=context.tenant, employee=employee, month=month, year=year).first()
         role_name = str(role or "Finance").strip().lower()
@@ -461,6 +529,7 @@ class FinanceLegacyService:
                 "normal_pay": total_normal_pay,
                 "bonus": total_bonus,
                 "bounty": total_bounty,
+                "deduction": ptrc,
                 "task_count": task_count,
                 "notes": pay_note or snapshot.notes if snapshot else pay_note,
                 "metadata": {
@@ -497,6 +566,7 @@ class FinanceLegacyService:
                 status_code=payout_result.status_code,
             )
         snapshot.refresh_from_db()
+        FinanceLegacyService._generate_payslip(context, employee, month, year, total_normal_pay, total_bonus, total_bounty, ptrc)
         return ServiceResult.success(
             {
                 "msg": f"Payment Amount Is {snapshot.payment_status or 'Queued'} To ",

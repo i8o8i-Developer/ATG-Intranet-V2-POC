@@ -1,0 +1,558 @@
+# Employee Table Schema Comparison — Old Intranet Vs New ReBuild
+# Generated: 2026-05-15
+# =============================================================================
+
+## ============================ Old System ============================
+
+### Profile
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | AutoField | NO | PK | auto | auto_increment |
+| 2 | user_id | OneToOne -> auth.User | YES | UNI/FK | NULL | on_delete=CASCADE |
+| 3 | emp_type | CharField(20) | YES | - | NULL | choices=STATUS_CHOICES |
+| 4 | start_date | DateField | NO | - | timezone.now | - |
+| 5 | end_date | DateField | YES | - | NULL | - |
+| 6 | work_availability | CharField(20) | YES | - | '' | - |
+| 7 | contact | CharField(13) | YES | - | '' | - |
+| 8 | email | CharField(40) | YES | - | '' | - |
+| 9 | whatsapp_contact | CharField(13) | YES | - | '' | - |
+| 10 | gender | IntegerField | NO | - | 3 | Not Specified |
+| 11 | avatar | ImageField | NO | - | 'users/images/default.jpg' | upload_to='users/images' |
+| 12 | title | CharField(50) | YES | - | NULL | - |
+| 13 | slack_username | CharField(30) | YES | - | '' | - |
+| 14 | atg_id | CharField(25) | YES | UNI | NULL | unique=True |
+| 15 | college | CharField(80) | YES | - | '' | - |
+| 16 | graduation_year | CharField(4) | NO | - | '' | - |
+| 17 | city | CharField(50) | YES | - | '' | - |
+| 18 | internship_duration | IntegerField | YES | - | 6 | - |
+| 19 | github_username | CharField(100) | YES | - | NULL | - |
+| 20 | leaves_wallet | FloatField | YES | - | 0 | - |
+| 21 | leaves_per_month | FloatField | YES | - | 2.25 | - |
+| 22 | last_leave_alloted_date | DateField | YES | - | timezone.now | - |
+| 23 | date_of_birth | DateField | YES | - | NULL | - |
+| 24 | ack_onboard | BooleanField | NO | - | False | - |
+| 25 | timezone | CharField(64) | YES | - | NULL | - |
+| 26 | industry | MultiSelectField | YES | - | NULL | max_length=200 |
+| 27 | ba_level | CharField(14) | YES | - | 'cold_calls' | - |
+| 28 | max_assigned_lead_count | IntegerField | NO | - | 5 | - |
+| 29 | calender_id | CharField(100) | YES | - | '' | - |
+
+### Department
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | AutoField | NO | PK | auto | - |
+| 2 | name | CharField(50) | NO | - | - | - |
+| 3 | category | CharField(100) | YES | - | '' | - |
+| 4 | archive | BooleanField | NO | - | False | - |
+| 5 | pay_type | CharField(10) | NO | - | 'Task' | Bug/Task |
+| 6 | base_pay | IntegerField | NO | - | 0 | - |
+| 7 | pay_per_task | IntegerField | NO | - | 0 | - |
+| 8 | work_day_per_month | IntegerField | NO | - | 25 | - |
+| 9 | mantis_access_level | TextField | NO | - | - | - |
+| 10 | slack_channel | TextField | NO | - | - | - |
+| 11 | whatsapp_group | TextField | NO | - | - | - |
+| 12 | whatsapp | BooleanField | NO | - | False | - |
+| 13 | slack | BooleanField | NO | - | False | - |
+| 14 | mantis | BooleanField | NO | - | False | - |
+| 15 | mantis_or_workast | IntegerField | NO | - | 0 | - |
+| 16 | domain_id | FK -> Domain | YES | FK | NULL | SET_NULL |
+| 17 | parent_department_id | FK -> self | YES | FK | NULL | CASCADE |
+| 18 | is_sub_separtment | BooleanField | NO | - | False | - |
+
+### Position
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | AutoField | NO | PK | auto | - |
+| 2 | position_name | CharField(100) | NO | UNI | - | unique=True |
+
+### EmpPosition (User-Position Link)
+...
+### WorksIn (User-Department Link)
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | AutoField | NO | PK | auto | - |
+| 2 | emp_name_id | FK -> User | NO | FK | - | CASCADE |
+| 3 | dept_name_id | FK -> Department | NO | FK | - | CASCADE |
+| 4 | sub_departments_id | FK -> Sub_departments | YES | FK | NULL | CASCADE |
+
+### PayData
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | AutoField | NO | PK | auto | - |
+| 2 | user_id | FK -> User | NO | FK | - | CASCADE |
+| 3 | base_pay | IntegerField | NO | - | 0 | - |
+| 4 | pay_type | CharField(20) | YES | - | 'Performance Based' | - |
+| 5 | pay_per_task | IntegerField | NO | - | 0 | - |
+| 6 | timestamp | DateTimeField | NO | - | auto_now_add | - |
+
+### PaymentData
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | AutoField | NO | PK | auto | - |
+| 2 | employee_id | FK -> User | NO | FK | - | CASCADE |
+| 3 | manager_status | CharField(5) | NO | - | 'NA' | - |
+| 4 | finance_manager_status | CharField(5) | NO | - | 'NA' | - |
+| 5 | payment_status | CharField(12) | NO | - | 'NA' | - |
+| 6 | bonus | IntegerField | NO | - | 0 | - |
+| 7 | normal_pay | IntegerField | NO | - | 0 | - |
+| 8 | ptrc_deduction | IntegerField | NO | - | 0 | - |
+| 9 | payout_id | CharField(30) | NO | - | 'NA' | - |
+| 10 | notes | CharField(40) | NO | - | "NA" | - |
+| 11 | utr_no | CharField(200) | YES | - | NULL | - |
+| 12 | bug_ids | CharField(1000) | YES | - | '' | - |
+| 13 | task_count | IntegerField | NO | - | 0 | - |
+| 14 | bounty | IntegerField | NO | - | 0 | - |
+| 15 | pay_notes | CharField(255) | YES | - | '' | - |
+| 16 | pay_for | CharField(255) | YES | - | 'ATG' | - |
+| 17 | year | IntegerField | NO | - | current year | - |
+| 18 | month | IntegerField | NO | - | 0 | 1-12 choices |
+
+### BankDetails
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | AutoField | NO | PK | auto | - |
+| 2 | employee_id | FK -> User | NO | FK | - | CASCADE |
+| 3 | Ac_No | CharField(20) | NO | - | "NA" | - |
+| 4 | Ac_IFSC | CharField(11) | NO | - | "NA" | - |
+| 5 | upi | CharField(50) | YES | - | "" | - |
+| 6 | customer_id | CharField(24) | NO | - | "NA" | - |
+| 7 | customer_Fund_id | CharField(24) | NO | - | "NA" | - |
+| 8 | customer_Fund_vpa_id | CharField(24) | NO | - | "NA" | - |
+
+### UserStatus
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | AutoField | NO | PK | auto | - |
+| 2 | user_id | OneToOne -> User | NO | UNI/FK | - | CASCADE |
+| 3 | status | CharField(30) | NO | - | 'Unselect' | - |
+| 4 | remark | TextField | YES | - | NULL | - |
+| 5 | skill_level | CharField(20) | NO | - | 'basic' | - |
+| 6 | skill_level_updated_at | DateTimeField | YES | - | NULL | - |
+
+### Skill
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | AutoField | NO | PK | auto | - |
+| 2 | department_id | FK -> Department | NO | FK | - | CASCADE |
+| 3 | name | CharField(200) | NO | - | - | - |
+| 4 | category | CharField(20) | NO | - | 'basic' | - |
+
+### UserSkill
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | AutoField | NO | PK | auto | - |
+| 2 | user_id | FK -> User | NO | FK | - | CASCADE |
+| 3 | skill_id | FK -> Skill | NO | FK | - | CASCADE |
+| 4 | rating | IntegerField | NO | - | 0 | 0-10 |
+
+### Goal
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | AutoField | NO | PK | auto | - |
+| 2 | assigned_to_id | FK -> User | NO | FK | - | CASCADE |
+| 3 | assigned_by_id | FK -> User | NO | FK | - | CASCADE |
+| 4 | description | CharField(255) | NO | - | - | - |
+| 5 | overall_feedback | CharField(225) | YES | - | '' | - |
+| 6 | assigned_on | DateField | NO | - | - | - |
+
+### Sub_departments
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | AutoField | NO | PK | auto | - |
+| 2 | name | CharField(300) | NO | - | - | - |
+| 3 | department_id | FK -> Department | NO | FK | - | CASCADE |
+
+### NewProvisionalEmployeeMail (MainApp)
+...
+### Leave (MainApp)
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | AutoField | NO | PK | auto | - |
+| 2 | department_id | FK -> Department | NO | FK | - | CASCADE |
+| 3 | employee_id | FK -> User | NO | FK | - | CASCADE |
+| 4 | issued_by_id | FK -> User | YES | FK | NULL | SET_NULL |
+| 5 | subject | CharField(50) | NO | - | - | - |
+| 6 | reason | TextField | YES | - | '' | - |
+| 7 | date_from | DateField | NO | - | - | - |
+| 8 | date_to | DateField | NO | - | - | - |
+| 9 | is_half_day_leave | BooleanField | NO | - | False | - |
+| 10 | leave_type | CharField(10) | NO | - | - | paid/unpaid |
+
+
+## ============================ New System ============================
+
+### EmployeeProfile
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | BigAutoField | NO | PK | auto | - |
+| 2 | tenant_id | FK -> Tenant | NO | FK | - | TenantScopedModel |
+| 3 | workspace_id | FK -> Workspace | YES | FK | NULL | TenantScopedModel |
+| 4 | created_at | DateTimeField | NO | - | auto_now_add | TenantScopedModel |
+| 5 | updated_at | DateTimeField | NO | - | auto_now | TenantScopedModel |
+| 6 | is_active | BooleanField | NO | - | True | TenantScopedModel |
+| 7 | created_by_id | FK -> User | YES | FK | NULL | SET_NULL |
+| 8 | updated_by_id | FK -> User | YES | FK | NULL | SET_NULL |
+| 9 | ext_id | CharField(180) | YES | - | '' | ExternalReference |
+| 10 | ext_system | CharField(80) | YES | - | '' | ExternalReference |
+| 11 | user_id | FK -> AUTH_USER_MODEL | NO | FK | - | PROTECT |
+| 12 | employee_code | CharField(80) | NO | UNI | - | unique per tenant |
+| 13 | display_name | CharField(180) | NO | - | - | - |
+| 14 | contact_number | CharField(40) | YES | - | '' | - |
+| 15 | avatar_url | URLField | YES | - | '' | - |
+| 16 | github_username | CharField(120) | YES | - | '' | db_index=True |
+| 17 | timezone_name | CharField(80) | YES | - | '' | - |
+| 18 | department_id | FK -> Department | YES | FK | NULL | PROTECT |
+| 19 | position_id | FK -> Position | YES | FK | NULL | PROTECT |
+| 20 | manager_id | FK -> EmployeeProfile | YES | FK | NULL | self-ref, PROTECT |
+| 21 | employment_type | CharField(80) | YES | - | '' | - |
+| 22 | status | CharField(40) | NO | - | 'Active' | choices |
+| 23 | joined_on | DateField | YES | - | NULL | - |
+| 24 | exited_on | DateField | YES | - | NULL | - |
+| 25 | leaves_wallet | DecimalField(8,2) | NO | - | 0 | - |
+| 26 | leaves_per_month | DecimalField(6,2) | NO | - | 0 | - |
+| 27 | city | CharField(120) | YES | - | '' | - |
+| 28 | college_name | CharField(220) | YES | - | '' | - |
+| 29 | year_of_graduation | PositiveIntegerField | YES | - | NULL | - |
+| 30 | availability_hours | PositiveIntegerField | NO | - | 40 | - |
+| 31 | calendar_id | CharField(180) | YES | - | '' | - |
+| 32 | slack_username | CharField(120) | YES | - | '' | - |
+| 33 | onboarding_completed | BooleanField | NO | - | False | db_index=True |
+| 34 | profile_payload | JSONField | NO | - | {} | - |
+
+Indexes: [tenant, department, status]
+Unique: [tenant, employee_code]
+
+### Department
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | BigAutoField | NO | PK | auto | - |
+| 2 | tenant_id | FK -> Tenant | NO | FK | - | TenantScopedModel |
+| 3 | workspace_id | FK -> Workspace | YES | FK | NULL | - |
+| 4 | created_at | DateTimeField | NO | - | auto_now_add | - |
+| 5 | updated_at | DateTimeField | NO | - | auto_now | - |
+| 6 | is_active | BooleanField | NO | - | True | - |
+| 7 | name | CharField(160) | NO | - | - | - |
+| 8 | code | CharField(60) | NO | - | - | - |
+| 9 | category | CharField(120) | YES | - | '' | db_index=True |
+| 10 | domain_id | FK -> Domain | YES | FK | NULL | SET_NULL |
+| 11 | parent_id | FK -> Department | YES | FK | NULL | self-ref, PROTECT |
+| 12 | is_archived | BooleanField | NO | - | False | db_index=True |
+| 13 | base_pay | DecimalField(14,2) | NO | - | 0 | - |
+| 14 | pay_per_task | DecimalField(14,2) | NO | - | 0 | - |
+| 15 | pay_type | CharField(80) | YES | - | '' | db_index=True |
+| 16 | work_source | CharField(80) | YES | - | '' | db_index=True |
+| 17 | metadata | JSONField | NO | - | {} | - |
+
+Unique: [tenant, code]
+
+### DepartmentMembership
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | BigAutoField | NO | PK | auto | - |
+| 2 | employee_id | FK -> EmployeeProfile | NO | FK | - | CASCADE |
+| 3 | department_id | FK -> Department | NO | FK | - | PROTECT |
+| 4 | sub_department_id | FK -> SubDepartment | YES | FK | NULL | PROTECT |
+| 5 | status | CharField(40) | NO | - | 'Active' | choices |
+| 6 | started_on | DateField | NO | - | today | - |
+| 7 | ended_on | DateField | YES | - | NULL | - |
+| 8 | metadata | JSONField | NO | - | {} | - |
+
+### Position
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | BigAutoField | NO | PK | auto | - |
+| 2 | title | CharField(160) | NO | - | - | - |
+| 3 | code | CharField(60) | NO | - | - | - |
+| 4 | level | CharField(80) | YES | - | '' | - |
+| 5 | metadata | JSONField | NO | - | {} | - |
+
+Unique: [tenant, code]
+
+### PayProfile
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | BigAutoField | NO | PK | auto | - |
+| 2 | employee_id | FK -> EmployeeProfile | NO | FK | - | CASCADE |
+| 3 | base_pay | DecimalField(14,2) | NO | - | 0 | - |
+| 4 | pay_type | CharField(80) | NO | - | 'Fixed' | db_index=True |
+| 5 | pay_per_task | DecimalField(14,2) | NO | - | 0 | - |
+| 6 | performance_pay | DecimalField(14,2) | NO | - | 0 | NEW FIELD |
+| 7 | effective_at | DateTimeField | NO | - | timezone.now | - |
+| 8 | metadata | JSONField | NO | - | {} | - |
+
+### EmployeeBankAccount
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | BigAutoField | NO | PK | auto | - |
+| 2 | employee_id | FK -> EmployeeProfile | NO | FK | - | CASCADE |
+| 3 | account_holder_name | CharField(180) | YES | - | '' | - |
+| 4 | masked_account_number | CharField(80) | YES | - | '' | MASKED |
+| 5 | ifsc_code | CharField(40) | YES | - | '' | - |
+| 6 | upi_id | CharField(120) | YES | - | '' | - |
+| 7 | verification_status | CharField(80) | NO | - | 'Unverified' | NEW FIELD |
+| 8 | fund_account_reference | CharField(180) | YES | - | '' | NEW FIELD |
+| 9 | metadata | JSONField | NO | - | {} | - |
+
+### EmployeePaymentSnapshot
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | BigAutoField | NO | PK | auto | - |
+| 2 | employee_id | FK -> EmployeeProfile | NO | FK | - | CASCADE |
+| 3 | month | PositiveSmallIntegerField | NO | - | - | - |
+| 4 | year | PositiveIntegerField | NO | - | - | - |
+| 5 | normal_pay | DecimalField(14,2) | NO | - | 0 | - |
+| 6 | bonus | DecimalField(14,2) | NO | - | 0 | - |
+| 7 | deduction | DecimalField(14,2) | NO | - | 0 | (was ptrc_deduction) |
+| 8 | bounty | DecimalField(14,2) | NO | - | 0 | - |
+| 9 | task_count | PositiveIntegerField | NO | - | 0 | - |
+| 10 | manager_status | CharField(80) | NO | - | 'Pending' | - |
+| 11 | finance_status | CharField(80) | NO | - | 'Pending' | - |
+| 12 | payment_status | CharField(80) | YES | - | '' | - |
+| 13 | payout_id | CharField(180) | YES | - | '' | - |
+| 14 | utr_number | CharField(180) | YES | - | '' | (was utr_no) |
+| 15 | notes | TextField | YES | - | '' | - |
+| 16 | metadata | JSONField | NO | - | {} | - |
+
+Unique: [tenant, employee, month, year]
+
+### UserSkill
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | BigAutoField | NO | PK | auto | - |
+| 2 | employee_id | FK -> EmployeeProfile | NO | FK | - | CASCADE |
+| 3 | skill_id | FK -> Skill | NO | FK | - | PROTECT |
+| 4 | proficiency | PositiveSmallIntegerField | NO | - | 1 | 1=Basic,2=Inter,3=Adv |
+| 5 | rating | PositiveSmallIntegerField | NO | - | 0 | - |
+| 6 | assigned_from_department | BooleanField | NO | - | False | - |
+| 7 | evidence | JSONField | NO | - | {} | - |
+
+Unique: [tenant, employee, skill]
+
+### Goal
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | BigAutoField | NO | PK | auto | - |
+| 2 | employee_id | FK -> EmployeeProfile | NO | FK | - | CASCADE |
+| 3 | assigned_by_id | FK -> User | YES | FK | NULL | SET_NULL |
+| 4 | title | CharField(220) | NO | - | - | - |
+| 5 | description | TextField | NO | - | '' | - |
+| 6 | assigned_on | DateField | NO | - | today | - |
+| 7 | due_on | DateField | YES | - | NULL | - |
+| 8 | status | CharField(60) | NO | - | 'Open' | db_index=True |
+| 9 | metadata | JSONField | NO | - | {} | - |
+
+### GoalFeedback
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | BigAutoField | NO | PK | auto | - |
+| 2 | goal_id | FK -> Goal | NO | FK | - | CASCADE |
+| 3 | author_id | FK -> User | YES | FK | NULL | SET_NULL |
+| 4 | feedback_type | CharField(40) | NO | - | 'Note' | db_index=True |
+| 5 | rating | PositiveSmallIntegerField | YES | - | NULL | - |
+| 6 | thumbs_up | PositiveIntegerField | NO | - | 0 | - |
+| 7 | thumbs_down | PositiveIntegerField | NO | - | 0 | - |
+| 8 | note | TextField | NO | - | '' | - |
+
+### EmployeeRating
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | BigAutoField | NO | PK | auto | - |
+| 2 | employee_id | OneToOne -> EmployeeProfile | NO | UNI/FK | - | CASCADE |
+| 3 | rating_value | DecimalField(4,2) | NO | - | 0 | - |
+| 4 | metadata | JSONField | NO | - | {} | - |
+
+### UserStatusSnapshot (Immutable History)
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | BigAutoField | NO | PK | auto | - |
+| 2 | employee_id | FK -> EmployeeProfile | NO | FK | - | CASCADE |
+| 3 | status | CharField(80) | NO | - | - | db_index=True |
+| 4 | reason | TextField | NO | - | '' | - |
+| 5 | effective_from | DateField | NO | - | - | - |
+| 6 | effective_to | DateField | YES | - | NULL | - |
+| 7 | metadata | JSONField | NO | - | {} | - |
+
+### BenchPeriod
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | BigAutoField | NO | PK | auto | - |
+| 2 | employee_id | FK -> EmployeeProfile | NO | FK | - | CASCADE |
+| 3 | started_on | DateField | NO | - | today | - |
+| 4 | ended_on | DateField | YES | - | NULL | - |
+| 5 | reason | TextField | NO | - | '' | - |
+
+### EmployeeCertificate
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | BigAutoField | NO | PK | auto | - |
+| 2 | manager_id | FK -> EmployeeProfile | YES | FK | NULL | SET_NULL |
+| 3 | employee_id | FK -> EmployeeProfile | NO | FK | - | CASCADE |
+| 4 | position_title | CharField(180) | YES | - | '' | - |
+| 5 | issued_on | DateField | YES | - | NULL | - |
+| 6 | storage_reference | CharField(260) | YES | - | '' | - |
+| 7 | metadata | JSONField | NO | - | {} | - |
+
+### EmployeeFeedback
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | BigAutoField | NO | PK | auto | - |
+| 2 | employee_id | FK -> EmployeeProfile | YES | FK | NULL | SET_NULL |
+| 3 | submitted_by_id | FK -> User | YES | FK | NULL | SET_NULL |
+| 4 | feedback_type | CharField(80) | NO | - | - | db_index=True |
+| 5 | project_name | CharField(180) | YES | - | '' | - |
+| 6 | feedback_text | TextField | NO | - | - | - |
+| 7 | metadata | JSONField | NO | - | {} | - |
+
+### ResignationRequest
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | BigAutoField | NO | PK | auto | - |
+| 2 | employee_id | FK -> EmployeeProfile | NO | FK | - | CASCADE |
+| 3 | reason | TextField | NO | - | - | - |
+| 4 | status | CharField(80) | NO | - | 'Submitted' | db_index=True |
+| 5 | requested_on | DateField | NO | - | today | - |
+| 6 | last_working_day | DateField | YES | - | NULL | - |
+| 7 | approved_by_id | FK -> User | YES | FK | NULL | SET_NULL |
+| 8 | approved_at | DateTimeField | YES | - | NULL | - |
+| 9 | metadata | JSONField | NO | - | {} | - |
+
+### UserEffortReport
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | BigAutoField | NO | PK | auto | - |
+| 2 | employee_id | FK -> EmployeeProfile | NO | FK | - | CASCADE |
+| 3 | project_reference | CharField(180) | YES | - | '' | - |
+| 4 | report_month | PositiveSmallIntegerField | NO | - | - | - |
+| 5 | report_year | PositiveIntegerField | NO | - | - | - |
+| 6 | effort_percent | DecimalField(5,2) | NO | - | 0 | - |
+| 7 | submitted_at | DateTimeField | NO | - | now | - |
+| 8 | metadata | JSONField | NO | - | {} | - |
+
+### InterviewProgress
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | BigAutoField | NO | PK | auto | - |
+| 2 | employee_id | OneToOne -> EmployeeProfile | NO | UNI/FK | - | CASCADE |
+| 3 | candidate_id | CharField(180) | YES | - | '' | db_index=True |
+| 4 | status | CharField(80) | NO | - | 'Pending' | db_index=True |
+| 5 | level | CharField(80) | YES | - | '' | - |
+| 6 | job_id | CharField(180) | YES | - | '' | NEW FIELD |
+| 7 | last_sent_at | DateTimeField | YES | - | NULL | - |
+| 8 | last_error | TextField | NO | - | '' | - |
+| 9 | metadata | JSONField | NO | - | {} | - |
+
+### LeavePolicy (New Model)
+...
+### LeaveBalance (New Model)
+...
+### LeaveTransaction (New Model)
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | BigAutoField | NO | PK | auto | - |
+| 2 | balance_id | FK -> LeaveBalance | NO | FK | - | CASCADE |
+| 3 | transaction_type | CharField(80) | NO | - | - | - |
+| 4 | amount | DecimalField(8,2) | NO | - | - | - |
+| 5 | reason | TextField | NO | - | '' | - |
+| 6 | metadata | JSONField | NO | - | {} | - |
+
+### LeaveRequest (MainApp)
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | BigAutoField | NO | PK | auto | - |
+| 2 | employee_id | FK -> EmployeeProfile | NO | FK | - | PROTECT |
+| 3 | leave_type | CharField(80) | NO | - | - | - |
+| 4 | starts_on | DateField | NO | - | - | - |
+| 5 | ends_on | DateField | NO | - | - | - |
+| 6 | status | CharField(60) | NO | - | 'Submitted' | db_index=True |
+| 7 | requested_days | DecimalField(6,2) | NO | - | 0 | - |
+| 8 | approval_stage | CharField(80) | NO | - | 'Manager' | - |
+| 9 | approved_by_id | FK -> User | YES | FK | NULL | SET_NULL |
+| 10 | approved_at | DateTimeField | YES | - | NULL | - |
+| 11 | rejected_at | DateTimeField | YES | - | NULL | - |
+| 12 | reason | TextField | NO | - | '' | - |
+| 13 | approval_payload | JSONField | NO | - | {} | - |
+
+### OnboardingOffer (MainApp)
+| # | Field | Type | Null | Key | Default | Extra |
+|---|-------|------|------|-----|---------|-------|
+| 1 | id | BigAutoField | NO | PK | auto | - |
+| 2 | candidate_name | CharField(180) | NO | - | - | - |
+| 3 | candidate_email | EmailField | NO | - | - | - |
+| 4 | company_name | CharField(160) | YES | - | '' | - |
+| 5 | position_title | CharField(180) | YES | - | '' | - |
+| 6 | offer_type | CharField(80) | YES | - | '' | - |
+| 7 | token | CharField(180) | YES | - | '' | - |
+| 8 | status | CharField(60) | NO | - | 'Draft' | - |
+| 9 | offer_payload | JSONField | NO | - | {} | - |
+| 10 | issued_at | DateTimeField | YES | - | NULL | - |
+| 11 | expires_at | DateTimeField | YES | - | NULL | - |
+| 12 | accepted_at | DateTimeField | YES | - | NULL | - |
+| 13 | reminder_count | PositiveIntegerField | NO | - | 0 | - |
+| 14 | last_reminder_at | DateTimeField | YES | - | NULL | - |
+
+
+## ============================ Key Differences ============================
+
+### 1. Multi-Tenancy
+OLD: No Tenant Support. All Models Use Direct FK To auth.User.
+NEW: Every Model Extends TenantScopedModel (tenant_id FK + workspace_id FK).
+
+### 2. Employee Identification
+OLD: Profile.atg_id (CharField, unique=True)
+NEW: EmployeeProfile.employee_code (CharField, unique per tenant)
+
+### 3. Pay Amounts
+OLD: IntegerField (whole INR, no decimals)
+NEW: DecimalField(max_digits=14, decimal_places=2)
+
+### 4. Leave Management
+OLD: Single FloatField on Profile (leaves_wallet) + Leave model in mainapp
+NEW: LeavePolicy + LeaveBalance + LeaveTransaction + LeaveRequest (MainApp)
+
+### 5. Status Tracking
+OLD: UserStatus (OneToOne, mutable - overwritten)
+NEW: UserStatusSnapshot (FK, immutable history with effective_from/to)
+
+### 6. Bank Details
+OLD: BankDetails (plain account numbers)
+NEW: EmployeeBankAccount (masked numbers + verification_status + fund_account_ref)
+
+### 7. Payment Tracking
+OLD: PayData + PaymentData (IntegerFields)
+NEW: PayProfile + EmployeePaymentSnapshot (DecimalFields + performance_pay)
+
+### 8. Department-Employee Link
+OLD: Works_in (separate join table to User)
+NEW: DepartmentMembership (to EmployeeProfile, with status/start/end dates)
+
+### 9. Position-Employee Link
+OLD: Emp_position (separate join table via username)
+NEW: EmployeeProfile.position (direct FK)
+
+### 10. Skill Proficiency
+OLD: UserSkill.rating (0-10)
+NEW: UserSkill.proficiency (1=Basic, 2=Intermediate, 3=Advanced) + rating (0-10)
+
+### 11. Goals
+OLD: No title field, description + assigned_on only
+NEW: Goal has title, description, due_on, status, metadata
+
+### 12. Certificates
+OLD: Certificates (position as string)
+NEW: EmployeeCertificate (position_title + storage_reference + issued_on)
+
+### 13. Interview Progress
+OLD: InternInterviewProgress (User FK, no job_id)
+NEW: InterviewProgress (EmployeeProfile FK + job_id + metadata)
+
+### 14. Effort Reports
+OLD: UserEffortReport (FK to Project model)
+NEW: UserEffortReport (FK to EmployeeProfile, project_reference string)
+
+### 15. Onboarding Offers
+OLD: NewProvisionalEmployeeMail (email-based, many bool fields)
+NEW: OnboardingOffer (full lifecycle: Draft->Issued->Accepted, offer_payload JSON)
+
+### 16. Leave Requests
+OLD: Leave (department FK, no policy, no approval stages)
+NEW: LeaveRequest (approval_stage, approved_by, approval_payload JSON)

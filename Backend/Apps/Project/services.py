@@ -13,16 +13,17 @@ from Backend.EnterpriseCore.services import OutboxService, ServiceResult
 
 class ProjectDeliveryService:
     @staticmethod
-    def create_default_checkpoints(context, project_id):
+    def create_default_checkpoints(context, project_id, group=None):
         project = ProjectWorkspace.objects.filter(tenant=context.tenant, id=project_id).first()
         if not project:
             return ServiceResult.failure({"project": "Project Not Found."}, status_code=404)
-        checkpoints = DefaultCheckpoint.objects.filter(tenant=context.tenant).filter(project_type__in=[project.project_type, ""]).order_by("sequence")
+        group_filter = group or project.project_type
+        checkpoints = DefaultCheckpoint.objects.filter(tenant=context.tenant).filter(project_type__in=[group_filter, ""]).order_by("sequence")
         if not checkpoints.exists():
             seed_titles = ["Discovery", "Planning", "Implementation", "Review", "Handover"]
             for index, title in enumerate(seed_titles, start=1):
-                DefaultCheckpoint.objects.create(tenant=context.tenant, workspace=context.workspace, title=title, sequence=index, project_type=project.project_type, created_by=context.actor)
-            checkpoints = DefaultCheckpoint.objects.filter(tenant=context.tenant).filter(project_type__in=[project.project_type, ""]).order_by("sequence")
+                DefaultCheckpoint.objects.create(tenant=context.tenant, workspace=context.workspace, title=title, sequence=index, project_type=group_filter, created_by=context.actor)
+            checkpoints = DefaultCheckpoint.objects.filter(tenant=context.tenant).filter(project_type__in=[group_filter, ""]).order_by("sequence")
         created = []
         for checkpoint in checkpoints:
             milestone, _created = DeliveryMilestone.objects.get_or_create(
@@ -88,6 +89,24 @@ class ProjectDeliveryService:
             title=title,
             description=description,
             metadata=metadata or {},
+            created_by=context.actor,
+        )
+        return ServiceResult.success(alert, status_code=201)
+
+    @staticmethod
+    def raise_milestone_flag(context, milestone_id, severity, title):
+        milestone = DeliveryMilestone.objects.filter(tenant=context.tenant, id=milestone_id).select_related("project").first()
+        if not milestone:
+            return ServiceResult.failure({"milestone": "Milestone Not Found."}, status_code=404)
+        alert = DeliveryAlert.objects.create(
+            tenant=context.tenant,
+            workspace=context.workspace or milestone.project.workspace,
+            project=milestone.project,
+            milestone=milestone,
+            severity=severity,
+            title=title,
+            description="",
+            metadata={},
             created_by=context.actor,
         )
         return ServiceResult.success(alert, status_code=201)
@@ -663,7 +682,7 @@ class ProjectDeliveryService:
                 setattr(task, field, data.get(field))
                 update_fields.append(field)
         if "bounty" in data:
-            task.bounty = data.get("bounty") or 0
+            task.bounty = max(0, float(data.get("bounty") or 0))
             update_fields.append("bounty")
         if "due_at" in data:
             task.due_at = data.get("due_at") or None

@@ -127,6 +127,7 @@ class DeliveryDocument(TenantScopedModel, ExternalReference):
 
 class DeliveryAlert(TenantScopedModel):
     project = models.ForeignKey("Project.ProjectWorkspace", on_delete=models.CASCADE, related_name="alerts")
+    milestone = models.ForeignKey("Project.DeliveryMilestone", null=True, blank=True, on_delete=models.CASCADE, related_name="flags")
     severity = models.CharField(max_length=40, default="Info", db_index=True)
     title = models.CharField(max_length=220)
     description = models.TextField(blank=True)
@@ -185,3 +186,51 @@ class ProjectDelay(TenantScopedModel):
 
     def __str__(self):
         return f"{self.delay_type} Delay - {self.days} days"
+
+
+class ProjectBudget(TenantScopedModel):
+    project = models.ForeignKey("Project.ProjectWorkspace", on_delete=models.CASCADE, related_name="budgets")
+    total_cost = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    total_budget = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    role_and_budget = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["tenant_id", "-created_at"]
+
+    def __str__(self):
+        return f"Budget for {self.project.name}"
+
+
+class TeamAssignmentHistory(TenantScopedModel):
+    ACTION_CHOICES = [
+        ("added", "Added"),
+        ("removed", "Removed"),
+        ("replaced", "Replaced"),
+        ("added_back", "Added Back"),
+        ("status_changed", "Status Changed"),
+    ]
+    team_assignment = models.ForeignKey("Project.TeamAssignment", on_delete=models.CASCADE, related_name="history")
+    action = models.CharField(max_length=40, choices=ACTION_CHOICES)
+    comment = models.TextField(blank=True)
+    changed_by = models.ForeignKey("Users.EmployeeProfile", null=True, blank=True, on_delete=models.SET_NULL, related_name="team_history_changes")
+
+    class Meta:
+        ordering = ["tenant_id", "-created_at"]
+
+    def __str__(self):
+        return f"{self.team_assignment.employee.display_name} - {self.action}"
+
+
+class UserRepositoryStatus(TenantScopedModel):
+    repository = models.ForeignKey("Project.RepositoryLink", on_delete=models.CASCADE, related_name="user_statuses")
+    employee = models.ForeignKey("Users.EmployeeProfile", on_delete=models.CASCADE, related_name="repository_statuses")
+    status = models.CharField(max_length=80, blank=True)
+    last_checked = models.DateTimeField(default=timezone.now)
+    days_since = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["tenant_id", "-last_checked"]
+        constraints = [models.UniqueConstraint(fields=["tenant", "repository", "employee"], name="project_user_repo_status_once")]
+
+    def __str__(self):
+        return f"{self.employee.display_name} - {self.repository.name}"

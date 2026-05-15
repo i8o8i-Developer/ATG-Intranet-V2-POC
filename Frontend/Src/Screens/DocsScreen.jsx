@@ -110,7 +110,7 @@ export function DocsDetailScreen({ data, route, navigate, reload }) {
         <p>Last Updated By: {formatDateTime(doc.updated_at)}</p>
         <StatusPill tone={doc.status === "Published" ? "green" : "gold"}>{doc.status || "Draft"}</StatusPill>
         <hr />
-        <div className="Doc-Body" dangerouslySetInnerHTML={{ __html: doc.body || doc.metadata?.body || "" }} />
+        <div className="Doc-Body" style={{ whiteSpace: "pre-wrap", fontSize: 14, lineHeight: 1.7 }}>{doc.body || doc.metadata?.body || "No Content."}</div>
         {!doc.body && !doc.metadata?.body && <p className="Doc-Body">{doc.description || "Document Content Has Not Been Populated Yet."}</p>}
       </article>
       {editOpen && <EditDocModal doc={doc} onClose={() => setEditOpen(false)} reload={reload} />}
