@@ -105,6 +105,8 @@ services:
             sleep 2
           done
           echo "Running Migrations..."
+          export POSTGRES_HOST="$${DIRECT_DB_HOST:-Database}"
+          export POSTGRES_PORT="$${DIRECT_DB_PORT:-5432}"
           python Backend/manage.py migrate --noinput
           echo "Collecting Static Files..."
           python Backend/manage.py collectstatic --noinput
@@ -125,6 +127,8 @@ services:
        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-intranet}
        DIRECT_DB_HOST: Database
        DIRECT_DB_PORT: 5432
+       CELERY_BROKER_URL: redis://Redis:6379/0
+       CELERY_RESULT_BACKEND: redis://Redis:6379/0
        BOOTSTRAP_TENANT: "${BOOTSTRAP_TENANT:-Banao}"
        BOOTSTRAP_WORKSPACE: "${BOOTSTRAP_WORKSPACE:-Default Workspace}"
        BOOTSTRAP_USERNAME: "${BOOTSTRAP_USERNAME:-AtgIntranet}"
