@@ -8,8 +8,6 @@ import { money } from "./Shared/ScreenUtils.jsx";
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 export function FinanceScreen({ data, reload }) {
-  const rows = localRows || data.financeRows || [];
-  const departments = data.financeDashboard?.departments || data.departments || [];
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDeptNames, setSelectedDeptNames] = useState(new Set());
   const [showApprovedOnly, setShowApprovedOnly] = useState(false);
@@ -21,6 +19,9 @@ export function FinanceScreen({ data, reload }) {
   const [prevMonthLabel, setPrevMonthLabel] = useState("");
   const [approvalData, setApprovalData] = useState(null);
   const [error, setError] = useState("");
+
+  const rows = localRows || data.financeRows || [];
+  const departments = data.financeDashboard?.departments || data.departments || [];
 
   const filtered = useMemo(() => {
     return rows.filter((row) => {
