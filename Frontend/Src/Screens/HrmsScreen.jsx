@@ -835,7 +835,7 @@ function HrmsGoalsWorkspace({ data, setGoalEmployee, reload }) {
                   </div>,
                   employee?.display_name || "—",
                   <span key={`status-${goal.id}`} className={`hrms-goal-status ${overdue ? "red" : meta.tone}`}>{overdue ? "Overdue" : meta.label}</span>,
-                  <span key={`progress-${goal.id}`} className="Hrms-Goal-Progress"><Progress value={overdue ? Math.max(meta.progress - 10, 5) : meta.progress} /><small>{overdue ? Math.max(meta.progress - 10, 5) : meta.progress}%</small></span>,
+                  <span key={`progress-${goal.id}`} style={{ color: "#94a3b8", fontSize: 12 }}>—</span>,
                   formatDate(goal.due_on),
                   feedbackCount,
                   <span key={`action-${goal.id}`} className="Table-Actions">
@@ -879,16 +879,12 @@ function GoalOverviewModal({ employee, data, onClose }) {
                       <span style={{ marginLeft: 8, color: "#64748b" }}>{goal.status} · Due {formatDate(goal.due_on)}</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: progress >= 100 ? "#10b981" : "#3b82f6" }}>{progress}%</span>
-                      <span style={{ fontSize: 11, color: "#94a3b8" }}>{goalFeedback.length} feedback</span>
+                      <span style={{ fontSize: 11, color: "#94a3b8" }}>{goalFeedback.length} Feedback</span>
                       {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     </div>
                   </button>
                   {isOpen && (
                     <div style={{ padding: "10px 14px" }}>
-                      <div style={{ marginBottom: 8, height: 6, background: "#e2e8f0", borderRadius: 3, overflow: "hidden" }}>
-                        <div style={{ width: `${progress}%`, height: "100%", background: progress >= 100 ? "#10b981" : "#3b82f6", borderRadius: 3 }} />
-                      </div>
                       {goal.description && <p style={{ fontSize: 12, color: "#64748b", marginBottom: 8 }}>{goal.description}</p>}
                       {progressUpdates.length > 0 && (
                         <div>
