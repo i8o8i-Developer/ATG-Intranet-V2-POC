@@ -167,6 +167,23 @@ export function EmployeeRegisterScreen({ data, reload }) {
                   </div>
                 ))}
               </div>
+              {/* Salary Revision History */}
+              {(() => {
+                const empPayProfiles = (data.payProfiles || []).filter((p) => String(p.employee) === String(selectedEmp.id)).sort((a, b) => new Date(b.effective_at || 0) - new Date(a.effective_at || 0));
+                if (!empPayProfiles.length) return null;
+                return (
+                  <div style={{ marginTop: 16, paddingTop: 12, borderTop: "1px solid #e2e8f0" }}>
+                    <h4 style={{ margin: "0 0 8px", fontSize: 14 }}>Salary Revision History</h4>
+                    {empPayProfiles.map((p, i) => (
+                      <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 12, borderBottom: "1px solid #f1f5f9" }}>
+                        <span style={{ color: "#64748b" }}>{formatDate(p.effective_at)}</span>
+                        <span>₹{Number(p.base_pay || 0).toLocaleString()}</span>
+                        <span style={{ color: "#64748b" }}>{p.pay_type} {Number(p.performance_pay || 0) > 0 ? `+ ₹${Number(p.performance_pay).toLocaleString()}` : ""}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
               <div style={{ marginTop: 16, paddingTop: 12, borderTop: "1px solid #e2e8f0", display: "flex", gap: 8 }}>
                 <button className="Soft-Button" onClick={() => setSelectedEmp(null)}>Close</button>
               </div>

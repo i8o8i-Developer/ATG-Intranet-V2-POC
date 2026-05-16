@@ -280,6 +280,27 @@ class OfferLifecycleService:
         except Exception as exc:
             provision_error = str(exc)
 
+        # ── ASSIGN ROLE & COMPLETE ONBOARDING ───────────────────────────────────
+        if auto_employee and not provision_error:
+            try:
+                auto_employee.onboarding_completed = True
+                auto_employee.save(update_fields=["onboarding_completed", "updated_at"])
+                from Backend.EnterpriseCore.models import Role, RoleAssignment
+                dept_name = (op.get("department_name") or "").lower()
+                role_map = {"python django": "MANAGER", "mern stack": "MANAGER", "business analysis": "BUSINESS_ANALYST",
+                            "human resources": "HR", "finance": "FINANCE_MANAGER", "design": "DOCS_EDIT",
+                            "manual testing": "BUSINESS_ANALYST", "l3 team": "L3_CALLER"}
+                role_code = "MANAGER"
+                for key, code in role_map.items():
+                    if key in dept_name:
+                        role_code = code
+                        break
+                role = Role.objects.filter(tenant=context.tenant, code=role_code).first()
+                if role:
+                    RoleAssignment.objects.get_or_create(tenant=context.tenant, workspace=context.workspace, user=auto_user, role=role, defaults={"is_active": True})
+            except Exception:
+                pass
+
         try:
             base_url = str(getattr(settings, "PUBLIC_BASE_URL", "http://localhost:5173") or "http://localhost:5173").rstrip("/")
             intranet_url = base_url
@@ -1189,6 +1210,10 @@ body {{ margin:0; padding:28px; background:#fff; color:#111827; font-family:Aria
         employee.exited_on = timezone.localdate()
         employee.updated_by = context.actor
         employee.save(update_fields=["status", "exited_on", "updated_by", "updated_at"])
+        user = employee.user
+        if user and user.is_active:
+            user.is_active = False
+            user.save(update_fields=["is_active", "updated_at"])
         return ServiceResult.success(employee)
 
     @staticmethod

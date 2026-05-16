@@ -48,5 +48,7 @@ export function RouteRenderer(props) {
   if (path.startsWith("/mcp")) return <McpScreen {...props} />;
   if (path.startsWith("/feedback")) return <FeedbackScreen {...props} />;
   if (path.startsWith("/lms")) return <LmsScreen {...props} />;
+  // Django Admin opens via sidebar newTab flag — no SPA route needed.
+  // If the path happens to be /admin/, fall through to HomeScreen to avoid loops.
   return <HomeScreen {...props} />;
 }

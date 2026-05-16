@@ -91,7 +91,7 @@ export function HrmsScreen({ data, reload }) {
         <Tabs
           value={tab}
           onChange={setTab}
-          items={[["team", "Team"], ["goals", "Goals"], ["sanity", "Project Sanity"], ["finance", "Project Finance"]]}
+          items={[["team", "Team"], ["goals", "Goals"], ["org", "Org Chart"], ["sanity", "Project Sanity"], ["finance", "Project Finance"]]}
         />
       </div>
 
@@ -160,8 +160,9 @@ export function HrmsScreen({ data, reload }) {
       )}
 
       {tab === "goals"   && <HrmsGoalsWorkspace data={data} setGoalEmployee={setGoalEmployee} reload={reload} />}
+      {tab === "org"     && <OrgChartView data={data} employeeName={employeeName} />}
       {tab === "sanity"  && <ProjectSanity  data={data} />}
-      {tab === "finance" && <ProjectFinance data={data} />}
+      {tab === "finance" && <ProjectFinance data={data} reload={reload} />}
 
       {eodEmployee && (
         <EodSummaryModal
@@ -395,9 +396,7 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, setShowG
     if (!employee.id) return;
     try {
       await apiPost(`/Users/EmployeeProfiles/${employee.id}/change-status/`, { status, reason: "" });
-    } catch {
-      // 
-    }
+    } catch {}
   };
 
   const savePerformance = async (label) => {
@@ -445,6 +444,7 @@ function EmployeeRow({ employee, data, setEodEmployee, setGoalEmployee, setShowG
       if (reload) reload(["employees", "userSkills", "notifications"]);
     } catch {
       setOptimisticSkill(previousSkill);
+      setShowSkillMenu(false);
     } finally {
       setSaving(false);
     }
@@ -841,8 +841,9 @@ function HrmsGoalsWorkspace({ data, setGoalEmployee, reload }) {
                   formatDate(goal.due_on),
                   feedbackCount,
                   <span key={`action-${goal.id}`} className="Table-Actions">
-                    <button className="Soft-Button Small" onClick={async () => { await apiPatch(`/Users/Goals/${goal.id}/`, { status: "InProgress" }); if (reload) reload(["goals", "goalFeedback"]); }}>Start</button>
-                    <button className="Soft-Button Small" onClick={async () => { await apiPost("/Users/GoalFeedback/", { goal: goal.id, feedback_type: "ManagerApproval", rating: 5, note: "Goal Approved." }); if (reload) reload(["goals", "goalFeedback"]); }}>Approve</button>
+                    {goal.status !== "InProgress" && goal.status !== "Completed" && goal.status !== "Approved" && <button className="Soft-Button Small" onClick={async () => { await apiPatch(`/Users/Goals/${goal.id}/`, { status: "InProgress" }); if (reload) reload(["goals", "goalFeedback"]); }}>Start</button>}
+                    {goal.status === "InProgress" && <button className="Soft-Button Small" onClick={async () => { await apiPatch(`/Users/Goals/${goal.id}/`, { status: "Completed" }); if (reload) reload(["goals", "goalFeedback"]); }}>Complete</button>}
+                    {goal.status === "Completed" && <button className="Soft-Button Small" onClick={async () => { await apiPost("/Users/GoalFeedback/", { goal: goal.id, feedback_type: "ManagerApproval", rating: 5, note: "Goal Approved." }); await apiPatch(`/Users/Goals/${goal.id}/`, { status: "Approved" }); if (reload) reload(["goals", "goalFeedback"]); }}>Approve</button>}
                     <button className="Soft-Button Small" onClick={() => employee && setGoalEmployee(employee)}>View</button>
                   </span>,
                 ];
@@ -860,20 +861,55 @@ function HrmsGoalsWorkspace({ data, setGoalEmployee, reload }) {
 function GoalOverviewModal({ employee, data, onClose }) {
   const goals = (data.goals || []).filter((goal) => String(goal.employee) === String(employee.id));
   const feedback = data.goalFeedback || [];
+  const [expandedGoal, setExpandedGoal] = useState(null);
 
   return (
     <Modal onClose={onClose} wide title={`${employee.display_name} Goals`}>
       <div className="Eod-Tab-Body">
         {goals.length ? (
-          <SimpleTable
-            columns={["Goal", "Status", "Due On", "Feedback"]}
-            rows={goals.map((goal) => [
-              goal.title,
-              goal.status,
-              formatDate(goal.due_on),
-              feedback.filter((item) => String(item.goal) === String(goal.id)).length,
-            ])}
-          />
+          <div style={{ display: "grid", gap: 8 }}>
+            {goals.map((goal) => {
+              const progress = goal.metadata?.progress ?? 0;
+              const goalFeedback = feedback.filter((item) => String(item.goal) === String(goal.id));
+              const progressUpdates = goalFeedback.filter((f) => f.feedback_type === "ProgressUpdate");
+              const isOpen = expandedGoal === goal.id;
+              return (
+                <div key={goal.id} style={{ border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden" }}>
+                  <button onClick={() => setExpandedGoal(isOpen ? null : goal.id)} style={{ width: "100%", textAlign: "left", padding: "10px 14px", background: "#f8fafc", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
+                    <div style={{ flex: 1 }}>
+                      <strong>{goal.title}</strong>
+                      <span style={{ marginLeft: 8, color: "#64748b" }}>{goal.status} · Due {formatDate(goal.due_on)}</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: progress >= 100 ? "#10b981" : "#3b82f6" }}>{progress}%</span>
+                      <span style={{ fontSize: 11, color: "#94a3b8" }}>{goalFeedback.length} feedback</span>
+                      {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </div>
+                  </button>
+                  {isOpen && (
+                    <div style={{ padding: "10px 14px" }}>
+                      <div style={{ marginBottom: 8, height: 6, background: "#e2e8f0", borderRadius: 3, overflow: "hidden" }}>
+                        <div style={{ width: `${progress}%`, height: "100%", background: progress >= 100 ? "#10b981" : "#3b82f6", borderRadius: 3 }} />
+                      </div>
+                      {goal.description && <p style={{ fontSize: 12, color: "#64748b", marginBottom: 8 }}>{goal.description}</p>}
+                      {progressUpdates.length > 0 && (
+                        <div>
+                          <strong style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase" }}>Progress Updates</strong>
+                          {progressUpdates.slice().reverse().map((fb) => (
+                            <div key={fb.id} style={{ fontSize: 12, padding: "6px 0", borderBottom: "1px solid #f1f5f9" }}>
+                              <p style={{ margin: 0 }}>{fb.note}</p>
+                              <small style={{ color: "#94a3b8" }}>{formatDate(fb.created_at)}</small>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {!progressUpdates.length && <small style={{ color: "#94a3b8" }}>No progress notes yet.</small>}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         ) : (
           <EmptyState label="No Goals Assigned Yet." />
         )}
@@ -1073,7 +1109,7 @@ function EodSummaryModal({ employee, data, onClose, reload }) {
       });
       setEodText("");
       if (reload) reload(["dailyStatus"]);
-    } catch { /* Silent */ }
+    } catch {}
     setSubmitting(false);
   };
 
@@ -1257,6 +1293,86 @@ function EodSummaryModal({ employee, data, onClose, reload }) {
   );
 }
 
+/* ─── Org Chart View ─────────────────────────────────────────── */
+function OrgChartView({ data, employeeName }) {
+  const employees = data.employees || [];
+  const grouped = {};
+  employees.forEach((emp) => {
+    const deptName = emp.department_name || "Unknown";
+    if (!grouped[deptName]) grouped[deptName] = { name: deptName, members: [] };
+    grouped[deptName].members.push(emp);
+  });
+  const sortedDepts = Object.values(grouped).sort((a, b) => a.name.localeCompare(b.name));
+  const totalCount = employees.length;
+  const deptCount = sortedDepts.length;
+  const managerCount = employees.filter((e) => employees.some((sub) => String(sub.manager) === String(e.id))).length;
+
+  return (
+    <div style={{ padding: "20px 0" }}>
+      {/* KPI Summary */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 20 }}>
+        {[
+          { label: "Total Employees", value: totalCount, color: "#3b82f6" },
+          { label: "Departments", value: deptCount, color: "#8b5cf6" },
+          { label: "Managers", value: managerCount, color: "#10b981" },
+        ].map(({ label, value, color }) => (
+          <div key={label} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: "14px 18px", display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: `${color}15`, display: "flex", alignItems: "center", justifyContent: "center", color, fontWeight: 700, fontSize: 18 }}>{value}</div>
+            <span style={{ fontSize: 13, color: "#64748b", fontWeight: 500 }}>{label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Department Cards */}
+      {sortedDepts.map((dept) => {
+        const leads = dept.members.filter((e) => dept.members.some((sub) => String(sub.manager) === String(e.id)));
+        const nonLeads = dept.members.filter((e) => !leads.some((l) => String(l.id) === String(e.id)));
+        return (
+          <div key={dept.name} style={{ marginBottom: 16, border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden", background: "#fff" }}>
+            <div style={{ padding: "14px 18px", background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: "#3b82f615", display: "flex", alignItems: "center", justifyContent: "center", color: "#3b82f6", fontWeight: 700, fontSize: 14 }}>{dept.members.length}</div>
+                <strong style={{ fontSize: 15, color: "#0f172a" }}>{dept.name}</strong>
+              </div>
+              {leads.length > 0 && (
+                <div style={{ fontSize: 12, color: "#64748b", display: "flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#f59e0b" }} />
+                  Lead: {leads.map((l) => l.display_name).join(", ")}
+                </div>
+              )}
+            </div>
+            <div style={{ padding: "14px 18px", display: "flex", flexWrap: "wrap", gap: 10 }}>
+              {dept.members.map((emp) => {
+                const isLead = leads.some((l) => String(l.id) === String(emp.id));
+                const managerName = emp.manager ? employeeName(data, emp.manager) : null;
+                const ic = (emp.display_name || "?").split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase();
+                const colors = ["#6366f1","#0ea5e9","#10b981","#f59e0b","#ec4899","#8b5cf6","#14b8a6","#f97316"];
+                const ac = colors[emp.id ? emp.id % colors.length : 0];
+                return (
+                  <div key={emp.id} style={{ padding: "12px 14px", background: "#f8fafc", border: isLead ? "1.5px solid #f59e0b" : "1px solid #e2e8f0", borderRadius: 10, minWidth: 180, flex: "1 0 auto", maxWidth: 240, position: "relative" }}>
+                    {isLead && <span style={{ position: "absolute", top: -1, right: 12, fontSize: 10, fontWeight: 600, color: "#f59e0b", background: "#fff", padding: "0 4px" }}>LEAD</span>}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                      <span style={{ width: 32, height: 32, borderRadius: "50%", background: ac, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{ic}</span>
+                      <div style={{ minWidth: 0 }}>
+                        <strong style={{ display: "block", fontSize: 13, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{emp.display_name}</strong>
+                        <span style={{ fontSize: 11, color: "#64748b" }}>{emp.position_title || emp.employment_type || "—"}</span>
+                      </div>
+                    </div>
+                    {emp.joined_on && <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>Joined {formatDate(emp.joined_on)}</div>}
+                    {managerName && !isLead && <div style={{ fontSize: 11, color: "#94a3b8" }}>Reports to: <span style={{ color: "#64748b" }}>{managerName}</span></div>}
+                    {emp.employee_code && <div style={{ fontSize: 10, color: "#cbd5e1", marginTop: 4 }}>{emp.employee_code}</div>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+      {!employees.length && <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>No Employees Found.</div>}
+    </div>
+  );
+}
+
 /* ─── Project Sanity ──────────────────────────────────────────── */
 function ProjectSanity({ data }) {
   const byProject = groupBy(data.milestones || [], (m) => String(m.project));
@@ -1343,9 +1459,10 @@ function ProjectSanity({ data }) {
 }
 
 /* ─── Project Finance ─────────────────────────────────────────── */
-function ProjectFinance({ data }) {
+function ProjectFinance({ data, reload }) {
   const [expandedRows, setExpandedRows] = useState({});
   const [financeBonus, setFinanceBonus] = useState({});
+  const [financeError, setFinanceError] = useState("");
   const employees = data.employees || [];
   const projects = data.projects || [];
   const tasks = data.tasks || [];
@@ -1390,6 +1507,7 @@ function ProjectFinance({ data }) {
 
   return (
     <div className="HF">
+      {financeError && <div style={{ fontSize: 13, padding: "8px 14px", marginBottom: 12, borderRadius: 6, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }}>{financeError}</div>}
       {/* KPI Summary */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 16 }}>
         {[
@@ -1441,7 +1559,7 @@ function ProjectFinance({ data }) {
                     <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600, color: "#059669" }}>₹{total.toLocaleString()}</td>
                     <td style={{ padding: "8px 12px", textAlign: "center" }}>{row.hasBank ? <span style={{ color: "#10b981" }}>✓</span> : <span style={{ color: "#ef4444" }}>✗</span>}</td>
                     <td style={{ padding: "8px 12px", textAlign: "center" }}>
-                      <button className="Primary-Button Small" onClick={async (e) => { e.stopPropagation(); try { await apiPost("/FinanceAndPayroll/payment-approval/", { employee: row.id, normalPay: row.basePay, bonus: Number(financeBonus[row.id] || 0), bounty: row.bounty }); if (reload) reload(["financeDashboard"]); } catch (err) { alert(err?.payload?.detail || "Approval Failed."); } }}>Approve</button>
+                      <button className="Primary-Button Small" onClick={async (e) => { e.stopPropagation(); try { await apiPost("/FinanceAndPayroll/payment-approval/", { employee: row.id, normalPay: row.basePay, bonus: Number(financeBonus[row.id] || 0), bounty: row.bounty }); setFinanceError(""); if (reload) reload(["financeDashboard"]); } catch (err) { setFinanceError(err?.payload?.detail || "Approval Failed."); setTimeout(() => setFinanceError(""), 3000); } }}>Approve</button>
                     </td>
                   </tr>
                   {expandedRows[row.id] && (

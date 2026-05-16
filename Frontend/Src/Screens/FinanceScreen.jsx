@@ -115,7 +115,7 @@ export function FinanceScreen({ data, reload }) {
         </div>
         <div className="Finance-Search">
           <input placeholder="Search By Name" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-          <button className="Primary-Button" onClick={() => {}}><SearchIcon size={16} /> Search</button>
+          <button className="Primary-Button" onClick={() => { const inp = document.querySelector(".Finance-Search input"); if (inp) inp.focus(); }}><SearchIcon size={16} /> Search</button>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
           <label style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -129,7 +129,7 @@ export function FinanceScreen({ data, reload }) {
                 const ids = Array.from(bulkSelected);
                 for (const id of ids) {
                   const row = filtered.find((r) => String(r.id) === String(id));
-                  if (row) await apiPost("/FinanceAndPayroll/payment-approval/", { employee: row.id, normalPay: row.base_pay || 0, bonus: Number(financeBonus[row.id] || 0), bounty: row.bounty || 0 }).catch(() => {});
+                  if (row) try { await apiPost("/FinanceAndPayroll/payment-approval/", { employee: row.id, normalPay: row.base_pay || 0, bonus: Number(financeBonus[row.id] || 0), bounty: row.bounty || 0 }); } catch {}
                 }
                 setBulkSelected(new Set());
                 reload(["financeDashboard", "financeRows", "payrollRuns", "payrollLineItems"]);

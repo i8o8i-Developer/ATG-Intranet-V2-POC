@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group as AuthGroup
 from django.core.management.base import BaseCommand
 
 from Backend.Apps.Users.models import EmployeeProfile
@@ -165,6 +166,7 @@ class Command(BaseCommand):
                 "display_name": display_name,
                 "employment_type": "Leadership",
                 "status": EmployeeProfile.STATUS_ACTIVE,
+                "onboarding_completed": True,
             },
         )
 
@@ -205,6 +207,13 @@ class Command(BaseCommand):
                     if cap_key in all_capabilities:
                         RoleCapability.objects.get_or_create(tenant=tenant, role=legacy_role, capability=all_capabilities[cap_key])
 
+        # 
+        auth_group_count = 0
+        for group_name in LEGACY_GROUPS:
+            _, created = AuthGroup.objects.get_or_create(name=group_name)
+            if created:
+                auth_group_count += 1
+
         legacy_count = 0
         for legacy_app, backend_app in LEGACY_APP_TO_BACKEND_APP.items():
             _item, was_created = LegacyApplicationMap.objects.get_or_create(
@@ -224,3 +233,4 @@ class Command(BaseCommand):
         self.stdout.write(f"New Capabilities: {capability_count}")
         self.stdout.write(f"New Legacy Mappings: {legacy_count}")
         self.stdout.write(f"Legacy Group Roles Created: {role_count}")
+        self.stdout.write(f"Auth Groups Created: {auth_group_count}")

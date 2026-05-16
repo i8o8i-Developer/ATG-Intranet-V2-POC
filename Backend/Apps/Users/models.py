@@ -119,7 +119,7 @@ class EmployeeProfile(TenantScopedModel, ExternalReference):
     year_of_graduation = models.PositiveIntegerField(null=True, blank=True)
     availability_hours = models.PositiveIntegerField(default=40)
     calendar_id = models.CharField(max_length=180, blank=True)
-    slack_username = models.CharField(max_length=120, blank=True)
+    slack_username = models.CharField(max_length=120)
     onboarding_completed = models.BooleanField(default=False, db_index=True)
     profile_payload = models.JSONField(default=dict, blank=True)
 

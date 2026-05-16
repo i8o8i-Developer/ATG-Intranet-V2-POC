@@ -58,13 +58,15 @@ export function LoginScreen({ settings, onLogin }) {
         tenantId: currentUser?.activeTenant?.id || form.tenantId,
         workspaceId: currentUser?.activeWorkspace?.id || form.workspaceId,
       });
-      // Check If Onboarding Is Completed
-      const employee = currentUser.employees?.[0];
-      if (employee) {
-        const employeeProfile = await apiGet(`/Users/EmployeeProfiles/${employee.id}/`);
-        if (!employeeProfile.onboarding_completed) {
-          onLogin("/onboarding/");
-          return;
+      // 
+      if (!currentUser.user?.isSuperuser) {
+        const employee = currentUser.employees?.[0];
+        if (employee) {
+          const employeeProfile = await apiGet(`/Users/EmployeeProfiles/${employee.id}/`);
+          if (!employeeProfile.onboarding_completed) {
+            onLogin("/onboarding/");
+            return;
+          }
         }
       }
       onLogin();

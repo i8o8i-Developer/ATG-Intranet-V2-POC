@@ -19,9 +19,9 @@ class PositionAdmin(admin.ModelAdmin):
 
 @admin.register(models.EmployeeProfile)
 class EmployeeProfileAdmin(admin.ModelAdmin):
-    list_display = ("id", "tenant", "employee_code", "display_name", "department", "status")
+    list_display = ("id", "tenant", "employee_code", "display_name", "department", "position", "slack_username", "status")
     list_filter = ("tenant", "status", "department", "employment_type")
-    search_fields = ("employee_code", "display_name", "user__username", "user__email", "github_username")
+    search_fields = ("employee_code", "display_name", "user__username", "user__email", "github_username", "slack_username")
 
 
 @admin.register(

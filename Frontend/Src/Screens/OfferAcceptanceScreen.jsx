@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { CheckCircle, FileText, Check, AlertCircle, User, Shield, Download } from "lucide-react";
-import { apiGet, apiPost, PUBLIC_BASE_URL } from "../Api/Client";
+import { apiGet, apiPost, PUBLIC_BASE_URL } from "../Api/Client.js";
 
 function fmt(val) {
   if (!val) return "—";
@@ -16,7 +16,8 @@ export default function OfferAcceptanceScreen() {
   const [step, setStep] = useState(1); // 1: Review, 2: NDA, 3: Profile, 4: Done
   const [accepting, setAccepting] = useState(false);
   const [ndaChecked, setNdaChecked] = useState(false);
-  const [profile, setProfile] = useState({ full_name: "", phone: "", city: "", emergency_contact: "", signature_name: "" });
+  const [profile, setProfile] = useState({ full_name: "", phone: "", city: "", emergency_contact: "", signature_name: "", id_type: "Aadhaar", id_number: "", college_name: "", github_username: "" });
+  const [idFile, setIdFile] = useState(null);
 
   useEffect(() => {
     async function fetchOffer() {
@@ -41,20 +42,29 @@ export default function OfferAcceptanceScreen() {
   const handleAcceptOffer = async () => {
     if (!ndaChecked) return;
     if (!profile.signature_name) {
-      alert("Please Provide Your Signature Name Before Accepting The Offer.");
+      setError("Please Provide Your Signature Name Before Accepting The Offer.");
       return;
     }
     setAccepting(true);
     try {
-      const result = await apiPost(`/MainApp/offer/${token}`, {
-        accepted_nda: ndaChecked,
-        accepted_terms: true,
-        signature_name: profile.signature_name,
-      });
+      const formData = new FormData();
+      formData.append("accepted_nda", "true");
+      formData.append("accepted_terms", "true");
+      formData.append("signature_name", profile.signature_name);
+      formData.append("phone", profile.phone);
+      formData.append("city", profile.city);
+      formData.append("emergency_contact", profile.emergency_contact);
+      formData.append("college_name", profile.college_name);
+      formData.append("github_username", profile.github_username);
+      formData.append("id_type", profile.id_type);
+      formData.append("id_number", profile.id_number);
+      if (idFile) formData.append("id_proof", idFile);
+      // 
+      const result = await apiPost(`/MainApp/offer/${token}`, formData);
       setAcceptedOffer(result);
       setStep(4);
-    } catch {
-      alert("Failed To Accept Offer. Please Try Again Or Contact HR.");
+    } catch (err) {
+      setError(err?.payload?.detail || err?.message || "Failed To Accept Offer. Please Try Again Or Contact HR.");
     } finally {
       setAccepting(false);
     }
@@ -262,18 +272,27 @@ export default function OfferAcceptanceScreen() {
                 ["Mobile / WhatsApp", "phone", "tel", "+91 XXXXXXXXXX"],
                 ["Current City", "city", "text", "Delhi, Mumbai, Etc."],
                 ["Emergency Contact", "emergency_contact", "text", "Name - Relationship - Phone"],
+                ["College Name", "college_name", "text", "If Applicable"],
+                ["GitHub Username", "github_username", "text", "Optional"],
               ].map(([label, key, type, placeholder]) => (
                 <label key={key} style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "14px", color: "#374151", fontWeight: "500" }}>
                   {label}
-                  <input
-                    type={type}
-                    value={profile[key]}
-                    placeholder={placeholder}
-                    onChange={(e) => setProfile((p) => ({ ...p, [key]: e.target.value }))}
-                    style={{ padding: "10px 14px", borderRadius: "10px", border: "1px solid #d1d5db", fontSize: "14px", background: "#f9fafb" }}
-                  />
+                  <input type={type} value={profile[key]} placeholder={placeholder} onChange={(e) => setProfile((p) => ({ ...p, [key]: e.target.value }))} style={{ padding: "10px 14px", borderRadius: "10px", border: "1px solid #d1d5db", fontSize: "14px", background: "#f9fafb" }} />
                 </label>
               ))}
+              {/* ID Proof Upload */}
+              <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "14px", color: "#374151", fontWeight: "500" }}>
+                ID Type<select value={profile.id_type} onChange={(e) => setProfile((p) => ({ ...p, id_type: e.target.value }))} style={{ padding: "10px 14px", borderRadius: "10px", border: "1px solid #d1d5db", fontSize: "14px", background: "#f9fafb" }}><option>Aadhaar</option><option>PAN</option><option>Passport</option><option>Driving License</option><option>Voter ID</option></select>
+              </label>
+              <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "14px", color: "#374151", fontWeight: "500" }}>
+                ID Number<input type="text" value={profile.id_number} onChange={(e) => setProfile((p) => ({ ...p, id_number: e.target.value }))} placeholder="Enter ID Number" style={{ padding: "10px 14px", borderRadius: "10px", border: "1px solid #d1d5db", fontSize: "14px", background: "#f9fafb" }} />
+              </label>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "14px", color: "#374151", fontWeight: "500" }}>
+                  Upload ID Proof (Photo/Scan)<input type="file" accept="image/*,.pdf" onChange={(e) => setIdFile(e.target.files[0])} style={{ fontSize: "13px" }} />
+                  {idFile && <span style={{ fontSize: 11, color: "#059669" }}>Selected: {idFile.name}</span>}
+                </label>
+              </div>
             </div>
 
             <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "12px", padding: "16px", marginBottom: "28px", fontSize: "13px", color: "#166534" }}>

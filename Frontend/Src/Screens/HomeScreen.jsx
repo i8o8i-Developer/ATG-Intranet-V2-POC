@@ -45,6 +45,8 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
   const [taskFilter, setTaskFilter] = useState("pending");
   const [collapsedProjects, setCollapsedProjects] = useState({});
   const [summary, setSummary] = useState("");
+  const [goalNotes, setGoalNotes] = useState({});
+  const [goalNotesOpen, setGoalNotesOpen] = useState({});
   const projectMap = useMemo(() => indexById(data.projects), [data.projects]);
   const days = useMemo(() => lastDays(15), []);
   const filteredTasks = taskFilter === "completed" ? completedTasks : pendingTasks;
@@ -122,7 +124,7 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
           <ChevronDown size={18} />
         </div>
         <div className="HomeR-NotifBanner">
-          <span>{primaryNotification?.title || primaryNotification?.message || "You Have Been Added To A New Project ( Intranet )"}</span>
+          <span>{primaryNotification?.title || primaryNotification?.message || ""}</span>
           <button type="button" onClick={() => navigate("/notifications/")}>Review</button>
         </div>
       </div>
@@ -190,27 +192,30 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
         </div>
       </div>
 
-      {/* Upcoming Leaves & Birthdays */}
+      {/* Upcoming Leaves & Work Anniversaries */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-        {/* Upcoming Approved Leaves */}
+        {/* My Upcoming Approved Leaves */}
         {(() => {
-          const upcoming = (data.leaveRequests || []).filter((lr) => String(lr.status).toLowerCase() === "approved" && lr.starts_on).sort((a, b) => new Date(a.starts_on) - new Date(b.starts_on)).slice(0, 4);
+          const myEmpId = linkedEmployee?.id || selectedEmployeeId;
+          const upcoming = (data.leaveRequests || []).filter((lr) => String(lr.status).toLowerCase() === "approved" && lr.starts_on && String(lr.employee) === String(myEmpId)).sort((a, b) => new Date(a.starts_on) - new Date(b.starts_on)).slice(0, 4);
           if (!upcoming.length) return null;
           return (
             <div className="HomeR-Card">
-              <div className="HomeR-Card-header"><span className="HomeR-Card-title">Upcoming Leaves</span></div>
+              <div className="HomeR-Card-header"><span className="HomeR-Card-title">My Upcoming Leaves</span></div>
               <div style={{ padding: "8px 14px 14px" }}>
                 {upcoming.map((lr) => (
                   <div key={lr.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, padding: "4px 0" }}>
                     <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#f59e0b" }} />
-                    <span style={{ flex: 1 }}>{employeeName(data, lr.employee)}</span>
-                    <span style={{ color: "#64748b", fontSize: 11 }}>{formatDate(lr.starts_on)} - {formatDate(lr.ends_on)}</span>
+                    <span style={{ flex: 1 }}>{formatDate(lr.starts_on)} - {formatDate(lr.ends_on)}</span>
+                    <span style={{ color: "#64748b", fontSize: 11 }}>{lr.leave_type || "Leave"}</span>
                   </div>
                 ))}
               </div>
             </div>
           );
         })()}
+
+
 
         {/* Recent Activity */}
         {(() => {
@@ -243,7 +248,7 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
             <div style={{ display: "grid", gap: 4, padding: "8px 14px 14px" }}>
               {myTasks.map((task) => (
                 <div key={task.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 6, background: "#fff", border: "1px solid #e2e8f0" }}>
-                  <input type="checkbox" onChange={async () => { await apiPost("/Project/update-task/", { task_id: task.id, status: "Completed" }); reload(["tasks"]); }} style={{ accentColor: "#3b82f6" }} />
+                  <input type="checkbox" onChange={async () => { try { await apiPost("/Project/update-task/", { task_id: task.id, status: "Completed" }); reload(["tasks"]); } catch {} }} style={{ accentColor: "#3b82f6" }} />
                   <span style={{ flex: 1, fontSize: 13 }}>{task.title}</span>
                   <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 4, background: task.priority === "High" ? "#fef2f2" : "#f8fafc", color: task.priority === "High" ? "#dc2626" : "#64748b" }}>{task.priority || "Normal"}</span>
                   {task.due_at && <span style={{ fontSize: 11, color: new Date(task.due_at) < new Date() ? "#dc2626" : "#64748b" }}>{formatDate(task.due_at)}</span>}
@@ -265,6 +270,7 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
             <div style={{ display: "grid", gap: 6, padding: "8px 14px 14px" }}>
               {myGoals.map((goal) => {
                 const goalProgress = goal.metadata?.progress || 0;
+                const noteOpen = goalNotesOpen[goal.id];
                 return (
                   <div key={goal.id} style={{ display: "flex", flexDirection: "column", padding: "10px 12px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
@@ -272,15 +278,18 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
                         <strong style={{ fontSize: 13 }}>{goal.title}</strong>
                         <span style={{ fontSize: 11, color: "#64748b", marginLeft: 8 }}>{goal.status} · Due {formatDate(goal.due_on)}</span>
                       </div>
-                      <span className="Table-Actions">
-                        {goal.status !== "InProgress" && <button className="Soft-Button Small" onClick={async () => { await apiPatch(`/Users/Goals/${goal.id}/`, { status: "InProgress" }); reload(["goals", "goalFeedback"]); }}>Start</button>}
-                        {goal.status !== "Completed" && <button className="Soft-Button Small" onClick={async () => { await apiPatch(`/Users/Goals/${goal.id}/`, { status: "Completed" }); reload(["goals", "goalFeedback"]); }}>Complete</button>}
-                      </span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <input type="range" min="0" max="100" value={goalProgress} onChange={async (e) => { const v = e.target.value; await apiPatch(`/Users/Goals/${goal.id}/`, { metadata: { ...(goal.metadata || {}), progress: Number(v) } }); reload(["goals"]); }} style={{ flex: 1, height: 4 }} />
+                      <input type="range" min="0" max="100" value={goalProgress} onChange={async (e) => { const v = Number(e.target.value); await apiPatch(`/Users/Goals/${goal.id}/`, { metadata: { ...(goal.metadata || {}), progress: v } }); reload(["goals"]); }} style={{ flex: 1, height: 4 }} />
                       <span style={{ fontSize: 11, fontWeight: 600, minWidth: 30, textAlign: "right" }}>{goalProgress}%</span>
+                      <button className="Soft-Button Small" onClick={() => setGoalNotesOpen((prev) => ({ ...prev, [goal.id]: !prev[goal.id] }))} style={{ fontSize: 10, padding: "2px 6px" }} title="Add Progress Note">{noteOpen ? "✕" : "📝"}</button>
                     </div>
+                    {noteOpen && (
+                      <div style={{ marginTop: 6, display: "flex", gap: 6, alignItems: "flex-start" }}>
+                        <textarea value={goalNotes[goal.id] || ""} onChange={(e) => setGoalNotes((prev) => ({ ...prev, [goal.id]: e.target.value }))} placeholder="Describe This Progress Update..." rows={2} style={{ flex: 1, fontSize: 12, padding: "6px 8px", borderRadius: 6, border: "1px solid #e2e8f0", resize: "vertical", minHeight: 40 }} />
+                        <button className="Primary-Button Small" onClick={async () => { const txt = (goalNotes[goal.id] || "").trim(); if (!txt) return; await apiPost("/Users/GoalFeedback/", { goal: goal.id, feedback_type: "ProgressUpdate", note: txt }); setGoalNotes((prev) => ({ ...prev, [goal.id]: "" })); setGoalNotesOpen((prev) => ({ ...prev, [goal.id]: false })); reload(["goalFeedback"]); }} style={{ whiteSpace: "nowrap" }}>Save</button>
+                      </div>
+                    )}
                   </div>
                 );
               })}

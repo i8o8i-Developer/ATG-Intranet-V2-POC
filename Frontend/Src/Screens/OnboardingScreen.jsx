@@ -29,8 +29,8 @@ export default function OnboardingScreen({ data, reload, navigate }) {
     setBusy(true);
     setError("");
     try {
-      // UpdateProfile      await apiPatch(`/Users/EmployeeProfiles/${employee.id}/`, form);
-      // CompleteOnboardingForTheCurrentEmployee      await apiPost(`/Users/EmployeeProfiles/${employee.id}/complete-onboarding/`, {});
+      await apiPatch(`/Users/EmployeeProfiles/${employee.id}/`, form);
+      await apiPost(`/Users/EmployeeProfiles/${employee.id}/complete-onboarding/`, {});
       reload(["me", "employees"]);
       navigate("/home/");
     } catch (err) {

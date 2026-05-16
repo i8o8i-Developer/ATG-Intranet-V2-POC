@@ -565,6 +565,15 @@ class ProjectDeliveryService:
             if date_field in data:
                 setattr(project, date_field, data.get(date_field) or None)
                 update_fields.append(date_field)
+        for fk_field in ["associate_project_manager", "project_manager"]:
+            if fk_field in data:
+                emp_id = data.get(fk_field)
+                if emp_id:
+                    emp = EmployeeProfile.objects.filter(tenant=context.tenant, id=emp_id).first()
+                    setattr(project, fk_field, emp)
+                else:
+                    setattr(project, fk_field, None)
+                update_fields.append(fk_field)
         if "metadata" in data:
             project.metadata = data.get("metadata") or {}
             update_fields.append("metadata")

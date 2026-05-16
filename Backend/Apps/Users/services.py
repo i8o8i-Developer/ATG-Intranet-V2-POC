@@ -53,6 +53,14 @@ class EmployeeLifecycleService:
             employee.exited_on = effective_from
         employee.updated_by = context.actor
         employee.save(update_fields=["status", "exited_on", "updated_by", "updated_at"])
+        user = employee.user
+        if user:
+            if status == EmployeeProfile.STATUS_EXITED and user.is_active:
+                user.is_active = False
+                user.save(update_fields=["is_active", "updated_at"])
+            elif status != EmployeeProfile.STATUS_EXITED and not user.is_active:
+                user.is_active = True
+                user.save(update_fields=["is_active", "updated_at"])
         snapshot = UserStatusSnapshot.objects.create(
             tenant=context.tenant,
             workspace=context.workspace or employee.workspace,

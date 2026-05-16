@@ -43,6 +43,7 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
   const [selectedProjectId, setSelectedProjectId] = useState(routeProjectId || String(data.projects?.[0]?.id || ""));
   const [dashboard, setDashboard] = useState(null);
   const [taskFilter, setTaskFilter] = useState("pending");
+  const [showTimeline, setShowTimeline] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
 
   // Modals
@@ -53,6 +54,7 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
   const [reposOpen, setReposOpen] = useState(false);
   const [milestoneToEdit, setMilestoneToEdit] = useState(null);
   const [eodEmployee, setEodEmployee] = useState(null);
+  const [error, setError] = useState("");
   const [addMilestoneOpen, setAddMilestoneOpen] = useState(false);
   const [addTaskFor, setAddTaskFor] = useState(null); 
   const [addMemberOpen, setAddMemberOpen] = useState(false);
@@ -127,7 +129,7 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
 
   const shareProject = async () => {
     const url = `${PUBLIC_BASE_URL}${routeBase}/${selectedProjectId}/${encodeURIComponent(project.name || "project")}/`;
-    if (navigator.clipboard) await navigator.clipboard.writeText(url);
+    try { await navigator.clipboard.writeText(url); } catch { prompt("Copy Project Link:", url); }
   };
 
   const tasksByMilestone = useMemo(() => {
@@ -187,6 +189,7 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
 
   return (
     <section className="Project-Screen Screen-Stack">
+      {error && <div style={{ fontSize: 13, padding: "8px 14px", marginBottom: 12, borderRadius: 6, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }}>{error}</div>}
       <Disclosure title="Notifications" defaultOpen={false}>
         {alerts.map((item) => <div className="Notice-RowCompact" key={item.id}>{item.title || item.severity}</div>)}
         {!alerts.length && <EmptyState label="No Project Alerts Returned." />}
@@ -246,11 +249,39 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
               <option value="completed">Completed Tasks</option>
               <option value="all">All Tasks</option>
             </select>
+            <button className="Soft-Button Small" onClick={() => setShowTimeline((v) => !v)}>{showTimeline ? "List View" : "Timeline View"}</button>
             <button className="Soft-Button Small" onClick={() => setManageGroupsOpen(true)}>Create Milestones</button>
             <button className="Primary-Button Small" onClick={() => setAddMilestoneOpen(true)}><Plus size={14} /> New Milestone</button>
           </div>
         }
       >
+        {showTimeline && milestones.length > 0 && (() => {
+          const today = new Date();
+          const msDates = milestones.filter((m) => m.due_on).map((m) => new Date(m.due_on));
+          const minDate = msDates.length ? new Date(Math.min(...msDates)) : today;
+          const maxDate = msDates.length ? new Date(Math.max(...msDates)) : new Date(today.getTime() + 7 * 86400000);
+          const range = Math.max(1, (maxDate - minDate) / 86400000);
+          return (
+            <div style={{ padding: "12px 14px", borderBottom: "1px solid #e2e8f0" }}>
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Milestone Timeline</div>
+              {milestones.filter((m) => m.due_on).map((m) => {
+                const msDate = new Date(m.due_on);
+                const offset = Math.max(0, (msDate - minDate) / 86400000);
+                const pct = Math.min(95, (offset / range) * 95);
+                const isOverdue = msDate < today && !isCompleted(m.status);
+                return (
+                  <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, fontSize: 12 }}>
+                    <span style={{ minWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.title}</span>
+                    <div style={{ flex: 1, height: 20, background: "#f1f5f9", borderRadius: 4, position: "relative", overflow: "hidden" }}>
+                      <div style={{ position: "absolute", left: `${pct}%`, top: 0, width: 8, height: "100%", borderRadius: 2, background: isOverdue ? "#ef4444" : isCompleted(m.status) ? "#10b981" : "#3b82f6" }} />
+                    </div>
+                    <span style={{ minWidth: 80, textAlign: "right", color: isOverdue ? "#dc2626" : "#64748b", fontSize: 11 }}>{formatDate(m.due_on)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
         {!milestones.length && (
           <EmptyState label="No Milestones Yet. Create Default Milestones Or Add A New One." />
         )}
@@ -371,7 +402,7 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
 
       {selectedTask && <TaskDetailModal task={selectedTask} data={data} onClose={() => setSelectedTask(null)} reload={refresh} />}
   {createProjectOpen && <CreateProjectModal defaultProjectType={kind === "marketing" ? "Marketing" : "Development"} data={data} onClose={() => setCreateProjectOpen(false)} reload={(newId, newName) => { refresh(); if (newId) { setSelectedProjectId(String(newId)); navigate(`${routeBase}/${newId}/${encodeURIComponent(newName || "project")}/`); } }} />}
-      {editProject && <EditProjectModal project={project} onClose={() => setEditProject(false)} reload={refresh} />}
+      {editProject && <EditProjectModal project={project} data={data} onClose={() => setEditProject(false)} reload={refresh} />}
       {flagOpen && <FlagMilestoneModal project={project} milestones={milestones} data={data} onClose={() => setFlagOpen(false)} reload={refresh} />}
       {documentOpen && <DocumentModal project={project} onClose={() => setDocumentOpen(false)} reload={refresh} />}
       {reposOpen && <RepositoriesModal project={project} repos={repos} data={data} onClose={() => setReposOpen(false)} reload={refresh} />}
@@ -416,13 +447,14 @@ function MemberRepoIcon({ assignment, repos, data }) {
 }
 
 function CreateProjectModal({ data, onClose, reload, defaultProjectType = "Development" }) {
-  const [form, setForm] = useState({ name: "", code: "", project_type: defaultProjectType, priority: "P3", status: "Active", health: "On Track", starts_on: isoDate(new Date()), ends_on: "" });
+  const [form, setForm] = useState({ name: "", code: "", project_type: defaultProjectType, priority: "P3", status: "Active", health: "On Track", starts_on: isoDate(new Date()), ends_on: "", associate_project_manager: "", project_manager: "" });
   const [busy, setBusy] = useState(false);
 
   const save = async () => {
     setBusy(true);
     try {
-      const response = await apiPost("/Project/ProjectWorkspaces/", form);
+      const payload = { ...form, associate_project_manager: form.associate_project_manager || null, project_manager: form.project_manager || null };
+      const response = await apiPost("/Project/ProjectWorkspaces/", payload);
       reload(response?.id, response?.name || form.name);
       onClose();
     } finally {
@@ -430,12 +462,21 @@ function CreateProjectModal({ data, onClose, reload, defaultProjectType = "Devel
     }
   };
 
+  const renderEmployeeSelect = (value, onChange) => (
+    <select value={value} onChange={(e) => onChange(e.target.value)}>
+      <option value="">Not Assigned</option>
+      {(data.employees || []).map((emp) => <option key={emp.id} value={emp.id}>{emp.display_name}</option>)}
+    </select>
+  );
+
   return (
     <Modal title="Create New Project" onClose={onClose} wide>
       <div className="Form-Grid Two Modal-Form">
         <label>Name<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label>
         <label>Code<input value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} placeholder="PRJ-001" /></label>
         <label>Type<select value={form.project_type} onChange={(event) => setForm({ ...form, project_type: event.target.value })}><option>Development</option><option>Marketing</option><option>Operations</option><option>Internal</option></select></label>
+        <label>APM (Associate Project Manager){renderEmployeeSelect(form.associate_project_manager, (v) => setForm({ ...form, associate_project_manager: v }))}</label>
+        <label>PM (Project Manager){renderEmployeeSelect(form.project_manager, (v) => setForm({ ...form, project_manager: v }))}</label>
         <label>Priority<select value={form.priority} onChange={(event) => setForm({ ...form, priority: event.target.value })}><option>P1</option><option>P2</option><option>P3</option><option>P4</option></select></label>
         <label>Status<select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}><option>Active</option><option>On Hold</option><option>Completed</option></select></label>
         <label>Health<select value={form.health} onChange={(event) => setForm({ ...form, health: event.target.value })}><option>On Track</option><option>At Risk</option><option>Blocked</option></select></label>
@@ -447,7 +488,7 @@ function CreateProjectModal({ data, onClose, reload, defaultProjectType = "Devel
   );
 }
 
-function EditProjectModal({ project, onClose, reload }) {
+function EditProjectModal({ project, data, onClose, reload }) {
   const [form, setForm] = useState({
     name: project.name || "",
     code: project.code || "",
@@ -457,13 +498,22 @@ function EditProjectModal({ project, onClose, reload }) {
     priority: project.priority || "P3",
     starts_on: project.starts_on || "",
     ends_on: project.ends_on || "",
+    associate_project_manager: project.associate_project_manager || "",
+    project_manager: project.project_manager || "",
   });
 
   const save = async () => {
-    await apiPost("/Project/update_details/", { project_id: project.id, ...form });
+    await apiPost("/Project/update_details/", { project_id: project.id, ...form, associate_project_manager: form.associate_project_manager || null, project_manager: form.project_manager || null });
     reload();
     onClose();
   };
+
+  const renderEmployeeSelect = (value, onChange) => (
+    <select value={value} onChange={(e) => onChange(e.target.value)}>
+      <option value="">Not Assigned</option>
+      {(data.employees || []).map((emp) => <option key={emp.id} value={emp.id}>{emp.display_name}</option>)}
+    </select>
+  );
 
   return (
     <Modal title="Edit Project Details" onClose={onClose} wide>
@@ -471,6 +521,8 @@ function EditProjectModal({ project, onClose, reload }) {
         <label>Name<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label>
         <label>Code<input value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} /></label>
         <label>Type<input value={form.project_type} onChange={(event) => setForm({ ...form, project_type: event.target.value })} /></label>
+        <label>APM (Associate Project Manager){renderEmployeeSelect(form.associate_project_manager, (v) => setForm({ ...form, associate_project_manager: v }))}</label>
+        <label>PM (Project Manager){renderEmployeeSelect(form.project_manager, (v) => setForm({ ...form, project_manager: v }))}</label>
         <label>Priority<input value={form.priority} onChange={(event) => setForm({ ...form, priority: event.target.value })} /></label>
         <label>Status<input value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })} /></label>
         <label>Health<input value={form.health} onChange={(event) => setForm({ ...form, health: event.target.value })} /></label>
@@ -704,7 +756,7 @@ function RepositoriesModal({ project, repos, data, onClose, reload }) {
       setAssigning(null);
       setAssignEmp("");
     } catch (err) {
-      alert(err?.payload?.detail || err?.payload?.error || "Assignment Failed.");
+      setError(err?.payload?.detail || err?.payload?.error || "Assignment Failed."); setTimeout(() => setError(""), 3000);
     } finally {
       setBusy(false);
     }

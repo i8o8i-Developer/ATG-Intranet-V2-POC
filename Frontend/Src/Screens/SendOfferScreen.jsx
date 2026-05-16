@@ -1,366 +1,172 @@
-import React, { useEffect, useMemo, useState } from "react";
-
+import React, { useState } from "react";
+import { Mail, Eye, Send, FileText } from "lucide-react";
 import { apiPost, PUBLIC_BASE_URL } from "../Api/Client.js";
-import "../Styles/OfferScreen.css";
-import { StatCard, StatusPill, Tabs } from "./Shared/ScreenComponents.jsx";
-import { findById, formatDate, isoDate } from "./Shared/ScreenUtils.jsx";
+import { Modal } from "./Shared/ScreenComponents.jsx";
+import { formatDate } from "./Shared/ScreenUtils.jsx";
 
-function normalizeLabel(value = "") {
-  return String(value || "")
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+function esc(val) { return String(val || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+function fmt(val) { if (!val) return "—"; const d = new Date(val); return isNaN(d) ? String(val) : d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }); }
+function pascal(val) { return esc(String(val || "").replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()).trim()); }
 
-function renderTemplate(template = "", variables = {}) {
-  let rendered = String(template || "");
-  Object.entries(variables).forEach(([key, value]) => {
-    const safeValue = value === undefined || value === null ? "" : String(value);
-    rendered = rendered.replace(new RegExp(`{{\\s*${key}\\s*}}`, "g"), safeValue);
-  });
-  return rendered.replace(/{{\s*[a-zA-Z_][a-zA-Z0-9_]*\s*}}/g, "");
-}
+const OFFER_HTML = (v) => `<!doctype html><html><head><meta charset="utf-8"><style>
+body{margin:0;padding:28px;background:#fff;color:#111;font-family:Georgia,'Times New Roman',serif}
+.offer-shell{max-width:860px;margin:0 auto;border:2px solid #111;padding:36px 42px 48px;background:#fff}
+.offer-title{text-align:center;font-size:26px;font-weight:700;letter-spacing:1.2px;margin:6px 0 20px;text-transform:uppercase}
+.offer-date{text-align:right;margin:10px 0 22px;font-size:14px;color:#475569}
+table{width:100%;border-collapse:collapse;margin:16px 0}
+td,th{border:1px solid #111;padding:8px 10px;font-size:14px;vertical-align:top}
+th{background:#f1f5f9;text-align:left;font-weight:600}
+.sign-row{display:flex;justify-content:space-between;margin-top:32px;padding-top:20px;border-top:1px solid #ddd}
+.sign-line{width:200px;border-top:1px solid #111;padding-top:4px;font-size:12px;text-align:center}
+.footer{text-align:center;margin-top:28px;font-size:12px;color:#94a3b8}
+</style></head><body>
+<div class="offer-shell">
+<div style="text-align:center;font-size:22px;font-weight:800;letter-spacing:2px">ATG</div>
+<div style="text-align:center;font-size:11px;color:#64748b;margin-bottom:16px">Across The Globe</div>
+<div class="offer-title">Offer Of Employment</div>
+<div class="offer-date">Date: ${fmt(v.offerDate)}</div>
+<p style="font-size:15px;line-height:1.7;text-align:justify">Dear <strong>${pascal(v.candidateName)}</strong>,</p>
+<p style="font-size:15px;line-height:1.7;text-align:justify">We Are Pleased To Offer You The Position Of <strong>${pascal(v.positionTitle)}</strong> With <strong>${pascal(v.companyName || "Banao")}</strong>. We Were Impressed With Your Background And Believe Your Skills Will Be A Valuable Addition To Our Team.</p>
+<table><tr><th style="width:40%">Detail</th><th>Value</th></tr>
+<tr><td>Position Title</td><td>${pascal(v.positionTitle)}</td></tr>
+<tr><td>Department</td><td>${pascal(v.departmentName)}</td></tr>
+<tr><td>Sub Department</td><td>${pascal(v.subDepartment)}</td></tr>
+<tr><td>Role Type</td><td>${pascal(v.roleType)}</td></tr>
+<tr><td>Employee Type</td><td>${pascal(v.empType)}</td></tr>
+<tr><td>Pay Type</td><td>${pascal(v.payType)}</td></tr>
+<tr><td>Base Pay</td><td>₹${Number(v.basePay || 0).toLocaleString()} / Month</td></tr>
+<tr><td>Pay Per Task</td><td>₹${Number(v.payPerTask || 0).toLocaleString()}</td></tr>
+${v.internDuration ? `<tr><td>Intern Duration</td><td>${v.internDuration} Months</td></tr>` : ""}
+<tr><td>Reporting To</td><td>${pascal(v.reportingTo)}</td></tr>
+<tr><td>Location</td><td>${pascal(v.location)}</td></tr>
+<tr><td>Joining Date</td><td>${fmt(v.joiningDate)}</td></tr>
+</table>
+<p style="font-size:15px;line-height:1.7;text-align:justify">Your appointment will be governed by the terms and conditions outlined in this offer letter and the company's standard employment policies. This offer is subject to verification of your credentials and background check.</p>
+<p style="font-size:15px;line-height:1.7;text-align:justify">Please indicate your acceptance by signing below and returning this letter. Once signed, you will receive further instructions regarding onboarding documentation and your first day details.</p>
+<div class="sign-row">
+<div class="sign-line">Authorized Signatory</div>
+<div class="sign-line">Candidate Signature</div>
+</div>
+<div style="margin-top:12px;font-size:13px;text-align:center;color:#64748b">Offer Valid Until: ${fmt(v.expiryDate || new Date(Date.now() + 7 * 86400000))}</div>
+<div class="footer">This Is A System-Generated Offer Letter From ATG Intranet. For Queries, Contact HR.</div>
+</div></body></html>`;
 
-function displayDate(value) {
-  if (!value) return new Date().toLocaleDateString("En-GB");
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleDateString("En-GB");
-}
-
-function defaultEmailTemplate() {
-  return "<DivStyle='Padding:32px;Font-Family:Arial,Helvetica,Sans-Serif;Background:#F5f7fb'><DivStyle='Max-Width:680px;Margin:0Auto;Background:#Fff;Border:1pxSolid #Dfe5ee;Border-Radius:18px;Padding:28px'><H2Style='Margin-Top:0'>OnboardingEmail</H2><P>Hi {{ Candidate_Name }},</P><P>YourOfferFor <Strong>{{ Position_Title }}</Strong> With <Strong>{{ Company_Name }}</Strong> IsReady.</P><P><AHref='{{ Offer_Url }}'>OpenOffer</A></P></Div></Div>";
-}
-
-function defaultOfferTemplate() {
-  return `<!doctype html>
-  <html>
-    <head>
-      <meta charset="Utf-8" />
-      <style>
-        body { margin: 0; padding: 28px; background: #ffffff; color: #111827; font-family: Georgia, 'TimesNewRoman', serif; }
-        .offer-shell { max-width: 860px; margin: 0 auto; border: 2px solid #111827; padding: 36px 42px 48px; }
-        .offer-logo { text-align: center; margin-bottom: 18px; }
-        .offer-logo img { width: 100%; max-width: 520px; height: auto; }
-        .offer-title { text-align: center; font-size: 27px; font-weight: 700; letter-spacing: 1.4px; margin: 6px 0 0; }
-        .offer-date { text-align: right; margin: 18px 0 22px; font-size: 15px; }
-        .offer-copy { font-size: 15px; line-height: 1.72; margin: 0 0 14px; text-align: justify; }
-        .offer-table { width: 100%; border-collapse: collapse; margin: 20px 0 24px; }
-        .offer-table td, .offer-table th { border: 1px solid #111827; padding: 10px 12px; vertical-align: top; }
-        .offer-table th { background: #efefef; text-align: left; }
-      </style>
-    </head>
-    <body>
-      <div class="Offer-Shell">
-        <div class="Offer-Logo"><img src="https://i.postimg.cc/kgHvKMLz/employed-India-Logo.png" alt="ATGOfferLetter" /></div>
-        <div class="Offer-Title">{{ offer_heading }}</div>
-        {{ offer_disclaimer }}
-        <div class="Offer-Date"><strong>{{ joining_date }}</strong></div>
-        <p class="Offer-Copy">Dear Mr./Ms. {{ candidate_name }},</p>
-        <p class="Offer-Copy">We are pleased to offer you the position of <strong>{{ position_title }}</strong> with <strong>{{ company_name }}</strong>. This fallback template is ready to preview and send even before the synced library finishes loading.</p>
-        <table class="Offer-Table">
-          <tbody>
-            <tr><th style="width:34%">Designation</th><td>{{ position_title }}</td></tr>
-            <tr><th>Date of Joining / Issue</th><td>{{ joining_date }}</td></tr>
-            <tr><th>Department</th><td>{{ department_name }}</td></tr>
-            <tr><th>Sub Department</th><td>{{ sub_department_name }}</td></tr>
-            <tr><th>Employment Type</th><td>{{ employment_type }}</td></tr>
-            <tr><th>Compensation</th><td>{{ pay_type }}</td></tr>
-            <tr><th>System Username</th><td>{{ username }}</td></tr>
-            <tr><th>Candidate Email</th><td>{{ candidate_email }}</td></tr>
-          </tbody>
-        </table>
-        <p class="Offer-Copy">This offer remains subject to company policy and onboarding formalities communicated by the hiring team.</p>
-      </div>
-    </body>
-  </html>`;
-}
-
-function templateSummary(template) {
-  return template?.metadata?.summary || template?.position || template?.name || "LegacyOfferTemplate";
-}
+const NDA_HTML = (v) => `<!doctype html><html><head><meta charset="utf-8"><style>
+body{margin:0;padding:28px;background:#fff;color:#111;font-family:Georgia,'Times New Roman',serif}
+.nda-shell{max-width:800px;margin:0 auto;border:2px solid #111;padding:32px 38px}
+h1{text-align:center;font-size:22px;font-weight:700;letter-spacing:1px}
+h2{font-size:15px;font-weight:600;margin:18px 0 8px}
+p{font-size:14px;line-height:1.6;text-align:justify}
+.sign-line{width:220px;border-top:1px solid #111;padding-top:4px;font-size:12px;text-align:center;margin-top:24px}
+</style></head><body>
+<div class="nda-shell">
+<h1>Non-Disclosure Agreement</h1>
+<p>This Non-Disclosure Agreement (The "Agreement") Is Entered Into By And Between <strong>ATG (Across The Globe)</strong> And <strong>${pascal(v.candidateName)}</strong>.</p>
+<h2>1. Definition Of Confidential Information</h2>
+<p>"Confidential Information" Shall Include All Information Disclosed By The Company To The Employee, Whether Verbally Or In Writing, Including But Not Limited To: Trade Secrets, Business Plans, Client Data, Technical Specifications, Financial Data, Software Code, And Internal Processes.</p>
+<h2>2. Obligations</h2>
+<p>The Employee Agrees To: (A) Hold All Confidential Information In Strict Confidence; (B) Not Disclose Such Information To Any Third Party Without Prior Written Consent; (C) Use The Information Solely For The Purpose Of Employment; (D) Return All Materials Upon Termination Of Employment.</p>
+<h2>3. Term</h2>
+<p>This Agreement Shall Remain In Effect During Employment And For A Period Of Two (2) Years Following The Cessation Of Employment.</p>
+<h2>4. Governing Law</h2>
+<p>This Agreement Shall Be Governed By The Laws Of India. Any Disputes Arising Hereunder Shall Be Subject To The Exclusive Jurisdiction Of The Courts In Bengaluru, Karnataka.</p>
+<div style="text-align:right;margin-top:28px"><div class="sign-line" style="margin-left:auto">${pascal(v.candidateName)}</div></div>
+<div style="text-align:right;font-size:11px;color:#94a3b8;margin-top:4px">Signed On: ${fmt(new Date())}</div>
+</div></body></html>`;
 
 export function SendOfferScreen({ data, reload }) {
   const [form, setForm] = useState({
-    company_name: "ATG",
-    candidate_email: "",
-    candidate_name: "",
-    username: "",
-    department: "",
-    sub_department: "",
-    position_title: "",
-    employment_type: "Intern",
-    pay_type: "PerformanceBased",
-    joining_date: isoDate(new Date()),
-    template_search: "",
+    domain: "", candidateEmail: "", departmentName: "", roleType: "", subDepartment: "",
+    positionTitle: "", candidateName: "", username: "", empType: "Intern", payType: "Performance Based",
+    basePay: "", payPerTask: "", offerDate: new Date().toISOString().split("T")[0], internDuration: "6",
+    reportingTo: "", location: "Bengaluru", joiningDate: "", companyName: "Banao",
   });
-  const [selectedTemplateId, setSelectedTemplateId] = useState("");
-  const [previewMode, setPreviewMode] = useState("offer");
-  const [showPreview, setShowPreview] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [preview, setPreview] = useState(null);
   const [result, setResult] = useState(null);
-  const [busyAction, setBusyAction] = useState("");
-  const [autoBootstrapState, setAutoBootstrapState] = useState("idle");
 
-  const departmentName = findById(data.departments || [], form.department)?.name || "";
-  const subDepartmentName = findById(data.subDepartments || [], form.sub_department)?.name || "";
-  const recentOffers = (data.offers || []).slice(0, 8);
+  const handleChange = (field, value) => setForm({ ...form, [field]: value });
 
-  const templates = useMemo(() => {
-    return (data.contentTemplates || [])
-      .filter((item) => String(item.template_type || "").toLowerCase() === "offer")
-      .sort((left, right) => String(left.name || "").localeCompare(String(right.name || "")));
-  }, [data.contentTemplates]);
+  const generateOfferUrl = (token) => `${PUBLIC_BASE_URL || window.location.origin}/offer/accept/${token}/`;
 
-  const searchedTemplates = useMemo(() => {
-    const search = form.template_search.trim().toLowerCase();
-    return templates.filter((template) => {
-      const searchBlob = `${template.name || ""} ${template.position || ""} ${templateSummary(template)} ${normalizeLabel(template.metadata?.template_key || "")}`.toLowerCase();
-      return !search || searchBlob.includes(search);
-    });
-  }, [form.template_search, templates]);
-
-  const exactDomainTemplates = useMemo(
-    () => searchedTemplates.filter((template) => String(template.offer_domain || "").toLowerCase() === String(form.company_name || "").toLowerCase()),
-    [form.company_name, searchedTemplates],
-  );
-
-  const legacyLibraryCount = useMemo(
-    () => templates.filter((template) => template?.metadata?.source === "Legacy-Offer-Library").length,
-    [templates],
-  );
-
-  const showingFallbackLibrary = !exactDomainTemplates.length && searchedTemplates.length > 0;
-  const formReady = Boolean(String(form.candidate_name || "").trim() && String(form.candidate_email || "").trim());
-
-  const visibleTemplates = useMemo(() => {
-    return exactDomainTemplates.length ? exactDomainTemplates : searchedTemplates;
-  }, [exactDomainTemplates, searchedTemplates]);
-
-  useEffect(() => {
-    if (autoBootstrapState !== "idle") return;
-    if (busyAction) return;
-    if (exactDomainTemplates.length) return;
-    if (legacyLibraryCount >= 10) return;
-    let active = true;
-    setAutoBootstrapState("running");
-    (async () => {
-      try {
-        await apiPost("/HtmlTemplate/GenericHtmlTemplates/sync-legacy-library/", {});
-        if (!active) return;
-        setAutoBootstrapState("done");
-        reload(["contentTemplates", "genericHtmlTemplates", "offerTemplates"]);
-      } catch (error) {
-        if (!active) return;
-        setAutoBootstrapState("failed");
-        setResult({ mode: "sync_error", response: error?.data || { error: error?.message || "UnableToSyncLegacyTemplates." } });
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [autoBootstrapState, busyAction, exactDomainTemplates.length, legacyLibraryCount, reload]);
-
-  useEffect(() => {
-    if (!visibleTemplates.length) {
-      setSelectedTemplateId("");
-      return;
-    }
-    if (!visibleTemplates.some((template) => String(template.id) === String(selectedTemplateId))) {
-      setSelectedTemplateId(String(visibleTemplates[0].id));
-    }
-  }, [selectedTemplateId, visibleTemplates]);
-
-  const selectedTemplate = useMemo(
-    () => visibleTemplates.find((template) => String(template.id) === String(selectedTemplateId)) || null,
-    [selectedTemplateId, visibleTemplates],
-  );
-
-  const templateVariables = useMemo(() => {
-    const effectivePosition = form.position_title || selectedTemplate?.position || "Intern";
-    return {
-      candidate_name: form.candidate_name || "Candidate",
-      candidate_email: form.candidate_email || "candidate@example.com",
-      company_name: form.company_name || selectedTemplate?.offer_domain || "ATG",
-      position_title: effectivePosition,
-      department_name: departmentName || "General",
-      sub_department_name: subDepartmentName || "-",
-      username: form.username || (form.candidate_email || "").split("@")[0] || "candidate",
-      employment_type: form.employment_type || selectedTemplate?.offer_type || "Intern",
-      pay_type: form.pay_type || "PerformanceBased",
-      joining_date: displayDate(form.joining_date),
-      offer_heading: "PROVISIONALOFFERLETTER",
-      offer_disclaimer: "<PStyle='Text-Align:Center;Margin:8px022px;Font-Size:13px;Font-Weight:700;'>ThisIsAProvisionalOfferLetter. ThisIsNOTAnActualOfferLetterWhichWillBeSentAfterSuccessfulFirstMonthCompletion.</P>",
-      offer_url: `${PUBLIC_BASE_URL}/offer/accept/DEMO_TOKEN`,
-    };
-  }, [departmentName, form.candidate_email, form.candidate_name, form.company_name, form.employment_type, form.joining_date, form.pay_type, form.position_title, form.username, selectedTemplate?.offer_domain, selectedTemplate?.offer_type, selectedTemplate?.position, subDepartmentName]);
-
-  const offerPreviewHtml = useMemo(() => renderTemplate(selectedTemplate?.body_html || defaultOfferTemplate(), templateVariables), [selectedTemplate?.body_html, templateVariables]);
-  const emailPreviewHtml = useMemo(() => renderTemplate(selectedTemplate?.email_template || defaultEmailTemplate(), templateVariables), [selectedTemplate?.email_template, templateVariables]);
-
-  const syncLibrary = async () => {
-    setBusyAction("sync");
+  const sendOffer = async () => {
+    setBusy(true);
+    setResult(null);
     try {
-      const response = await apiPost("/HtmlTemplate/GenericHtmlTemplates/sync-legacy-library/", {});
-      setAutoBootstrapState("done");
-      setResult({ mode: "sync", response });
-      reload(["contentTemplates", "genericHtmlTemplates", "offerTemplates"]);
-    } catch (error) {
-      setAutoBootstrapState("failed");
-      setResult({ mode: "sync_error", response: error?.data || { error: error?.message || "UnableToSyncLegacyTemplates." } });
-    } finally {
-      setBusyAction("");
-    }
-  };
-
-  const submit = async (issue) => {
-    setBusyAction(issue ? "send" : "draft");
-    try {
+      const offerHtml = OFFER_HTML(form);
+      const ndaHtml = NDA_HTML(form);
       const payload = {
-        ...form,
-        position_title: form.position_title || selectedTemplate?.position || "Intern",
-        offer_type: selectedTemplate?.offer_type || "Intern",
-        offer_payload: {
-          department: form.department,
-          department_name: departmentName,
-          sub_department: form.sub_department,
-          sub_department_name: subDepartmentName,
-      username: form.username || (form.candidate_email || "").split("@")[0] || "candidate",
-          pay_type: form.pay_type,
-          employment_type: form.employment_type,
-          joining_date: form.joining_date,
-          template_id: selectedTemplate?.id,
-          template_name: selectedTemplate?.name || "FallbackLegacyTemplate",
-          template_key: selectedTemplate?.metadata?.template_key || "fallback_legacy_template",
-          summary: templateSummary(selectedTemplate) || "FallbackLegacyOfferTemplate",
-        },
+        candidate_name: form.candidateName,
+        candidate_email: form.candidateEmail,
+        company_name: form.companyName,
+        position_title: form.positionTitle,
+        offer_type: form.empType,
+        offer_payload: { ...form, offerHtml, ndaHtml },
       };
-      const offer = await apiPost(issue ? "/MainApp/Onboard/send-actual-offer" : "/MainApp/Onboard/Send_Offer", payload);
-      let response = offer;
-      if (issue && offer?.id) {
-        response = await apiPost("/MainApp/send-pdf-offer", {
-          offer_id: offer.id,
-          email: form.candidate_email,
-          macro_values: {
-            ...templateVariables,
-            offer_heading: "OFFERLETTER",
-            offer_disclaimer: "",
-          },
-        });
+      const resp = await apiPost("/MainApp/OnboardingOffers/", payload);
+      const token = resp?.token;
+      if (token) {
+        await apiPost("/MainApp/Onboard/send-actual-offer/", { token, email: form.candidateEmail, name: form.candidateName, offer_url: generateOfferUrl(token) });
+        setResult({ ok: true, message: `Offer sent to ${form.candidateEmail} successfully.` });
+      } else {
+        setResult({ ok: true, message: "Offer created but send endpoint unavailable. Token: " + token });
       }
-      setResult({ mode: issue ? "sent" : "draft", response });
-      reload(["offers"]);
-    } catch (error) {
-      setResult({ mode: "error", response: error?.payload || { error: error?.message || "UnableToProcessOffer." } });
+    } catch (err) {
+      setResult({ ok: false, message: err?.payload?.detail || err?.message || "Failed to send offer." });
     } finally {
-      setBusyAction("");
+      setBusy(false);
     }
   };
 
   return (
-    <section className="OF">
-      <section className="OF-Hero">
+    <section style={{ padding: "24px 28px", maxWidth: 960, margin: "0 auto" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <div>
-          <small>Onboarding / Offers</small>
-          <h1>Send Offer Letter</h1>
-          <p>Configure Candidate Details, Select A Template, Preview The Offer, And Send It.</p>
+          <span style={{ fontSize: 12, color: "#64748b", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>HR / Onboarding</span>
+          <h1 style={{ margin: "4px 0 0", fontSize: 26, fontWeight: 700 }}>Send Offer Letter</h1>
         </div>
-        <div className="OF-Hero-Actions">
-          <StatusPill tone="blue">{visibleTemplates.length} Templates</StatusPill>
-          <button className="OF-Hero-Btn" disabled={busyAction === "sync"} onClick={syncLibrary}>{busyAction === "sync" ? "Syncing..." : "Sync Legacy Templates"}</button>
-          <button className="OF-Hero-Btn" onClick={() => setShowPreview(!showPreview)}>{showPreview ? "Hide Preview" : "Show Preview"}</button>
-          <button className="OF-Hero-Btn" disabled={!formReady || Boolean(busyAction)} onClick={() => submit(false)}>{busyAction === "draft" ? "Creating..." : "Create Draft"}</button>
-          <button className="OF-Hero-Btn Primary" disabled={!formReady || Boolean(busyAction)} onClick={() => submit(true)}>{busyAction === "send" ? "Sending..." : "Send Offer"}</button>
-        </div>
-      </section>
-
-      <section className="OF-Kpis">
-        <StatCard label="Active Template Library" value={String(templates.length)} />
-        <StatCard label="Current Domain" value={form.company_name} />
-        <StatCard label="Recent Offers" value={String(recentOffers.length)} />
-        <StatCard label="Onboarding Email Ready" value={selectedTemplate?.email_template ? "Template" : "Fallback"} />
-      </section>
-
-      <section className="OF-Layout">
-        <div className="OF-Card">
-          <div className="OF-CardHead"><h2>Candidate Details</h2></div>
-          <div className="OF-CardBody">
-            <div className="OF-Form">
-              <label>Company<select value={form.company_name} onChange={(event) => setForm((current) => ({ ...current, company_name: event.target.value }))}><option>ATG</option><option>Banao</option><option>Bunny</option></select></label>
-              <label>Candidate Name<input value={form.candidate_name} onChange={(event) => setForm((current) => ({ ...current, candidate_name: event.target.value }))} /></label>
-              <label>Candidate Email<input type="email" value={form.candidate_email} onChange={(event) => setForm((current) => ({ ...current, candidate_email: event.target.value }))} /></label>
-              <label>Username<input value={form.username} onChange={(event) => setForm((current) => ({ ...current, username: event.target.value }))} placeholder="Candidate.Login" /></label>
-              <label>Joining Date<input type="date" value={form.joining_date} onChange={(event) => setForm((current) => ({ ...current, joining_date: event.target.value }))} /></label>
-              <label>Employment Type<select value={form.employment_type} onChange={(event) => setForm((current) => ({ ...current, employment_type: event.target.value }))}><option>Intern</option><option>Full Time</option><option>Contract</option><option>Part Time</option></select></label>
-              <label>Department<select value={form.department} onChange={(event) => setForm((current) => ({ ...current, department: event.target.value }))}><option value="">Select Department</option>{(data.departments || []).map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}</select></label>
-              <label>Sub Department<select value={form.sub_department} onChange={(event) => setForm((current) => ({ ...current, sub_department: event.target.value }))}><option value="">Select Sub Department</option>{(data.subDepartments || []).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-              <label>Position Title<input value={form.position_title} onChange={(event) => setForm((current) => ({ ...current, position_title: event.target.value }))} placeholder={selectedTemplate?.position || "Role Title"} /></label>
-              <label>Pay Type<select value={form.pay_type} onChange={(event) => setForm((current) => ({ ...current, pay_type: event.target.value }))}><option>Performance Based</option><option>Fixed</option><option>Hybrid</option></select></label>
-            </div>
-          </div>
-        </div>
-
-        <div className="OF-Card">
-          <div className="OF-CardHead"><h2>Template Library</h2><p>All discovered legacy offer types are synced here.</p></div>
-          <div className="OF-CardBody">
-            {autoBootstrapState === "running" && <div className="OF-Notice Compact">Bootstrapping The Legacy Offer Library For This Workspace.</div>}
-            {showingFallbackLibrary && <div className="OF-Notice"><div><strong>No Exact {form.company_name} Template Yet.</strong><p>Showing templates from other domains so you can still preview and send immediately. Sync will populate the full library.</p></div></div>}
-            <div className="OF-Search">
-              <label>Search Templates<input value={form.template_search} onChange={(event) => setForm((current) => ({ ...current, template_search: event.target.value }))} placeholder="Developer, Marketing, Testing..." /></label>
-            </div>
-            <div className="OF-Template-List">
-              {visibleTemplates.length ? visibleTemplates.map((template) => {
-                const active = String(template.id) === String(selectedTemplateId);
-                return (
-                  <button key={template.id} className={active ? "OF-Template-Card Active" : "OF-Template-Card"} onClick={() => setSelectedTemplateId(String(template.id))}>
-                    <div className="OF-Template-Head">
-                      <strong>{normalizeLabel(template.name)}</strong>
-                      <StatusPill tone={active ? "blue" : "green"}>{template.offer_type || "Offer"}</StatusPill>
-                    </div>
-                    <p>{templateSummary(template)}</p>
-                    <div className="OF-Template-Tags">
-                      <span>{template.offer_domain || form.company_name}</span>
-                      <span>{template.position || "General"}</span>
-                      <span>{normalizeLabel(template.metadata?.template_key || "Legacy")}</span>
-                    </div>
-                  </button>
-                );
-              }) : <div className="Wf-Empty">No Templates Are Loaded Yet. The Fallback Preview Below Is Still Ready, And The Legacy Library Sync Will Populate This List.</div>}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {showPreview && (
-        <section className="OF-Preview">
-          <div className="OF-Card">
-            <div className="OF-CardHead"><h2>Preview Workspace</h2><p>{selectedTemplate ? `Selected Template: ${normalizeLabel(selectedTemplate.name)}` : "Preview Is Available Below Even Without A Selected Template."}</p></div>
-            <div className="OF-CardBody">
-              <Tabs value={previewMode} onChange={setPreviewMode} items={[["offer", "Offer Letter"], ["email", "Onboarding Email"]]} />
-              <div className="OF-Preview-Shell">
-                <iframe title={previewMode === "offer" ? "Offer Preview" : "Onboarding Email Preview"} srcDoc={previewMode === "offer" ? offerPreviewHtml : emailPreviewHtml} className="OF-Preview-Frame" />
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      <div className="OF-Card">
-        <div className="OF-CardHead"><h2>Recent Offers</h2><p>Latest Onboarding Offers Created In The Rebuilt Main App Service.</p></div>
-        <div className="OF-CardBody">
-          <table className="OF-Table">
-            <thead><tr><th>Candidate</th><th>Position</th><th>Status</th><th>Email</th><th>Created</th></tr></thead>
-            <tbody>{recentOffers.map((offer) => <tr key={offer.id}><td>{offer.candidate_name}</td><td>{offer.position_title}</td><td>{offer.status}</td><td>{offer.candidate_email}</td><td>{formatDate(offer.created_at)}</td></tr>)}</tbody>
-          </table>
-          {!recentOffers.length && <div className="Wf-Empty">No Offers Created Yet.</div>}
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="Soft-Button Small" onClick={() => setPreview(preview ? null : "offer")}>{preview ? "Hide" : "Preview"} Offer</button>
+          <button className="Primary-Button Small" onClick={sendOffer} disabled={busy || !form.candidateEmail || !form.candidateName}>
+            <Send size={14} /> {busy ? "Sending..." : "Send Offer"}
+          </button>
         </div>
       </div>
 
-      {result && (
-        <div className="OF-Result">
-          <div className="OF-CardHead"><h2>Offer Activity Result</h2><p>Mode: {result.mode}</p></div>
-          <pre>{JSON.stringify(result.response, null, 2)}</pre>
+      {result && <div className={result.ok ? "Auth-AlertOk" : "Auth-Alert"} style={{ marginBottom: 16 }}>{result.message}</div>}
+
+      <div style={{ display: "grid", gridTemplateColumns: preview ? "1fr 500px" : "1fr", gap: 24 }}>
+        <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 20 }}>
+          <h2 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 600 }}>Candidate & Offer Details</h2>
+          <div className="Form-Grid Two" style={{ gap: 12 }}>
+            <label>Domain<select className="Mini-Inp" value={form.domain} onChange={(e) => handleChange("domain", e.target.value)}><option value="">Select Domain</option>{(data.domains || []).map((d) => <option key={d.id || d.domain_name}>{d.domain_name || d.name || d}</option>)}</select></label>
+            <label>Email<input className="Mini-Inp" value={form.candidateEmail} onChange={(e) => handleChange("candidateEmail", e.target.value)} placeholder="candidate@example.com" /></label>
+            <label>Department Name<input className="Mini-Inp" value={form.departmentName} onChange={(e) => handleChange("departmentName", e.target.value)} placeholder="Python Django" /></label>
+            <label>Role Type<input className="Mini-Inp" value={form.roleType} onChange={(e) => handleChange("roleType", e.target.value)} placeholder="e.g. Senior Developer" /></label>
+            <label>Sub Department<input className="Mini-Inp" value={form.subDepartment} onChange={(e) => handleChange("subDepartment", e.target.value)} placeholder="Python Django Core" /></label>
+            <label>Position Title<input className="Mini-Inp" value={form.positionTitle} onChange={(e) => handleChange("positionTitle", e.target.value)} placeholder="React Developer" /></label>
+            <label>Candidate Name<input className="Mini-Inp" value={form.candidateName} onChange={(e) => handleChange("candidateName", e.target.value)} placeholder="Full Name" /></label>
+            <label>Username<input className="Mini-Inp" value={form.username} onChange={(e) => handleChange("username", e.target.value)} placeholder="username" /></label>
+            <label>Employee Type<select className="Mini-Inp" value={form.empType} onChange={(e) => handleChange("empType", e.target.value)}><option>Full-Time</option><option>Part-Time</option><option>Intern</option><option>Contract</option></select></label>
+            <label>Pay Type<select className="Mini-Inp" value={form.payType} onChange={(e) => handleChange("payType", e.target.value)}><option>Performance Based</option><option>Fixed</option><option>Monthly</option></select></label>
+            <label>Base Pay (₹/Month)<input type="number" min="0" className="Mini-Inp" value={form.basePay} onChange={(e) => handleChange("basePay", e.target.value)} /></label>
+            <label>Pay Per Task (₹)<input type="number" min="0" className="Mini-Inp" value={form.payPerTask} onChange={(e) => handleChange("payPerTask", e.target.value)} /></label>
+            <label>Offer Date<input type="date" className="Mini-Inp" value={form.offerDate} onChange={(e) => handleChange("offerDate", e.target.value)} /></label>
+            <label>Intern Duration (Months)<input type="number" min="1" className="Mini-Inp" value={form.internDuration} onChange={(e) => handleChange("internDuration", e.target.value)} /></label>
+            <label>Reporting To<input className="Mini-Inp" value={form.reportingTo} onChange={(e) => handleChange("reportingTo", e.target.value)} placeholder="Manager Name" /></label>
+            <label>Location<input className="Mini-Inp" value={form.location} onChange={(e) => handleChange("location", e.target.value)} /></label>
+            <label>Joining Date<input type="date" className="Mini-Inp" value={form.joiningDate} onChange={(e) => handleChange("joiningDate", e.target.value)} /></label>
+            <label>Company Name<input className="Mini-Inp" value={form.companyName} onChange={(e) => handleChange("companyName", e.target.value)} /></label>
+          </div>
         </div>
-      )}
+
+        {preview && (
+          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden" }}>
+            <div style={{ padding: "10px 16px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", fontSize: 13, fontWeight: 600 }}>Offer Preview</div>
+            <iframe srcDoc={OFFER_HTML(form)} title="Offer Preview" style={{ width: "100%", height: "80vh", border: "none" }} />
+          </div>
+        )}
+      </div>
     </section>
   );
 }

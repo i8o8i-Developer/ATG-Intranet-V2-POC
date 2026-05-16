@@ -235,6 +235,9 @@ class LogoutAPIView(APIView):
 
 class CurrentUserAPIView(APIView):
     def get(self, request):
+        if not request.user.is_authenticated or not request.user.is_active:
+            session_logout(request)
+            return Response({"detail": "Account Deactivated."}, status=status.HTTP_401_UNAUTHORIZED)
         return Response(
             _current_user_payload(
                 request.user,

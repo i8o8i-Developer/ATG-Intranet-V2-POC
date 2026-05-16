@@ -15,6 +15,7 @@ export function DelayManagementScreen({ data, reload }) {
   const [days, setDays] = useState("");
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
+  const [feedback, setFeedback] = useState({ ok: false, message: "" });
 
   const employees = data.employees || [];
   const projects = data.projects || [];
@@ -67,10 +68,9 @@ export function DelayManagementScreen({ data, reload }) {
         await reload(["delays", "employees", "projects", "tasks"]);
       }
       
-      alert("Delay Submitted Successfully!");
+      setFeedback({ ok: true, message: "Delay Submitted Successfully." });
     } catch (error) {
-      console.error("Failed To Submit Delay:", error);
-      alert(`Failed to Submit Delay: ${error.message || "Please Try Again."}`);
+      setFeedback({ ok: false, message: error?.message || "Failed To Submit Delay " });
     } finally {
       setLoading(false);
     }
@@ -185,10 +185,9 @@ export function DelayManagementScreen({ data, reload }) {
                               if (reload) {
                                 await reload(["delays"]);
                               }
-                              alert("Delay Resolved Successfully!");
+                              setFeedback({ ok: true, message: "Delay Resolved." });
                             } catch (error) {
-                              console.error("Failed To Resolve Delay:", error);
-                              alert(`Failed to resolve delay: ${error.message || "Please Try Again"}`);
+                              setFeedback({ ok: false, message: error?.message || "Failed To Resolve Delay." });
                             }
                           }}
                         >
@@ -266,124 +265,18 @@ export function DelayManagementScreen({ data, reload }) {
       {/* Add Delay Modal */}
       {showAddModal && (
         <Modal title="Add Delay" onClose={() => setShowAddModal(false)}>
-          <form onSubmit={handleSubmitDelay} style={{ padding: "1.5rem" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
-              {/* Select Type */}
-              <div>
-                <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500 }}>
-                  Select Type
-                </label>
-                <select
-                  value={delayType}
-                  onChange={(e) => {
-                    setDelayType(e.target.value);
-                    setSelectedItem("");
-                  }}
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "0.5rem",
-                    border: "1px solid #E5e7eb",
-                    borderRadius: "0.375rem",
-                    fontSize: "0.875rem",
-                  }}
-                >
-                  <option value="Project">Project</option>
-                  <option value="Task">Task</option>
-                  <option value="Employee">Employee</option>
-                </select>
-              </div>
-
-              {/* Select Item */}
-              <div>
-                <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500 }}>
-                  Select Item
-                </label>
-                <select
-                  value={selectedItem}
-                  onChange={(e) => setSelectedItem(e.target.value)}
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "0.5rem",
-                    border: "1px solid #E5e7eb",
-                    borderRadius: "0.375rem",
-                    fontSize: "0.875rem",
-                  }}
-                >
-                  <option value="">—</option>
-                  {getDelayItems().map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name || item.title || item.display_name || "Unknown"}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          <form onSubmit={handleSubmitDelay}>
+            <div className="Form-Grid Two">
+              <label>Type<select className="Mini-Inp" value={delayType} onChange={(e) => { setDelayType(e.target.value); setSelectedItem(""); }} required><option value="Project">Project</option><option value="Task">Task</option><option value="Employee">Employee</option></select></label>
+              <label>Item<select className="Mini-Inp" value={selectedItem} onChange={(e) => setSelectedItem(e.target.value)} required><option value="">—</option>{getDelayItems().map((item) => <option key={item.id} value={item.id}>{item.name || item.title || item.display_name || "Unknown"}</option>)}</select></label>
+              <label>Days<input type="number" min="1" className="Mini-Inp" value={days} onChange={(e) => setDays(e.target.value)} required placeholder="2" /></label>
             </div>
-
-            {/* Days */}
-            <div style={{ marginBottom: "1rem" }}>
-              <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500 }}>
-                Days
-              </label>
-              <input
-                type="number"
-                min="1"
-                value={days}
-                onChange={(e) => setDays(e.target.value)}
-                required
-                placeholder="2"
-                style={{
-                  width: "100%",
-                  padding: "0.5rem",
-                  border: "1px solid #E5e7eb",
-                  borderRadius: "0.375rem",
-                  fontSize: "0.875rem",
-                }}
-              />
+            <label>Reason<textarea className="Mini-Inp" value={reason} onChange={(e) => setReason(e.target.value)} required placeholder="Supplier Issue" rows={3} /></label>
+            {feedback.message && <div className={feedback.ok ? "Auth-AlertOk" : "Auth-Alert"}>{feedback.message}</div>}
+            <div className="Modal-Actions">
+              <button className="Primary-Button" type="submit" disabled={loading}>{loading ? "Submitting..." : "Submit Delay"}</button>
+              <button className="Soft-Button" type="button" onClick={() => setShowAddModal(false)}>Cancel</button>
             </div>
-
-            {/* Reason */}
-            <div style={{ marginBottom: "1.5rem" }}>
-              <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500 }}>
-                Reason
-              </label>
-              <textarea
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                required
-                placeholder="Supplier Issue"
-                rows="3"
-                style={{
-                  width: "100%",
-                  padding: "0.5rem",
-                  border: "1px solid #E5e7eb",
-                  borderRadius: "0.375rem",
-                  fontSize: "0.875rem",
-                  resize: "vertical",
-                }}
-              />
-            </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                width: "100%",
-                padding: "0.75rem",
-                backgroundColor: "#000",
-                color: "#fff",
-                border: "none",
-                borderRadius: "0.375rem",
-                fontSize: "0.875rem",
-                fontWeight: 500,
-                cursor: loading ? "not-allowed" : "pointer",
-                opacity: loading ? 0.6 : 1,
-              }}
-            >
-              {loading ? "Submitting..." : "Submit Delay"}
-            </button>
           </form>
         </Modal>
       )}

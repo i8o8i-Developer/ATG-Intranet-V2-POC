@@ -19,6 +19,8 @@ class ProjectWorkspace(TenantScopedModel, ExternalReference):
     clickup_sync_enabled = models.BooleanField(default=False, db_index=True)
     terms_required = models.BooleanField(default=False, db_index=True)
     anti_phishing_enabled = models.BooleanField(default=False, db_index=True)
+    associate_project_manager = models.ForeignKey("Users.EmployeeProfile", null=True, blank=True, on_delete=models.SET_NULL, related_name="apm_projects")
+    project_manager = models.ForeignKey("Users.EmployeeProfile", null=True, blank=True, on_delete=models.SET_NULL, related_name="pm_projects")
     metadata = models.JSONField(default=dict, blank=True)
 
     class Meta:

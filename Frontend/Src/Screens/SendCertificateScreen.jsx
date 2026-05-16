@@ -1,39 +1,34 @@
 import React, { useMemo, useState } from "react";
-import { Award, FileSignature, Plus, Save, ShieldCheck } from "lucide-react";
+import { Award, ShieldCheck } from "lucide-react";
 
 import { apiPost } from "../Api/Client.js";
 import "../Styles/CertScreen.css";
-import { Modal } from "./Shared/ScreenComponents.jsx";
 import { findById } from "./Shared/ScreenUtils.jsx";
 
 const CERTIFICATE_TYPES = [
-  { id: "Completion", label: "Internship / EngagementCompletion", color: "#7a5a1f", subtitle: "OFCOMPLETION" },
-  { id: "Experience", label: "ExperienceLetter", color: "#1d4e89", subtitle: "OFEXPERIENCE" },
-  { id: "Achievement", label: "Achievement / Award", color: "#a4133c", subtitle: "OFACHIEVEMENT" },
-  { id: "Recognition", label: "Recognition", color: "#0f766e", subtitle: "OFRECOGNITION" },
-  { id: "Custom", label: "Custom (UseTemplate)", color: "#4b5563", subtitle: "" },
+  { id: "Completion",   label: "Internship / Engagement Completion", color: "#7a5a1f", subtitle: "OF COMPLETION" },
+  { id: "Experience",   label: "Experience Letter",                  color: "#1d4e89", subtitle: "OF EXPERIENCE" },
+  { id: "Achievement",  label: "Achievement / Award",                color: "#a4133c", subtitle: "OF ACHIEVEMENT" },
+  { id: "Recognition",  label: "Recognition",                        color: "#0f766e", subtitle: "OF RECOGNITION" },
 ];
 
+function esc(val) { return String(val || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
 function fmtDate(value) {
-  return value ? new Date(value).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—";
-}
-
-function applyTemplate(template, vars) {
-  if (!template) return "";
-  return String(template).replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, key) => (vars[key] ?? `{{${key}}}`));
+  return value ? esc(new Date(value).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })) : "—";
 }
 
 function defaultBody(typeId, vars) {
+  const e = (v) => esc(v);
   if (typeId === "Experience") {
-    return `<p>This Is To Certify That <strong>${vars.name}</strong> Has Been Associated With Us As <strong>${vars.position}</strong> From <strong>${vars.joined}</strong> To <strong>${vars.completion}</strong>.</p><p>During This Tenure, Key Contributions Included <strong>${vars.responsibilities || "—"}</strong>. We Wish Them Success In Future Endeavours.</p>`;
+    return `<p>This Is To Certify That <strong>${e(vars.name)}</strong> Has Been Associated With Us As <strong>${e(vars.position)}</strong> From <strong>${e(vars.joined)}</strong> To <strong>${e(vars.completion)}</strong>.</p><p>During This Tenure, Key Contributions Included <strong>${e(vars.responsibilities) || "—"}</strong>. We Wish Them Success In Future Endeavours.</p>`;
   }
   if (typeId === "Achievement") {
-    return `<p>Awarded To <strong>${vars.name}</strong> In Recognition Of Outstanding Achievement In <strong>${vars.responsibilities || vars.position}</strong> On   <strong>${vars.completion}</strong>.</p>`;
+    return `<p>Awarded To <strong>${e(vars.name)}</strong> In Recognition Of Outstanding Achievement In <strong>${e(vars.responsibilities || vars.position)}</strong> On <strong>${e(vars.completion)}</strong>.</p>`;
   }
   if (typeId === "Recognition") {
-    return `<p>We Hereby Recognise <strong>${vars.name}</strong> For Exceptional Contribution As <strong>${vars.position}</strong>. ${vars.responsibilities ? `Highlights: <strong>${vars.responsibilities}</strong>.` : ""}</p>`;
+    return `<p>We Hereby Recognise <strong>${e(vars.name)}</strong> For Exceptional Contribution As <strong>${e(vars.position)}</strong>. ${vars.responsibilities ? `Highlights: <strong>${e(vars.responsibilities)}</strong>.` : ""}</p>`;
   }
-  return `<p>This Is To Certify That <strong>${vars.name}</strong> Has Successfully Served As <strong>${vars.position}</strong> With Major Responsibilities Including <strong>${vars.responsibilities || "—"}</strong>, From <strong>${vars.joined}</strong> To <strong>${vars.completion}</strong>.</p><p>We Acknowledge The Dedication, Commitment And Contribution Made During This Engagement.</p>`;
+  return `<p>This Is To Certify That <strong>${e(vars.name)}</strong> Has Successfully Served As <strong>${e(vars.position)}</strong> With Major Responsibilities Including <strong>${e(vars.responsibilities) || "—"}</strong>, From <strong>${e(vars.joined)}</strong> To <strong>${e(vars.completion)}</strong>.</p><p>We Acknowledge The Dedication, Commitment And Contribution Made During This Engagement.</p>`;
 }
 
 function buildCertificateHtml({ typeId, body, vars, accent }) {
@@ -56,15 +51,13 @@ function buildCertificateHtml({ typeId, body, vars, accent }) {
     <div class='Certificate-Heading'>TO WHOMSOEVER IT MAY CONCERN</div>
     <div class='Certificate-Type'>${type.subtitle || (typeId || "").toUpperCase()}</div>
     <div class='Certificate-Copy'>${body}</div>
-    <div class='Certificate-Signature'>${vars.issuer || "SaurabhBassi"}<br/>Across The Globe (ATG)</div>
+    <div class='Certificate-Signature'>${esc(vars.issuer) || "Saurabh Bassi"}<br/>Across The Globe (ATG)</div>
     <div class='Certificate-Footer'>Across The Globe (ATG)<br/>ATGWorld Networks Pvt. Ltd.<br/>809/1, Ferns Paradise, Doddanekundi, Bengaluru, KA, India - 560048</div>
   </div></body></html>`;
 }
 
 export function SendCertificateScreen({ data, reload }) {
-  const [tab, setTab] = useState("issue");
   const employees = data.employees || [];
-  const templates = (data.contentTemplates || []).filter((tpl) => /certificate|experience|achievement|completion/i.test(`${tpl.code || ""} ${tpl.title || ""} ${tpl.category || ""}`));
 
   const [form, setForm] = useState({
     typeId: "Completion",
@@ -73,33 +66,23 @@ export function SendCertificateScreen({ data, reload }) {
     completion_date: "",
     position: "",
     responsibilities: "",
-    issuer: "BanaoHR",
+    issuer: "Saurabh Bassi",
     accent: "",
-    templateId: "",
-    customBody: "",
-    send: true,
   });
   const [showPreview, setShowPreview] = useState(false);
   const [busy, setBusy] = useState(false);
   const [results, setResults] = useState([]);
-  const [createTemplateOpen, setCreateTemplateOpen] = useState(false);
 
   const previewEmployee = findById(employees, form.selectedEmployees[0]) || employees[0] || {};
   const previewVars = {
     name: previewEmployee.display_name || previewEmployee.candidate_name || previewEmployee.username || "Recipient",
-    position: form.position || previewEmployee.position_title || "TeamMember",
+    position: form.position || previewEmployee.position_title || "Team Member",
     responsibilities: form.responsibilities,
     joined: fmtDate(form.joined_on || previewEmployee.joined_on),
     completion: fmtDate(form.completion_date),
     issuer: form.issuer,
   };
-  const selectedTemplate = templates.find((tpl) => String(tpl.id) === String(form.templateId));
-  const body = useMemo(() => {
-    if (form.typeId === "Custom" && form.customBody) return applyTemplate(form.customBody, previewVars);
-    if (selectedTemplate?.body) return applyTemplate(selectedTemplate.body, previewVars);
-    return defaultBody(form.typeId, previewVars);
-  }, [form.typeId, form.customBody, selectedTemplate, previewVars]);
-
+  const body = useMemo(() => defaultBody(form.typeId, previewVars), [form.typeId, previewVars]);
   const html = buildCertificateHtml({ typeId: form.typeId, body, vars: previewVars, accent: form.accent });
 
   const toggleEmployee = (id) => {
@@ -118,17 +101,13 @@ export function SendCertificateScreen({ data, reload }) {
         if (!employee) continue;
         const vars = {
           name: employee.display_name || employee.candidate_name || employee.username || "Recipient",
-          position: form.position || employee.position_title || "TeamMember",
+          position: form.position || employee.position_title || "Team Member",
           responsibilities: form.responsibilities,
           joined: fmtDate(form.joined_on || employee.joined_on),
           completion: fmtDate(form.completion_date),
           issuer: form.issuer,
         };
-        const renderedBody = form.typeId === "Custom" && form.customBody
-          ? applyTemplate(form.customBody, vars)
-          : selectedTemplate?.body
-            ? applyTemplate(selectedTemplate.body, vars)
-            : defaultBody(form.typeId, vars);
+        const renderedBody = defaultBody(form.typeId, vars);
         const certificateHtml = buildCertificateHtml({ typeId: form.typeId, body: renderedBody, vars, accent: form.accent });
         try {
           const response = await apiPost("/MainApp/send-certificate", {
@@ -136,7 +115,6 @@ export function SendCertificateScreen({ data, reload }) {
             title: `${form.typeId} Certificate For ${vars.name}`,
             metadata: {
               certificate_type: form.typeId,
-              template_id: form.templateId || null,
               position: form.position,
               responsibilities: form.responsibilities,
               joined_on: form.joined_on,
@@ -157,149 +135,75 @@ export function SendCertificateScreen({ data, reload }) {
 
   return (
     <section className="CT">
-      <div className="CT-Tabs">
-        <button className={tab === "issue" ? "CT-Tab Active" : "CT-Tab"} onClick={() => setTab("issue")}>Issue Certificates</button>
-        <button className={tab === "templates" ? "CT-Tab Active" : "CT-Tab"} onClick={() => setTab("templates")}>Templates</button>
-      </div>
-
-      {tab === "issue" && (
-        <div className="CT" style={{ padding: 0, gap: 20 }}>
-          <div className="CT-Card">
-            <div className="CT-CardHead"><h2><Award size={18} /> Issue Certificates</h2><p>Pick A Type, Choose Recipients, Customise Content, Preview, Then Send.</p></div>
-            <div className="CT-CardBody">
-              <div className="CT-Form">
-                <label>Certificate Type
-                  <select value={form.typeId} onChange={(event) => setForm({ ...form, typeId: event.target.value, templateId: "" })}>
-                    {CERTIFICATE_TYPES.map((type) => <option key={type.id} value={type.id}>{type.label}</option>)}
-                  </select>
-                </label>
-                <label>Template (Optional)
-                  <select value={form.templateId} onChange={(event) => setForm({ ...form, templateId: event.target.value })}>
-                    <option value="">— Use Default Body —</option>
-                    {templates.map((tpl) => <option key={tpl.id} value={tpl.id}>{tpl.title || tpl.code}</option>)}
-                  </select>
-                </label>
-                <label>Position / Role<input value={form.position} onChange={(event) => setForm({ ...form, position: event.target.value })} /></label>
-                <label>Issuer<input value={form.issuer} onChange={(event) => setForm({ ...form, issuer: event.target.value })} /></label>
-                <label>Joining Date<input type="date" value={form.joined_on} onChange={(event) => setForm({ ...form, joined_on: event.target.value })} /></label>
-                <label>Completion Date<input type="date" value={form.completion_date} onChange={(event) => setForm({ ...form, completion_date: event.target.value })} /></label>
-                <label className="CT-Span2">Responsibilities / Highlights<input value={form.responsibilities} onChange={(event) => setForm({ ...form, responsibilities: event.target.value })} /></label>
-                <label>Accent Colour<input type="color" value={form.accent || (CERTIFICATE_TYPES.find((t) => t.id === form.typeId)?.color || "#7a5a1f")} onChange={(event) => setForm({ ...form, accent: event.target.value })} /></label>
-                {form.typeId === "Custom" && (
-                  <label className="CT-Span2">Custom Body (HTML, Supports {"{{name}}"}, {"{{position}}"}, {"{{joined}}"}, {"{{completion}}"}, {"{{responsibilities}}"})
-                    <textarea rows={6} value={form.customBody} onChange={(event) => setForm({ ...form, customBody: event.target.value })} />
-                  </label>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="CT-Card">
-            <div className="CT-CardHead">
-              <h2><ShieldCheck size={18} /> Recipients ({form.selectedEmployees.length})</h2>
-              <div style={{ display: "flex", gap: 10 }}>
-                <button className="Outline-Button" onClick={() => setShowPreview((v) => !v)}>{showPreview ? "Hide Preview" : "Preview"}</button>
-                <button className="Primary-Button" onClick={submit} disabled={busy || !form.selectedEmployees.length}>
-                  {busy ? "Sending..." : `Issue To ${form.selectedEmployees.length || "—"}`}
-                </button>
-              </div>
-            </div>
-            <div className="CT-CardBody">
-              <div className="CT-Recipients">
-                {employees.map((employee) => {
-                  const checked = form.selectedEmployees.includes(employee.id);
-                  return (
-                    <label key={employee.id} className={checked ? "CT-RecipCard Active" : "CT-RecipCard"}>
-                      <input type="checkbox" checked={checked} onChange={() => toggleEmployee(employee.id)} />
-                      <div>
-                        <strong>{employee.display_name || employee.candidate_name || `#${employee.id}`}</strong>
-                        <small>{employee.position_title || "—"} &middot; {employee.candidate_email || ""}</small>
-                      </div>
-                    </label>
-                  );
-                })}
-                {!employees.length && <p>No Employees Available.</p>}
-              </div>
-            </div>
-          </div>
-
-          {showPreview && (
-            <div className="CT-Card CT-Preview">
-              <div className="CT-CardHead"><h2>Certificate Preview</h2><button className="Outline-Button" onClick={() => setShowPreview(false)}>Close</button></div>
-              <div className="CT-CardBody"><iframe title="CertificatePreview" srcDoc={html} /></div>
-            </div>
-          )}
-
-          {results.length > 0 && (
-            <div className="CT-Card">
-              <div className="CT-CardHead"><h2>Send Result ({results.filter((r) => r.ok).length}/{results.length})</h2></div>
-              <div className="CT-CardBody">
-                <ul className="CT-Results">
-                  {results.map((row, index) => (
-                    <li key={index}>{row.ok ? "✅" : "❌"} {row.employee}{row.error ? ` — ${typeof row.error === "string" ? row.error : JSON.stringify(row.error)}` : ""}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {tab === "templates" && (
+      <div className="CT" style={{ padding: 0, gap: 20 }}>
         <div className="CT-Card">
-          <div className="CT-CardHead"><h2><FileSignature size={18} /> Certificate Templates</h2><button className="Primary-Button Small" onClick={() => setCreateTemplateOpen(true)}><Plus size={14} /> New Template</button></div>
+          <div className="CT-CardHead"><h2><Award size={18} /> Issue Certificates</h2><p>Select Type, Recipients, Fill Details, Preview, Then Send.</p></div>
           <div className="CT-CardBody">
-            <table className="CT-Table">
-              <thead><tr><th>Title</th><th>Category</th><th>Variables</th><th>Updated</th></tr></thead>
-              <tbody>
-                {templates.map((tpl) => (
-                  <tr key={tpl.id}>
-                    <td>{tpl.title || tpl.code}</td>
-                    <td>{tpl.category || "Certificate"}</td>
-                    <td>{(tpl.variables || []).join(", ") || "—"}</td>
-                    <td>{tpl.updated_at || "—"}</td>
-                  </tr>
-                ))}
-                {!templates.length && <tr><td colSpan={4} className="CT-Empty">No Certificate Templates Yet. Create One To Make Issuing Repeatable.</td></tr>}
-              </tbody>
-            </table>
+            <div className="CT-Form">
+              <label>Certificate Type
+                <select value={form.typeId} onChange={(event) => setForm({ ...form, typeId: event.target.value })}>
+                  {CERTIFICATE_TYPES.map((type) => <option key={type.id} value={type.id}>{type.label}</option>)}
+                </select>
+              </label>
+              <label>Position / Role<input value={form.position} onChange={(event) => setForm({ ...form, position: event.target.value })} /></label>
+              <label>Issuer<input value={form.issuer} onChange={(event) => setForm({ ...form, issuer: event.target.value })} /></label>
+              <label>Joining Date<input type="date" value={form.joined_on} onChange={(event) => setForm({ ...form, joined_on: event.target.value })} /></label>
+              <label>Completion Date<input type="date" value={form.completion_date} onChange={(event) => setForm({ ...form, completion_date: event.target.value })} /></label>
+              <label className="CT-Span2">Responsibilities / Highlights<input value={form.responsibilities} onChange={(event) => setForm({ ...form, responsibilities: event.target.value })} /></label>
+              <label>Accent Colour<input type="color" value={form.accent || (CERTIFICATE_TYPES.find((t) => t.id === form.typeId)?.color || "#7a5a1f")} onChange={(event) => setForm({ ...form, accent: event.target.value })} /></label>
+            </div>
           </div>
         </div>
-      )}
 
-      {createTemplateOpen && <CreateCertificateTemplateModal onClose={() => setCreateTemplateOpen(false)} reload={reload} />}
-    </section>
-  );
-}
+        <div className="CT-Card">
+          <div className="CT-CardHead">
+            <h2><ShieldCheck size={18} /> Recipients ({form.selectedEmployees.length})</h2>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button className="Outline-Button" onClick={() => setShowPreview((v) => !v)}>{showPreview ? "Hide Preview" : "Preview"}</button>
+              <button className="Primary-Button" onClick={submit} disabled={busy || !form.selectedEmployees.length}>
+                {busy ? "Sending..." : `Issue To ${form.selectedEmployees.length || "—"}`}
+              </button>
+            </div>
+          </div>
+          <div className="CT-CardBody">
+            <div className="CT-Recipients">
+              {employees.map((employee) => {
+                const checked = form.selectedEmployees.includes(employee.id);
+                return (
+                  <label key={employee.id} className={checked ? "CT-RecipCard Active" : "CT-RecipCard"}>
+                    <input type="checkbox" checked={checked} onChange={() => toggleEmployee(employee.id)} />
+                    <div>
+                      <strong>{employee.display_name || employee.candidate_name || `#${employee.id}`}</strong>
+                      <small>{employee.position_title || "—"}</small>
+                    </div>
+                  </label>
+                );
+              })}
+              {!employees.length && <p>No Employees Available.</p>}
+            </div>
+          </div>
+        </div>
 
-function CreateCertificateTemplateModal({ onClose, reload }) {
-  const [form, setForm] = useState({ title: "", category: "Certificate", code: "", body: "" });
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const save = async () => {
-    if (!form.title || !form.body) return;
-    setBusy(true);
-    setError("");
-    try {
-      await apiPost("/HtmlTemplate/ContentTemplates/", { ...form, status: "Active", variables: ["name", "position", "joined", "completion", "responsibilities"] });
-      reload(["contentTemplates"]);
-      onClose();
-    } catch (err) {
-      setError(err?.data ? JSON.stringify(err.data) : err?.message || "Failed To Save Template.");
-    } finally { setBusy(false); }
-  };
-  return (
-    <Modal title="New Certificate Template" onClose={onClose} wide>
-      <div className="Form-Grid Two Modal-Form">
-        <label>Title<input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label>
-        <label>Code<input value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} /></label>
-        <label>Category<select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}><option>Certificate</option><option>Letter</option><option>Award</option></select></label>
+        {showPreview && (
+          <div className="CT-Card CT-Preview">
+            <div className="CT-CardHead"><h2>Certificate Preview</h2><button className="Outline-Button" onClick={() => setShowPreview(false)}>Close</button></div>
+            <div className="CT-CardBody"><iframe title="CertificatePreview" srcDoc={html} /></div>
+          </div>
+        )}
+
+        {results.length > 0 && (
+          <div className="CT-Card">
+            <div className="CT-CardHead"><h2>Send Result ({results.filter((r) => r.ok).length}/{results.length})</h2></div>
+            <div className="CT-CardBody">
+              <ul className="CT-Results">
+                {results.map((row, index) => (
+                  <li key={index}>{row.ok ? "✅" : "❌"} {row.employee}{row.error ? ` — ${typeof row.error === "string" ? row.error : JSON.stringify(row.error)}` : ""}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
       </div>
-      <label>Body (HTML, use {"{{name}}"}, {"{{position}}"}, {"{{joined}}"}, {"{{completion}}"}, {"{{responsibilities}}"})
-        <textarea rows={10} value={form.body} onChange={(event) => setForm({ ...form, body: event.target.value })} />
-      </label>
-      {error && <p style={{ color: "#b91c1c" }}>{error}</p>}
-      <button className="Primary-Button" onClick={save} disabled={busy || !form.title || !form.body}><Save size={14} /> {busy ? "Saving…" : "Save Template"}</button>
-    </Modal>
+    </section>
   );
 }

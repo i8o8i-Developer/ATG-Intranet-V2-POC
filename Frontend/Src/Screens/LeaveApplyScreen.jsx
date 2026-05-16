@@ -51,15 +51,23 @@ export function LeaveApplyScreen({ data, selectedEmployeeId, reload }) {
   }, [selectedEmployeeId, form.employee_id, data.employees]);
 
   const submit = async () => {
-    const response = await apiPost("/MainApp/leave/apply/", form);
-    setResult(response);
-    reload(["leaveRequests", "leaveBalances", "leaveOverview", "notifications", "employees"]);
+    try {
+      const response = await apiPost("/MainApp/leave/apply/", form);
+      setResult(response);
+      reload(["leaveRequests", "leaveBalances", "leaveOverview", "notifications", "employees"]);
+    } catch (err) {
+      setResult({ error: err?.payload?.detail || err?.message || "Failed To Apply Leave." });
+    }
   };
 
   const reviewLeave = async (id, action) => {
     if (!id) return;
-    await apiPost(`/MainApp/LeaveRequests/${id}/${action}/`, action === "reject" ? { reason: "Rejected From Leave Console" } : {});
-    reload(["leaveRequests", "leaveBalances", "leaveOverview", "notifications", "employees"]);
+    try {
+      await apiPost(`/MainApp/LeaveRequests/${id}/${action}/`, action === "reject" ? { reason: "Rejected From Leave Console" } : {});
+      reload(["leaveRequests", "leaveBalances", "leaveOverview", "notifications", "employees"]);
+    } catch (err) {
+      /* silent */
+    }
   };
 
   const leaveTone = (status = "") => {

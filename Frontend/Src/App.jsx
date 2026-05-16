@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { AlertTriangle, Bell, ChevronLeft, LogOut } from "lucide-react";
+import { AlertTriangle, Bell, ChevronLeft, LogOut, Shield } from "lucide-react";
 import { apiGet, apiPost, clearApiAuth, getApiSettings, unpackList } from "./Api/Client.js";
 import { LoginScreen, ProfileScreen } from "./Screens/AuthScreens.jsx";
 import { RouteRenderer } from "./Screens/AppScreens.jsx";
@@ -45,7 +45,6 @@ const navItems = [
   { label: "Bank Details",          path: "/Bankdetails/" },
   { label: "Payslips",              path: "/payslips/" },
   { label: "Employee Register",     path: "/employee-register/" },
-  { label: "MCP Agents",            path: "/mcp/" },
   { label: "Notifications",         path: "/notifications/" },
   { label: "Payroll Downloads",     path: "/payroll-downloads/" },
   { label: "Delay Management",      path: "/delays/" },
@@ -192,20 +191,55 @@ const endpointMap = [
 
 
 
+// ─── Permission Map: Nav Label -> Required Capabilities ──────
+
+const NAV_CAP_MAP = {
+  "HRMS":               ["Users.employee.view", "Users.employee.manage"],
+  "LMS":                ["Lms.learning.view", "Banao.lead.view"],
+  "MCP":                ["McpAccessLayer.mcp.view"],
+  "Development Project":["Project.project.view"],
+  "Marketing Project":  ["Project.project.view"],
+  "Apply Leave":        null, 
+  "Password Management":null,
+  "Assessments":        ["Assesment.assessment.view"],
+  "Bank Details":       null,
+  "Payslips":           null,
+  "Employee Register":  ["Users.employee.view"],
+  "Send Offer Letter":  ["MainApp.offer.create"],
+  "Send Certificate":   ["MainApp.certificate.issue"],
+  "Deactivate Employee":["Users.employee.deactivate"],
+  "Documents":          ["AtgDocs.docs.view"],
+  "Provide Feedbacks":  ["Users.employee.view"],
+  "Finance Department": ["FinanceAndPayroll.finance.view"],
+  "Delay Management":   ["Project.project.view"],
+  "Payroll Downloads":  ["FinanceAndPayroll.finance.view"],
+  "Django Admin":       null, 
+};
+
+function userCanSee(label, capabilities, isSuperuser, isStaff) {
+  if (isSuperuser) return true;
+  if (label === "Django Admin") return isStaff;
+  if (!capabilities || !capabilities.length) return false;
+  const required = NAV_CAP_MAP[label];
+  if (!required) return true;
+  return required.some((cap) => capabilities.includes(cap));
+}
+
 // ─── Nav Structure — Maps Figma Items To Your Existing Paths ─────────────────
-function buildNavItems(activePath) {
-  return [
+function buildNavItems(activePath, capabilities = [], isSuperuser = false, isStaff = false) {
+  const raw = [
     { label: "Home",                 icon: <IconHome active={activePath === "/home/"} />, path: "/home/" },
     { label: "HRMS",                 icon: <IconHRMS />,             path: "/hrms/" },
     { label: "LMS",                  icon: <IconLMS />,              path: "/lms/" },
     { label: "MCP",                  icon: <IconMCP />,              path: "/mcp/" },
     {
-      label: "Development Project",
+      label: "Projects",
       icon: <IconDevProject />,
-      path: "/project/dashboard/",
-      children: [],
+      children: [
+        { label: "Development Project", icon: <IconDevProject />, path: "/project/dashboard/" },
+        { label: "Marketing Project", icon: <IconMarketing />, path: "/marketing-project/" },
+      ],
     },
-    { label: "Marketing Project",    icon: <IconMarketing />,        path: "/marketing-project/", children: [] },
     { label: "Apply Leave",          icon: <IconCalendar />,         path: "/leave/apply/" },
     { label: "Password Management",  icon: <IconPassword />,         path: "/change-password/" },
     { label: "Assessments",          icon: <IconAssessments />,      path: "/assessment/" },
@@ -226,7 +260,18 @@ function buildNavItems(activePath) {
     { label: "Finance Department",   icon: <IconFinance />,          path: "/payments/?pay_month=current&month_name=May" },
     { label: "Delay Management",     icon: <IconDelayManagement />,  path: "/delays/" },
     { label: "Payroll Downloads",    icon: <IconPayrollDownload />,  path: "/payroll-downloads/" },
+    { label: "Django Admin",         icon: <Shield size={20} />,     path: "/admin/", newTab: true },
   ];
+
+  return raw
+    .map((item) => {
+      if (item.children) {
+        const filteredChildren = item.children.filter((child) => userCanSee(child.label, capabilities, isSuperuser, isStaff));
+        return filteredChildren.length ? { ...item, children: filteredChildren } : null;
+      }
+      return userCanSee(item.label, capabilities, isSuperuser, isStaff) ? item : null;
+    })
+    .filter(Boolean);
 }
 
 // ─── Nav Link ─────────────────────────────────────────────────────────────
@@ -238,7 +283,7 @@ function NavLink({ item, depth = 0, activePath, navigate, collapsed }) {
       activePath.startsWith(item.path.split("?")[0].replace(/\/$/, "")));
 
   const [open, setOpen] = useState(
-    item.label === "Development Project" || isGroupActive
+    item.label === "Projects" || isGroupActive
   );
 
   useEffect(() => {
@@ -291,7 +336,7 @@ function NavLink({ item, depth = 0, activePath, navigate, collapsed }) {
 
   return (
     <button
-      onClick={() => item.path && navigate(item.path)}
+      onClick={() => { if (!item.path) return; if (item.newTab) { window.open(item.path, "_blank"); } else { navigate(item.path); } }}
       style={{
         display: "flex", alignItems: "center", gap: 12,
         width: "100%", paddingRight: 12, paddingTop: 8, paddingBottom: 8,
@@ -362,24 +407,20 @@ function App() {
     }
   }, [data.employees, data.me, selectedEmployeeId, isPublicOfferRoute]);
 
+  // 
   useEffect(() => {
     if (!hasAuth || isLoginRoute) return;
-    const unauthorized = errors.some((e) => e.status === 401);
-    const offline = false;
-    if (unauthorized || offline) {
+    const me401 = errors.some((e) => e.key === "me" && e.status === 401);
+    if (me401) {
       clearApiAuth();
       setSettings(getApiSettings());
       navigate("/login/");
     }
-  }, [errors, loading, apiOnline, hasAuth, isLoginRoute, navigate]);
+  }, [errors, hasAuth, isLoginRoute, navigate]);
 
   const login = (path = "/home/") => { setSettings(getApiSettings()); setReloadKey((v) => v + 1); navigate(path); };
   const logout = async () => {
-    try {
-      await apiPost("/Users/Auth/Logout/");
-    } catch (error) {
-      console.warn("Logout Request Failed", error);
-    }
+    try { await apiPost("/Users/Auth/Logout/"); } catch {}
     clearApiAuth();
     setSettings(getApiSettings());
     setReloadKey((v) => v + 1);
@@ -407,6 +448,9 @@ function useIntranetData(reloadKey, enabled) {
   const [state, setState] = useState({ data: {}, loading: false, errors: [], apiOnline: false });
   const hasInitiallyLoaded = useRef(false);
   const loadVersion = useRef(0);
+  const pollingRef = useRef(null);
+  const enabledRef = useRef(enabled);
+  enabledRef.current = enabled;
 
   const applyPayload = (nextData, key, mode, payload) => {
     if (key === "assessmentLegacy") {
@@ -424,51 +468,62 @@ function useIntranetData(reloadKey, enabled) {
     }
   };
 
-const REALTIME_KEYS = ["dailyStatus", "me", "notifications", "employees", "departments", "positions", "skills", "tasks", "projects", "leaveRequests", "leaveBalances", "teamAssignments", "milestones", "alerts", "userSkills", "goals", "goalFeedback", "workEntries", "bankAccounts", "assessmentTemplates", "assessmentAssignments", "payProfiles", "financeDashboard", "payrollRuns", "payrollLineItems", "payslipDocuments", "payPeriods", "paymentSnapshots", "delays", "projectBudgets", "teamAssignmentHistory", "userRepositoryStatus", "defaultCheckpoints", "docs", "lmsLeads", "leadAccounts", "leadTags", "leadContacts", "leadActivities", "leadNotes", "leadTests", "leadProposals", "leadAudits", "workflowTransitions", "leadStatusHistory", "learningPaths", "learningModules", "learningAssignments", "leadQueueSnapshots", "revenueSnapshots", "knowledgeActivities", "driveFolders", "assessmentLegacy", "offers", "issues", "managerScopes", "projectContacts", "milestoneComponents", "complianceCampaigns", "complianceAssignments", "slackThreads", "slackMessages", "externalWorkMappings", "clickupMappings", "managerAbbreviations", "subDepartments", "userStatusSnapshots", "benchPeriods", "employeeCertificates", "leaveTransactions", "resignationRequests", "userEffortReports", "interviewProgress", "credentialVaultItems", "notificationSnoozeRecords", "docPermissions", "driveFiles", "docVersions", "paymentOrders", "compensationPlans", "approvalDecisions", "payoutExecutions", "gitRepoSnapshots", "gitActivitySnapshots", "repoUtilityRequests", "githubRepositories", "branchReviewers", "branchTesters", "repoBranchStatuses", "collegePipelines", "collegeContacts", "collegeAssignments", "candidateProfiles", "talentAssignments", "talentPerformanceSnapshots", "integrationProviders", "integrationConnections", "webhookInboxEvents", "agentPrincipals", "mcpToolDefinitions", "mcpResourceDefinitions", "mcpAccessGrants", "enterpriseRoles", "enterpriseRoleAssignments", "accessAuditLogs", "leadTransitions"];
+const REALTIME_KEYS = ["dailyStatus", "me", "notifications", "employees", "departments", "positions", "skills", "tasks", "projects", "leaveRequests", "leaveBalances", "teamAssignments", "milestones", "alerts", "userSkills", "goals", "goalFeedback", "workEntries", "bankAccounts", "assessmentTemplates", "assessmentAssignments", "payProfiles", "financeDashboard", "payrollRuns", "payrollLineItems", "payslipDocuments", "payPeriods", "paymentSnapshots", "delays", "projectBudgets", "teamAssignmentHistory", "userRepositoryStatus", "defaultCheckpoints", "docs", "lmsLeads", "leadAccounts", "leadTags", "leadContacts", "leadActivities", "leadNotes", "leadTests", "leadProposals", "leadAudits", "leadStatusHistory", "learningPaths", "learningModules", "learningAssignments", "leadQueueSnapshots", "revenueSnapshots", "knowledgeActivities", "driveFolders", "assessmentLegacy", "offers", "issues", "managerScopes", "projectContacts", "milestoneComponents", "complianceCampaigns", "complianceAssignments", "slackThreads", "slackMessages", "externalWorkMappings", "clickupMappings", "managerAbbreviations", "subDepartments", "userStatusSnapshots", "benchPeriods", "employeeCertificates", "leaveTransactions", "resignationRequests", "userEffortReports", "interviewProgress", "credentialVaultItems", "notificationSnoozeRecords", "docPermissions", "driveFiles", "docVersions", "paymentOrders", "compensationPlans", "approvalDecisions", "payoutExecutions", "gitRepoSnapshots", "gitActivitySnapshots", "repoUtilityRequests", "githubRepositories", "branchReviewers", "branchTesters", "repoBranchStatuses", "collegePipelines", "collegeContacts", "collegeAssignments", "candidateProfiles", "talentAssignments", "talentPerformanceSnapshots", "integrationProviders", "integrationConnections", "webhookInboxEvents", "agentPrincipals", "mcpToolDefinitions", "mcpResourceDefinitions", "mcpAccessGrants", "enterpriseRoles", "enterpriseRoleAssignments", "accessAuditLogs", "leadTransitions", "domains"];
+
+const POLL_KEYS = ["dailyStatus", "notifications", "alerts", "tasks"];
 
 const load = useCallback(async (keysFilter) => {
-     if (!enabled) { hasInitiallyLoaded.current = false; return; }
+     if (!enabledRef.current) { hasInitiallyLoaded.current = false; return; }
      const myVersion = ++loadVersion.current;
      let subset;
      if (Array.isArray(keysFilter) && keysFilter.length) {
        subset = endpointMap.filter(([key]) => keysFilter.includes(key));
-     } else if (keysFilter === undefined && hasInitiallyLoaded.current) {
+     } else if (keysFilter === undefined) {
        subset = endpointMap.filter(([key]) => REALTIME_KEYS.includes(key));
      } else {
        subset = endpointMap;
      }
-     const isPartial = subset.length !== endpointMap.length;
+     const isSmallReload = Array.isArray(keysFilter) && keysFilter.length < 20;
+     const isPartial = isSmallReload && subset.length !== endpointMap.length;
      setState((cur) => ({ ...cur, loading: !isPartial ? true : cur.loading, errors: isPartial ? cur.errors : [] }));
 
-     const criticalKeys = ["me", "enterprises", "departments", "positions", "skills"];
-     const critical = subset.filter(([key]) => criticalKeys.includes(key));
-     const rest = subset.filter(([key]) => !criticalKeys.includes(key));
+     const tag = ([key, p, mode]) =>
+       apiGet(p).then(
+         (payload) => ({ key, payload, mode }),
+         (err) => { err._ek = key; err._em = mode; throw err; }
+       );
 
-     const results = [];
-     if (critical.length > 0) {
-       const wave1 = await Promise.allSettled(critical.map(([key, p, mode]) => apiGet(p).then((payload) => ({ key, payload, mode }))));
-       results.push(...wave1);
-     }
-     if (rest.length > 0) {
-       const wave2 = await Promise.allSettled(rest.map(([key, p, mode]) => apiGet(p).then((payload) => ({ key, payload, mode }))));
-       results.push(...wave2);
-     }
+     const results = await Promise.allSettled(subset.map(tag));
 
      setState((cur) => {
         if (loadVersion.current !== myVersion) return { ...cur, loading: false };
         const nextData = isPartial ? { ...cur.data } : {};
         const requestErrors = isPartial && Array.isArray(keysFilter) ? cur.errors.filter((err) => !keysFilter.includes(err.key)) : [];
-        results.forEach((result, i) => {
-          const [key, , mode] = subset[i];
-          if (result.status === "fulfilled") applyPayload(nextData, key, mode, result.value.payload);
-          else { requestErrors.push({ key, status: result.reason?.status, message: result.reason?.message || "Request Failed" }); if (!isPartial) nextData[key] = mode === "list" ? [] : null; }
+        results.forEach((result) => {
+          let key, mode;
+          if (result.status === "fulfilled") { key = result.value.key; mode = result.value.mode; applyPayload(nextData, key, mode, result.value.payload); }
+          else { key = result.reason._ek; mode = result.reason._em; requestErrors.push({ key, status: result.reason?.status, message: result.reason?.message || "Request Failed" }); if (!isPartial && key) nextData[key] = mode === "list" ? [] : null; }
         });
-        return { data: nextData, loading: false, errors: requestErrors, apiOnline: isPartial ? cur.apiOnline : requestErrors.length < subset.length };
+        const half = subset.length / 2;
+        const failCount = requestErrors.filter((e) => !e.key || e.status !== 401).length;
+        return { data: nextData, loading: false, errors: requestErrors, apiOnline: isPartial ? cur.apiOnline : failCount < half };
       });
       hasInitiallyLoaded.current = true;
-   }, [enabled]);
+   }, []);
 
-   useEffect(() => { if (enabled) load(REALTIME_KEYS); }, [load, reloadKey]);
+   // 
+   useEffect(() => {
+     if (enabled) { hasInitiallyLoaded.current = false; load(REALTIME_KEYS); }
+     return () => { hasInitiallyLoaded.current = false; };
+   }, [reloadKey, enabled]);
+
+   // 
+   useEffect(() => {
+     if (!enabled) { if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; } return; }
+     pollingRef.current = setInterval(() => { load(POLL_KEYS); }, 30000);
+     return () => { if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; } };
+   }, [enabled, load]);
+
    return { ...state, reload: load };
 }
 
@@ -484,7 +539,10 @@ function AppShell({ children, route, navigate, data, apiOnline, loading, logout,
   const initials = String(displayName).split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase() || "U";
   const visibleErrors = errors.filter((item) => item.status && item.status !== 401).slice(0, 1);
 
-  const builtNav = buildNavItems(activePath);
+  const userCaps = data.me?.capabilities || [];
+  const isSuper = data.me?.user?.isSuperuser || false;
+  const isStaff = data.me?.user?.is_staff || false;
+  const builtNav = buildNavItems(activePath, userCaps, isSuper, isStaff);
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -750,10 +808,8 @@ function NotificationBell({ notifications = [], navigate, reloadData }) {
       await apiPost("/MainApp/Notifications/mark-all-read/", {});
       setOptimisticRead(false);
       if (reloadData) reloadData(["notifications"]);
-    } catch (err) {
-      console.warn("Mark All Read API Error:", err);
+    } catch {
       setOptimisticRead(false);
-      if (reloadData) reloadData(["notifications"]);
     }
     setMarkAllBusy(false);
   };
@@ -797,4 +853,4 @@ function isCompleted(status = "") {
   return ["completed", "complete", "done", "passed", "submitted", "closed"].includes(String(status).toLowerCase());
 }
 
-export default App;
+export default App;

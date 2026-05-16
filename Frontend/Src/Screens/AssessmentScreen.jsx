@@ -1,20 +1,27 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Plus, Search, X } from "lucide-react";
 import "../Styles/AssessmentScreen.css";
 
 import { apiPost } from "../Api/Client.js";
 import { EmptyState, Modal, Panel, SimpleTable, StatusPill, Tabs } from "./Shared/ScreenComponents.jsx";
-import { employeeName, formatDate, isCompleted } from "./Shared/ScreenUtils.jsx";
+import { employeeName, formatDate, isCompleted, resolveActiveEmployee } from "./Shared/ScreenUtils.jsx";
 
-export function AssessmentScreen({ data, reload }) {
+export function AssessmentScreen({ data, selectedEmployeeId, reload }) {
   const [tab, setTab] = useState("results");
   const [search, setSearch] = useState("");
   const [assignOpen, setAssignOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const linkedEmployee = resolveActiveEmployee(data);
+  const myEmployeeId = linkedEmployee?.id || selectedEmployeeId;
 
   const rows = useMemo(() => {
     const source = data.assessmentRows?.length ? data.assessmentRows : data.assessmentAssignments || [];
-    return source.map((row) => {
+    return source
+      .filter((row) => {
+        const rowEmployeeId = row.employee || row.employee_id || row.employeeId;
+        return !rowEmployeeId || !myEmployeeId || String(rowEmployeeId) === String(myEmployeeId);
+      })
+      .map((row) => {
       const latest = row.assessments?.[0] || {};
       return {
         ...row,
@@ -38,22 +45,36 @@ export function AssessmentScreen({ data, reload }) {
   const [answers, setAnswers] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [assessmentResult, setAssessmentResult] = useState(null);
+  const [assessmentError, setAssessmentError] = useState("");
+  const [timeLeft, setTimeLeft] = useState(null);
+  const timerRef = useRef(null);
 
   const startAssignment = async (id) => {
     if (!id) return;
     try {
       await apiPost(`/Assesment/AssessmentAssignments/${id}/start/`, {});
       reload(["assessmentAssignments", "assessmentLegacy"]);
-    } catch (e) { /**/ }
+    } catch (e) { setAssessmentError("Failed To Start Assessment."); }
   };
 
   const openTakeAssessment = async (row) => {
     const templates = data.assessmentTemplates || [];
     const template = templates.find((t) => String(t.id) === String(row.assessment || row.assessment_id));
-    if (!template) { alert("No Questions Available For TThis Assessment."); return; }
+    if (!template) { setAssessmentError("No Questions Available For This Assessment."); return; }
     setAnswers({});
+    setAssessmentError("");
+    const duration = Number(template.duration_minutes || 0);
+    if (duration > 0) setTimeLeft(duration * 60);
+    else setTimeLeft(null);
     setTakeAssessment({ assignmentId: row.assignment_id, questions: template.question_payload || [], title: template.title || "Assessment" });
   };
+
+  useEffect(() => {
+    if (!takeAssessment || timeLeft === null || timeLeft <= 0) return;
+    if (timeLeft <= 0) { submitAnswers(); return; }
+    timerRef.current = setInterval(() => setTimeLeft((prev) => { if (prev <= 1) { clearInterval(timerRef.current); submitAnswers(); return 0; } return prev - 1; }), 1000);
+    return () => clearInterval(timerRef.current);
+  }, [takeAssessment, timeLeft]);
 
   const submitAnswers = async () => {
     if (!takeAssessment) return;
@@ -69,9 +90,10 @@ export function AssessmentScreen({ data, reload }) {
     try {
       await apiPost(`/Assesment/AssessmentAssignments/${takeAssessment.assignmentId}/submit/`, { score, percentage: score, status: "Submitted", answer_payload: answers });
       setAssessmentResult({ score, correct, total: questions.length, details });
+      setAssessmentError("");
       reload(["assessmentAssignments", "assessmentLegacy"]);
     } catch (err) {
-      alert("Submit failed: " + (err?.payload?.detail || err?.message));
+      setAssessmentError(err?.payload?.detail || "Submit failed.");
     } finally {
       setSubmitting(false);
     }
@@ -82,7 +104,7 @@ export function AssessmentScreen({ data, reload }) {
     try {
       await apiPost(`/Assesment/AssessmentAssignments/${id}/sync-provider-status/`, {});
       reload(["assessmentAssignments", "assessmentLegacy"]);
-    } catch (e) { /* Sync Failed */ }
+    } catch (e) { setAssessmentError("Sync Failed."); }
   };
 
   return (
@@ -96,6 +118,7 @@ export function AssessmentScreen({ data, reload }) {
           ["create", "Create Template"],
         ]}
       />
+      {assessmentError && <div style={{ fontSize: 13, padding: "8px 14px", marginBottom: 12, borderRadius: 6, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }}>{assessmentError}</div>}
       {tab === "results" && (
         <Panel title="Assessment Results">
           <div className="Toolbar-Row">
@@ -179,7 +202,10 @@ export function AssessmentScreen({ data, reload }) {
         <div className="Modal-Backdrop" onClick={() => { setTakeAssessment(null); setAnswers({}); }}>
           <section className="Modal Wide" onClick={(e) => e.stopPropagation()} style={{ width: "min(700px, calc(100vw - 56px))" }}>
             <div className="Modal-Body" style={{ maxHeight: "80vh", overflow: "auto" }}>
-              <h2>{takeAssessment.title}</h2>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h2>{takeAssessment.title}</h2>
+                {timeLeft !== null && <span style={{ fontSize: 14, fontWeight: 700, color: timeLeft < 60 ? "#ef4444" : "#0f172a" }}>{Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, "0")} Min</span>}
+              </div>
               <p style={{ color: "#64748b", marginBottom: 16, fontSize: 13 }}>Answer The Questions Below And Submit To Complete The Assessment.</p>
               {takeAssessment.questions.map((q, qi) => (
                 <div key={qi} style={{ marginBottom: 16, padding: 14, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fafafa" }}>
@@ -263,7 +289,6 @@ function CreateTemplateModal({ data, onClose, reload }) {
       const typeErr = err?.payload?.assessment_type?.[0];
       const deptErr = err?.payload?.department?.[0];
       const qpErr = err?.payload?.question_payload?.[0];
-      console.error("Assessment 400 Payload:", JSON.stringify(err?.payload, null, 2));
       const detail = codeErr || titleErr || typeErr || deptErr || qpErr || err?.payload?.detail || err?.message || "Failed To Create Template.";
       setError(detail);
     } finally {

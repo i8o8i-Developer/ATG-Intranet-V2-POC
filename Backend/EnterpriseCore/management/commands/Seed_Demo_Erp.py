@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group as AuthGroup
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from django.utils import timezone
@@ -10,14 +11,14 @@ from Backend.Apps.AtgDocs.models import DriveFile, DriveFolder, DocumentVersion,
 from Backend.Apps.Banao.models import AuditArtifact, LeadAccount, LeadActivity, LeadContact, LeadNote, LeadTag, LeadTest, ProposalArtifact, WorkflowStatusHistory, WorkflowTransition
 from Backend.Apps.Git.models import GitActivitySnapshot, GitRepositorySnapshot, RepositoryUtilityRequest
 from Backend.Apps.GithubExtension.models import BranchReviewerAssignment, BranchTestingAssignment, GitHubRepository, RepositoryBranchStatus
-from Backend.Apps.FinanceAndPayroll.models import ApprovalDecision, CompensationPlan, PayPeriod, PayrollLineItem, PayrollRun, PaymentOrder, PayoutExecution, PayslipDocument
+from Backend.Apps.FinanceAndPayroll.models import ApprovalDecision, BankAccount, CompensationPlan, PayPeriod, PayrollLineItem, PayrollRun, PaymentOrder, PayoutExecution, PayslipDocument, PaymentWebhookEvent
 from Backend.Apps.HtmlTemplate.models import ContentTemplate, GenericHtmlTemplate, OfferMacro, OfferTemplate, TemplateVariable
 from Backend.Apps.HtmlTemplate.services import TemplateRenderService
 from Backend.Apps.IntegrationHub.models import IntegrationAttempt, IntegrationConnection, IntegrationProvider, IntegrationSyncJob, WebhookInboxEvent
 from Backend.Apps.L3.models import CandidateProfile, CollegeAssignment, CollegeContact, CollegeEmailTemplate, CollegePipelineRecord, TalentAssignment, TalentEmail, TalentPerformanceSnapshot
 from Backend.Apps.LegacyBridge.models import LegacyApplicationMap, LegacyMigrationIssue, LegacyModelCrosswalk, MigrationRun
 from Backend.Apps.Lms.models import LeadQueueSnapshot, LearningAssignment, LearningModule, LearningPath, RevenuePerformanceSnapshot
-from Backend.Apps.MainApp.models import CredentialShareGrant, CredentialVaultItem, ExternalIssueReference, LeaveRequest, ManagerScope, NotificationItem, OnboardingOffer
+from Backend.Apps.MainApp.models import CredentialShareGrant, CredentialVaultItem, ExternalIssueReference, LeaveRequest, ManagerScope, NotificationItem, NotificationSnoozeRecord, OnboardingOffer
 from Backend.Apps.McpAccessLayer.models import AgentPrincipal, DraftAgentAction, McpAccessGrant, McpInvocationAudit, McpResourceDefinition, McpToolDefinition
 from Backend.Apps.Project.models import ComplianceAssignment, ComplianceCampaign, DefaultCheckpoint, DeliveryAlert, DeliveryDocument, DeliveryMilestone, MilestoneComponent, ProjectBudget, ProjectContact, ProjectDelay, ProjectWorkspace, RepositoryLink, TeamAssignment, TeamAssignmentHistory, UserRepositoryStatus
 from Backend.Apps.TasksDashboard.models import ClickUpProjectMapping, DailyStatusEntry, ExternalWorkMapping, ManagerAbbreviation, SlackDeliveryMessage, SlackDeliveryThread, TaskActivity, WorkEntry, WorkItem
@@ -130,10 +131,10 @@ class Command(BaseCommand):
     def make_user(self, username, first_name, last_name, email):
         user, _created = get_user_model().objects.update_or_create(
             username=username,
-            defaults={"first_name": first_name, "last_name": last_name, "email": email, "is_active": True},
+            defaults={"first_name": first_name, "last_name": last_name, "email": email, "is_active": True, "is_staff": True},
         )
         user.set_password(EMPLOYEE_DEMO_PASSWORD)
-        user.save(update_fields=["password", "first_name", "last_name", "email", "is_active"])
+        user.save(update_fields=["password", "first_name", "last_name", "email", "is_active", "is_staff"])
         return user
 
     def seed_people(self):
@@ -327,6 +328,11 @@ class Command(BaseCommand):
         self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP003"].user, "title": "Code Review Requested"}, {"message": "Your Review Is Requested On PR #345 - Authentication flow", "category": "github", "resource_type": "pull_request", "resource_id": "345", "is_read": False, "metadata": {"repo": "intranet-v2"}})
         self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP001"].user, "title": "Skill Updated: React"}, {"message": "Your Skill Level For React Has Been Updated To Advanced.", "category": "hrms", "resource_type": "skill", "resource_id": "1", "is_read": True, "metadata": {"proficiency": 3}})
         self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP002"].user, "title": "New Goal Assigned"}, {"message": "Complete Intranet Module Redesign - Due in 14 days", "category": "hrms", "resource_type": "goal", "resource_id": "1", "is_read": False})
+        self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP001"].user, "title": "Payroll Approved"}, {"message": "May Payroll Has Been Approved And Queued For Payout.", "category": "finance", "resource_type": "payroll", "resource_id": "1", "is_read": False, "delivered_at": self.now})
+        self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP003"].user, "title": "Lead Stage Updated"}, {"message": "Acme Services Lead Moved To Proposal Sent Stage.", "category": "lms", "resource_type": "lead", "resource_id": "1", "is_read": False, "delivered_at": self.now})
+        self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP006"].user, "title": "New Document Shared"}, {"message": "React ERP Old Page Map Has Been Shared With Your Department.", "category": "docs", "resource_type": "doc", "resource_id": "1", "is_read": False, "delivered_at": self.now})
+        notif_snooze = self.upsert(NotificationItem, {"tenant": self.tenant, "recipient": employees["EMP001"].user, "title": "Weekly Report Reminder"}, {"message": "Don't Forget To Submit Your Weekly Report.", "category": "general", "resource_type": "report", "resource_id": "", "is_read": False, "delivered_at": self.now})
+        self.upsert(NotificationSnoozeRecord, {"tenant": self.tenant, "notification": notif_snooze, "snoozed_by": employees["EMP001"].user}, {"snoozed_until": self.now + timezone.timedelta(days=1), "reason": "Busy With Project Delivery"})
         credential = self.upsert(CredentialVaultItem, {"tenant": self.tenant, "name": "Demo GitHub Token", "system_name": "GitHub"}, {"owner": self.admin_user, "secret_reference": "secret://demo/github", "status": "Active", "rotation_due_at": self.now + timezone.timedelta(days=30)})
         self.upsert(CredentialShareGrant, {"tenant": self.tenant, "credential": credential, "grantee": employees["EMP001"].user}, {"permission": "Read", "expires_at": self.now + timezone.timedelta(days=14), "reason": "Project access"})
         self.upsert(ExternalIssueReference, {"tenant": self.tenant, "provider": "Mantis", "title": "Demo blocker on old dashboard"}, {"issue_type": "Bug", "priority": "P2", "status": "Open", "assigned_to": employees["EMP007"].user})
@@ -336,8 +342,8 @@ class Command(BaseCommand):
         self.upsert(UserEffortReport, {"tenant": self.tenant, "employee": employees["EMP002"], "report_month": self.today.month, "report_year": self.today.year}, {"project_reference": "Intranet Rebuild", "effort_percent": Decimal("80")})
 
     def seed_projects(self, employees):
-        project_a = self.upsert(ProjectWorkspace, {"tenant": self.tenant, "code": "INTRA-REACT"}, {"name": "Intranet React Rebuild", "client_name": "Banao", "description": "React Rewrite Of Old Intranet Screens", "project_type": "Development", "priority": "P1", "status": "Active", "starts_on": self.today - timezone.timedelta(days=20), "ends_on": self.today + timezone.timedelta(days=45), "health": "Watch", "github_organization": "atg-world", "clickup_sync_enabled": True, "terms_required": True, "anti_phishing_enabled": True, "metadata": {"category": "Development", "tracks": ["Frontend", "API"], "company_name": "Banao Technologies", "address": "Block-1, Tech Park, Bengaluru", "gstin": "29AABCB1234C1Z5", "pan": "AABCB1234C", "proposal_url": "https://docs.example/proposals/intra-react", "tech_stack": ["Django", "React", "PostgreSQL", "Redis", "Docker"], "client_token": "demo-client-token-intra", "budget_breakdown": {"development": 350000, "design": 100000, "testing": 50000}}})
-        project_b = self.upsert(ProjectWorkspace, {"tenant": self.tenant, "code": "VIKAAS-CRM"}, {"name": "Vikaas Growth Campaign Engine", "client_name": "Internal Growth", "description": "Marketing Campaign Execution, Landing Pages, Lead Capture, And CRM Follow-Up Automation.", "project_type": "Marketing", "priority": "P2", "status": "Active", "starts_on": self.today - timezone.timedelta(days=5), "ends_on": self.today + timezone.timedelta(days=60), "health": "Good", "github_organization": "atg-world", "clickup_sync_enabled": True, "metadata": {"category": "Marketing", "channels": ["Email", "CRM", "Landing Pages"], "tags": ["growth", "campaign"], "company_name": "ATG Internal", "address": "Block-2, Tech Park, Bengaluru", "gstin": "29AADEF5678D1Z5", "pan": "AADEF5678D", "proposal_url": "https://docs.example/proposals/vikaas-crm", "tech_stack": ["React", "Node.js", "MongoDB", "AWS"], "budget_breakdown": {"development": 200000, "marketing": 150000, "operations": 50000}}})
+        project_a = self.upsert(ProjectWorkspace, {"tenant": self.tenant, "code": "INTRA-REACT"}, {"name": "Intranet React Rebuild", "client_name": "Banao", "description": "React Rewrite Of Old Intranet Screens", "project_type": "Development", "priority": "P1", "status": "Active", "starts_on": self.today - timezone.timedelta(days=20), "ends_on": self.today + timezone.timedelta(days=45), "health": "Watch", "github_organization": "atg-world", "clickup_sync_enabled": True, "terms_required": True, "anti_phishing_enabled": True, "associate_project_manager": employees["EMP002"], "project_manager": employees["EMP001"], "metadata": {"category": "Development", "tracks": ["Frontend", "API"], "company_name": "Banao Technologies", "address": "Block-1, Tech Park, Bengaluru", "gstin": "29AABCB1234C1Z5", "pan": "AABCB1234C", "proposal_url": "https://docs.example/proposals/intra-react", "tech_stack": ["Django", "React", "PostgreSQL", "Redis", "Docker"], "client_token": "demo-client-token-intra", "budget_breakdown": {"development": 350000, "design": 100000, "testing": 50000}}})
+        project_b = self.upsert(ProjectWorkspace, {"tenant": self.tenant, "code": "VIKAAS-CRM"}, {"name": "Vikaas Growth Campaign Engine", "client_name": "Internal Growth", "description": "Marketing Campaign Execution, Landing Pages, Lead Capture, And CRM Follow-Up Automation.", "project_type": "Marketing", "priority": "P2", "status": "Active", "starts_on": self.today - timezone.timedelta(days=5), "ends_on": self.today + timezone.timedelta(days=60), "health": "Good", "github_organization": "atg-world", "clickup_sync_enabled": True, "associate_project_manager": employees["EMP003"], "project_manager": employees["EMP001"], "metadata": {"category": "Marketing", "channels": ["Email", "CRM", "Landing Pages"], "tags": ["growth", "campaign"], "company_name": "ATG Internal", "address": "Block-2, Tech Park, Bengaluru", "gstin": "29AADEF5678D1Z5", "pan": "AADEF5678D", "proposal_url": "https://docs.example/proposals/vikaas-crm", "tech_stack": ["React", "Node.js", "MongoDB", "AWS"], "budget_breakdown": {"development": 200000, "marketing": 150000, "operations": 50000}}})
         for project in [project_a, project_b]:
             is_marketing = project.project_type == "Marketing"
             component_name = "Campaign Ops" if is_marketing else "Frontend Workbench"
@@ -531,30 +537,65 @@ class Command(BaseCommand):
         role_map = {}
         for role in Role.objects.filter(tenant=self.tenant):
             role_map[role.code] = role
-        dept_to_role_code = {
-            "Python Django": "SENIOR_PROJECT_MANAGER",
-            "MERN Stack": "MANAGER",
-            "Business Analysis": "BUSINESS_ANALYST",
-            "Human Resources": "HR",
-            "Finance": "FINANCE_MANAGER",
-            "Design": "DOCS_EDIT",
-            "Manual Testing": "BUSINESS_ANALYST",
-            "L3 Team": "L3_CALLER",
+        # 
+        emp_roles = {
+            "EMP001": ["SENIOR_PROJECT_MANAGER", "MANAGER", "FINANCE_MANAGER"],
+            "EMP002": ["BUSINESS_ANALYST", "DOCS_EDIT"],
+            "EMP003": ["BUSINESS_ANALYST", "LMS_MANAGER"],
+            "EMP004": ["HR", "DOCS_VIEW"],
+            "EMP005": ["FINANCE_MANAGER", "MANAGER"],
+            "EMP006": ["DOCS_EDIT", "DOCS_VIEW"],
+            "EMP007": ["BUSINESS_ANALYST"],
+            "EMP008": ["L3_CALLER", "L3_DATA_ENTRY"],
+            "EMP009": ["BUSINESS_ANALYST"],
+            "EMP010": ["DOCS_EDIT"],
+        }
+        # 
+        role_code_to_group = {
+            "ADMIN": "Admin",
+            "BUSINESS_ANALYST": "Business analyst",
+            "BUSINESS_ANALYST_DATA_ENTRY": "Business analyst - data entry",
+            "DOCS_VIEW": "Docs view",
+            "HR": "HR",
+            "JUNIOR_BUSINESS_ANALYST": "Junior Business analyst",
+            "DOCS_EDIT": "docs edit",
+            "FINANCE_MANAGER": "finance manager",
+            "L3_DATA_ENTRY": "l3 data entry",
+            "L3_CALLER": "l3_caller",
+            "LMS_MANAGER": "lms-manager",
+            "MANAGER": "manager",
+            "MARKETING_MANAGER": "marketing manager",
+            "SENIOR_PROJECT_MANAGER": "senior project manager",
+            "BANAO_ADMIN": "banao-admin",
+            "BANAO_MANAGER": "banao-manager",
         }
         assigned = 0
         for code, employee in employees.items():
-            if code == "ADMIN":
+            if not employee.user:
                 continue
-            dept_name = employee.department.name if employee.department else None
-            role_code = dept_to_role_code.get(dept_name, "MANAGER")
-            role = role_map.get(role_code)
-            if role and employee.user:
-                _, created = RoleAssignment.objects.get_or_create(
-                    tenant=self.tenant, workspace=self.workspace, user=employee.user, role=role,
-                    defaults={"is_active": True},
-                )
-                if created:
-                    assigned += 1
+            user = employee.user
+            if code == "ADMIN":
+                for r in role_map.values():
+                    _, c = RoleAssignment.objects.get_or_create(tenant=self.tenant, workspace=self.workspace, user=user, role=r, defaults={"is_active": True})
+                    if c: assigned += 1
+                # 
+                all_groups = AuthGroup.objects.filter(name__in=role_code_to_group.values())
+                user.groups.add(*all_groups)
+                continue
+            role_codes = emp_roles.get(code, ["MANAGER"])
+            for rc in role_codes:
+                role = role_map.get(rc)
+                if role:
+                    _, created = RoleAssignment.objects.get_or_create(tenant=self.tenant, workspace=self.workspace, user=user, role=role, defaults={"is_active": True})
+                    if created: assigned += 1
+                # 
+                group_name = role_code_to_group.get(rc)
+                if group_name:
+                    try:
+                        g = AuthGroup.objects.get(name=group_name)
+                        user.groups.add(g)
+                    except AuthGroup.DoesNotExist:
+                        pass
         self.stdout.write(f"Role Assignments: {assigned}")
 
     def seed_finance(self, employees):
@@ -568,9 +609,18 @@ class Command(BaseCommand):
             self.upsert(PaymentOrder, {"tenant": self.tenant, "employee": employee, "provider_order_id": f"order_demo_{emp_code}"}, {"amount": base_pay - Decimal("1000"), "status": "Paid", "provider": "Razorpay"})
         
         self.upsert(PayoutExecution, {"tenant": self.tenant, "payroll_run": run, "provider": "Razorpay"}, {"amount": run.net_amount, "status": "Processed"})
-        from Backend.Apps.Users.models import EmployeeProfile
-        admin_employee = EmployeeProfile.objects.filter(user=self.admin_user).first()
+        from Backend.Apps.Users.models import EmployeeProfile as EmpProfile
+        admin_employee = EmpProfile.objects.filter(user=self.admin_user).first()
         self.upsert(ApprovalDecision, {"tenant": self.tenant, "resource_type": "PayrollRun", "resource_id": str(run.id)}, {"decision": "Approved", "decided_by": admin_employee, "reason": "Monthly automated processing."})
+
+        # 
+        for emp_code, employee in employees.items():
+            existing = EmployeeBankAccount.objects.filter(tenant=self.tenant, employee=employee).first()
+            if existing:
+                self.upsert(BankAccount, {"tenant": self.tenant, "employee": employee}, {"account_holder_name": existing.account_holder_name, "masked_account_number": existing.masked_account_number, "ifsc_code": existing.ifsc_code, "verification_status": "Verified"})
+        
+        # 
+        self.upsert(PaymentWebhookEvent, {"tenant": self.tenant, "external_event_id": "wh-payroll-may"}, {"event_type": "payout.processed", "status": "Processed", "processed_at": self.now, "payload": {"payroll_run_id": run.id, "amount": str(run.net_amount), "status": "success"}, "processing_attempts": 1})
 
     def seed_templates(self):
         candidate = self.upsert(TemplateVariable, {"tenant": self.tenant, "key": "candidate_name"}, {"label": "Candidate Name", "default_value": "Demo Candidate"})

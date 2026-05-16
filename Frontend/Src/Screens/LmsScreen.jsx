@@ -179,6 +179,7 @@ export function LmsScreen({ data, reload, navigate, route }) {
   const [moreOpen, setMoreOpen] = useState(false);
   const [addLeadOpen, setAddLeadOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
   const [slideLeadId, setSlideLeadId] = useState(null);
   const [switchingBA, setSwitchingBA] = useState({});
   const activeLeadId = routeLeadId(route);
@@ -290,7 +291,7 @@ export function LmsScreen({ data, reload, navigate, route }) {
 
   const addLead = async (formData) => {
     if (!formData.company_name?.trim()) {
-      alert("Company Name Is Required");
+      setError("Company Name Is Required"); setTimeout(() => setError(""), 3000);
       return;
     }
     setBusy(true);
@@ -298,8 +299,8 @@ export function LmsScreen({ data, reload, navigate, route }) {
       await apiPost("/Banao/LeadAccounts/capture/", formData);
       refresh();
       setAddLeadOpen(false);
-    } catch (error) {
-      alert(error?.data?.detail || error?.message || "Unable To Create Lead.");
+    } catch (err) {
+      setError(err?.data?.detail || err?.message || "Unable To Create Lead."); setTimeout(() => setError(""), 3000);
     } finally {
       setBusy(false);
     }
@@ -396,6 +397,8 @@ export function LmsScreen({ data, reload, navigate, route }) {
         <span>/</span>
         <b>LMS</b>
       </div>
+
+      {error && <div style={{ fontSize: 13, padding: "8px 14px", marginBottom: 12, borderRadius: 6, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }}>{error}</div>}
 
       {(() => {
         const paths = data.learningPaths || [];
@@ -521,6 +524,7 @@ export function LmsScreen({ data, reload, navigate, route }) {
                 <th>
                   <button className="Lms-Sort-Head" onClick={() => toggleSort("createdAt")}>Created At {renderSortIcon("createdAt")}</button>
                 </th>
+                <th>Score</th>
                 <th>Last Update Note</th>
                 <th>
                   <button className="Lms-Sort-Head" onClick={() => toggleSort("updatedAt")}>Last Updated {renderSortIcon("updatedAt")}</button>
@@ -549,11 +553,12 @@ export function LmsScreen({ data, reload, navigate, route }) {
                   <td>{lead.phone || "-"}</td>
                   <td>{lead.ownerName || "-"}</td>
                   <td>
-                    <select value={switchingBA[lead.id] || ""} onChange={(e) => { const val = e.target.value; if (!val) return; setSwitchingBA({ ...switchingBA, [lead.id]: val }); apiPatch(`/Banao/LeadAccounts/${lead.id}/`, { owner: Number(val) }).then(() => { refresh(); setSwitchingBA({ ...switchingBA, [lead.id]: "" }); }).catch((err) => alert(err?.payload?.detail || "Switch BA Failed")); }} style={{ fontSize: 11, padding: "2px 4px", maxWidth: 100 }}>
+                    <select value={switchingBA[lead.id] || ""} onChange={(e) => { const val = e.target.value; if (!val) return; setSwitchingBA({ ...switchingBA, [lead.id]: val }); apiPatch(`/Banao/LeadAccounts/${lead.id}/`, { owner: Number(val) }).then(() => { refresh(); setSwitchingBA({ ...switchingBA, [lead.id]: "" }); }).catch((err) => { setError(err?.payload?.detail || "Switch BA Failed"); setTimeout(() => setError(""), 3000); }); }} style={{ fontSize: 11, padding: "2px 4px", maxWidth: 100 }}>
                       <option value="">—</option>
                       {(data.employees || []).map((emp) => <option key={emp.id} value={emp.id}>{emp.display_name}</option>)}
                     </select>
                   </td>
+                  <td>{(() => { const stageOrder = ["New Lead", "Contacted", "Discovery", "Demo", "Proposal", "Negotiation", "Closed Won", "Closed Lost"]; const idx = stageOrder.indexOf(lead.stageLabel); const pct = Math.min(100, Math.max(0, (idx + 1) * 12)); const val = Number(lead.estimatedValue || 0); return <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 80 }}><div style={{ height: 4, background: "#e2e8f0", borderRadius: 2, overflow: "hidden" }}><div style={{ width: `${pct}%`, height: "100%", background: pct >= 75 ? "#10b981" : pct >= 40 ? "#f59e0b" : "#ef4444", borderRadius: 2 }} /></div><span style={{ fontSize: 10, color: "#64748b" }}>{pct}% · ₹{val.toLocaleString()}</span></div>; })()}</td>
                   <td>{formatDate(lead.createdAt)}</td>
                   <td className="Lms-Last-Note">{lead.lastUpdateNote || "-"}</td>
                   <td>{formatDate(lead.updatedAt)}</td>
@@ -755,11 +760,11 @@ function LeadDetailWorkspace({ data, lead, navigate, refresh, stageOptions }) {
                 draft.important ? "Lead Unmarked As Important." : "Lead Marked As Important.")}>
               <Star size={17} /> <span>Mark As Important</span>
             </button>
-            <select className="Lms-Detail-Action" value="" onChange={(e) => { const val = e.target.value; if (!val) return; apiPatch(`/Banao/LeadAccounts/${activeLeadId}/`, { owner: Number(val) }).then(() => refresh()).catch((err) => console.error("Switch BA:", err)); }} style={{ fontSize: 12, padding: "4px 8px", border: "1px solid #e2e8f0", borderRadius: 6, cursor: "pointer" }}>
+            <select className="Lms-Detail-Action" value="" onChange={(e) => { const val = e.target.value; if (!val) return; apiPatch(`/Banao/LeadAccounts/${lead.id}/`, { owner: Number(val) }).then(() => refresh()).catch(() => { /* silent */ }); }} style={{ fontSize: 12, padding: "4px 8px", border: "1px solid #e2e8f0", borderRadius: 6, cursor: "pointer" }}>
               <option value="">Switch BA</option>
               {(data.employees || []).map((emp) => <option key={emp.id} value={emp.id}>{emp.display_name}</option>)}
             </select>
-            <button className="Lms-Detail-Action" style={{ color: "#ef4444" }} onClick={async () => { if (window.confirm("Delete this lead permanently?")) { await apiPost(`/Banao/LeadAccounts/${activeLeadId}/`, { is_active: false }); refresh(); navigate?.("/lms/"); } }}>
+            <button className="Lms-Detail-Action" style={{ color: "#ef4444" }} onClick={async () => { if (window.confirm("Delete this lead permanently?")) { await apiPost(`/Banao/LeadAccounts/${lead.id}/`, { is_active: false }); refresh(); navigate?.("/lms/"); } }}>
               <Trash2 size={17} /> <span>Delete</span>
             </button>
             <a className="Lms-Detail-Action"
@@ -929,7 +934,7 @@ function AddLeadModal({ data, sources, busy, onClose, onSubmit }) {
 
   const handleSubmit = () => {
     if (!formData.source.trim()) {
-      alert("Origin Is Required");
+      setError("Origin Is Required"); setTimeout(() => setError(""), 3000);
       return;
     }
     const payload = {

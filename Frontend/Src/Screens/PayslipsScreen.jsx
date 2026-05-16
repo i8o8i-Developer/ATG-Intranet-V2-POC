@@ -43,9 +43,16 @@ export function PayslipsScreen({ data }) {
 
   const totalNet = filtered.reduce((sum, row) => sum + Number(row.net || 0), 0);
 
-  const openPayslip = (row) => {
+  const openPayslip = async (row) => {
     if (row.storage && /^https?:\/\//.test(row.storage)) {
-      window.open(row.storage, "_blank", "noopener");
+      try {
+        const resp = await fetch(row.storage);
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = `payslip_${row.id}.pdf`; a.click();
+        URL.revokeObjectURL(url);
+      } catch { window.open(row.storage, "_blank", "noopener"); }
     } else {
       setSelected(row);
     }
