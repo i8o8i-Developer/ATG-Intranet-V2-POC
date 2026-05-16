@@ -17,7 +17,7 @@ class GithubExtensionTests(TestCase):
         self.workspace = Workspace.objects.create(tenant=self.tenant, business_unit=self.business_unit, name="Github", code="GH")
         self.user = get_user_model().objects.create_user(username="github-user", email="github@example.com", password="Password123!")
         self.position = Position.objects.create(tenant=self.tenant, workspace=self.workspace, title="QA Tester", code="QA")
-        self.employee = EmployeeProfile.objects.create(tenant=self.tenant, workspace=self.workspace, user=self.user, employee_code="GH-1", display_name="Github User", position=self.position)
+        self.employee = EmployeeProfile.objects.create(tenant=self.tenant, workspace=self.workspace, user=self.user, employee_code="GH-1", display_name="Github User", slack_username="github-user", position=self.position)
         self.repository = GitHubRepository.objects.create(tenant=self.tenant, workspace=self.workspace, owner="atgworld", name="intranet", default_branch="master")
         self.context = TenantContext(tenant=self.tenant, workspace=self.workspace, actor=self.user)
         self.client = APIClient()

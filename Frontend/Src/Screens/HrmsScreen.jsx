@@ -7,8 +7,6 @@ import {
 
 import { EmptyState, MilestoneRail, Modal, Panel, Progress, SimpleTable, Tabs } from "./Shared/ScreenComponents.jsx";
 import { apiPatch, apiPost } from "../Api/Client.js";
-import "../Styles/HrmsSanity.css";
-import "../Styles/HrmsFinance.css";
 import "../Styles/HrmsModal.css";
 import {
   calendarDays, employeeName, filterForEmployee, findDailyStatus, formatDate,

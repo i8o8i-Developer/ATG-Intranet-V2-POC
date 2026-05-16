@@ -120,7 +120,9 @@ class PaymentsLegacyAPIView(LegacyFinanceDashboardAPIView):
             years = {current_year, current_year - 1}
             from Backend.Apps.Users.models import EmployeePaymentSnapshot
 
-            years.update(EmployeePaymentSnapshot.objects.filter(tenant=self.get_context(request).data.tenant).values_list("year", flat=True))
+            ctx = self.get_context(request)
+            if ctx.data:
+                years.update(EmployeePaymentSnapshot.objects.filter(tenant=ctx.data.tenant).values_list("year", flat=True))
             response.data["years"] = sorted(years, reverse=True)
         return response
 

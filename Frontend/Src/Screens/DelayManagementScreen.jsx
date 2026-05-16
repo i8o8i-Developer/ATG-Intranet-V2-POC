@@ -22,9 +22,8 @@ export function DelayManagementScreen({ data, reload }) {
   const tasks = data.tasks || [];
   const delays = data.delays || [];
   
-  // Auto-Reload Delays When Modal Closes
   useEffect(() => {
-    if (!showAddModal && reload) {
+    if (!showAddModal && reload && showAddModal !== undefined) {
       reload(["delays"]);
     }
   }, [showAddModal]);

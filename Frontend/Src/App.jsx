@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { AlertTriangle, Bell, ChevronLeft, LogOut, Shield } from "lucide-react";
+import { AlertTriangle, Bell, ChevronLeft, LogOut } from "lucide-react";
 import { apiGet, apiPost, clearApiAuth, getApiSettings, unpackList } from "./Api/Client.js";
 import { LoginScreen, ProfileScreen } from "./Screens/AuthScreens.jsx";
 import { RouteRenderer } from "./Screens/AppScreens.jsx";
@@ -45,6 +45,12 @@ const navItems = [
   { label: "Bank Details",          path: "/Bankdetails/" },
   { label: "Payslips",              path: "/payslips/" },
   { label: "Employee Register",     path: "/employee-register/" },
+  { label: "Send Offer Letter",     path: "/Onboard/Send_Offer" },
+  { label: "Send Certificate",      path: "/send-certificate" },
+  { label: "Deactivate Employee",   path: "/deactivate-multiple-employee/" },
+  { label: "Documents",             path: "/docs/" },
+  { label: "Provide Feedbacks",     path: "/feedback/" },
+  { label: "Finance Department",    path: "/payments/" },
   { label: "Notifications",         path: "/notifications/" },
   { label: "Payroll Downloads",     path: "/payroll-downloads/" },
   { label: "Delay Management",      path: "/delays/" },
@@ -218,7 +224,6 @@ const NAV_CAP_MAP = {
 
 function userCanSee(label, capabilities, isSuperuser, isStaff) {
   if (isSuperuser) return true;
-  if (label === "Django Admin") return isStaff;
   if (!capabilities || !capabilities.length) return false;
   const required = NAV_CAP_MAP[label];
   if (!required) return true;
@@ -260,7 +265,6 @@ function buildNavItems(activePath, capabilities = [], isSuperuser = false, isSta
     { label: "Finance Department",   icon: <IconFinance />,          path: "/payments/?pay_month=current&month_name=May" },
     { label: "Delay Management",     icon: <IconDelayManagement />,  path: "/delays/" },
     { label: "Payroll Downloads",    icon: <IconPayrollDownload />,  path: "/payroll-downloads/" },
-    { label: "Django Admin",         icon: <Shield size={20} />,     path: "/admin/", newTab: true },
   ];
 
   return raw
@@ -468,7 +472,7 @@ function useIntranetData(reloadKey, enabled) {
     }
   };
 
-const REALTIME_KEYS = ["dailyStatus", "me", "notifications", "employees", "departments", "positions", "skills", "tasks", "projects", "leaveRequests", "leaveBalances", "teamAssignments", "milestones", "alerts", "userSkills", "goals", "goalFeedback", "workEntries", "bankAccounts", "assessmentTemplates", "assessmentAssignments", "payProfiles", "financeDashboard", "payrollRuns", "payrollLineItems", "payslipDocuments", "payPeriods", "paymentSnapshots", "delays", "projectBudgets", "teamAssignmentHistory", "userRepositoryStatus", "defaultCheckpoints", "docs", "lmsLeads", "leadAccounts", "leadTags", "leadContacts", "leadActivities", "leadNotes", "leadTests", "leadProposals", "leadAudits", "leadStatusHistory", "learningPaths", "learningModules", "learningAssignments", "leadQueueSnapshots", "revenueSnapshots", "knowledgeActivities", "driveFolders", "assessmentLegacy", "offers", "issues", "managerScopes", "projectContacts", "milestoneComponents", "complianceCampaigns", "complianceAssignments", "slackThreads", "slackMessages", "externalWorkMappings", "clickupMappings", "managerAbbreviations", "subDepartments", "userStatusSnapshots", "benchPeriods", "employeeCertificates", "leaveTransactions", "resignationRequests", "userEffortReports", "interviewProgress", "credentialVaultItems", "notificationSnoozeRecords", "docPermissions", "driveFiles", "docVersions", "paymentOrders", "compensationPlans", "approvalDecisions", "payoutExecutions", "gitRepoSnapshots", "gitActivitySnapshots", "repoUtilityRequests", "githubRepositories", "branchReviewers", "branchTesters", "repoBranchStatuses", "collegePipelines", "collegeContacts", "collegeAssignments", "candidateProfiles", "talentAssignments", "talentPerformanceSnapshots", "integrationProviders", "integrationConnections", "webhookInboxEvents", "agentPrincipals", "mcpToolDefinitions", "mcpResourceDefinitions", "mcpAccessGrants", "enterpriseRoles", "enterpriseRoleAssignments", "accessAuditLogs", "leadTransitions", "domains"];
+const REALTIME_KEYS = ["dailyStatus", "me", "notifications", "employees", "departments", "positions", "skills", "tasks", "projects", "leaveRequests", "leaveBalances", "leaveOverview", "teamAssignments", "milestones", "alerts", "userSkills", "goals", "goalFeedback", "workEntries", "bankAccounts", "assessmentTemplates", "assessmentAssignments", "payProfiles", "financeDashboard", "payrollRuns", "payrollLineItems", "payslipDocuments", "payPeriods", "paymentSnapshots", "delays", "projectBudgets", "teamAssignmentHistory", "userRepositoryStatus", "defaultCheckpoints", "docs", "lmsLeads", "leadAccounts", "leadTags", "leadContacts", "leadActivities", "leadNotes", "leadTests", "leadProposals", "leadAudits", "leadStatusHistory", "learningPaths", "learningModules", "learningAssignments", "leadQueueSnapshots", "revenueSnapshots", "knowledgeActivities", "driveFolders", "assessmentLegacy", "offers", "issues", "managerScopes", "projectContacts", "milestoneComponents", "complianceCampaigns", "complianceAssignments", "slackThreads", "slackMessages", "externalWorkMappings", "clickupMappings", "managerAbbreviations", "subDepartments", "userStatusSnapshots", "benchPeriods", "employeeCertificates", "leaveTransactions", "resignationRequests", "userEffortReports", "interviewProgress", "credentialVaultItems", "notificationSnoozeRecords", "docPermissions", "driveFiles", "docVersions", "paymentOrders", "compensationPlans", "approvalDecisions", "payoutExecutions", "gitRepoSnapshots", "gitActivitySnapshots", "repoUtilityRequests", "githubRepositories", "branchReviewers", "branchTesters", "repoBranchStatuses", "collegePipelines", "collegeContacts", "collegeAssignments", "candidateProfiles", "talentAssignments", "talentPerformanceSnapshots", "integrationProviders", "integrationConnections", "webhookInboxEvents", "agentPrincipals", "mcpToolDefinitions", "mcpResourceDefinitions", "mcpAccessGrants", "enterpriseRoles", "enterpriseRoleAssignments", "accessAuditLogs", "leadTransitions", "domains", "taskActivities", "employeeFeedback", "projectDocuments", "repositories", "mcpInvocationAudits", "draftAgentActions"];
 
 const POLL_KEYS = ["dailyStatus", "notifications", "alerts", "tasks"];
 
@@ -690,6 +694,12 @@ function AppShell({ children, route, navigate, data, apiOnline, loading, logout,
           font-family: inherit; transition: background 0.12s;
         }
         .Atg-Soft-Btn:hover { background: #f1f5f9; }
+
+        .Section-Kicker { font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+        .Mini-Inp { height: 38px; border: 1px solid #d1d5db; border-radius: 8px; padding: 8px 12px; font-size: 14px; background: #fff; color: #0f172a; width: 100%; font-family: inherit; }
+        .Mini-Inp:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
+        .Auth-Alert { padding: 10px 14px; border-radius: 8px; font-size: 13px; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+        .Auth-AlertOk { padding: 10px 14px; border-radius: 8px; font-size: 13px; background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
 
         /* Error Banner */
         .Atg-Error-Bar {

@@ -60,7 +60,7 @@ export function DeactivateEmployeeScreen({ data, reload }) {
           <option value="">All Departments</option>
           {(data.departments || []).map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}
         </select>
-        <button className="Primary-Button">Show Users</button>
+        <button className="Primary-Button" onClick={() => setDepartmentId(departmentId)}>Show Users</button>
       </div>
 
       {selected.size > 0 && (

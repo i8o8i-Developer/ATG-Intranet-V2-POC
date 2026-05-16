@@ -129,7 +129,7 @@ export function FinanceScreen({ data, reload }) {
                 const ids = Array.from(bulkSelected);
                 for (const id of ids) {
                   const row = filtered.find((r) => String(r.id) === String(id));
-                  if (row) try { await apiPost("/FinanceAndPayroll/payment-approval/", { employee: row.id, normalPay: row.base_pay || 0, bonus: Number(financeBonus[row.id] || 0), bounty: row.bounty || 0 }); } catch {}
+                  if (row) try { await apiPost("/FinanceAndPayroll/payment-approval/", { employee: row.id, normalPay: row.base_pay || 0, bonus: Number(row.bonus || 0), bounty: row.bounty || 0 }); } catch {}
                 }
                 setBulkSelected(new Set());
                 reload(["financeDashboard", "financeRows", "payrollRuns", "payrollLineItems"]);
