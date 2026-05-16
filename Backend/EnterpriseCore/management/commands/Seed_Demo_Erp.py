@@ -380,11 +380,15 @@ class Command(BaseCommand):
         return {"project_a": project_a, "project_b": project_b}
 
     def seed_delays(self, employees, projects):
+        admin_emp = EmployeeProfile.objects.filter(tenant=self.tenant, user=self.admin_user).order_by("id").first()
+
         # Project Delays
         self.upsert(
             ProjectDelay,
             {"tenant": self.tenant, "delay_type": "Project", "item_id": projects["project_a"].id},
             {
+                "project": projects["project_a"],
+                "reported_by": employees["EMP001"],
                 "days": 2,
                 "reason": "Client Feedback Is Pending - Waiting For SOW Approval",
                 "status": "Active",
@@ -394,6 +398,8 @@ class Command(BaseCommand):
             ProjectDelay,
             {"tenant": self.tenant, "delay_type": "Project", "item_id": projects["project_b"].id},
             {
+                "project": projects["project_b"],
+                "reported_by": employees["EMP003"],
                 "days": 1,
                 "reason": "Marketing Campaign Dependencies Are Not Ready",
                 "status": "Resolved",
@@ -402,11 +408,28 @@ class Command(BaseCommand):
             }
         )
         
+        # 
+        first_task = WorkItem.objects.filter(tenant=self.tenant, project=projects["project_a"]).order_by("id").first()
+        if first_task:
+            self.upsert(
+                ProjectDelay,
+                {"tenant": self.tenant, "delay_type": "Task", "item_id": first_task.id},
+                {
+                    "project": projects["project_a"],
+                    "task": first_task,
+                    "reported_by": employees["EMP002"],
+                    "days": 3,
+                    "reason": "Skill Matrix Data Import From Old System Is Delayed - API Changes",
+                    "status": "Active",
+                }
+            )
+
         # Employee Delays
         self.upsert(
             ProjectDelay,
             {"tenant": self.tenant, "delay_type": "Employee", "item_id": employees["EMP002"].id},
             {
+                "reported_by": admin_emp or employees["EMP001"],
                 "days": 1,
                 "reason": "On Medical Leave - Medical Emergency",
                 "status": "Active",
@@ -416,6 +439,7 @@ class Command(BaseCommand):
             ProjectDelay,
             {"tenant": self.tenant, "delay_type": "Employee", "item_id": employees["EMP005"].id},
             {
+                "reported_by": admin_emp or employees["EMP001"],
                 "days": 3,
                 "reason": "Training - Python Advanced - Python Advanced Course",
                 "status": "Resolved",
@@ -427,6 +451,7 @@ class Command(BaseCommand):
             ProjectDelay,
             {"tenant": self.tenant, "delay_type": "Employee", "item_id": employees["EMP007"].id},
             {
+                "reported_by": admin_emp or employees["EMP001"],
                 "days": 2,
                 "reason": "Hardware Issue - Laptop Repair - Laptop Repair In Progress",
                 "status": "Active",
