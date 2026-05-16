@@ -1,0 +1,47 @@
+meeting_id: meet-vendor-001
+project_id: INTERNAL-INFRA
+date: 2025-05-06
+meeting_type: vendor
+duration_minutes: 30
+security_level: INTERNAL
+
+organiser_id: p-arjun-001
+attendee_count_internal: 2
+attendee_count_external: 1
+
+extraction_confidence: 1.0
+extraction_review: false
+
+language_mix: hinglish
+
+follow_up_owner: p-rohan-pm
+follow_up_type: planned
+
+next_meeting_date: 2025-05-15
+previous_meeting_ref: null
+
+tags: []
+consumer_level: pm
+
+vendor:
+  vendor_name_hash: c9f2a7
+  vendor_type: services
+  meeting_subtype: evaluation
+  contract_discussed: true
+  contract_ref: null
+  commitments:
+    - id: V-001
+      text: We commit to completing migration within 2 weeks of contract signing.
+      owner: vendor-side
+      due: 2025-05-20
+      status: open
+  issues_raised:
+    - desc: Need to decide before the current contract with VPS provider expires on May 31st.
+      severity: high
+      owner: p-arjun-001
+      resolution: null
+  cost_implication: true
+  cost_note: Cost is around 15,000 rupees per month for the setup needed.
+  renewal_due: 2025-05-31
+  escalation_needed: false
+  relationship_health: good

@@ -1,0 +1,63 @@
+meeting_id: meet-sprint-001
+project_id: PROJ-CRM-0014
+date: 2025-05-05
+meeting_type: sprint-planning
+duration_minutes: 65
+security_level: INTERNAL
+
+organiser_id: p-rohan-pm
+attendee_count_internal: 5
+attendee_count_external: 0
+
+extraction_confidence: 1.0
+extraction_review: false
+
+language_mix: hinglish
+
+follow_up_owner: p-arjun-001
+follow_up_type: planned
+
+next_meeting_date: 2025-05-09
+previous_meeting_ref: null
+
+tags:
+  - decision
+  - risk
+  - scope-change
+
+consumer_level: pm
+
+internal:
+  sprint_ref: Sprint-06
+  decisions:
+    - id: D-001
+      text: Reporting dashboard will be out of scope for this sprint and will go to Phase 2.
+      owner: null
+      due: null
+      reverses_previous: false
+  technical_risks:
+    - desc: API gateway complexity is a medium risk with no formal mitigation plan yet.
+      severity: medium
+      owner: p-arjun-001
+      mitigation_agreed: false
+  scope_adjustments:
+    - item: Reporting dashboard
+      direction: out
+      agreed_by: null
+      sow_ref: null
+  velocity_concern: true
+  velocity_note: Last sprint only 60% was completed.
+  deferred_items:
+    - text: Database migration strategy
+      deferred_to: Next sync
+      deferred_count: 2
+      owner: p-arjun-001
+  resolved_from_last_sync:
+    - text: API versioning approach was resolved with v2 endpoint decision.
+      resolved: true
+  cross_dept_dependencies:
+    - blocking_dept: UIUX
+      blocked_dept: REACT
+      item: Final mockups for dashboard feed
+      due: 2025-05-08
+      status: open

@@ -1,0 +1,48 @@
+meeting_id: meet-standup-001
+project_id: PROJ-CRM-0014
+date: 2025-05-06
+meeting_type: standup
+duration_minutes: 18
+security_level: INTERNAL
+
+organiser_id: p-rohan-pm
+attendee_count_internal: 6
+attendee_count_external: 0
+
+extraction_confidence: 0.8
+extraction_review: false
+
+language_mix: hinglish
+
+follow_up_owner: p-ba-001
+follow_up_type: forced
+
+next_meeting_date: null
+previous_meeting_ref: null
+
+tags: [blocker, sentiment-negative, meeting health]
+
+consumer_level: pm
+
+standup:
+  all_green: false
+  submitted_count: 5
+  expected_count: 6
+  silent_members:
+    - person_id: p-dev-003
+      days_silent_in_row: 2
+  blocked_today:
+    - person_id: p-rohit-002
+      desc: Waiting for CRM credentials to set up staging environment
+      carried_from: 2025-05-03
+      days_carried: 3
+      cross_team: true
+      blocking_dept: BA
+  confidence_drops: 
+    - person_id: p-arjun-001
+      from: green
+      to: yellow
+      note: Gateway complexity is 40% more than estimated
+  unplanned_work_mentioned: []
+  pattern_flags:
+    - p-rohit-002 blocked 3 days on same item

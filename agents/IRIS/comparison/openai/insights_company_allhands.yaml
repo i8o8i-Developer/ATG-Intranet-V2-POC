@@ -1,0 +1,39 @@
+meeting_id: meet-allhands-001
+project_id: INTERNAL-COMPANY
+date: 2025-05-02
+meeting_type: company-allhands
+duration_minutes: 60
+security_level: INTERNAL
+
+organiser_id: ceo
+attendee_count_internal: 165
+attendee_count_external: 0
+
+extraction_confidence: 1.0
+extraction_review: false
+
+language_mix: hinglish
+
+follow_up_owner: null
+follow_up_type: planned
+
+next_meeting_date: 2025-06-02
+previous_meeting_ref: null
+
+tags: [sentiment-positive]
+
+consumer_level: director
+
+allhands:
+  attendance_pct: null
+  announcements:
+    - text: "We are launching a new L&D program next month. Every employee will get a learning budget of 5000 rupees per quarter for courses and certifications."
+      category: org
+  strategic_decisions:
+    - text: "We are evaluating the remote work policy and will announce a clear policy next quarter."
+      owner: ceo
+      due: 2025-06-30
+  sentiment_overall: positive
+  concerns_raised: true
+  concerns_note: "Employees raised questions regarding the remote work policy and office reopening."
+  followup_comms_needed: true

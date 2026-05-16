@@ -1,0 +1,67 @@
+meeting_id: meet-client-001
+project_id: PROJ-CRM-0014
+date: '2025-05-06'
+meeting_type: client-call
+duration_minutes: 47
+security_level: INTERNAL
+organiser_id: p-rohan-pm
+attendee_count_internal: 3
+attendee_count_external: 1
+extraction_confidence: 0.88
+extraction_review: false
+language_mix: hinglish
+follow_up_owner: p-rohan-pm
+follow_up_type: planned
+next_meeting_date: '2025-05-09'
+previous_meeting_ref: null
+tags:
+  - external-client
+  - deadline-pressure
+  - commitment-fulfilled
+  - scope-change
+consumer_level: pm
+client:
+  sentiment: mixed
+  sentiment_note: Client frustrated by credential delays but appreciative of staging access delivery and committed to resolving blockers by Thursday.
+  relationship_trajectory: stable
+  client_id: CLIENT-ACME-001
+  commitments:
+    - id: C-001
+      text: Share API credentials to enable staging setup
+      owner: a3f9c2
+      due: '2025-05-08'
+      made_by: client-side
+      status: open
+      critical_path: true
+    - id: C-002
+      text: Assess effort for reporting dashboard scope change and provide response
+      owner: p-rohan-pm
+      due: null
+      made_by: our-side
+      status: open
+      critical_path: false
+  open_commitments_from_last_call:
+    - id: C-prev-001
+      text: Share staging environment access
+      status: fulfilled
+  scope_requests:
+    - item: Reporting dashboard for operations team
+      in_sow: false
+      client_priority: high
+      our_response: deferred
+      revenue_implication: true
+  deadline_pressure: true
+  deadline_note: Client board has set May 30th as absolute go-live deadline with no flexibility. Credential delay puts Milestone 1 at risk.
+  budget_pressure: false
+  escalation_signal: false
+  satisfaction_signal: medium
+  risks:
+    - desc: API credentials not delivered by May 8th EOD will jeopardize May 30th go-live deadline
+      severity: critical
+      trigger: Client IT team fails to deliver credentials by Thursday end of day
+    - desc: Reporting dashboard scope addition may impact timeline if included in current phase
+      severity: high
+      trigger: Client insists on dashboard inclusion before go-live and effort assessment shows significant work required
+    - desc: Staging setup completion dependent on credential delivery
+      severity: high
+      trigger: Credentials not received on schedule will delay staging validation and testing activities

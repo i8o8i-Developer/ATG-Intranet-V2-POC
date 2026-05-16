@@ -1,0 +1,58 @@
+meeting_id: meet-client-001
+project_id: PROJ-CRM-0014
+date: 2025-05-06
+meeting_type: client-call
+duration_minutes: 47
+security_level: INTERNAL
+
+organiser_id: p-rohan-pm
+attendee_count_internal: 3
+attendee_count_external: 1
+
+extraction_confidence: 0.9
+extraction_review: false
+
+language_mix: hinglish
+
+follow_up_owner: p-rohan-pm
+follow_up_type: planned
+
+next_meeting_date: 2025-05-09
+previous_meeting_ref: null
+
+tags: [commitment, risk]
+
+consumer_level: pm
+
+client:
+  sentiment: sentiment-negative
+  sentiment_note: The client expressed frustration over delayed API credentials.
+  relationship_trajectory: stable
+  client_id: CLIENT-ACME-001
+  commitments:
+    - id: C-001
+      text: Client will share API credentials by end of day May 8th.
+      owner: a3f9c2
+      due: 2025-05-08
+      made_by: client-side
+      status: open
+      critical_path: true
+  open_commitments_from_last_call:
+    - id: C-prev-001
+      text: Staging access was shared on May 3rd.
+      status: fulfilled
+  scope_requests:
+    - item: Reporting dashboard
+      in_sow: false
+      client_priority: high
+      our_response: deferred
+      revenue_implication: true
+  deadline_pressure: true
+  deadline_note: The client has set May 30th as the absolute go-live deadline.
+  budget_pressure: false
+  escalation_signal: false
+  satisfaction_signal: medium
+  risks:
+    - desc: Delay in receiving API credentials could jeopardize the May 30th deadline.
+      severity: high
+      trigger: Failure to receive credentials by May 8th.

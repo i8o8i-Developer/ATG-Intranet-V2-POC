@@ -1,0 +1,38 @@
+meeting_id: meet-design-001
+project_id: PROJ-CRM-0014
+date: 2025-05-07
+meeting_type: design-review
+duration_minutes: 35
+security_level: INTERNAL
+
+organiser_id: p-uiux-001
+attendee_count_internal: 4
+attendee_count_external: 0
+
+extraction_confidence: 1.0
+extraction_review: false
+
+language_mix: hinglish
+
+follow_up_owner: p-uiux-001
+follow_up_type: planned
+
+next_meeting_date: null
+previous_meeting_ref: null
+
+tags: [decision, blocker]
+
+consumer_level: pm
+
+design_review:
+  deliverable: Dashboard UI mockups
+  review_round: 3
+  reviewer_type: internal
+  approval_status: conditional
+  feedback_items:
+    - item: Color contrast on data cards is low and does not meet accessibility standards.
+      severity: blocking
+      owner: p-uiux-001
+      due: 2025-05-08
+  blocking_development: true
+  sow_alignment: true

@@ -1,0 +1,42 @@
+meeting_id: meet-allhands-001
+project_id: INTERNAL-COMPANY
+date: '2025-05-02'
+meeting_type: company-allhands
+duration_minutes: 60
+security_level: INTERNAL
+organiser_id: ceo
+attendee_count_internal: 165
+attendee_count_external: 0
+extraction_confidence: 0.88
+extraction_review: false
+language_mix: hinglish
+follow_up_owner: ceo
+follow_up_type: planned
+next_meeting_date: '2025-06-02'
+previous_meeting_ref: null
+tags:
+  - sentiment-positive
+  - decision
+  - scope-change
+  - deferred-item
+consumer_level: director
+allhands:
+  attendance_pct: null
+  announcements:
+    - text: Q2 revenue target achieved at 19.2 crore against target of 18 crore
+      category: financial
+    - text: React Native department expansion planned with 4 additional hires in Q3
+      category: org
+    - text: New Learning and Development program launching next month with 5000 rupees quarterly learning budget per employee
+      category: culture
+  strategic_decisions:
+    - text: Remote work policy evaluation in progress; decision to be announced by end of Q3
+      owner: ceo
+      due: '2025-09-30'
+    - text: No forced office return planned for current year
+      owner: ceo
+      due: null
+  sentiment_overall: positive
+  concerns_raised: true
+  concerns_note: Employee raised question about office reopening and remote work policy permanence. CEO acknowledged uncertainty and committed to transparent communication with decision by next quarter.
+  followup_comms_needed: true

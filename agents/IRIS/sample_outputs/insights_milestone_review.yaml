@@ -1,0 +1,45 @@
+meeting_id: meet-milestone-001
+project_id: PROJ-CRM-0014
+date: '2025-05-07'
+meeting_type: milestone-review
+duration_minutes: 55
+security_level: INTERNAL
+organiser_id: p-rohan-pm
+attendee_count_internal: 3
+attendee_count_external: 1
+extraction_confidence: 0.92
+extraction_review: false
+language_mix: hinglish
+follow_up_owner: p-arjun-001
+follow_up_type: planned
+next_meeting_date: null
+previous_meeting_ref: null
+tags:
+  - decision
+  - rework-requested
+  - external-client
+  - deferred-item
+consumer_level: dept-head
+milestone_review:
+  milestone_id: M1
+  milestone_name: Milestone 1
+  acceptance_status: partial
+  sign_offs:
+    - deliverable: requirements document
+      status: accepted
+      reviewer: client-side
+      rework_requested: null
+      rework_owner: null
+      rework_due: null
+    - deliverable: architecture diagram
+      status: rejected
+      reviewer: client-side
+      rework_requested: data flow for reporting module not clearly shown, needs to be added
+      rework_owner: p-arjun-001
+      rework_due: '2025-05-12'
+  rework_count_this_milestone: 1
+  next_milestone_id: M2
+  next_milestone_at_risk: true
+  next_milestone_risk_note: M2 start is dependent on M1 completion. M2 is at risk until architecture rework is completed and signed off by client.
+  payment_trigger: false
+  client_satisfaction_signal: medium
