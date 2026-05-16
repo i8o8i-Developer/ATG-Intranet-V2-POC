@@ -11,6 +11,7 @@ import {
   IconHRMS,
   IconLMS,
   IconMCP,
+  IconProjects,
   IconDevProject,
   IconMarketing,
   IconCalendar,
@@ -239,7 +240,7 @@ function buildNavItems(activePath, capabilities = [], isSuperuser = false, isSta
     { label: "MCP",                  icon: <IconMCP />,              path: "/mcp/" },
     {
       label: "Projects",
-      icon: <IconDevProject />,
+      icon: <IconProjects />,
       children: [
         { label: "Development Project", icon: <IconDevProject />, path: "/project/dashboard/" },
         { label: "Marketing Project", icon: <IconMarketing />, path: "/marketing-project/" },

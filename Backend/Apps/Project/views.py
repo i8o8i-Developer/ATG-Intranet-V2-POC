@@ -206,15 +206,23 @@ class ComplianceAssignmentViewSet(TenantScopedModelViewSet):
 
 
 class ProjectDelayViewSet(TenantScopedModelViewSet):
-    queryset = ProjectDelay.objects.select_related("tenant", "workspace").all()
+    queryset = ProjectDelay.objects.select_related("tenant", "workspace", "project", "task", "reported_by").all()
     serializer_class = ProjectDelaySerializer
 
     @action(detail=True, methods=["post"], url_path="resolve")
     def resolve(self, request, pk=None):
         delay = self.get_object()
+        user = request.user
+        can_resolve = user.is_superuser or user.is_staff
+        if not can_resolve:
+            profile = EmployeeProfile.objects.filter(user=user).order_by("id").first()
+            if profile and delay.project:
+                can_resolve = profile.id in (delay.project.associate_project_manager_id, delay.project.project_manager_id)
+        if not can_resolve:
+            return Response({"detail": "Only Admin, Project APM, Or PM Can Resolve Delays."}, status=403)
         delay.status = "Resolved"
         delay.resolved_at = timezone.now()
-        delay.resolved_by = request.user
+        delay.resolved_by = user
         delay.save()
         return Response(ProjectDelaySerializer(delay).data)
 

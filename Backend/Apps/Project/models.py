@@ -168,6 +168,27 @@ class ProjectDelay(TenantScopedModel):
     """Track delays in projects, tasks, or employee work"""
     delay_type = models.CharField(max_length=40, db_index=True)  # Project, Task, Employee
     item_id = models.PositiveIntegerField()  # ID Of The Delayed Item
+    project = models.ForeignKey(
+        "Project.ProjectWorkspace",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="delays",
+    )
+    task = models.ForeignKey(
+        "TasksDashboard.WorkItem",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="delays",
+    )
+    reported_by = models.ForeignKey(
+        "Users.EmployeeProfile",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reported_delays",
+    )
     days = models.PositiveIntegerField(default=0)
     reason = models.TextField()
     status = models.CharField(max_length=40, default="Active", db_index=True)  # Active, Resolved

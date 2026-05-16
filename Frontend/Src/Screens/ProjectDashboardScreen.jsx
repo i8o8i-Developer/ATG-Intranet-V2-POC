@@ -4,6 +4,7 @@ import {
   CalendarDays,
   Check,
   ChevronRight,
+  Clock,
   ExternalLink,
   FileText,
   Flag,
@@ -60,6 +61,9 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [manageGroupsOpen, setManageGroupsOpen] = useState(false);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
+  const [delayTask, setDelayTask] = useState(null);
+  const [delayDays, setDelayDays] = useState("");
+  const [delayReason, setDelayReason] = useState("");
 
   useEffect(() => {
     if (!selectedProjectId && data.projects?.length) setSelectedProjectId(String(data.projects[0].id));
@@ -88,12 +92,6 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
     if (selectedProjectId) {
       apiGet(`/Project/dashboard/${selectedProjectId}/${encodeURIComponent(projectName(data, selectedProjectId) || "project")}/`).then(setDashboard).catch(() => {});
     }
-  };
-
-  const addDelay = async (milestoneId) => {
-    if (!milestoneId) return;
-    await apiPost("/Project/api/add-delay/", { milestone_id: milestoneId, delayed_days: 1 });
-    refresh();
   };
 
   const completeMilestone = async (milestoneId) => {
@@ -177,6 +175,7 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
               <span className="Table-Actions">
                 <button className="Soft-Button Small" onClick={() => setAddTaskFor({ parentTaskId: task.id, milestoneId: task.metadata?.milestone_id || null })} title="Add Sub Task"><Plus size={12} /></button>
                 {!isCompleted(task.status) && <button className="Soft-Button Small" onClick={async () => { await apiPost("/Project/update-task/", { task_id: task.id, status: "Completed" }); refresh(); }} title="Mark Complete"><Check size={12} /></button>}
+                <button className="Soft-Button Small" onClick={() => { setDelayTask(task); setDelayDays(""); setDelayReason(""); }} title="Report Delay"><Clock size={12} style={{ color: "#d97706" }} /></button>
                 <button className="Soft-Button Small Danger" onClick={() => deleteTask(task.id)} title="Delete"><Trash2 size={12} /></button>
               </span>
             </td>
@@ -304,7 +303,6 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
                     <button className="Soft-Button Small" onClick={() => setAddTaskFor({ milestoneId: milestone.id })}><Plus size={13} /> Add Task</button>
                     <button className="Soft-Button Small" onClick={() => setMilestoneToEdit(milestone)}>Edit</button>
                     <button className="Soft-Button Small" onClick={() => completeMilestone(milestone.id)}>Complete</button>
-                    <button className="Soft-Button Small Danger" onClick={() => addDelay(milestone.id)}>+1 Delay</button>
                   </span>
                 )}
               </div>
@@ -413,6 +411,37 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
       {eodEmployee && <TeamEodModal assignment={eodEmployee} data={data} onClose={() => setEodEmployee(null)} />}
       {manageGroupsOpen && <MilestoneGroupPicker project={project} data={data} onClose={() => setManageGroupsOpen(false)} onSelect={createDefaultMilestones} onCreateGroup={() => { setManageGroupsOpen(false); setCreateGroupOpen(true); }} />}
       {createGroupOpen && <CreateCheckpointGroupModal project={project} data={data} onClose={() => setCreateGroupOpen(false)} reload={refresh} />}
+      {delayTask && (
+        <Modal title="Report Delay" onClose={() => setDelayTask(null)}>
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            const me = data.me?.user || data.me?.account || data.me || {};
+            const myProfile = (data.employees || []).find((emp) => String(emp.user) === String(me.id));
+            await apiPost("/Project/ProjectDelays/", {
+              delay_type: "Task",
+              item_id: delayTask.id,
+              project: selectedProjectId || delayTask.project,
+              task: delayTask.id,
+              reported_by: myProfile?.id || null,
+              days: Number(delayDays) || 1,
+              reason: delayReason,
+              status: "Active",
+            });
+            refresh();
+            setDelayTask(null);
+          }}>
+            <div className="Form-Grid Two">
+              <label>Task<strong style={{ fontSize: 13 }}>{delayTask.title}</strong></label>
+              <label>Delay Days<input type="number" min="1" className="Mini-Inp" value={delayDays} onChange={(e) => setDelayDays(e.target.value)} required placeholder="1" /></label>
+            </div>
+            <label>Reason<textarea className="Mini-Inp" value={delayReason} onChange={(e) => setDelayReason(e.target.value)} required placeholder="Why Is This Task Delayed?" rows={3} /></label>
+            <div className="Modal-Actions">
+              <button className="Primary-Button" type="submit">Submit Delay</button>
+              <button className="Soft-Button" type="button" onClick={() => setDelayTask(null)}>Cancel</button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </section>
   );
 }

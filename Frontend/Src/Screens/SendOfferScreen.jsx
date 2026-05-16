@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Mail, Eye, Send, FileText } from "lucide-react";
-import { apiPost, PUBLIC_BASE_URL } from "../Api/Client.js";
+import { Mail, Send, FileText } from "lucide-react";
+import { apiPost } from "../Api/Client.js";
 import { Modal } from "./Shared/ScreenComponents.jsx";
 import { formatDate } from "./Shared/ScreenUtils.jsx";
 
@@ -87,8 +87,6 @@ export function SendOfferScreen({ data, reload }) {
 
   const handleChange = (field, value) => setForm({ ...form, [field]: value });
 
-  const generateOfferUrl = (token) => `${PUBLIC_BASE_URL || window.location.origin}/offer/accept/${token}/`;
-
   const sendOffer = async () => {
     setBusy(true);
     setResult(null);
@@ -103,16 +101,14 @@ export function SendOfferScreen({ data, reload }) {
         offer_type: form.empType,
         offer_payload: { ...form, offerHtml, ndaHtml },
       };
-      const resp = await apiPost("/MainApp/OnboardingOffers/", payload);
-      const token = resp?.token;
-      if (token) {
-        await apiPost("/MainApp/Onboard/send-actual-offer/", { token, email: form.candidateEmail, name: form.candidateName, offer_url: generateOfferUrl(token) });
+      const resp = await apiPost("/MainApp/Onboard/send-actual-offer/", payload);
+      if (resp?.token) {
         setResult({ ok: true, message: `Offer sent to ${form.candidateEmail} successfully.` });
       } else {
-        setResult({ ok: true, message: "Offer created but send endpoint unavailable. Token: " + token });
+        setResult({ ok: false, message: "Failed To Generate Offer Token." });
       }
     } catch (err) {
-      setResult({ ok: false, message: err?.payload?.detail || err?.message || "Failed to send offer." });
+      setResult({ ok: false, message: err?.payload?.detail || err?.message || "Failed To Send Offer." });
     } finally {
       setBusy(false);
     }
@@ -153,7 +149,7 @@ export function SendOfferScreen({ data, reload }) {
             <label>Pay Per Task (₹)<input type="number" min="0" className="Mini-Inp" value={form.payPerTask} onChange={(e) => handleChange("payPerTask", e.target.value)} /></label>
             <label>Offer Date<input type="date" className="Mini-Inp" value={form.offerDate} onChange={(e) => handleChange("offerDate", e.target.value)} /></label>
             <label>Intern Duration (Months)<input type="number" min="1" className="Mini-Inp" value={form.internDuration} onChange={(e) => handleChange("internDuration", e.target.value)} /></label>
-            <label>Reporting To<input className="Mini-Inp" value={form.reportingTo} onChange={(e) => handleChange("reportingTo", e.target.value)} placeholder="Manager Name" /></label>
+            <label>Reporting To<select className="Mini-Inp" value={form.reportingTo} onChange={(e) => handleChange("reportingTo", e.target.value)}><option value="">Select Manager</option>{(data.employees || []).filter((e) => e.status === "Active").map((e) => <option key={e.id} value={e.display_name}>{e.display_name}</option>)}</select></label>
             <label>Location<input className="Mini-Inp" value={form.location} onChange={(e) => handleChange("location", e.target.value)} /></label>
             <label>Joining Date<input type="date" className="Mini-Inp" value={form.joiningDate} onChange={(e) => handleChange("joiningDate", e.target.value)} /></label>
             <label>Company Name<input className="Mini-Inp" value={form.companyName} onChange={(e) => handleChange("companyName", e.target.value)} /></label>

@@ -5,6 +5,7 @@ import {
   BookOpen,
   Bot,
   Code2,
+  FolderKanban,
   Megaphone,
   Calendar,
   KeyRound,
@@ -43,6 +44,10 @@ export const IconLMS = () => (
 
 export const IconMCP = () => (
   <Bot size={20} color="#60676D" absoluteStrokeWidth />
+);
+
+export const IconProjects = () => (
+  <FolderKanban size={20} color="#60676D" absoluteStrokeWidth />
 );
 
 export const IconDevProject = () => (

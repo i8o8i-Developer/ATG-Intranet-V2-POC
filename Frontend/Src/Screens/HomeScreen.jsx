@@ -214,50 +214,7 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
             </div>
           );
         })()}
-
-
-
-        {/* Recent Activity */}
-        {(() => {
-          const activities = [...(data.taskActivities || []).slice(0, 5)];
-          if (!activities.length) return null;
-          return (
-            <div className="HomeR-Card">
-              <div className="HomeR-Card-header"><span className="HomeR-Card-title">Recent Activity</span></div>
-              <div style={{ padding: "8px 14px 14px" }}>
-                {activities.map((act) => (
-                  <div key={act.id} style={{ fontSize: 12, padding: "4px 0", color: "#475569", borderBottom: "1px solid #f1f5f9" }}>
-                    <span>{act.message || act.activity_type || "Activity"}</span>
-                    <span style={{ float: "right", color: "#94a3b8", fontSize: 11 }}>{formatDate(act.created_at)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })()}
       </div>
-
-      {/* My Tasks / Todo */}
-      {(() => {
-        const empId = linkedEmployee?.id || selectedEmployeeId;
-        const myTasks = (data.tasks || []).filter((t) => String(t.owner) === String(empId) && !isCompleted(t.status)).slice(0, 8);
-        if (!myTasks.length) return null;
-        return (
-          <div className="HomeR-Card" style={{ marginBottom: 16 }}>
-            <div className="HomeR-Card-header"><span className="HomeR-Card-title">My Tasks</span></div>
-            <div style={{ display: "grid", gap: 4, padding: "8px 14px 14px" }}>
-              {myTasks.map((task) => (
-                <div key={task.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 6, background: "#fff", border: "1px solid #e2e8f0" }}>
-                  <input type="checkbox" onChange={async () => { try { await apiPost("/Project/update-task/", { task_id: task.id, status: "Completed" }); reload(["tasks"]); } catch {} }} style={{ accentColor: "#3b82f6" }} />
-                  <span style={{ flex: 1, fontSize: 13 }}>{task.title}</span>
-                  <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 4, background: task.priority === "High" ? "#fef2f2" : "#f8fafc", color: task.priority === "High" ? "#dc2626" : "#64748b" }}>{task.priority || "Normal"}</span>
-                  {task.due_at && <span style={{ fontSize: 11, color: new Date(task.due_at) < new Date() ? "#dc2626" : "#64748b" }}>{formatDate(task.due_at)}</span>}
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })()}
 
       {/* My Goals */}
       {(() => {
@@ -269,23 +226,18 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
             <div className="HomeR-Card-header"><span className="HomeR-Card-title">My Goals</span></div>
             <div style={{ display: "grid", gap: 6, padding: "8px 14px 14px" }}>
               {myGoals.map((goal) => {
-                const goalProgress = goal.metadata?.progress || 0;
                 const noteOpen = goalNotesOpen[goal.id];
                 return (
                   <div key={goal.id} style={{ display: "flex", flexDirection: "column", padding: "10px 12px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                       <div style={{ flex: 1 }}>
                         <strong style={{ fontSize: 13 }}>{goal.title}</strong>
                         <span style={{ fontSize: 11, color: "#64748b", marginLeft: 8 }}>{goal.status} · Due {formatDate(goal.due_on)}</span>
                       </div>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <input type="range" min="0" max="100" value={goalProgress} onChange={async (e) => { const v = Number(e.target.value); await apiPatch(`/Users/Goals/${goal.id}/`, { metadata: { ...(goal.metadata || {}), progress: v } }); reload(["goals"]); }} className="HomeR-GoalSlider" />
-                      <span style={{ fontSize: 11, fontWeight: 600, minWidth: 30, textAlign: "right" }}>{goalProgress}%</span>
                       <button className="Soft-Button Small" onClick={() => setGoalNotesOpen((prev) => ({ ...prev, [goal.id]: !prev[goal.id] }))} style={{ fontSize: 10, padding: "2px 6px" }} title="Add Progress Note">{noteOpen ? "✕" : "📝"}</button>
                     </div>
                     {noteOpen && (
-                      <div style={{ marginTop: 6, display: "flex", gap: 6, alignItems: "flex-start" }}>
+                      <div style={{ marginTop: 8, display: "flex", gap: 6, alignItems: "flex-start" }}>
                         <textarea value={goalNotes[goal.id] || ""} onChange={(e) => setGoalNotes((prev) => ({ ...prev, [goal.id]: e.target.value }))} placeholder="Describe This Progress Update..." rows={2} style={{ flex: 1, fontSize: 12, padding: "6px 8px", borderRadius: 6, border: "1px solid #e2e8f0", resize: "vertical", minHeight: 40 }} />
                         <button className="Primary-Button Small" onClick={async () => { const txt = (goalNotes[goal.id] || "").trim(); if (!txt) return; await apiPost("/Users/GoalFeedback/", { goal: goal.id, feedback_type: "ProgressUpdate", note: txt }); setGoalNotes((prev) => ({ ...prev, [goal.id]: "" })); setGoalNotesOpen((prev) => ({ ...prev, [goal.id]: false })); reload(["goalFeedback"]); }} style={{ whiteSpace: "nowrap" }}>Save</button>
                       </div>

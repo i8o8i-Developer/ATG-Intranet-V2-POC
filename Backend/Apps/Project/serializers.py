@@ -86,9 +86,22 @@ class ComplianceAssignmentSerializer(serializers.ModelSerializer):
 
 
 class ProjectDelaySerializer(serializers.ModelSerializer):
+    project_name = serializers.SerializerMethodField()
+    task_title = serializers.SerializerMethodField()
+    reporter_name = serializers.SerializerMethodField()
+
     class Meta:
         model = ProjectDelay
         fields = "__all__"
+
+    def get_project_name(self, obj):
+        return obj.project.name if obj.project else None
+
+    def get_task_title(self, obj):
+        return obj.task.title if obj.task else None
+
+    def get_reporter_name(self, obj):
+        return obj.reported_by.display_name if obj.reported_by else None
 
 
 class ProjectBudgetSerializer(serializers.ModelSerializer):

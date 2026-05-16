@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { AlertTriangle, Clock, Users } from "lucide-react";
 import "../Styles/DelayScreen.css";
 
 import { EmptyState, Modal, Panel, StatCard, StatusPill, Tabs } from "./Shared/ScreenComponents.jsx";
-import { apiGet, apiPost } from "../Api/Client.js";
+import { apiPost } from "../Api/Client.js";
 import { formatDate } from "./Shared/ScreenUtils.jsx";
 
 /* ─── DelayManagementScreen ─────────────────────────────────────── */
 export function DelayManagementScreen({ data, reload }) {
+  const me = data.me?.user || data.me?.account || data.me || {};
   const [tab, setTab] = useState("all");
   const [showAddModal, setShowAddModal] = useState(false);
   const [delayType, setDelayType] = useState("Project");
@@ -21,6 +22,17 @@ export function DelayManagementScreen({ data, reload }) {
   const projects = data.projects || [];
   const tasks = data.tasks || [];
   const delays = data.delays || [];
+
+  //
+  const canResolve = useMemo(() => {
+    if (me.is_superuser || me.is_staff) return true;
+    const myProfile = employees.find((e) => String(e.user) === String(me.id));
+    if (!myProfile) return false;
+    return projects.some((p) =>
+      String(p.associate_project_manager) === String(myProfile.id) ||
+      String(p.project_manager) === String(myProfile.id)
+    );
+  }, [me, employees, projects]);
   
   useEffect(() => {
     if (!showAddModal && reload && showAddModal !== undefined) {
@@ -62,7 +74,6 @@ export function DelayManagementScreen({ data, reload }) {
       setDays("");
       setReason("");
       
-      // Reload Delays Data
       if (reload) {
         await reload(["delays", "employees", "projects", "tasks"]);
       }
@@ -98,9 +109,23 @@ export function DelayManagementScreen({ data, reload }) {
     return "Unknown";
   };
 
+  const getProjectName = (delay) => {
+    const p = projects.find((pr) => String(pr.id) === String(delay.project));
+    return p?.name || "—";
+  };
+
+  const getTaskTitle = (delay) => {
+    const t = tasks.find((tk) => String(tk.id) === String(delay.task));
+    return t?.title || "—";
+  };
+
+  const getReporterName = (delay) => {
+    const e = employees.find((emp) => String(emp.id) === String(delay.reported_by));
+    return e?.display_name || "—";
+  };
+
   return (
     <div className="DelayPage">
-      {/* Header */}
       <Panel
         title="Delay Management System"
         subtitle="Track And Manage Delays Across Projects, Tasks, And Team Members"
@@ -110,7 +135,6 @@ export function DelayManagementScreen({ data, reload }) {
           </button>
         }
       >
-        {/* Stats */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
           <StatCard label="Total Delays" value={totalDelays} />
           <StatCard label="Active Delays" value={activeDelays} />
@@ -118,7 +142,6 @@ export function DelayManagementScreen({ data, reload }) {
           <StatCard label="Avg. Delay Days" value={avgDelayDays} />
         </div>
 
-        {/* Tabs */}
         <Tabs
           value={tab}
           onChange={setTab}
@@ -129,7 +152,6 @@ export function DelayManagementScreen({ data, reload }) {
           ]}
         />
 
-        {/* Delays Table */}
         <div style={{ marginTop: "1.5rem" }}>
           {filteredDelays.length === 0 ? (
             <EmptyState label={`No ${tab} Delays Found`} />
@@ -137,10 +159,12 @@ export function DelayManagementScreen({ data, reload }) {
             <table className="Erp-Table">
               <thead>
                 <tr>
+                  <th>Project</th>
+                  <th>Task</th>
                   <th>Type</th>
-                  <th>Item</th>
                   <th>Days</th>
                   <th>Reason</th>
+                  <th>Reported By</th>
                   <th>Status</th>
                   <th>Created</th>
                   <th>Actions</th>
@@ -149,6 +173,8 @@ export function DelayManagementScreen({ data, reload }) {
               <tbody>
                 {filteredDelays.map((delay) => (
                   <tr key={delay.id}>
+                    <td style={{ fontWeight: 500 }}>{getProjectName(delay)}</td>
+                    <td>{getTaskTitle(delay)}</td>
                     <td>
                       <StatusPill tone={
                         delay.delay_type === "Project" ? "info" :
@@ -158,16 +184,16 @@ export function DelayManagementScreen({ data, reload }) {
                         {delay.delay_type}
                       </StatusPill>
                     </td>
-                    <td>{getItemName(delay)}</td>
                     <td>
                       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                         <Clock size={16} />
                         {delay.days} {delay.days === 1 ? "day" : "days"}
                       </div>
                     </td>
-                    <td style={{ maxWidth: "300px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <td style={{ maxWidth: "250px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {delay.reason || "N/A"}
                     </td>
+                    <td>{getReporterName(delay)}</td>
                     <td>
                       <StatusPill tone={delay.status === "Active" ? "error" : "success"}>
                         {delay.status}
@@ -175,7 +201,7 @@ export function DelayManagementScreen({ data, reload }) {
                     </td>
                     <td>{formatDate(delay.created_at)}</td>
                     <td>
-                      {delay.status === "Active" && (
+                      {delay.status === "Active" && canResolve && (
                         <button
                           className="ButtonSmall"
                           onClick={async () => {
@@ -186,7 +212,7 @@ export function DelayManagementScreen({ data, reload }) {
                               }
                               setFeedback({ ok: true, message: "Delay Resolved." });
                             } catch (error) {
-                              setFeedback({ ok: false, message: error?.message || "Failed To Resolve Delay." });
+                              setFeedback({ ok: false, message: error?.payload?.detail || error?.message || "Failed To Resolve Delay." });
                             }
                           }}
                         >
@@ -202,7 +228,6 @@ export function DelayManagementScreen({ data, reload }) {
         </div>
       </Panel>
 
-      {/* Team Members Section */}
       <Panel title="Team Members" subtitle="View Team Member Status And Delays">
         {employees.length === 0 ? (
           <EmptyState label="No Team Members Found" />
@@ -261,7 +286,6 @@ export function DelayManagementScreen({ data, reload }) {
         )}
       </Panel>
 
-      {/* Add Delay Modal */}
       {showAddModal && (
         <Modal title="Add Delay" onClose={() => setShowAddModal(false)}>
           <form onSubmit={handleSubmitDelay}>

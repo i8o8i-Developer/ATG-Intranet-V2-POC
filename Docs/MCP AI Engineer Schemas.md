@@ -153,7 +153,53 @@ DirectReports      <- EmployeeProfile.Manager (Team Members Reporting To Them)
 
 ---
 
-## 2. PM Per Project Schema
+## 1A. Slack Identity Mapping (For AI Engineer Context)
+
+**Purpose:** AI Agents Need To Resolve Slack Identities To Send Notifications, EOD Reminders, And Alerts. The Mapping Between Employee And Slack Identity Is Stored In `EmployeeProfile.SlackUsername`, But A Dedicated Slack User ID Mapping Is Recommended For AI Operations.
+
+### Current Field
+
+| Field | Model | Type | Notes |
+|-------|-------|------|-------|
+| `SlackUsername` | `EmployeeProfile` | `CharField(120)` | **Required** — Slack Display Handle (e.g., `john.doe`). Used For EOD Notifications, Slack Delivery Messages, Manager Abbreviations |
+
+### Recommended Slack User ID Table (For AI Operations)
+
+| Field | Type | Purpose | AI Usage |
+|-------|------|---------|----------|
+| `SlackUserId` | `CharField(40)` | Slack Unique Member ID (e.g., `U07ABC1234`) | **Primary Lookup Key** — Never Changes |
+| `SlackTeamId` | `CharField(40)` | Slack Workspace ID (e.g., `T02XYZ5678`) | Multi-Workspace Isolation |
+| `SlackUsername` | `CharField(120)` | Slack @ Handle (e.g., `john.doe`) | Secondary Lookup — May Change Over Time |
+
+### AI Engineer Resolution Strategy
+
+```
+User Input ("Send Notification To John")
+  → Resolve EmployeeProfile Via DisplayName / EmployeeCode
+  → Read EmployeeProfile.SlackUsername
+  → Resolve SlackUserId Via Slack API users.lookupByEmail(email) OR users.list
+  → Cache Mapping For Next Use
+```
+
+### Current Slack-Related Tables (Already In System)
+
+| Table | Route | Fields | AI Context |
+|-------|-------|--------|------------|
+| `SlackDeliveryMessage` | `GET /TasksDashboard/SlackDeliveryMessages/` | `Employee` FK, `MessageTs`, `ChannelId`, `ThreadTs`, `Status` | EOD Reports, Task Delivery Notifications |
+| `ManagerAbbreviation` | `GET /TasksDashboard/ManagerAbbreviations/` | `Employee` FK, `Abbreviation` | Manager Abbreviations |
+| `EmployeeProfile.SlackUsername` | `GET /Users/EmployeeProfiles/` | `SlackUsername` | Primary Identity Field — must NOT Be Null |
+
+### Migration Path (If SlackUserId Not Yet Stored)
+
+```
+1. Ensure EmployeeProfile.SlackUsername Is Populated (NOT NULL Enforced)
+2. Run Batch Job: For Each EmployeeProfile, Call Slack API users.lookupByEmail(email)
+   To Fetch And Store SlackUserId
+3. Store SlackUserId in EmployeeProfile.ProfilePayload["slack_user_id"] (JSON field)
+4. Future: Add Dedicated Column For SlackUserId To EmployeeProfile
+```
+
+---
 
 **Model:** `Backend.Apps.Project.Models.ProjectWorkspace`
 **Table:** `Project_ProjectWorkspace`
