@@ -37,7 +37,7 @@ urlpatterns = [
 	path("Onboard/Delete", views.MainAppLegacyActionAPIView.as_view(action_name="delete_onboard"), name="Delete"),
 	path("Onboard/Bug_Issue", views.MainAppLegacyActionAPIView.as_view(action_name="bug_issue", response_serializer=ExternalIssueReferenceSerializer), name="Bug_Issue"),
 	path("Onboard/Send_Offer", views.MainAppLegacyActionAPIView.as_view(action_name="send_offer", response_serializer=OnboardingOfferSerializer), name="Send_Offer"),
-	path("Onboard/send-actual-offer", views.MainAppLegacyActionAPIView.as_view(action_name="send_actual_offer", response_serializer=OnboardingOfferSerializer), name="send_actual_offer"),
+	path("Onboard/send-actual-offer/", views.MainAppLegacyActionAPIView.as_view(action_name="send_actual_offer", response_serializer=OnboardingOfferSerializer), name="send_actual_offer"),
 	path("checkname/", views.MainAppLegacyActionAPIView.as_view(action_name="checkname"), name="checkmail"),
 	path("dep_valid/", views.MainAppLegacyActionAPIView.as_view(action_name="dep_valid"), name="dep_valid"),
 	path("remind_work/", views.MainAppLegacyActionAPIView.as_view(action_name="remind_work"), name="remind_work"),
