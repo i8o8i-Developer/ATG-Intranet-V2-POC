@@ -280,7 +280,7 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
                       </div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <input type="range" min="0" max="100" value={goalProgress} onChange={async (e) => { const v = Number(e.target.value); await apiPatch(`/Users/Goals/${goal.id}/`, { metadata: { ...(goal.metadata || {}), progress: v } }); reload(["goals"]); }} style={{ flex: 1, height: 4 }} />
+                      <input type="range" min="0" max="100" value={goalProgress} onChange={async (e) => { const v = Number(e.target.value); await apiPatch(`/Users/Goals/${goal.id}/`, { metadata: { ...(goal.metadata || {}), progress: v } }); reload(["goals"]); }} className="HomeR-GoalSlider" />
                       <span style={{ fontSize: 11, fontWeight: 600, minWidth: 30, textAlign: "right" }}>{goalProgress}%</span>
                       <button className="Soft-Button Small" onClick={() => setGoalNotesOpen((prev) => ({ ...prev, [goal.id]: !prev[goal.id] }))} style={{ fontSize: 10, padding: "2px 6px" }} title="Add Progress Note">{noteOpen ? "✕" : "📝"}</button>
                     </div>

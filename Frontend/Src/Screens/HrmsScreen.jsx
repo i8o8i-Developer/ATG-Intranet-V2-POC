@@ -1463,8 +1463,8 @@ function ProjectFinance({ data, reload }) {
   const [expandedRows, setExpandedRows] = useState({});
   const [financeBonus, setFinanceBonus] = useState({});
   const [financeError, setFinanceError] = useState("");
+  const [selectedDept, setSelectedDept] = useState("all");
   const employees = data.employees || [];
-  const projects = data.projects || [];
   const tasks = data.tasks || [];
   const payProfiles = data.payProfiles || [];
   const bankAccounts = data.bankAccounts || [];
@@ -1472,7 +1472,6 @@ function ProjectFinance({ data, reload }) {
 
   const toggleExpand = (id) => setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
 
-  // 
   const rows = [];
   const seen = new Set();
   (data.teamAssignments || []).forEach((ta) => {
@@ -1501,17 +1500,32 @@ function ProjectFinance({ data, reload }) {
     });
   });
 
-  const totalBase = rows.reduce((s, r) => s + r.basePay, 0);
-  const totalBountyAll = rows.reduce((s, r) => s + r.bounty, 0);
+  const departments = ["all", ...new Set(rows.map((r) => r.dept).filter(Boolean))];
+  const filteredRows = selectedDept === "all" ? rows : rows.filter((r) => r.dept === selectedDept);
+
+  const totalBase = filteredRows.reduce((s, r) => s + r.basePay, 0);
+  const totalBountyAll = filteredRows.reduce((s, r) => s + r.bounty, 0);
   const totalBonusAll = Object.values(financeBonus).reduce((s, v) => s + (Number(v) || 0), 0);
 
   return (
     <div className="HF">
       {financeError && <div style={{ fontSize: 13, padding: "8px 14px", marginBottom: 12, borderRadius: 6, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }}>{financeError}</div>}
+
+      {/* Department Dropdown */}
+      <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
+        <label style={{ fontSize: 13, fontWeight: 600, color: "#475569", whiteSpace: "nowrap" }}>Department:</label>
+        <select value={selectedDept} onChange={(e) => setSelectedDept(e.target.value)}
+          style={{ minWidth: 180, padding: "6px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, background: "#fff" }}>
+          {departments.map((d) => (
+            <option key={d} value={d}>{d === "all" ? "All Departments" : d}</option>
+          ))}
+        </select>
+      </div>
+
       {/* KPI Summary */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 16 }}>
         {[
-          { label: "Total Employees", value: rows.length, color: "#3b82f6" },
+          { label: "Total Employees", value: filteredRows.length, color: "#3b82f6" },
           { label: "Total Base Pay", value: `₹${totalBase.toLocaleString()}`, color: "#10b981" },
           { label: "Total Bounty Pool", value: `₹${totalBountyAll.toLocaleString()}`, color: "#f59e0b" },
           { label: "Total With Bonus", value: `₹${(totalBase + totalBountyAll + totalBonusAll).toLocaleString()}`, color: "#8b5cf6" },
@@ -1537,11 +1551,10 @@ function ProjectFinance({ data, reload }) {
               <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: "#475569" }}>Bonus</th>
               <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: "#475569" }}>Total</th>
               <th style={{ padding: "10px 12px", textAlign: "center", fontWeight: 600, color: "#475569" }}>Bank</th>
-              <th style={{ padding: "10px 12px", textAlign: "center", fontWeight: 600, color: "#475569" }} />
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, i) => {
+            {filteredRows.map((row, i) => {
               const bonus = Number(financeBonus[row.id] || 0);
               const total = row.basePay + row.bounty + bonus;
               return (
@@ -1558,12 +1571,9 @@ function ProjectFinance({ data, reload }) {
                     </td>
                     <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600, color: "#059669" }}>₹{total.toLocaleString()}</td>
                     <td style={{ padding: "8px 12px", textAlign: "center" }}>{row.hasBank ? <span style={{ color: "#10b981" }}>✓</span> : <span style={{ color: "#ef4444" }}>✗</span>}</td>
-                    <td style={{ padding: "8px 12px", textAlign: "center" }}>
-                      <button className="Primary-Button Small" onClick={async (e) => { e.stopPropagation(); try { await apiPost("/FinanceAndPayroll/payment-approval/", { employee: row.id, normalPay: row.basePay, bonus: Number(financeBonus[row.id] || 0), bounty: row.bounty }); setFinanceError(""); if (reload) reload(["financeDashboard"]); } catch (err) { setFinanceError(err?.payload?.detail || "Approval Failed."); setTimeout(() => setFinanceError(""), 3000); } }}>Approve</button>
-                    </td>
                   </tr>
                   {expandedRows[row.id] && (
-                    <tr><td colSpan="10" style={{ padding: "12px 16px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+                    <tr><td colSpan="9" style={{ padding: "12px 16px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                         <div><strong style={{ fontSize: 12, color: "#64748b", textTransform: "uppercase" }}>Payment Details</strong>
                           <div style={{ marginTop: 6, display: "grid", gap: 4, fontSize: 13 }}>
@@ -1583,7 +1593,7 @@ function ProjectFinance({ data, reload }) {
                 </React.Fragment>
               );
             })}
-            {!rows.length && <tr><td colSpan="10" style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>No Employees With Team Assignments Found.</td></tr>}
+            {!filteredRows.length && <tr><td colSpan="9" style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>No Employees Found For Selected Department.</td></tr>}
           </tbody>
         </table>
       </div>

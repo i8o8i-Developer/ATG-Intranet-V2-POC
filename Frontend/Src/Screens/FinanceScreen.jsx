@@ -183,7 +183,7 @@ export function FinanceScreen({ data, reload }) {
               <p style={{ marginBottom: 16, color: "#64748b" }}>{approvalData.display_name || approvalData.username} — {MONTH_NAMES[monthIndex]} {year}</p>
               <label>Base Pay<input value={money(approvalData.base_pay)} readOnly /></label>
               <label>Bonus<input type="number" min="0" value={approvalData.bonus} onChange={(e) => setApprovalData({ ...approvalData, bonus: e.target.value })} /></label>
-              <label>Note<textarea value={approvalData.note} onChange={(e) => setApprovalData({ ...approvalData, note: e.target.value })} placeholder="Approval note..." /></label>
+              <label>Note<textarea value={approvalData.note} onChange={(e) => setApprovalData({ ...approvalData, note: e.target.value })} placeholder="Approval Note..." /></label>
               {error && <div className="error-banner">{error}</div>}
               <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                 <button className="Primary-Button" onClick={submitApproval}>Approve & Generate Payslip</button>

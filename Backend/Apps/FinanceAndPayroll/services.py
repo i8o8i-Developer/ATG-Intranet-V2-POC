@@ -554,6 +554,8 @@ class FinanceLegacyService:
                 }
             )
 
+        FinanceLegacyService._generate_payslip(context, employee, month, year, total_normal_pay, total_bonus, total_bounty, ptrc)
+
         payout_result = PayoutService.request_employee_payout(context, snapshot.id, live=live)
         if not payout_result.ok:
             return ServiceResult.success(
