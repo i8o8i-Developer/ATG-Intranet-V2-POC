@@ -1,0 +1,67 @@
+meeting_id: meet-vendor-001
+project_id: INTERNAL-INFRA
+date: '2025-05-06'
+meeting_type: vendor
+duration_minutes: 30
+security_level: INTERNAL
+organiser_id: p-arjun-001
+attendee_count_internal: 2
+attendee_count_external: 1
+extraction_confidence: 0.85
+extraction_review: false
+language_mix: hinglish
+follow_up_owner: p-rohan-pm
+follow_up_type: planned
+next_meeting_date: null
+previous_meeting_ref: null
+tags:
+  - decision
+  - deadline-pressure
+  - budget-pressure
+  - external-client
+consumer_level: pm
+vendor:
+  vendor_name_hash: c9f2a7
+  vendor_type: infrastructure
+  meeting_subtype: evaluation
+  contract_discussed: true
+  contract_ref: null
+  commitments:
+    - id: V-001
+      text: Provide full migration support with zero downtime, completing migration within 2 weeks of contract signing
+      owner: vendor-side
+      due: '2025-05-20'
+      status: open
+    - id: V-002
+      text: Ensure migration completion before May 31st if contract signed before May 20th
+      owner: vendor-side
+      due: '2025-05-31'
+      status: open
+    - id: V-003
+      text: Send formal proposal by next day
+      owner: vendor-side
+      due: '2025-05-07'
+      status: open
+    - id: V-004
+      text: Review proposal and provide internal decision
+      owner: p-rohan-pm
+      due: '2025-05-15'
+      status: open
+  issues_raised:
+    - desc: Migration complexity and cost implications for company budget
+      severity: high
+      owner: p-rohan-pm
+      resolution: Vendor provided startup tier pricing at 15,000 rupees per month with full migration support
+    - desc: Current VPS contract expires May 31st, requiring decision before that date
+      severity: high
+      owner: p-arjun-001
+      resolution: Vendor committed to complete migration by May 31st if signed by May 20th
+    - desc: Uptime SLA resolution time for critical outages
+      severity: medium
+      owner: p-arjun-001
+      resolution: Vendor confirmed 15 minute response time and 1 hour resolution time for critical issues per contract
+  cost_implication: true
+  cost_note: Startup tier pricing at 15,000 rupees per month for managed Kubernetes setup with auto-scaling and 99.99% uptime SLA
+  renewal_due: null
+  escalation_needed: false
+  relationship_health: good

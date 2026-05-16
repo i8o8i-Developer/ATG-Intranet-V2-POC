@@ -1,0 +1,41 @@
+meeting_id: meet-hr-001
+project_id: INTERNAL-HR
+date: '2025-05-06'
+meeting_type: hr
+duration_minutes: 30
+security_level: CONFIDENTIAL
+organiser_id: hr-head
+attendee_count_internal: 2
+attendee_count_external: 0
+extraction_confidence: 0.92
+extraction_review: false
+language_mix: hinglish
+follow_up_owner: hr-assoc-001
+follow_up_type: planned
+next_meeting_date: null
+previous_meeting_ref: null
+tags:
+  - hiring
+  - commitment
+  - deadline-pressure
+consumer_level: hr-only
+hr:
+  subtype: hiring
+  headcount_discussed: true
+  decisions:
+    - text: Approve hiring of 2 React Native engineers for PROJ-CRM with mid to senior level seniority (3+ years experience)
+      owner: hr-head
+      due: '2025-05-15'
+  aggregate_signal: amber
+  attrition_risk_mentioned: false
+  hiring_velocity: on-track
+  action_items:
+    - text: Draft and finalize job descriptions for 2 React Native engineer positions
+      owner: hr-assoc-001
+      due: '2025-05-09'
+    - text: Post job descriptions by May 15th
+      owner: hr-assoc-001
+      due: '2025-05-15'
+    - text: Check in with team leads regarding workload concerns and team morale
+      owner: hr-assoc-001
+      due: null

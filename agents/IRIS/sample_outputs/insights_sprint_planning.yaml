@@ -1,0 +1,67 @@
+meeting_id: meet-sprint-001
+project_id: PROJ-CRM-0014
+date: '2025-05-05'
+meeting_type: sprint-planning
+duration_minutes: 65
+security_level: INTERNAL
+organiser_id: p-rohan-pm
+attendee_count_internal: 5
+attendee_count_external: 0
+extraction_confidence: 0.92
+extraction_review: false
+language_mix: hinglish
+follow_up_owner: p-rohan-pm
+follow_up_type: planned
+next_meeting_date: '2025-05-09'
+previous_meeting_ref: null
+tags:
+  - sprint
+  - scope-change
+  - risk
+  - deferred-item
+  - velocity-concern
+consumer_level: pm
+internal:
+  sprint_ref: Sprint-6
+  decisions:
+    - id: D-001
+      text: Reporting dashboard removed from Sprint 6 scope and deferred to Phase 2
+      owner: p-rohan-pm
+      due: null
+      reverses_previous: false
+    - id: D-002
+      text: API versioning approach decided as v2 endpoint approach
+      owner: p-arjun-001
+      due: null
+      reverses_previous: false
+    - id: D-003
+      text: API-gateway spike approved for 2 days to understand scope complexity
+      owner: p-arjun-001
+      due: null
+      reverses_previous: false
+  technical_risks:
+    - desc: API-gateway complexity was underestimated in previous sprint and consumed significant time
+      severity: medium
+      owner: p-arjun-001
+      mitigation_agreed: true
+  scope_adjustments:
+    - item: Reporting dashboard
+      direction: out
+      agreed_by: p-rohan-pm
+      sow_ref: Phase 2
+  velocity_concern: true
+  velocity_note: Last sprint completed only 60% of planned work due to API-gateway complexity underestimation
+  deferred_items:
+    - text: Database migration strategy
+      deferred_to: Next sync
+      deferred_count: 2
+      owner: p-arjun-001
+  resolved_from_last_sync:
+    - text: API versioning approach decision
+      resolved: true
+  cross_dept_dependencies:
+    - blocking_dept: UIUX
+      blocked_dept: REACT
+      item: Final mockups for dashboard feed
+      due: '2025-05-08'
+      status: open

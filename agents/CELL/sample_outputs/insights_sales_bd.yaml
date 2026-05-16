@@ -1,0 +1,49 @@
+meeting_id: meet-sales-001
+project_id: PROJ-SALES-NEW
+date: '2025-05-06'
+meeting_type: sales-bd
+duration_minutes: 42
+security_level: CONFIDENTIAL
+
+organiser_id: p-ba-001
+attendee_count_internal: 2
+attendee_count_external: 1
+
+extraction_confidence: 0.92
+extraction_review: false
+
+language_mix: hinglish
+
+follow_up_owner: p-ba-001
+follow_up_type: planned
+
+next_meeting_date: null
+previous_meeting_ref: null
+
+tags:
+  - external-client
+  - decision
+  - commitment
+
+consumer_level: hr-only
+
+sales_bd:
+  lead_id: null
+  client_name_hash: b7d4e1
+  meeting_subtype: discovery
+  lead_stage_before: null
+  lead_stage_after: proposal
+  proposal_value_band: high
+  tech_stack_requested:
+    - React Native
+    - Python Django
+  estimated_team_size: 5
+  estimated_duration_weeks: 22
+  next_action: Prepare and send detailed proposal to client
+  next_action_owner: p-ba-001
+  next_action_due: '2025-05-09'
+  qualification_signals:
+    budget_confirmed: true
+    timeline_realistic: true
+    decision_maker_present: false
+  lost_reason: null

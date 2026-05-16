@@ -1,0 +1,41 @@
+meeting_id: meet-crossdept-001
+project_id: PROJ-CRM-0014
+date: '2025-05-06'
+meeting_type: cross-dept
+duration_minutes: 25
+security_level: INTERNAL
+organiser_id: p-arjun-001
+attendee_count_internal: 3
+attendee_count_external: 0
+language_mix: hinglish
+extraction_confidence: 0.88
+extraction_review: false
+follow_up_owner: p-arjun-001
+follow_up_type: planned
+next_meeting_date: null
+previous_meeting_ref: null
+tags:
+  - cross-dept
+  - decision
+  - blocker
+consumer_level: pm
+cross_dept:
+  departments_present:
+    - PYDJANGO
+    - REACT
+    - Delivery
+  dependency_item: API contract specification for dashboard feed endpoint including schema, pagination strategy, and rate limiting configuration
+  dependency_status: open
+  blocking_dept: PYDJANGO
+  blocked_dept: REACT
+  resolution:
+    text: API schema finalized as v2 endpoint with cursor-based pagination and JSON response format. Rate limiting decision deferred pending backend team discussion.
+    owner: p-arjun-001
+    due: '2025-05-08'
+  unresolved_items:
+    - text: Rate limiting strategy for dashboard feed API endpoint
+      owner: p-arjun-001
+      due: '2025-05-08'
+  escalation_needed: false
+  projects_affected:
+    - PROJ-CRM-0014
