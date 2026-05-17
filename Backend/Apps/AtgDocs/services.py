@@ -113,6 +113,8 @@ class KnowledgeDocumentService:
             document = KnowledgeDocument.objects.get(id=document_id)
         except KnowledgeDocument.DoesNotExist:
             return ServiceResult.failure({"document": "Not Found"}, status_code=404)
+        if not KnowledgeDocumentService._user_has_perm(document, actor, require_write=True):
+            return ServiceResult.failure({"document": "Permission Denied"}, status_code=403)
         document.status = "Published"
         document.updated_by = actor
         document.save(update_fields=["status", "updated_by", "updated_at"])
@@ -139,10 +141,13 @@ class KnowledgeDocumentService:
 
     @staticmethod
     def upload_to_drive(context, document_id, folder_name="ATG Docs", provider=None, make_public=False):
+        actor = KnowledgeDocumentService._actor(context)
         try:
             document = KnowledgeDocument.objects.get(id=document_id)
         except KnowledgeDocument.DoesNotExist:
             return ServiceResult.failure({"document": "Not Found"}, status_code=404)
+        if not KnowledgeDocumentService._user_has_perm(document, actor, require_write=True):
+            return ServiceResult.failure({"document": "Permission Denied"}, status_code=403)
         provider = provider or GoogleDriveProvider()
         root_payload = provider.get_or_create_folder(folder_name)
         target_folder_id = root_payload.get("id", "")
@@ -162,6 +167,8 @@ class KnowledgeDocumentService:
             document = KnowledgeDocument.objects.get(id=document_id)
         except KnowledgeDocument.DoesNotExist:
             return ServiceResult.failure({"document": "Not Found"}, status_code=404)
+        if not KnowledgeDocumentService._user_has_perm(document, actor, require_write=True):
+            return ServiceResult.failure({"document": "Permission Denied"}, status_code=403)
         from django.contrib.auth.models import User
         try:
             user = User.objects.get(id=user_id)
@@ -190,7 +197,8 @@ class KnowledgeDocumentService:
             document = KnowledgeDocument.objects.get(id=document_id)
         except KnowledgeDocument.DoesNotExist:
             return ServiceResult.failure({"document": "Not Found"}, status_code=404)
-        
+        if not KnowledgeDocumentService._user_has_perm(document, actor, require_write=True):
+            return ServiceResult.failure({"document": "Permission Denied"}, status_code=403)
         tenant = KnowledgeDocumentService._tenant(context)
         perm = KnowledgePermission.objects.filter(
             document=document, subject_type="user", subject_id=str(user_id), tenant=tenant
@@ -315,7 +323,8 @@ class KnowledgeDocumentService:
                 tenant=KnowledgeDocumentService._tenant(context), created_by=actor,
             )
         open_url = KnowledgeDocumentService._open_url(document)
-        return ServiceResult.success({"document": document, "openUrl": open_url})
+        can_edit = KnowledgeDocumentService._user_has_perm(document, actor, require_write=True)
+        return ServiceResult.success({"document": document, "openUrl": open_url, "canEdit": can_edit})
 
     @staticmethod
     def delete_document(context, document_id):

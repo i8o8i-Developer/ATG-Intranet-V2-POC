@@ -324,6 +324,11 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
     document.execCommand("fontSize", false, e.target.value);
   };
 
+  const execFont = (e) => {
+    if (!e.target.value) return;
+    document.execCommand("fontName", false, e.target.value);
+  };
+
   const hasGoogleDoc = isRealGoogleUrl(doc?.openUrl);
 
   if (!doc) return <section className="Screen-Stack" style={{ padding: 32 }}><p>Loading Document...</p></section>;
@@ -333,16 +338,16 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
       <section className="Page-Heading">
         <div>
           <span><button className="Atg-Link-Btn" onClick={() => navigate("/docs/")} style={{ fontSize: 13 }}>&larr; Back to Documents</button></span>
-          <h1><input value={title} onChange={(e) => setTitle(e.target.value)} style={{ fontSize: 20, fontWeight: 700, border: "none", background: "transparent", width: "100%", padding: 0, fontFamily: "inherit" }} /></h1>
+          <h1><input value={title} onChange={(e) => setTitle(e.target.value)} readOnly={!doc.canEdit} style={{ fontSize: 20, fontWeight: 700, border: "none", background: "transparent", width: "100%", padding: 0, fontFamily: "inherit", cursor: doc.canEdit ? "text" : "default" }} /></h1>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <StatusPill tone={doc.status === "Published" ? "green" : "gold"}>{doc.status}</StatusPill>
           <button className="Soft-Button Small" onClick={() => setPermOpen(true)}>Permissions</button>
-          {!hasGoogleDoc && <button className="Soft-Button Small" onClick={uploadToDrive} disabled={uploading}><Upload size={14} /> {uploading ? "Uploading..." : "Upload to Drive"}</button>}
-          {!hasGoogleDoc && <button className="Primary-Button Small" onClick={save} disabled={saving}>{saving ? "Saving..." : "Save"}</button>}
-          {!hasGoogleDoc && doc.status !== "Published" && <button className="Primary-Button Small" onClick={publish}>Publish</button>}
+          {!hasGoogleDoc && doc.canEdit && <button className="Soft-Button Small" onClick={uploadToDrive} disabled={uploading}><Upload size={14} /> {uploading ? "Uploading..." : "Upload to Drive"}</button>}
+          {!hasGoogleDoc && doc.canEdit && <button className="Primary-Button Small" onClick={save} disabled={saving}>{saving ? "Saving..." : "Save"}</button>}
+          {!hasGoogleDoc && doc.canEdit && doc.status !== "Published" && <button className="Primary-Button Small" onClick={publish}>Publish</button>}
           {hasGoogleDoc && <a className="Primary-Button Small" href={doc.openUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}><ExternalLink size={14} /> Open In Google Docs</a>}
-          <button className="Soft-Button Small" onClick={deleteDoc} style={{ color: "var(--Danger)" }}><Trash size={14} /> Delete</button>
+          {doc.canEdit && <button className="Soft-Button Small" onClick={deleteDoc} style={{ color: "var(--Danger)" }}><Trash size={14} /> Delete</button>}
         </div>
       </section>
 
@@ -360,7 +365,7 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
 
       {tab === "editor" && !hasGoogleDoc && (
         <div className="Docs-Editor-Wrapper">
-          <div className="Docs-Toolbar">
+          {doc.canEdit && <div className="Docs-Toolbar">
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("undo"); }} title="Undo">&#x21A9;</button>
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("redo"); }} title="Redo">&#x21AA;</button>
             <span className="Docs-Toolbar-Sep" />
@@ -374,6 +379,7 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
             <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execHeading("h3"); }} title="Heading 3">H3</button>
             <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execHeading("p"); }} title="Paragraph">P</button>
             <span className="Docs-Toolbar-Sep" />
+            <select className="Docs-Toolbar-Select Docs-Toolbar-Select-Wide" onChange={execFont} title="Font Family"><option value="">Font</option><option value="Arial">Arial</option><option value="Times New Roman">Times New Roman</option><option value="Courier New">Courier New</option><option value="Georgia">Georgia</option><option value="Verdana">Verdana</option><option value="Tahoma">Tahoma</option><option value="Trebuchet MS">Trebuchet MS</option><option value="Comic Sans MS">Comic Sans MS</option></select>
             <select className="Docs-Toolbar-Select" onChange={execFontSize} title="Font Size"><option value="">Size</option><option value="1">XS</option><option value="2">S</option><option value="3">M</option><option value="4">L</option><option value="5">XL</option><option value="6">XXL</option></select>
             <input type="color" className="Docs-Toolbar-Color" title="Text Color" onChange={(e) => execColor(e.target.value)} />
             <input type="color" className="Docs-Toolbar-Color" title="Highlight Color" onChange={(e) => execHighlight(e.target.value)} value="#ffff00" />
@@ -390,15 +396,16 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
             <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execLink(); }} title="Insert Link">Link</button>
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("insertHorizontalRule"); }} title="Horizontal Line">&mdash;</button>
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("removeFormat"); }} title="Remove Formatting">&#x2716;</button>
-          </div>
+          </div>}
           <div
             className="Docs-Editor"
-            contentEditable
+            contentEditable={doc.canEdit}
             suppressContentEditableWarning
             dangerouslySetInnerHTML={{ __html: body }}
             onBlur={(e) => setBody(e.currentTarget.innerHTML)}
-            style={{ minHeight: 400, padding: 24, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", fontSize: 14, lineHeight: 1.6, outline: "none" }}
+            style={{ minHeight: 400, padding: 24, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", fontSize: 14, lineHeight: 1.6, outline: "none", cursor: doc.canEdit ? "text" : "default" }}
           />
+          {!doc.canEdit && <div style={{ fontSize: 12, color: "#94a3b8", padding: "8px 12px", textAlign: "center", borderTop: "1px solid #e2e8f0" }}>Read-Only View</div>}
         </div>
       )}
 
