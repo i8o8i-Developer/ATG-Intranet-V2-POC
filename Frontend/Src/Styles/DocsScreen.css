@@ -33,3 +33,11 @@
 .Docs-Toolbar-Color::-webkit-color-swatch-wrapper { padding: 2px; }
 .Docs-Toolbar-Color::-webkit-color-swatch { border: none; border-radius: 3px; }
 .Docs-Toolbar-Sep { width: 1px; height: 20px; background: #e2e8f0; margin: 0 4px; }
+.Docs-Editor-Fullscreen { position: fixed; inset: 0; z-index: 1000; background: #fff; }
+.Docs-Editor-Fullscreen .Docs-Toolbar { position: sticky; top: 0; z-index: 10; border-radius: 0; }
+.Docs-Editor-Fullscreen .Docs-Editor { height: calc(100vh - 50px) !important; overflow-y: auto; border-radius: 0 !important; border: none !important; }
+.Docs-Editor kbd { padding: 2px 6px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 0.9em; font-family: 'Courier New', monospace; }
+.Docs-Editor var { font-style: italic; color: #6366f1; }
+.Docs-Editor samp { background: #0f172a; color: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 0.9em; }
+.Docs-Editor cite { font-style: italic; color: #64748b; }
+.Docs-Editor abbr { text-decoration: underline dotted #94a3b8; cursor: help; }

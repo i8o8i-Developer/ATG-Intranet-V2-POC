@@ -306,9 +306,22 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
     document.execCommand("formatBlock", false, `<${tag}>`);
   };
 
+  const execSizeRel = (delta) => {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const parent = sel.getRangeAt(0).startContainer.parentElement;
+    const current = parseInt(parent.style.fontSize) || 14;
+    parent.style.fontSize = Math.max(8, Math.min(72, current + delta)) + "px";
+  };
+
   const execLink = () => {
     const url = prompt("Enter URL:");
     if (url) document.execCommand("createLink", false, url);
+  };
+
+  const execEmail = () => {
+    const addr = prompt("Enter Email Address:");
+    if (addr) document.execCommand("createLink", false, `mailto:${addr}`);
   };
 
   const execColor = (color) => {
@@ -339,10 +352,76 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
     document.execCommand("insertHTML", false, html);
   };
 
+  const execTable3x3 = () => {
+    const html = '<table style="width:100%;border-collapse:collapse;border:1px solid #cbd5e1;"><tr><td style="border:1px solid #cbd5e1;padding:6px">&nbsp;</td><td style="border:1px solid #cbd5e1;padding:6px">&nbsp;</td><td style="border:1px solid #cbd5e1;padding:6px">&nbsp;</td></tr><tr><td style="border:1px solid #cbd5e1;padding:6px">&nbsp;</td><td style="border:1px solid #cbd5e1;padding:6px">&nbsp;</td><td style="border:1px solid #cbd5e1;padding:6px">&nbsp;</td></tr><tr><td style="border:1px solid #cbd5e1;padding:6px">&nbsp;</td><td style="border:1px solid #cbd5e1;padding:6px">&nbsp;</td><td style="border:1px solid #cbd5e1;padding:6px">&nbsp;</td></tr></table><br>';
+    document.execCommand("insertHTML", false, html);
+  };
+
   const execDate = () => {
     const now = new Date();
     const dateStr = now.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
     document.execCommand("insertHTML", false, dateStr);
+  };
+
+  const execTime = () => {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+    document.execCommand("insertHTML", false, timeStr);
+  };
+
+  const execAuthor = () => {
+    const name = data.me?.display_name || data.me?.username || "Author";
+    document.execCommand("insertHTML", false, name);
+  };
+
+  const execNBSP = () => {
+    document.execCommand("insertHTML", false, "&nbsp;");
+  };
+
+  const execPageBreak = () => {
+    document.execCommand("insertHTML", false, '<div style="page-break-after:always;border-top:1px dashed #cbd5e1;margin:12px 0;font-size:10px;color:#94a3b8;text-align:center">Page Break</div>');
+  };
+
+  const execSpecialChar = () => {
+    const chars = ["&copy;","&reg;","&trade;","&bull;","&middot;","&sect;","&para;","&dagger;","&Dagger;","&permil;","&euro;","&pound;","&yen;","&cent;","&deg;","&plusmn;","&times;","&divide;","&micro;","&not;","&sum;","&prod;","&radic;","&infin;","&int;","&asymp;","&ne;","&equiv;","&le;","&ge;","&larr;","&rarr;","&uarr;","&darr;","&harr;","&spades;","&clubs;","&hearts;","&diams;","&#10003;","&#10007;","&#9733;","&#9786;","&#9829;"];
+    const pick = prompt("Pick symbol index (1-45):\n1.&copy; 2.&reg; 3.&trade; 4.&bull; 5.&middot;\n6.&sect; 7.&para; 8.&dagger; 9.&Dagger; 10.&permil;\n11.&euro; 12.&pound; 13.&yen; 14.&cent; 15.&deg;\n16.&plusmn; 17.&times; 18.&divide; 19.&micro; 20.&not;\n21.&sum; 22.&prod; 23.&radic; 24.&infin; 25.&int;\n26.&asymp; 27.&ne; 28.&equiv; 29.&le; 30.&ge;\n31.&larr; 32.&rarr; 33.&uarr; 34.&darr; 35.&harr;\n36.&spades; 37.&clubs; 38.&hearts; 39.&diams;\n40.&#10003; 41.&#10007; 42.&#9733; 43.&#9786; 44.&#9829;");
+    const idx = parseInt(pick) - 1;
+    if (idx >= 0 && idx < chars.length) document.execCommand("insertHTML", false, chars[idx]);
+  };
+
+  const execCheckbox = () => {
+    document.execCommand("insertHTML", false, '<input type="checkbox" style="margin:0 4px 0 0"> ');
+  };
+
+  const execLineHeight = (val) => {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const parent = sel.getRangeAt(0).startContainer.parentElement;
+    const block = parent.closest?.("p,h1,h2,h3,h4,h5,h6,div,li,blockquote") || parent;
+    block.style.lineHeight = val;
+  };
+
+  const execKBD = () => execHeading("kbd");
+  const execVar = () => execHeading("var");
+  const execSamp = () => execHeading("samp");
+
+  const execPastePlain = () => {
+    const text = prompt("Paste plain text:");
+    if (text) document.execCommand("insertText", false, text);
+  };
+
+  const wordCount = () => {
+    const text = body.replace(/<[^>]+>/g, "").trim();
+    const words = text ? text.split(/\s+/).length : 0;
+    const chars = text.length;
+    alert(`Words: ${words}\nCharacters: ${chars}\nCharacters (with spaces): ${body.replace(/<[^>]+>/g, "").length}`);
+  };
+
+  const [fullscreen, setFullscreen] = useState(false);
+  const toggleFullscreen = () => setFullscreen((v) => !v);
+
+  const copyDoc = () => {
+    execCmd("copy");
   };
 
   const hasGoogleDoc = isRealGoogleUrl(doc?.openUrl);
@@ -380,10 +459,14 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
       )}
 
       {tab === "editor" && !hasGoogleDoc && (
-        <div className="Docs-Editor-Wrapper">
+        <div className={`Docs-Editor-Wrapper${fullscreen ? " Docs-Editor-Fullscreen" : ""}`}>
           {doc.canEdit && <div className="Docs-Toolbar">
-            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("undo"); }} title="Undo">&#x21A9;</button>
-            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("redo"); }} title="Redo">&#x21AA;</button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("undo"); }} title="Undo (Ctrl+Z)">&#x21A9;</button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("redo"); }} title="Redo (Ctrl+Y)">&#x21AA;</button>
+            <span className="Docs-Toolbar-Sep" />
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("selectAll"); }} title="Select All (Ctrl+A)">Sel</button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); copyDoc(); }} title="Copy (Ctrl+C)">Copy</button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execPastePlain(); }} title="Paste as Plain Text">Paste</button>
             <span className="Docs-Toolbar-Sep" />
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("bold"); }} title="Bold (Ctrl+B)"><b>B</b></button>
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("italic"); }} title="Italic (Ctrl+I)"><i>I</i></button>
@@ -392,13 +475,21 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("subscript"); }} title="Subscript">x<sub>2</sub></button>
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("superscript"); }} title="Superscript">x<sup>2</sup></button>
             <span className="Docs-Toolbar-Sep" />
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execSizeRel(-1); }} title="Decrease Font Size">A-</button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execSizeRel(1); }} title="Increase Font Size">A+</button>
+            <span className="Docs-Toolbar-Sep" />
             <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execHeading("h1"); }} title="Heading 1">H1</button>
             <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execHeading("h2"); }} title="Heading 2">H2</button>
             <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execHeading("h3"); }} title="Heading 3">H3</button>
             <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execHeading("h4"); }} title="Heading 4">H4</button>
+            <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execHeading("h5"); }} title="Heading 5">H5</button>
+            <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execHeading("h6"); }} title="Heading 6">H6</button>
             <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execHeading("p"); }} title="Paragraph">P</button>
             <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execHeading("blockquote"); }} title="Blockquote">&#x275E;</button>
             <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execHeading("pre"); }} title="Code Block">&lt;/&gt;</button>
+            <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execKBD(); }} title="Keyboard Input">&lt;KBD&gt;</button>
+            <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execVar(); }} title="Variable">&lt;VAR&gt;</button>
+            <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execSamp(); }} title="Sample Output">&lt;SAMP&gt;</button>
             <span className="Docs-Toolbar-Sep" />
             <select className="Docs-Toolbar-Select Docs-Toolbar-Select-Wide" onChange={execFont} title="Font Family"><option value="">Font</option><option value="Arial">Arial</option><option value="Times New Roman">Times New Roman</option><option value="Courier New">Courier New</option><option value="Georgia">Georgia</option><option value="Verdana">Verdana</option><option value="Tahoma">Tahoma</option><option value="Trebuchet MS">Trebuchet MS</option><option value="Comic Sans MS">Comic Sans MS</option><option value="Segoe UI">Segoe UI</option><option value="Calibri">Calibri</option><option value="Cambria">Cambria</option></select>
             <select className="Docs-Toolbar-Select" onChange={execFontSize} title="Font Size"><option value="">Size</option><option value="1" style={{fontSize:10}}>10</option><option value="2" style={{fontSize:12}}>12</option><option value="3" style={{fontSize:14}}>14</option><option value="4" style={{fontSize:18}}>18</option><option value="5" style={{fontSize:24}}>24</option><option value="6" style={{fontSize:32}}>32</option><option value="7" style={{fontSize:48}}>48</option></select>
@@ -409,18 +500,34 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyCenter"); }} title="Center">&#x2194;</button>
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyRight"); }} title="Align Right">&#x2192;</button>
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyFull"); }} title="Justify">&#x21C4;</button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyLeft"); execCmd("direction", "ltr"); }} title="Left to Right">LTR</button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyRight"); execCmd("direction", "rtl"); }} title="Right to Left">RTL</button>
             <span className="Docs-Toolbar-Sep" />
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("insertUnorderedList"); }} title="Bullet List">&#x2022;</button>
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("insertOrderedList"); }} title="Numbered List">#</button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCheckbox(); }} title="Insert Checkbox">&#x2611;</button>
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("indent"); }} title="Increase Indent">&#x21B7;</button>
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("outdent"); }} title="Decrease Indent">&#x21B6;</button>
             <span className="Docs-Toolbar-Sep" />
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execLineHeight("1"); }} title="Line Height: Single">Ln1</button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execLineHeight("1.5"); }} title="Line Height: 1.5">Ln1.5</button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execLineHeight("2"); }} title="Line Height: Double">Ln2</button>
+            <span className="Docs-Toolbar-Sep" />
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("insertHorizontalRule"); }} title="Horizontal Line">&mdash;</button>
             <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execLink(); }} title="Insert Link">Link</button>
+            <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execEmail(); }} title="Insert Email Link">Email</button>
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execImage(); }} title="Insert Image">&#x1F5BC;</button>
-            <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execTable(); }} title="Insert Table">Tbl</button>
+            <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execTable(); }} title="Insert Table (2x2)">Tbl2</button>
+            <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execTable3x3(); }} title="Insert Table (3x3)">Tbl3</button>
             <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execDate(); }} title="Insert Date">Date</button>
+            <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execTime(); }} title="Insert Time">Time</button>
+            <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execAuthor(); }} title="Insert Author Name">Auth</button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execNBSP(); }} title="Insert Non-breaking Space">NBSP</button>
+            <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execPageBreak(); }} title="Insert Page Break">PgBr</button>
+            <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execSpecialChar(); }} title="Insert Special Character">&#x2122;</button>
             <span className="Docs-Toolbar-Sep" />
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); wordCount(); }} title="Word Count">W/C</button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); toggleFullscreen(); }} title="Toggle Fullscreen">&#x26F6;</button>
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("removeFormat"); }} title="Clear Formatting">&#x2716;</button>
           </div>}
           <div
