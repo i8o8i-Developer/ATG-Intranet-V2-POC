@@ -490,7 +490,7 @@ const load = useCallback(async (keysFilter) => {
      }
      const isSmallReload = Array.isArray(keysFilter) && keysFilter.length < 20;
      const isPartial = isSmallReload && subset.length !== endpointMap.length;
-     setState((cur) => ({ ...cur, loading: !isPartial ? true : cur.loading, errors: isPartial ? cur.errors : [] }));
+      setState((cur) => ({ data: isPartial ? cur.data : {}, loading: !isPartial ? true : cur.loading, errors: isPartial ? cur.errors : [], apiOnline: cur.apiOnline }));
 
      const tag = ([key, p, mode]) =>
        apiGet(p).then(
@@ -596,7 +596,7 @@ function AppShell({ children, route, navigate, data, apiOnline, loading, logout,
           flex-shrink: 0; transition: background 0.15s, color 0.15s;
         }
         .Atg-Collapse-Btn:hover { background: #eef3ff; color: #1d44b0; }
-        .Atg-Sidebar.Collapsed .Atg-Collapse-Btn { display: none; }
+        .Atg-Sidebar.Collapsed .Atg-Collapse-Btn { margin-left: auto; margin-right: auto; }
 
         /* Nav Scroll */
         .Atg-Nav {

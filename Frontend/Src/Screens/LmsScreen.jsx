@@ -400,41 +400,6 @@ export function LmsScreen({ data, reload, navigate, route }) {
 
       {error && <div style={{ fontSize: 13, padding: "8px 14px", marginBottom: 12, borderRadius: 6, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }}>{error}</div>}
 
-      {(() => {
-        const paths = data.learningPaths || [];
-        const assignments = data.learningAssignments || [];
-        if (!paths.length && !assignments.length) return null;
-        return (
-          <section className="Lms-Learning-Section" style={{ marginBottom: 20, padding: 16, background: "#f8fafc", borderRadius: 12, border: "1px solid #e2e8f0" }}>
-            <h2 style={{ margin: "0 0 12px", fontSize: 16 }}>Learning Paths</h2>
-            <div style={{ display: "grid", gap: 8 }}>
-              {paths.map((p) => (
-                <div key={p.id} style={{ padding: "10px 14px", background: "#fff", borderRadius: 8, border: "1px solid #e2e8f0" }}>
-                  <strong>{p.title}</strong> <span style={{ color: "#64748b", fontSize: 12 }}>({p.audience || "All"} — {p.status})</span>
-                  <div style={{ marginTop: 6, display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    {(p.modules || data.learningModules?.filter((m) => String(m.path) === String(p.id)) || []).map((mod) => (
-                      <span key={mod.id} style={{ padding: "3px 10px", background: "#eef2ff", borderRadius: 6, fontSize: 12, color: "#3b82f6" }}>{mod.title}</span>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-            {assignments.length > 0 && (
-              <>
-                <h3 style={{ margin: "12px 0 6px", fontSize: 14 }}>Assignments</h3>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {assignments.map((a) => {
-                    const empName = employeeName(data, a.employee);
-                    const pathName = paths.find((p) => String(p.id) === String(a.path || a.learning_path))?.title || "-";
-                    return <span key={a.id} style={{ padding: "4px 12px", background: a.status === "Completed" ? "#f0fdf4" : "#fefce8", borderRadius: 6, fontSize: 12, border: "1px solid #e2e8f0" }}>{empName} → {pathName} ({a.status})</span>;
-                  })}
-                </div>
-              </>
-            )}
-          </section>
-        );
-      })()}
-
       <h1>Lead Overview</h1>
       <section className="Lms-Source-Strip">
         {sourceCards.map((card) => (

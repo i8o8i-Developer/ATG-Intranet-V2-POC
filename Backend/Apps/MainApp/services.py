@@ -1203,10 +1203,11 @@ body {{ margin:0; padding:28px; background:#fff; color:#111827; font-family:Aria
         return ServiceResult.success({"employee_id": employee.id, "joined_on": employee.joined_on.isoformat() if employee.joined_on else None})
 
     @staticmethod
-    def deactivate_employee(context, employee_id):
+    def deactivate_employee(context, employee_id, reason=""):
         employee = EmployeeProfile.objects.filter(tenant=context.tenant, id=employee_id).first()
         if not employee:
             return ServiceResult.failure({"employee": "Employee Not Found."}, status_code=404)
+        from Backend.Apps.Users.models import UserStatusSnapshot
         employee.status = EmployeeProfile.STATUS_EXITED
         employee.exited_on = timezone.localdate()
         employee.updated_by = context.actor
@@ -1215,13 +1216,48 @@ body {{ margin:0; padding:28px; background:#fff; color:#111827; font-family:Aria
         if user and user.is_active:
             user.is_active = False
             user.save(update_fields=["is_active", "updated_at"])
+        UserStatusSnapshot.objects.create(
+            tenant=context.tenant,
+            workspace=context.workspace or employee.workspace,
+            employee=employee,
+            status=EmployeeProfile.STATUS_EXITED,
+            reason=reason,
+            effective_from=timezone.localdate(),
+            created_by=context.actor,
+            updated_by=context.actor,
+        )
+        NotificationService.notify(
+            context=context,
+            recipient=user,
+            title="Account Deactivated",
+            message=f"Your account has been deactivated. Reason: {reason}" if reason else "Your account has been deactivated.",
+            category="Account",
+            resource_type="EmployeeProfile",
+            resource_id=employee.id,
+        )
+        OutboxService.publish(context, "EmployeeProfile", employee.id, "EmployeeDeactivated", {"employeeId": employee.id, "reason": reason})
+        if user and user.email:
+            try:
+                from django.conf import settings
+                from_email = getattr(settings, "DEFAULT_FROM_EMAIL", None) or getattr(settings, "EMAIL_HOST_USER", "") or "admin@atg.world"
+                msg = EmailMultiAlternatives(
+                    subject="Your ATG Intranet Account Has Been Deactivated",
+                    body=f"Dear {employee.display_name or user.username},\n\nYour ATG Intranet account has been deactivated."
+                         + (f"\nReason: {reason}" if reason else "")
+                         + "\n\nIf you believe this is a mistake, please contact HR.\n\n— ATG Intranet",
+                    from_email=from_email,
+                    to=[user.email],
+                )
+                msg.send(fail_silently=True)
+            except Exception:
+                pass
         return ServiceResult.success(employee)
 
     @staticmethod
-    def deactivate_multiple_employees(context, employee_ids):
+    def deactivate_multiple_employees(context, employee_ids, reason=""):
         rows = []
         for employee_id in employee_ids:
-            result = MainAppLegacyService.deactivate_employee(context, employee_id)
+            result = MainAppLegacyService.deactivate_employee(context, employee_id, reason=reason)
             if result.ok:
                 rows.append(result.data.id)
         return ServiceResult.success({"count": len(rows), "employee_ids": rows})

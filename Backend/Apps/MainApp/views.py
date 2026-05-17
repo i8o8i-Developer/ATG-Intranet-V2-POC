@@ -357,9 +357,9 @@ class MainAppLegacyActionAPIView(MainAppLegacyMixin, APIView):
         elif action == "get_joining_date":
             result = MainAppLegacyService.get_joining_date(context, employee_id=request.data.get("employee_id") or request.query_params.get("employee_id"))
         elif action == "deactivate_multiple":
-            result = MainAppLegacyService.deactivate_multiple_employees(context, request.data.get("employee_ids") or [])
+            result = MainAppLegacyService.deactivate_multiple_employees(context, request.data.get("employee_ids") or [], reason=request.data.get("reason", ""))
         elif action == "deactivate":
-            result = MainAppLegacyService.deactivate_employee(context, request.data.get("employee_id"))
+            result = MainAppLegacyService.deactivate_employee(context, request.data.get("employee_id"), reason=request.data.get("reason", ""))
             if result.ok:
                 result = ServiceResult.success({"employee_id": result.data.id, "status": result.data.status, "exited_on": result.data.exited_on.isoformat() if result.data.exited_on else None}, status_code=result.status_code)
         elif action == "dep_pos_val":

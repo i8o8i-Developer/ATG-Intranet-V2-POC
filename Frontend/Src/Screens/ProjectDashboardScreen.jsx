@@ -13,14 +13,13 @@ import {
   Link as LinkIcon,
   Pencil,
   Plus,
-  Share2,
   Trash2,
   UserCheck,
   UserX,
   X,
 } from "lucide-react";
 
-import { apiGet, apiPost, PUBLIC_BASE_URL } from "../Api/Client.js";
+import { apiDelete, apiGet, apiPatch, apiPost, PUBLIC_BASE_URL } from "../Api/Client.js";
 import { Disclosure, EmptyState, Modal, Panel, Progress, SimpleTable, StatusPill } from "./Shared/ScreenComponents.jsx";
 import "../Styles/ProjectScreen.css";
 import "../Styles/HrmsModal.css";
@@ -57,7 +56,10 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
   const [eodEmployee, setEodEmployee] = useState(null);
   const [error, setError] = useState("");
   const [addMilestoneOpen, setAddMilestoneOpen] = useState(false);
-  const [addTaskFor, setAddTaskFor] = useState(null); 
+  const [addTaskFor, setAddTaskFor] = useState(null);
+  const [budgetModalOpen, setBudgetModalOpen] = useState(false);
+  const [budgetForm, setBudgetForm] = useState({ total_cost: 0, total_budget: 0, role_and_budget: [] });
+  const [editBudgetId, setEditBudgetId] = useState(null); 
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [manageGroupsOpen, setManageGroupsOpen] = useState(false);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
@@ -209,7 +211,6 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
           <button className="Outline-Button" onClick={() => setFlagOpen(true)}><Flag size={16} /> Flag</button>
           <button className="Outline-Button" onClick={() => setDocumentOpen(true)}><FileText size={16} /> Documents</button>
           <button className="Outline-Button" onClick={() => setReposOpen(true)}><GitBranch size={16} /> Repositories ({repos.length})</button>
-          <button className="Icon-Button" onClick={shareProject} title="Copy Project Link"><Share2 size={17} /></button>
         </div>
       </section>
 
@@ -219,21 +220,32 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
 
       {(() => {
         const budget = (data.projectBudgets || []).find((b) => String(b.project) === String(selectedProjectId));
-        if (!budget) return null;
         return (
-          <Disclosure title={`Budget — ₹${Number(budget.total_budget).toLocaleString()}`} defaultOpen>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              <div style={{ padding: 12, background: "#f8fafc", borderRadius: 8 }}>
-                <span style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase" }}>Total Cost</span>
-                <strong style={{ display: "block", fontSize: 18, color: "#0f172a" }}>₹{Number(budget.total_cost).toLocaleString()}</strong>
+          <Disclosure title={`Budget — ${budget ? `₹${Number(budget.total_budget).toLocaleString()}` : "Not Set"}`} defaultOpen={!!budget}>
+            {budget ? (
+              <>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 12 }}>
+                  <div style={{ padding: 12, background: "#f8fafc", borderRadius: 8 }}>
+                    <span style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase" }}>Total Cost</span>
+                    <strong style={{ display: "block", fontSize: 18, color: "#0f172a" }}>₹{Number(budget.total_cost).toLocaleString()}</strong>
+                  </div>
+                  <div style={{ padding: 12, background: "#f0fdf4", borderRadius: 8 }}>
+                    <span style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase" }}>Total Budget</span>
+                    <strong style={{ display: "block", fontSize: 18, color: "#059669" }}>₹{Number(budget.total_budget).toLocaleString()}</strong>
+                  </div>
+                </div>
+                {(budget.role_and_budget || []).length > 0 && (
+                  <SimpleTable columns={["Role", "Budget"]} rows={(budget.role_and_budget || []).map((r) => [r.role || r.name, `₹${Number(r.budget || r.amount || 0).toLocaleString()}`])} />
+                )}
+                <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+                  <button className="Soft-Button Small" onClick={() => { setEditBudgetId(budget.id); setBudgetForm({ total_cost: budget.total_cost, total_budget: budget.total_budget, role_and_budget: Array.isArray(budget.role_and_budget) ? budget.role_and_budget : [] }); setBudgetModalOpen(true); }}><Pencil size={14} /> Edit Budget</button>
+                  <button className="Soft-Button Small Danger" onClick={async () => { if (!window.confirm("Delete this budget?")) return; await apiDelete(`/Project/ProjectBudgets/${budget.id}/`); reload(["projectBudgets"]); }}><Trash2 size={14} /> Delete</button>
+                </div>
+              </>
+            ) : (
+              <div style={{ padding: "12px 0" }}>
+                <button className="Soft-Button Small" onClick={() => { setEditBudgetId(null); setBudgetForm({ total_cost: 0, total_budget: 0, role_and_budget: [] }); setBudgetModalOpen(true); }}><Plus size={14} /> Add Budget</button>
               </div>
-              <div style={{ padding: 12, background: "#f0fdf4", borderRadius: 8 }}>
-                <span style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase" }}>Total Budget</span>
-                <strong style={{ display: "block", fontSize: 18, color: "#059669" }}>₹{Number(budget.total_budget).toLocaleString()}</strong>
-              </div>
-            </div>
-            {(budget.role_and_budget || []).length > 0 && (
-              <SimpleTable columns={["Role", "Budget"]} rows={(budget.role_and_budget || []).map((r) => [r.role || r.name, `₹${Number(r.budget || r.amount || 0).toLocaleString()}`])} />
             )}
           </Disclosure>
         );
@@ -398,8 +410,9 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
         {!docs.length && <EmptyState label="No Project Documents Returned." />}
       </Disclosure>
 
+      {budgetModalOpen && <BudgetModal project={project} budgetForm={budgetForm} setBudgetForm={setBudgetForm} editBudgetId={editBudgetId} onClose={() => setBudgetModalOpen(false)} reload={refresh} />}
       {selectedTask && <TaskDetailModal task={selectedTask} data={data} onClose={() => setSelectedTask(null)} reload={refresh} />}
-  {createProjectOpen && <CreateProjectModal defaultProjectType={kind === "marketing" ? "Marketing" : "Development"} data={data} onClose={() => setCreateProjectOpen(false)} reload={(newId, newName) => { refresh(); if (newId) { setSelectedProjectId(String(newId)); navigate(`${routeBase}/${newId}/${encodeURIComponent(newName || "project")}/`); } }} />}
+      {createProjectOpen && <CreateProjectModal defaultProjectType={kind === "marketing" ? "Marketing" : "Development"} data={data} onClose={() => setCreateProjectOpen(false)} reload={(newId, newName) => { refresh(); if (newId) { setSelectedProjectId(String(newId)); navigate(`${routeBase}/${newId}/${encodeURIComponent(newName || "project")}/`); } }} />}
       {editProject && <EditProjectModal project={project} data={data} onClose={() => setEditProject(false)} reload={refresh} />}
       {flagOpen && <FlagMilestoneModal project={project} milestones={milestones} data={data} onClose={() => setFlagOpen(false)} reload={refresh} />}
       {documentOpen && <DocumentModal project={project} onClose={() => setDocumentOpen(false)} reload={refresh} />}
@@ -1098,6 +1111,55 @@ function TaskDetailModal({ task, data, onClose, reload }) {
           {activities.map((item) => <div className="Activity-Row" key={item.id}><span>{item.message || item.Activity_type}</span><time>{formatDate(item.created_at)}</time></div>)}
           {!activities.length && <EmptyState label="No Task Activity Returned." />}
         </aside>
+      </div>
+    </Modal>
+  );
+}
+
+function BudgetModal({ project, budgetForm, setBudgetForm, editBudgetId, onClose, reload }) {
+  const [saving, setSaving] = useState(false);
+  const addRole = () => setBudgetForm((prev) => ({ ...prev, role_and_budget: [...(prev.role_and_budget || []), { role: "", budget: 0 }] }));
+  const removeRole = (i) => setBudgetForm((prev) => ({ ...prev, role_and_budget: (prev.role_and_budget || []).filter((_, idx) => idx !== i) }));
+  const updateRole = (i, field, value) => setBudgetForm((prev) => {
+    const rows = [...(prev.role_and_budget || [])];
+    rows[i] = { ...rows[i], [field]: value };
+    return { ...prev, role_and_budget: rows };
+  });
+  const save = async () => {
+    setSaving(true);
+    try {
+      const body = { ...budgetForm, project: project.id };
+      if (editBudgetId) {
+        await apiPatch(`/Project/ProjectBudgets/${editBudgetId}/`, body);
+      } else {
+        await apiPost("/Project/ProjectBudgets/", body);
+      }
+      onClose();
+      reload(["projectBudgets"]);
+    } catch (err) {
+      /* silent */
+    } finally {
+      setSaving(false);
+    }
+  };
+  return (
+    <Modal title={editBudgetId ? "Edit Budget" : "Add Budget"} onClose={onClose}>
+      <div className="Form-Grid Two" style={{ marginBottom: 12 }}>
+        <label>Total Cost<input type="number" min="0" step="0.01" value={budgetForm.total_cost} onChange={(e) => setBudgetForm({ ...budgetForm, total_cost: e.target.value })} /></label>
+        <label>Total Budget<input type="number" min="0" step="0.01" value={budgetForm.total_budget} onChange={(e) => setBudgetForm({ ...budgetForm, total_budget: e.target.value })} /></label>
+      </div>
+      <strong style={{ fontSize: 13, display: "block", marginBottom: 8 }}>Role-wise Budget</strong>
+      {(budgetForm.role_and_budget || []).map((r, i) => (
+        <div key={i} style={{ display: "flex", gap: 8, marginBottom: 6, alignItems: "center" }}>
+          <input placeholder="Role" value={r.role} onChange={(e) => updateRole(i, "role", e.target.value)} style={{ flex: 1 }} />
+          <input type="number" min="0" step="0.01" placeholder="Budget" value={r.budget} onChange={(e) => updateRole(i, "budget", e.target.value)} style={{ width: 120 }} />
+          <button className="Soft-Button Small Danger" type="button" onClick={() => removeRole(i)}><X size={14} /></button>
+        </div>
+      ))}
+      <button className="Soft-Button Small" type="button" onClick={addRole} style={{ marginBottom: 12 }}><Plus size={14} /> Add Role</button>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button className="Primary-Button" onClick={save} disabled={saving}>{saving ? "Saving..." : "Save Budget"}</button>
+        <button className="Outline-Button" onClick={onClose}>Cancel</button>
       </div>
     </Modal>
   );

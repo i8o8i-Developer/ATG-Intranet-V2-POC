@@ -103,7 +103,7 @@ export function SendOfferScreen({ data, reload }) {
       };
       const resp = await apiPost("/MainApp/Onboard/send-actual-offer/", payload);
       if (resp?.token) {
-        setResult({ ok: true, message: `Offer sent to ${form.candidateEmail} successfully.` });
+        setResult({ ok: true, message: `Offer Sent To ${form.candidateEmail} Successfully.` });
       } else {
         setResult({ ok: false, message: "Failed To Generate Offer Token." });
       }

@@ -216,7 +216,7 @@ class ProjectBudget(TenantScopedModel):
     project = models.ForeignKey("Project.ProjectWorkspace", on_delete=models.CASCADE, related_name="budgets")
     total_cost = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     total_budget = models.DecimalField(max_digits=14, decimal_places=2, default=0)
-    role_and_budget = models.JSONField(default=dict, blank=True)
+    role_and_budget = models.JSONField(default=list, blank=True)
 
     class Meta:
         ordering = ["tenant_id", "-created_at"]

@@ -35,15 +35,16 @@ export function LeaveApplyScreen({ data, selectedEmployeeId, reload }) {
     const firstDay = new Date(calYear, calMonth, 1).getDay();
     const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
     const today = new Date();
+    const myLeaves = !isSuperAdmin ? (data.leaveRequests || []).filter((lr) => String(lr.employee || lr.employee_id) === String(currentEmployeeId)) : (data.leaveRequests || []);
     for (let i = 0; i < firstDay; i++) days.push(null);
     for (let d = 1; d <= daysInMonth; d++) {
       const date = new Date(calYear, calMonth, d);
       const iso = isoDate(date);
-      const leaves = (data.leaveRequests || []).filter((lr) => iso >= String(lr.starts_on).slice(0, 10) && iso <= String(lr.ends_on).slice(0, 10));
+      const leaves = myLeaves.filter((lr) => iso >= String(lr.starts_on).slice(0, 10) && iso <= String(lr.ends_on).slice(0, 10));
       days.push({ day: d, iso, isToday: iso === isoDate(today), isPast: date < new Date(today.getFullYear(), today.getMonth(), today.getDate()), leaves });
     }
     return days;
-  }, [calMonth, calYear, data.leaveRequests]);
+  }, [calMonth, calYear, data.leaveRequests, isSuperAdmin, currentEmployeeId]);
 
   useEffect(() => {
     const fallbackEmployeeId = selectedEmployeeId || data.employees?.[0]?.id;
@@ -94,7 +95,7 @@ export function LeaveApplyScreen({ data, selectedEmployeeId, reload }) {
   return (
     <section className="Leave-Screen Screen-Stack">
       <section className="Page-Heading"><div><span>Main App / Leave</span><h1>{canReviewAnyLeave ? "Leave Console" : "Apply Leave"}</h1></div><StatusPill tone="gold">{leaveRows.filter((item) => !isCompleted(item.status) && String(item.status).toLowerCase() !== "approved").length} Pending</StatusPill></section>
-      <section className="Split-Grid Two-One">
+      <section className={isSuperAdmin ? "Split-Grid Two-One" : ""}>
         <Panel title="Leave Request" subtitle="Submits To Main App Leave Workflow.">
           <div className="Form-Grid Two">
             <label>Employee{isSuperAdmin ? <select value={form.employee_id} onChange={(event) => setForm({ ...form, employee_id: event.target.value })}>{(data.employees || []).map((item) => <option key={item.id} value={item.id}>{item.display_name}</option>)}</select> : <input value={employee.display_name || ""} readOnly />}</label>
@@ -106,7 +107,7 @@ export function LeaveApplyScreen({ data, selectedEmployeeId, reload }) {
           <button className="Primary-Button" onClick={submit} disabled={!form.employee_id || !form.starts_on || !form.ends_on}>Submit Leave</button>
           {result && <div className="error-banner">{result?.detail || result?.message || (result?.status === "Success" ? "Leave Submitted Successfully." : "Leave Submission Completed.")}</div>}
         </Panel>
-        <Panel title="Leave Wallets"><SimpleTable columns={["Employee", "Balance", "Accrued", "Used"]} rows={visibleBalances.slice(0, isSuperAdmin ? 50 : 8).map((item) => [employeeName(data, item.employee), item.balance || item.available_balance || item.amount, item.accrued || "-", item.used || "-"])} /></Panel>
+        {isSuperAdmin && <Panel title="Leave Wallets"><SimpleTable columns={["Employee", "Balance", "Accrued", "Used"]} rows={visibleBalances.slice(0, 50).map((item) => [employeeName(data, item.employee), item.balance || item.available_balance || item.amount, item.accrued || "-", item.used || "-"])} /></Panel>}
       </section>
       <Panel title="Leave Calendar" subtitle={`${calMonth + 1}/${calYear}`}
         right={
@@ -126,7 +127,7 @@ export function LeaveApplyScreen({ data, selectedEmployeeId, reload }) {
           ))}
         </div>
       </Panel>
-      <Panel title="Leave Requests"><SimpleTable columns={requestColumns} rows={requestRows} /></Panel>
+      {isSuperAdmin && <Panel title="Leave Requests"><SimpleTable columns={requestColumns} rows={requestRows} /></Panel>}
     </section>
   );
 }

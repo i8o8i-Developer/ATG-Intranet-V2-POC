@@ -14,6 +14,7 @@ import {
 
 import { apiPatch, apiPost } from "../Api/Client.js";
 import "../Styles/HomeScreen.css";
+import { Modal } from "./Shared/ScreenComponents.jsx";
 import {
   avatar,
   employeeName,
@@ -47,6 +48,8 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
   const [summary, setSummary] = useState("");
   const [goalNotes, setGoalNotes] = useState({});
   const [goalNotesOpen, setGoalNotesOpen] = useState({});
+  const [showDelayForm, setShowDelayForm] = useState(false);
+  const [delayForm, setDelayForm] = useState({ project: "", delay_days: 1, reason: "" });
   const projectMap = useMemo(() => indexById(data.projects), [data.projects]);
   const days = useMemo(() => lastDays(15), []);
   const filteredTasks = taskFilter === "completed" ? completedTasks : pendingTasks;
@@ -88,6 +91,7 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
 
   const quickLinks = [
     { label: "Getting Started", onClick: () => navigate("/docs/") },
+    { label: "Report Delay", onClick: () => setShowDelayForm(true) },
   ];
 
   const statusTone = (status = "") => {
@@ -354,6 +358,36 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
         </table>
         {!filteredTasks.length && <div className="HomeR-Empty">No Tasks Found For This Filter.</div>}
       </div>
+      {showDelayForm && (
+        <Modal title="Report Delay" onClose={() => setShowDelayForm(false)}>
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            const me = data.me?.user || data.me?.account || data.me || {};
+            const myProfile = (data.employees || []).find((emp) => String(emp.user) === String(me.id));
+            if (!delayForm.project || !myProfile) return;
+            await apiPost("/Project/ProjectDelays/", {
+              delay_type: "General",
+              project: Number(delayForm.project),
+              delay_days: Number(delayForm.delay_days),
+              reason: delayForm.reason,
+              reported_by: myProfile.id,
+            });
+            setShowDelayForm(false);
+            setDelayForm({ project: "", delay_days: 1, reason: "" });
+            reload(["projectDelays"]);
+          }}>
+            <div className="Form-Grid Two" style={{ marginBottom: 12 }}>
+              <label>Project<select value={delayForm.project} onChange={(e) => setDelayForm({ ...delayForm, project: e.target.value })} required><option value="">Select Project</option>{(data.projects || []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
+              <label>Delay Days<input type="number" min="1" value={delayForm.delay_days} onChange={(e) => setDelayForm({ ...delayForm, delay_days: e.target.value })} required /></label>
+            </div>
+            <label>Reason<textarea value={delayForm.reason} onChange={(e) => setDelayForm({ ...delayForm, reason: e.target.value })} rows={3} required /></label>
+            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+              <button className="Primary-Button" type="submit">Submit Delay</button>
+              <button className="Outline-Button" type="button" onClick={() => setShowDelayForm(false)}>Cancel</button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </section>
   );
 }
