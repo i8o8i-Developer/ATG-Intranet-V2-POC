@@ -347,7 +347,6 @@ function submitAccept() {
 
   var xhr = new XMLHttpRequest();
   xhr.open("POST", window.location.href, true);
-  xhr.setRequestHeader("X-CSRFToken", getCsrfToken());
   xhr.onload = function() {
     btn.disabled = false;
     btn.textContent = "Accept Offer & Sign NDA \u2713";
@@ -358,9 +357,16 @@ function submitAccept() {
     } else {
       try {
         var err = JSON.parse(xhr.responseText);
-        errorEl.textContent = err.detail || err.offer || "Failed to accept offer. Please try again or contact HR.";
+        var msgs = [];
+        for (var k in err) {
+          if (err.hasOwnProperty(k)) {
+            var v = err[k];
+            msgs.push(Array.isArray(v) ? v.join(", ") : String(v));
+          }
+        }
+        errorEl.textContent = msgs.length ? msgs.join(" | ") : "Failed To Accept Offer. Please Try Again Or Contact HR.";
       } catch(e) {
-        errorEl.textContent = "Failed to accept offer. Please try again or contact HR.";
+        errorEl.textContent = "Server error (status " + xhr.status + "). Please Try Again Or Contact HR.";
       }
       errorEl.classList.remove("hidden");
     }
