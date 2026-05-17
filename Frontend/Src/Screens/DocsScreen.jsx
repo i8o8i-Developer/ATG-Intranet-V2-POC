@@ -329,6 +329,22 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
     document.execCommand("fontName", false, e.target.value);
   };
 
+  const execImage = () => {
+    const url = prompt("Enter Image URL:");
+    if (url) document.execCommand("insertImage", false, url);
+  };
+
+  const execTable = () => {
+    const html = '<table style="width:100%;border-collapse:collapse;border:1px solid #cbd5e1;"><tr><td style="border:1px solid #cbd5e1;padding:6px">&nbsp;</td><td style="border:1px solid #cbd5e1;padding:6px">&nbsp;</td></tr><tr><td style="border:1px solid #cbd5e1;padding:6px">&nbsp;</td><td style="border:1px solid #cbd5e1;padding:6px">&nbsp;</td></tr></table><br>';
+    document.execCommand("insertHTML", false, html);
+  };
+
+  const execDate = () => {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+    document.execCommand("insertHTML", false, dateStr);
+  };
+
   const hasGoogleDoc = isRealGoogleUrl(doc?.openUrl);
 
   if (!doc) return <section className="Screen-Stack" style={{ padding: 32 }}><p>Loading Document...</p></section>;
@@ -369,33 +385,43 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("undo"); }} title="Undo">&#x21A9;</button>
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("redo"); }} title="Redo">&#x21AA;</button>
             <span className="Docs-Toolbar-Sep" />
-            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("bold"); }} title="Bold"><b>B</b></button>
-            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("italic"); }} title="Italic"><i>I</i></button>
-            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("underline"); }} title="Underline"><u>U</u></button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("bold"); }} title="Bold (Ctrl+B)"><b>B</b></button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("italic"); }} title="Italic (Ctrl+I)"><i>I</i></button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("underline"); }} title="Underline (Ctrl+U)"><u>U</u></button>
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("strikeThrough"); }} title="Strikethrough"><s>S</s></button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("subscript"); }} title="Subscript">x<sub>2</sub></button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("superscript"); }} title="Superscript">x<sup>2</sup></button>
             <span className="Docs-Toolbar-Sep" />
             <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execHeading("h1"); }} title="Heading 1">H1</button>
             <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execHeading("h2"); }} title="Heading 2">H2</button>
             <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execHeading("h3"); }} title="Heading 3">H3</button>
+            <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execHeading("h4"); }} title="Heading 4">H4</button>
             <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execHeading("p"); }} title="Paragraph">P</button>
+            <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execHeading("blockquote"); }} title="Blockquote">&#x275E;</button>
+            <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execHeading("pre"); }} title="Code Block">&lt;/&gt;</button>
             <span className="Docs-Toolbar-Sep" />
-            <select className="Docs-Toolbar-Select Docs-Toolbar-Select-Wide" onChange={execFont} title="Font Family"><option value="">Font</option><option value="Arial">Arial</option><option value="Times New Roman">Times New Roman</option><option value="Courier New">Courier New</option><option value="Georgia">Georgia</option><option value="Verdana">Verdana</option><option value="Tahoma">Tahoma</option><option value="Trebuchet MS">Trebuchet MS</option><option value="Comic Sans MS">Comic Sans MS</option></select>
-            <select className="Docs-Toolbar-Select" onChange={execFontSize} title="Font Size"><option value="">Size</option><option value="1">XS</option><option value="2">S</option><option value="3">M</option><option value="4">L</option><option value="5">XL</option><option value="6">XXL</option></select>
+            <select className="Docs-Toolbar-Select Docs-Toolbar-Select-Wide" onChange={execFont} title="Font Family"><option value="">Font</option><option value="Arial">Arial</option><option value="Times New Roman">Times New Roman</option><option value="Courier New">Courier New</option><option value="Georgia">Georgia</option><option value="Verdana">Verdana</option><option value="Tahoma">Tahoma</option><option value="Trebuchet MS">Trebuchet MS</option><option value="Comic Sans MS">Comic Sans MS</option><option value="Segoe UI">Segoe UI</option><option value="Calibri">Calibri</option><option value="Cambria">Cambria</option></select>
+            <select className="Docs-Toolbar-Select" onChange={execFontSize} title="Font Size"><option value="">Size</option><option value="1" style={{fontSize:10}}>10</option><option value="2" style={{fontSize:12}}>12</option><option value="3" style={{fontSize:14}}>14</option><option value="4" style={{fontSize:18}}>18</option><option value="5" style={{fontSize:24}}>24</option><option value="6" style={{fontSize:32}}>32</option><option value="7" style={{fontSize:48}}>48</option></select>
             <input type="color" className="Docs-Toolbar-Color" title="Text Color" onChange={(e) => execColor(e.target.value)} />
             <input type="color" className="Docs-Toolbar-Color" title="Highlight Color" onChange={(e) => execHighlight(e.target.value)} value="#ffff00" />
             <span className="Docs-Toolbar-Sep" />
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyLeft"); }} title="Align Left">&#x2190;</button>
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyCenter"); }} title="Center">&#x2194;</button>
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyRight"); }} title="Align Right">&#x2192;</button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyFull"); }} title="Justify">&#x21C4;</button>
             <span className="Docs-Toolbar-Sep" />
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("insertUnorderedList"); }} title="Bullet List">&#x2022;</button>
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("insertOrderedList"); }} title="Numbered List">#</button>
-            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("indent"); }} title="Indent">&#x21B7;</button>
-            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("outdent"); }} title="Outdent">&#x21B6;</button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("indent"); }} title="Increase Indent">&#x21B7;</button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("outdent"); }} title="Decrease Indent">&#x21B6;</button>
             <span className="Docs-Toolbar-Sep" />
-            <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execLink(); }} title="Insert Link">Link</button>
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("insertHorizontalRule"); }} title="Horizontal Line">&mdash;</button>
-            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("removeFormat"); }} title="Remove Formatting">&#x2716;</button>
+            <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execLink(); }} title="Insert Link">Link</button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execImage(); }} title="Insert Image">&#x1F5BC;</button>
+            <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execTable(); }} title="Insert Table">Tbl</button>
+            <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execDate(); }} title="Insert Date">Date</button>
+            <span className="Docs-Toolbar-Sep" />
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("removeFormat"); }} title="Clear Formatting">&#x2716;</button>
           </div>}
           <div
             className="Docs-Editor"
