@@ -12,14 +12,35 @@ from Backend.Apps.AtgDocs.serializers import (
     KnowledgePermissionSerializer,
 )
 from Backend.Apps.AtgDocs.services import KnowledgeDocumentService
+from Backend.EnterpriseCore.models import Tenant
+from Backend.EnterpriseCore.services import TenantContext
 from Backend.EnterpriseCore.viewsets import TenantScopedModelViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 
-class KnowledgeDocumentViewSet(TenantScopedModelViewSet):
-    queryset = KnowledgeDocument.objects.select_related("tenant", "workspace", "owner", "department").all()
+class SimpleDocsViewSet(TenantScopedModelViewSet):
+    def get_request_tenant(self):
+        tenant = getattr(self.request, "tenant", None) or Tenant.objects.filter(id=1).first()
+        return tenant
+
+    def get_request_workspace(self):
+        return None
+
+    def get_tenant_context(self):
+        return TenantContext(
+            tenant=self.get_request_tenant(),
+            workspace=None,
+            actor=self.request.user if self.request.user.is_authenticated else None,
+        )
+
+
+class KnowledgeDocumentViewSet(SimpleDocsViewSet):
+    queryset = KnowledgeDocument.objects.all()
     serializer_class = KnowledgeDocumentSerializer
+
+    def get_queryset(self):
+        return KnowledgeDocument.objects.filter(is_active=True)
 
     @action(detail=True, methods=["post"], url_path="publish")
     def publish(self, request, pk=None):
@@ -33,40 +54,13 @@ class KnowledgeDocumentViewSet(TenantScopedModelViewSet):
         data = serializer.validated_data
         result = KnowledgeDocumentService.create_document(
             self.get_tenant_context(),
-            data["title"],
-            body=data.get("body", ""),
-            owner_id=data.get("owner"),
-            department_id=data.get("department"),
+            data["title"], body=data.get("body", ""),
+            owner_id=data.get("owner"), department_id=data.get("department"),
             document_type=data.get("document_type", "Article"),
             status=data.get("status", "Draft"),
-            visibility=data.get("visibility", KnowledgeDocument.VISIBILITY_PRIVATE),
-            slug=data.get("slug", ""),
-            metadata=data.get("metadata", {}),
+            visibility=data.get("visibility", "private"),
+            slug=data.get("slug", ""), metadata=data.get("metadata", {}),
             auto_upload=data.get("upload_to_drive", False),
-            folder_name=data.get("folder_name", "Documents"),
-            make_public=data.get("make_public"),
-        )
-        return self.service_response(result, KnowledgeDocumentSerializer)
-
-    @action(detail=False, methods=["post"], url_path="create-post")
-    def legacy_create_post(self, request):
-        payload = request.data.copy()
-        payload["upload_to_drive"] = True
-        serializer = KnowledgeDocumentCreateSerializer(data=payload)
-        serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
-        result = KnowledgeDocumentService.create_document(
-            self.get_tenant_context(),
-            data["title"],
-            body=data.get("body", ""),
-            owner_id=data.get("owner"),
-            department_id=data.get("department"),
-            document_type=data.get("document_type", "Article"),
-            status=data.get("status", "Draft"),
-            visibility=data.get("visibility", KnowledgeDocument.VISIBILITY_PRIVATE),
-            slug=data.get("slug", ""),
-            metadata=data.get("metadata", {}),
-            auto_upload=True,
             folder_name=data.get("folder_name", "Documents"),
             make_public=data.get("make_public"),
         )
@@ -77,8 +71,7 @@ class KnowledgeDocumentViewSet(TenantScopedModelViewSet):
         serializer = DriveUploadSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         result = KnowledgeDocumentService.upload_to_drive(
-            self.get_tenant_context(),
-            pk,
+            self.get_tenant_context(), pk,
             folder_name=serializer.validated_data.get("folder_name", "Documents"),
             make_public=serializer.validated_data.get("make_public", False),
         )
@@ -90,18 +83,15 @@ class KnowledgeDocumentViewSet(TenantScopedModelViewSet):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         result = KnowledgeDocumentService.grant_permission(
-            self.get_tenant_context(),
-            pk,
-            data["subject_type"],
-            data["subject_id"],
-            permission=data.get("permission", "Read"),
+            self.get_tenant_context(), pk,
+            data["user_id"], permission=data.get("permission", "Read"),
             email=data.get("email", ""),
         )
         return self.service_response(result, KnowledgePermissionSerializer)
 
     @action(detail=True, methods=["get"], url_path="history")
     def history(self, request, pk=None):
-        queryset = DocumentVersion.objects.filter(tenant=self.get_tenant_context().tenant, document_id=pk)
+        queryset = DocumentVersion.objects.filter(document_id=pk).order_by("-version")
         return Response(DocumentVersionSerializer(queryset, many=True).data)
 
     @action(detail=False, methods=["get"], url_path="library")
@@ -134,40 +124,40 @@ class KnowledgeDocumentViewSet(TenantScopedModelViewSet):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         result = KnowledgeDocumentService.update_document(
-            self.get_tenant_context(),
-            pk,
-            title=data.get("title"),
-            body=data.get("body"),
-            department_id=data.get("department") if "department" in data else None,
-            document_type=data.get("document_type"),
-            status=data.get("status"),
-            visibility=data.get("visibility"),
-            slug=data.get("slug"),
+            self.get_tenant_context(), pk,
+            title=data.get("title"), body=data.get("body"),
+            department=data.get("department") if "department" in data else None,
+            document_type=data.get("document_type"), status=data.get("status"),
+            visibility=data.get("visibility"), slug=data.get("slug"),
             metadata=data.get("metadata") if "metadata" in data else None,
         )
         return self.service_response(result, KnowledgeDocumentSerializer)
 
 
-class KnowledgePermissionViewSet(TenantScopedModelViewSet):
-    queryset = KnowledgePermission.objects.select_related("tenant", "workspace", "document").all()
+class KnowledgePermissionViewSet(SimpleDocsViewSet):
+    queryset = KnowledgePermission.objects.all()
     serializer_class = KnowledgePermissionSerializer
+    http_method_names = ["get", "post", "head", "options"]
+
+    def get_queryset(self):
+        return KnowledgePermission.objects.filter(subject_type="user")
 
 
-class KnowledgeActivityViewSet(TenantScopedModelViewSet):
-    queryset = KnowledgeActivity.objects.select_related("tenant", "workspace", "document", "actor").all()
+class KnowledgeActivityViewSet(SimpleDocsViewSet):
+    queryset = KnowledgeActivity.objects.all()
     serializer_class = KnowledgeActivitySerializer
 
 
-class DriveFolderViewSet(TenantScopedModelViewSet):
-    queryset = DriveFolder.objects.select_related("tenant", "workspace", "parent").all()
+class DocumentVersionViewSet(SimpleDocsViewSet):
+    queryset = DocumentVersion.objects.all()
+    serializer_class = DocumentVersionSerializer
+
+
+class DriveFolderViewSet(SimpleDocsViewSet):
+    queryset = DriveFolder.objects.all()
     serializer_class = DriveFolderSerializer
 
 
-class DriveFileViewSet(TenantScopedModelViewSet):
-    queryset = DriveFile.objects.select_related("tenant", "workspace", "document", "folder").all()
+class DriveFileViewSet(SimpleDocsViewSet):
+    queryset = DriveFile.objects.all()
     serializer_class = DriveFileSerializer
-
-
-class DocumentVersionViewSet(TenantScopedModelViewSet):
-    queryset = DocumentVersion.objects.select_related("tenant", "workspace", "document", "changed_by").all()
-    serializer_class = DocumentVersionSerializer

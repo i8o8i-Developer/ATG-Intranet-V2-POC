@@ -191,7 +191,7 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
       setBody(d.body || "");
     }).catch(() => {});
     apiGet("/AtgDocs/KnowledgePermissions/").then((list) => {
-      setPermissions((list || []).filter((p) => String(p.document) === String(docId)));
+      setPermissions((list || []).filter((p) => String(p.document) === String(docId) && p.subject_type === "user"));
     }).catch(() => {});
     apiGet(`/AtgDocs/KnowledgeDocuments/${docId}/history/`).then(setHistory).catch(() => {});
   }, [docId]);
@@ -238,12 +238,11 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
   const grantPermission = async (e) => {
     e.preventDefault();
     const emp = (data.employees || []).find((e) => String(e.id) === String(permForm.employee_id));
-    if (!emp || !emp.user_email) return;
+    if (!emp || !emp.user_id) return;
     await apiPost(`/AtgDocs/KnowledgeDocuments/${docId}/grant-permission/`, {
-      subject_type: "employee",
-      subject_id: String(permForm.employee_id),
+      user_id: Number(emp.user_id),
       permission: permForm.permission,
-      email: emp.user_email,
+      email: emp.user_email || "",
     });
     setPermOpen(false);
     setPermForm({ employee_id: "", permission: "Read" });
@@ -272,7 +271,7 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
           {!hasGoogleDoc && <button className="Soft-Button Small" onClick={uploadToDrive} disabled={uploading}><Upload size={14} /> {uploading ? "Uploading..." : "Upload to Drive"}</button>}
           {!hasGoogleDoc && <button className="Primary-Button Small" onClick={save} disabled={saving}>{saving ? "Saving..." : "Save"}</button>}
           {!hasGoogleDoc && doc.status !== "Published" && <button className="Primary-Button Small" onClick={publish}>Publish</button>}
-          {hasGoogleDoc && <a className="Primary-Button Small" href={doc.openUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}><ExternalLink size={14} /> Open in Google Docs</a>}
+          {hasGoogleDoc && <a className="Primary-Button Small" href={doc.openUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}><ExternalLink size={14} /> Open In Google Docs</a>}
         </div>
       </section>
 
@@ -318,7 +317,7 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
 
       {tab === "permissions" && (
         <Panel title="Permissions">
-          <SimpleTable columns={["Subject Type", "Subject ID", "Permission"]} rows={permissions.map((p) => [p.subject_type, p.subject_type === "employee" ? employeeName(data, p.subject_id) : p.subject_id, <StatusPill key={p.id} tone={p.permission === "Write" ? "green" : "slate"}>{p.permission}</StatusPill>])} />
+          <SimpleTable columns={["User", "Permission"]} rows={permissions.map((p) => [employeeName(data, p.subject_id) || `User #${p.subject_id}`, <StatusPill key={p.id} tone={p.permission === "Write" || p.permission === "Owner" ? "green" : "slate"}>{p.permission}</StatusPill>])} />
           <button className="Soft-Button Small" onClick={() => setPermOpen(true)} style={{ marginTop: 12 }}><Plus size={14} /> Add Permission</button>
         </Panel>
       )}

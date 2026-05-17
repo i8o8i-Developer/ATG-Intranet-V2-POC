@@ -80,7 +80,6 @@ class DriveUploadSerializer(serializers.Serializer):
 
 
 class KnowledgePermissionGrantSerializer(serializers.Serializer):
-    subject_type = serializers.CharField(max_length=80)
-    subject_id = serializers.CharField(max_length=120)
+    user_id = serializers.IntegerField()
     permission = serializers.CharField(default="Read")
     email = serializers.EmailField(required=False, allow_blank=True)
