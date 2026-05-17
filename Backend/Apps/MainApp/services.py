@@ -81,6 +81,8 @@ class NotificationService:
         notification = NotificationItem.objects.filter(tenant=context.tenant, id=notification_id).first()
         if not notification:
             return ServiceResult.failure({"notification": "Notification Not Found."}, status_code=404)
+        if context.actor and notification.recipient != context.actor:
+            return ServiceResult.failure({"notification": "Notification Not Found."}, status_code=404)
         notification.is_read = True
         notification.read_at = timezone.now()
         notification.updated_by = context.actor
@@ -98,6 +100,8 @@ class NotificationService:
     def snooze(context, notification_id, snoozed_until, reason=""):
         notification = NotificationItem.objects.filter(tenant=context.tenant, id=notification_id).first()
         if not notification:
+            return ServiceResult.failure({"notification": "Notification Not Found."}, status_code=404)
+        if context.actor and notification.recipient != context.actor:
             return ServiceResult.failure({"notification": "Notification Not Found."}, status_code=404)
         notification.snoozed_until = snoozed_until
         notification.updated_by = context.actor
