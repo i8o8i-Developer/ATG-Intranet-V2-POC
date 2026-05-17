@@ -88,6 +88,12 @@ class NotificationItemViewSet(TenantScopedModelViewSet):
     queryset = NotificationItem.objects.select_related("tenant", "workspace", "recipient").all()
     serializer_class = NotificationItemSerializer
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if self.request.user.is_authenticated:
+            return qs.filter(recipient=self.request.user)
+        return qs.none()
+
     @action(detail=False, methods=["post"], url_path="send")
     def send(self, request):
         user_model = get_user_model()
@@ -164,6 +170,12 @@ class ExternalIssueReferenceViewSet(TenantScopedModelViewSet):
 class NotificationSnoozeRecordViewSet(TenantScopedModelViewSet):
     queryset = NotificationSnoozeRecord.objects.select_related("tenant", "workspace", "notification", "snoozed_by").all()
     serializer_class = NotificationSnoozeRecordSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if self.request.user.is_authenticated:
+            return qs.filter(snoozed_by=self.request.user)
+        return qs.none()
 
 
 class ManagerScopeViewSet(TenantScopedModelViewSet):
