@@ -76,7 +76,7 @@ export function SendCertificateScreen({ data, reload }) {
   const previewEmployee = findById(employees, form.selectedEmployees[0]) || employees[0] || {};
   const previewVars = {
     name: previewEmployee.display_name || previewEmployee.candidate_name || previewEmployee.username || "Recipient",
-    position: form.position || previewEmployee.position_title || "Team Member",
+    position: form.position || previewEmployee.position_title || "",
     responsibilities: form.responsibilities,
     joined: fmtDate(form.joined_on || previewEmployee.joined_on),
     completion: fmtDate(form.completion_date),
@@ -101,7 +101,7 @@ export function SendCertificateScreen({ data, reload }) {
         if (!employee) continue;
         const vars = {
           name: employee.display_name || employee.candidate_name || employee.username || "Recipient",
-          position: form.position || employee.position_title || "Team Member",
+          position: form.position || employee.position_title || "",
           responsibilities: form.responsibilities,
           joined: fmtDate(form.joined_on || employee.joined_on),
           completion: fmtDate(form.completion_date),

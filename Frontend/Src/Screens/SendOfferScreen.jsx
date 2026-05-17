@@ -79,7 +79,7 @@ export function SendOfferScreen({ data, reload }) {
     domain: "", candidateEmail: "", departmentName: "", roleType: "", subDepartment: "",
     positionTitle: "", candidateName: "", username: "", empType: "Intern", payType: "Performance Based",
     basePay: "", payPerTask: "", offerDate: new Date().toISOString().split("T")[0], internDuration: "6",
-    reportingTo: "", location: "Bengaluru", joiningDate: "", companyName: "Banao",
+    reportingTo: "", location: "", joiningDate: "", companyName: "",
   });
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState(null);

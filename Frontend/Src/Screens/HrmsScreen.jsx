@@ -1149,12 +1149,6 @@ function EodSummaryModal({ employee, data, onClose, reload }) {
           <strong>{totalBountyCount}</strong>
           <small>Numbered Bounties</small>
         </article>
-        <article className="Eod-Credential-Card">
-          <span>Seed Login</span>
-          <strong>{credentials?.username || employee.username || "—"}</strong>
-          <small>User Id: {credentials?.user_id || employee.user || "—"}</small>
-          <small>Password: {credentials?.password || "—"}</small>
-        </article>
       </div>
 
       <Tabs

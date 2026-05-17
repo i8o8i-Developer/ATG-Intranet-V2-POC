@@ -923,7 +923,7 @@ class MainAppLegacyService:
         recipient_employee = EmployeeProfile.objects.filter(tenant=context.tenant, user=recipient).select_related("position").first()
         joining_date = joining_date or (recipient_employee.joined_on.isoformat() if recipient_employee and recipient_employee.joined_on else "")
         completion_date = completion_date or timezone.now().date().isoformat()
-        position = position or (recipient_employee.position.title if recipient_employee and recipient_employee.position else "Team Member")
+        position = position or (recipient_employee.position.title if recipient_employee and recipient_employee.position else "")
 
         if not pisa:
             return ServiceResult.failure({"error": "PDF Generation Dependencies Not Installed (xhtml2pdf)"}, status_code=500)
