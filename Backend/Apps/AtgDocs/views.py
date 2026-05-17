@@ -40,7 +40,7 @@ class KnowledgeDocumentViewSet(SimpleDocsViewSet):
     serializer_class = KnowledgeDocumentSerializer
 
     def get_queryset(self):
-        return KnowledgeDocument.objects.filter(is_active=True)
+        return super().get_queryset().filter(is_active=True)
 
     @action(detail=True, methods=["post"], url_path="publish")
     def publish(self, request, pk=None):
@@ -133,6 +133,11 @@ class KnowledgeDocumentViewSet(SimpleDocsViewSet):
         )
         return self.service_response(result, KnowledgeDocumentSerializer)
 
+    @action(detail=True, methods=["post", "delete"], url_path="delete-document")
+    def delete_document(self, request, pk=None):
+        result = KnowledgeDocumentService.delete_document(self.get_tenant_context(), pk)
+        return self.service_response(result)
+
 
 class KnowledgePermissionViewSet(SimpleDocsViewSet):
     queryset = KnowledgePermission.objects.all()
@@ -140,7 +145,7 @@ class KnowledgePermissionViewSet(SimpleDocsViewSet):
     http_method_names = ["get", "post", "head", "options"]
 
     def get_queryset(self):
-        return KnowledgePermission.objects.filter(subject_type="user")
+        return super().get_queryset().filter(subject_type="user")
 
 
 class KnowledgeActivityViewSet(SimpleDocsViewSet):

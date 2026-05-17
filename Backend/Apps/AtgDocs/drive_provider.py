@@ -172,6 +172,55 @@ class GoogleDriveProvider:
             logger.error("Failed To Restrict Download: %s", e)      
             return {"file_id": file_id, "dry_run": True, "error": str(e)}
 
+    def delete_file(self, file_id):
+        hdrs = self._headers()
+        if not hdrs:
+            return {"file_id": file_id, "dry_run": True, "deleted": True}
+        import requests as req
+        try:
+            resp = req.delete(f"{self.DRIVE_API}/files/{file_id}", headers=hdrs, timeout=30)
+            resp.raise_for_status()
+            return {"file_id": file_id, "deleted": True}
+        except Exception as e:
+            logger.error("Failed To Delete Drive File: %s", e)
+            return {"file_id": file_id, "deleted": False, "error": str(e)}
+
+    def rename_file(self, file_id, new_name):
+        hdrs = self._headers()
+        if not hdrs:
+            return {"file_id": file_id, "name": new_name, "dry_run": True}
+        import requests as req
+        try:
+            resp = req.patch(
+                f"{self.DRIVE_API}/files/{file_id}",
+                headers=hdrs, json={"name": new_name}, timeout=30,
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as e:
+            logger.error("Failed To Rename Drive File: %s", e)
+            return {"file_id": file_id, "error": str(e)}
+
+    def list_files(self, folder_id=None, query=None):
+        hdrs = self._headers()
+        if not hdrs:
+            return {"files": [], "dry_run": True}
+        import requests as req
+        q = query or "trashed=false"
+        if folder_id:
+            q += f" and '{folder_id}' in parents"
+        try:
+            resp = req.get(
+                f"{self.DRIVE_API}/files",
+                headers=hdrs, params={"q": q, "fields": "files(id,name,mimeType,webViewLink,parents,modifiedTime,owners)"},
+                timeout=30
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as e:
+            logger.error("Failed To List Drive Files: %s", e)
+            return {"files": [], "error": str(e)}
+
 
 def get_credentials():
     return GoogleDriveProvider()._load_credentials()
@@ -196,3 +245,12 @@ def set_file_public(file_id, role="reader"):
 
 def restrict_editor_download(file_id):
     return GoogleDriveProvider().restrict_editor_download(file_id)
+
+def delete_file(file_id):
+    return GoogleDriveProvider().delete_file(file_id)
+
+def rename_file(file_id, new_name):
+    return GoogleDriveProvider().rename_file(file_id, new_name)
+
+def list_files(folder_id=None, query=None):
+    return GoogleDriveProvider().list_files(folder_id=folder_id, query=query)

@@ -18,8 +18,12 @@ class KnowledgeDocumentService:
         return getattr(context, "tenant", context.get("tenant")) if isinstance(context, dict) else getattr(context, "tenant", None)
 
     @staticmethod
-    def _queryset():
-        return KnowledgeDocument.objects.filter(is_active=True).select_related("owner__user", "department")
+    def _queryset(context=None):
+        qs = KnowledgeDocument.objects.filter(is_active=True).select_related("owner__user", "department")
+        tenant = KnowledgeDocumentService._tenant(context)
+        if tenant:
+            qs = qs.filter(tenant=tenant)
+        return qs
 
     @staticmethod
     def _document_card(document):
@@ -46,9 +50,23 @@ class KnowledgeDocumentService:
         if document.owner_id and document.owner and document.owner.user == user:
             return True
         perm_filter = {"document": document, "subject_type": "user", "subject_id": str(user.id)}
+        if document.tenant_id:
+            perm_filter["tenant_id"] = document.tenant_id
         if require_write:
             perm_filter["permission__in"] = ["Write", "Owner"]
         return KnowledgePermission.objects.filter(**perm_filter).exists()
+
+    @staticmethod
+    def _open_url(document):
+        if document.metadata.get("drive_file", {}).get("webViewLink"):
+            return document.metadata["drive_file"]["webViewLink"]
+        return f"/docs/post-detail/{document.id}"
+
+    @staticmethod
+    def _actor_employee(context):
+        actor = KnowledgeDocumentService._actor(context)
+        if not actor: return None
+        return EmployeeProfile.objects.filter(user=actor, is_active=True).first()
 
     @staticmethod
     def create_document(context, title, body="", owner_id=None, department_id=None, document_type="Article", status="Draft", visibility="private", slug="", metadata=None, auto_upload=False, folder_name="Documents", make_public=None):
@@ -190,11 +208,13 @@ class KnowledgeDocumentService:
     @staticmethod
     def document_library(context):
         actor = KnowledgeDocumentService._actor(context)
-        docs = KnowledgeDocumentService._queryset()
+        tenant = KnowledgeDocumentService._tenant(context)
+        docs = KnowledgeDocumentService._queryset(context)
         if actor and actor.is_authenticated:
-            perm_ids = list(KnowledgePermission.objects.filter(
-                subject_type="user", subject_id=str(actor.id),
-            ).values_list("document_id", flat=True))
+            perm_filter = {"subject_type": "user", "subject_id": str(actor.id)}
+            if tenant:
+                perm_filter["tenant"] = tenant
+            perm_ids = list(KnowledgePermission.objects.filter(**perm_filter).values_list("document_id", flat=True))
             docs = docs.filter(
                 Q(owner__user=actor) | Q(id__in=perm_ids) | Q(visibility="public") | Q(visibility="authenticated")
             )
@@ -216,7 +236,7 @@ class KnowledgeDocumentService:
         actor = KnowledgeDocumentService._actor(context)
         if not actor or not actor.is_authenticated:
             return ServiceResult.success([])
-        docs = KnowledgeDocumentService._queryset().filter(
+        docs = KnowledgeDocumentService._queryset(context).filter(
             Q(created_by=actor) | Q(owner__user=actor)
         )
         return ServiceResult.success([KnowledgeDocumentService._document_card(d) for d in docs])
@@ -248,26 +268,34 @@ class KnowledgeDocumentService:
     def open_document(context, document_id, record_view=True):
         actor = KnowledgeDocumentService._actor(context)
         try:
-            document = KnowledgeDocument.objects.get(id=document_id, is_active=True)
+            document = KnowledgeDocument.objects.get(id=document_id)
         except KnowledgeDocument.DoesNotExist:
             return ServiceResult.failure({"document": "Not Found"}, status_code=404)
-        if document.visibility != "public" and not KnowledgeDocumentService._user_has_perm(document, actor):
-            if not actor or not actor.is_authenticated:
-                return ServiceResult.failure({"document": "Permission Denied"}, status_code=403)
-        if record_view and actor and actor.is_authenticated:
-            actor_employee = EmployeeProfile.objects.filter(user=actor, is_active=True).first()
-            if actor_employee:
-                KnowledgeActivity.objects.filter(
-                    document=document, actor=actor_employee, activity_type="Viewed"
-                ).delete()
-                KnowledgeActivity.objects.create(
-                    document=document, actor=actor_employee, activity_type="Viewed",
-                    tenant=KnowledgeDocumentService._tenant(context), created_by=actor,
-                )
-        return ServiceResult.success({
-            "document": document,
-            "openUrl": KnowledgeDocumentService._open_url(document),
-        })
+        if not KnowledgeDocumentService._user_has_perm(document, actor):
+            return ServiceResult.failure({"document": "Permission Denied"}, status_code=403)
+        if record_view:
+            actor_employee = KnowledgeDocumentService._actor_employee(context)
+            KnowledgeActivity.objects.create(
+                document=document, actor=actor_employee, activity_type="Viewed",
+                tenant=KnowledgeDocumentService._tenant(context), created_by=actor,
+            )
+        open_url = KnowledgeDocumentService._open_url(document)
+        return ServiceResult.success({"document": document, "openUrl": open_url})
+
+    @staticmethod
+    def delete_document(context, document_id):
+        actor = KnowledgeDocumentService._actor(context)
+        try:
+            document = KnowledgeDocument.objects.get(id=document_id)
+        except KnowledgeDocument.DoesNotExist:
+            return ServiceResult.failure({"document": "Not Found"}, status_code=404)
+        if not KnowledgeDocumentService._user_has_perm(document, actor, require_write=True):
+            return ServiceResult.failure({"document": "Permission Denied"}, status_code=403)
+        drive_file_id = document.metadata.get("drive_file", {}).get("id")
+        if drive_file_id:
+            GoogleDriveProvider().delete_file(drive_file_id)
+        document.delete()
+        return ServiceResult.success({"deleted": True})
 
     @staticmethod
     def _open_url(document):

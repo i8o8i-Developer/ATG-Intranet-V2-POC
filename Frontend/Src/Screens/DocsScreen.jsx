@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ExternalLink, File, FileText, FolderOpen, Plus, Search, Upload } from "lucide-react";
+import { ExternalLink, File, FileText, FolderOpen, Plus, Search, Trash, Upload } from "lucide-react";
 
-import { apiGet, apiPost } from "../Api/Client.js";
+import { apiGet, apiPost, unpackList } from "../Api/Client.js";
 import { Modal, Panel, SimpleTable, StatusPill } from "./Shared/ScreenComponents.jsx";
 import "../Styles/DocsScreen.css";
 import { employeeName, formatDate, formatDateTime } from "./Shared/ScreenUtils.jsx";
@@ -41,18 +41,15 @@ export function DocsScreen({ data, reload, navigate }) {
   const filtered = useMemo(() => {
     if (!search.trim()) return docs;
     const q = search.toLowerCase();
-    if (Array.isArray(docs)) return docs.filter((d) => String(d.title || "").toLowerCase().includes(q));
-    if (docs.groups) {
-      return {
-        ...docs,
-        groups: docs.groups.map((g) => ({
-          ...g,
-          documents: (g.documents || []).filter((d) => String(d.title || "").toLowerCase().includes(q)),
-        })).filter((g) => g.documents.length > 0),
-      };
+    if (tab === "Library") {
+      return (docs || []).map((g) => ({
+        ...g,
+        documents: (g.documents || []).filter((d) => String(d.title || "").toLowerCase().includes(q)),
+      })).filter((g) => g.documents.length > 0);
     }
+    if (Array.isArray(docs)) return docs.filter((d) => String(d.title || "").toLowerCase().includes(q));
     return docs;
-  }, [docs, search]);
+  }, [docs, search, tab]);
 
   const createDocument = async (e) => {
     e.preventDefault();
@@ -77,6 +74,17 @@ export function DocsScreen({ data, reload, navigate }) {
 
   const openDoc = (id) => navigate(`/docs/post-detail/${id}/`);
 
+  const deleteDocument = async (id) => {
+    if (!window.confirm("Are You Sure You Want To Delete This Document?")) return;
+    try {
+      await apiPost(`/AtgDocs/KnowledgeDocuments/${id}/delete-document/`, {});
+      loadDocs();
+      reload(["docs"]);
+    } catch (err) {
+      alert("Failed To Delete Document");
+    }
+  };
+
   return (
     <section className="Docs-Screen Screen-Stack">
       <section className="Page-Heading">
@@ -96,7 +104,7 @@ export function DocsScreen({ data, reload, navigate }) {
 
       <div className="Docs-Content">
         {loading && <div className="Docs-Loading">Loading...</div>}
-        {!loading && tab === "Library" && Array.isArray(filtered?.groups) && filtered.groups.map((group) => (
+        {!loading && tab === "Library" && Array.isArray(filtered) && filtered.map((group) => (
           <div key={group.departmentId} className="Docs-Group">
             <h3 className="Docs-Group-Title"><FolderOpen size={16} /> {group.departmentName} ({group.documents.length})</h3>
             <div className="Docs-Card-Grid">
@@ -108,6 +116,7 @@ export function DocsScreen({ data, reload, navigate }) {
                     <div className="Docs-Card-Meta">
                       <StatusPill tone={doc.status === "Published" ? "green" : doc.status === "Draft" ? "gold" : "slate"}>{doc.status}</StatusPill>
                       <span>{doc.departmentName}</span>
+                      <button className="Icon-Button" onClick={(e) => { e.stopPropagation(); deleteDocument(doc.id); }} style={{ marginLeft: "auto", color: "var(--Danger)", background: "transparent", border: "none", cursor: "pointer", display: "flex", padding: 0 }}><Trash size={16} /></button>
                     </div>
                     <small>{doc.ownerName} &middot; {formatDateTime(doc.updatedAt)}</small>
                   </div>
@@ -126,6 +135,7 @@ export function DocsScreen({ data, reload, navigate }) {
                   <div className="Docs-Card-Meta">
                     <StatusPill tone={doc.status === "Published" ? "green" : doc.status === "Draft" ? "gold" : "slate"}>{doc.status || "Viewed"}</StatusPill>
                     <span>{doc.departmentName}</span>
+                    <button className="Icon-Button" onClick={(e) => { e.stopPropagation(); deleteDocument(doc.documentId || doc.id); }} style={{ marginLeft: "auto", color: "var(--Danger)", background: "transparent", border: "none", cursor: "pointer", display: "flex", padding: 0 }}><Trash size={14} /></button>
                   </div>
                   <small>{doc.ownerName || ""} {doc.visitedAt ? formatDateTime(doc.visitedAt) : formatDateTime(doc.updatedAt)}</small>
                 </div>
@@ -134,7 +144,7 @@ export function DocsScreen({ data, reload, navigate }) {
           </div>
         )}
         {!loading && tab !== "Library" && Array.isArray(filtered) && filtered.length === 0 && <p className="Docs-Empty">No Documents Found.</p>}
-        {!loading && tab === "Library" && (!Array.isArray(filtered?.groups) || filtered.groups.length === 0) && <p className="Docs-Empty">No Documents Found.</p>}
+        {!loading && tab === "Library" && (!Array.isArray(filtered) || filtered.length === 0) && <p className="Docs-Empty">No Documents Found.</p>}
       </div>
 
       {createOpen && (
@@ -191,7 +201,7 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
       setBody(d.body || "");
     }).catch(() => {});
     apiGet("/AtgDocs/KnowledgePermissions/").then((list) => {
-      setPermissions((list || []).filter((p) => String(p.document) === String(docId) && p.subject_type === "user"));
+      setPermissions(unpackList(list).filter((p) => String(p.document) === String(docId) && p.subject_type === "user"));
     }).catch(() => {});
     apiGet(`/AtgDocs/KnowledgeDocuments/${docId}/history/`).then(setHistory).catch(() => {});
   }, [docId]);
@@ -235,6 +245,17 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
     }
   };
 
+  const deleteDoc = async () => {
+    if (!window.confirm("Are You Sure You Want To Delete This Document?")) return;
+    try {
+      await apiPost(`/AtgDocs/KnowledgeDocuments/${docId}/delete-document/`, {});
+      reload(["docs"]);
+      navigate("/docs/");
+    } catch (err) {
+      alert("Failed To Delete Document");
+    }
+  };
+
   const grantPermission = async (e) => {
     e.preventDefault();
     const emp = (data.employees || []).find((e) => String(e.id) === String(permForm.employee_id));
@@ -247,7 +268,7 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
     setPermOpen(false);
     setPermForm({ employee_id: "", permission: "Read" });
     const list = await apiGet("/AtgDocs/KnowledgePermissions/");
-    setPermissions((list || []).filter((p) => String(p.document) === String(docId)));
+    setPermissions(unpackList(list).filter((p) => String(p.document) === String(docId)));
   };
 
   const execCmd = (cmd, val = null) => {
@@ -272,6 +293,7 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
           {!hasGoogleDoc && <button className="Primary-Button Small" onClick={save} disabled={saving}>{saving ? "Saving..." : "Save"}</button>}
           {!hasGoogleDoc && doc.status !== "Published" && <button className="Primary-Button Small" onClick={publish}>Publish</button>}
           {hasGoogleDoc && <a className="Primary-Button Small" href={doc.openUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}><ExternalLink size={14} /> Open In Google Docs</a>}
+          <button className="Soft-Button Small" onClick={deleteDoc} style={{ color: "var(--Danger)" }}><Trash size={14} /> Delete</button>
         </div>
       </section>
 

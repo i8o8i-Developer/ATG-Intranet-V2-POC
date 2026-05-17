@@ -14,17 +14,20 @@ export function DeactivateEmployeeScreen({ data, reload }) {
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const employees = (data.employees || []).filter((employee) => !departmentId || String(employee.department) === String(departmentId));
 
   const deactivateOne = async () => {
     if (!confirmTarget) return;
     setBusy(true);
     setError("");
+    setSuccess("");
     try {
       await apiPost("/MainApp/deactivate-employee/", { employee_id: confirmTarget, reason });
       setConfirmOpen(false);
       setConfirmTarget(null);
       setReason("");
+      setSuccess("Employee Deactivated Successfully.");
       reload();
     } catch (err) {
       setError(err?.payload?.detail || err?.message || "Failed To Deactivate Employee.");
@@ -36,11 +39,13 @@ export function DeactivateEmployeeScreen({ data, reload }) {
   const deactivateSelected = async () => {
     setBusy(true);
     setError("");
+    setSuccess("");
     try {
       await apiPost("/MainApp/deactivate-multiple-employee/", { employee_ids: Array.from(selected), reason });
       setSelected(new Set());
       setBulkConfirmOpen(false);
       setReason("");
+      setSuccess(`${selected.size} Employee(s) Deactivated Successfully.`);
       reload();
     } catch (err) {
       setError(err?.payload?.detail || err?.message || "Failed To Deactivate Selected Employees.");
@@ -53,7 +58,8 @@ export function DeactivateEmployeeScreen({ data, reload }) {
     <section className="Deactivate-Page">
       <h1>Deactivate Employee</h1>
 
-      {error && <div style={{ fontSize: 13, padding: "8px 14px", marginBottom: 12, borderRadius: 6, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }}>{error}</div>}
+      {success && <div className="Auth-AlertOk" style={{ marginBottom: 12 }}>{success}</div>}
+      {error && <div className="Auth-Alert" style={{ marginBottom: 12 }}>{error}</div>}
 
       <div className="Deactivate-Controls">
         <select value={departmentId} onChange={(event) => setDepartmentId(event.target.value)}>
@@ -97,7 +103,7 @@ export function DeactivateEmployeeScreen({ data, reload }) {
       </table>
 
       {confirmOpen && (
-        <Modal title="Confirm Deactivation" onClose={() => { setConfirmOpen(false); setConfirmTarget(null); setError(""); }}>
+        <Modal title="Confirm Deactivation" onClose={() => { setConfirmOpen(false); setConfirmTarget(null); setError(""); setSuccess(""); }}>
           <div style={{ padding: "8px 0" }}>
             <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "12px 16px", marginBottom: 16 }}>
               <strong style={{ color: "#dc2626", display: "block", marginBottom: 4 }}>Login Access Will Be Revoked</strong>
@@ -115,7 +121,7 @@ export function DeactivateEmployeeScreen({ data, reload }) {
       )}
 
       {bulkConfirmOpen && (
-        <Modal title={`Deactivate ${selected.size} Employees`} onClose={() => { setBulkConfirmOpen(false); setError(""); }}>
+        <Modal title={`Deactivate ${selected.size} Employees`} onClose={() => { setBulkConfirmOpen(false); setError(""); setSuccess(""); }}>
           <div style={{ padding: "8px 0" }}>
             <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "12px 16px", marginBottom: 16 }}>
               <strong style={{ color: "#dc2626", display: "block", marginBottom: 4 }}>Login Access Will Be Revoked For {selected.size} Users</strong>

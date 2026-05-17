@@ -1064,7 +1064,7 @@ class MainAppLegacyService:
         user = employee.user
         if user and user.is_active:
             user.is_active = False
-            user.save(update_fields=["is_active", "updated_at"])
+            user.save(update_fields=["is_active"])
         UserStatusSnapshot.objects.create(
             tenant=context.tenant,
             workspace=context.workspace or employee.workspace,
@@ -1080,7 +1080,7 @@ class MainAppLegacyService:
                 context=context,
                 recipient=user,
                 title="Account Deactivated",
-                message=f"Your account has been deactivated. Reason: {reason}" if reason else "Your account has been deactivated.",
+                message=f"Your Account Has Been Deactivated. Reason: {reason}" if reason else "Your Account Has Been Deactivated.",
                 category="Account",
                 resource_type="EmployeeProfile",
                 resource_id=employee.id,
