@@ -366,6 +366,20 @@ class ProjectDeliveryService:
                     }
                     for alert in alerts
                 ],
+                "team_history": [
+                    {
+                        "id": h.id,
+                        "action": h.action,
+                        "comment": h.comment,
+                        "changed_by_name": h.changed_by.display_name if h.changed_by else None,
+                        "created_at": h.created_at.isoformat(),
+                        "team_assignment_id": h.team_assignment_id,
+                    }
+                    for h in TeamAssignmentHistory.objects.filter(
+                        tenant=context.tenant,
+                        team_assignment__project=project
+                    ).select_related("changed_by").order_by("-created_at")[:20]
+                ],
                 "tasks": [
                     {
                         "id": item.id,

@@ -388,9 +388,19 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
 
       <Disclosure title="Team History" defaultOpen={false}>
         {(() => {
-          const teamHistory = (data.teamAssignmentHistory || []).filter((h) => team.some((t) => String(t.id) === String(h.team_assignment))).slice(0, 10);
+          const teamHistory = dashboard?.team_history || [];
           if (!teamHistory.length) return <EmptyState label="No Team History." />;
-          return <SimpleTable columns={["Employee", "Action", "Comment", "Date"]} rows={teamHistory.map((h) => [employeeName(data, h.changed_by) || "-", h.action, h.comment || "-", formatDate(h.created_at)])} />;
+          return (
+            <SimpleTable
+              columns={["Employee", "Action", "Comment", "Date"]}
+              rows={teamHistory.map((h) => [
+                h.changed_by_name || "-",
+                h.action,
+                h.comment || "-",
+                formatDate(h.created_at)
+              ])}
+            />
+          );
         })()}
       </Disclosure>
 

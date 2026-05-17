@@ -111,9 +111,14 @@ class ProjectBudgetSerializer(serializers.ModelSerializer):
 
 
 class TeamAssignmentHistorySerializer(serializers.ModelSerializer):
+    changed_by_name = serializers.SerializerMethodField()
+
     class Meta:
         model = TeamAssignmentHistory
         fields = "__all__"
+
+    def get_changed_by_name(self, obj):
+        return obj.changed_by.display_name if obj.changed_by else None
 
 
 class UserRepositoryStatusSerializer(serializers.ModelSerializer):
