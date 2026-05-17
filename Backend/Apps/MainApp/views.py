@@ -1,5 +1,7 @@
+from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponse
 
 from Backend.Apps.MainApp.models import CredentialShareGrant, CredentialVaultItem, ExternalIssueReference, LeaveRequest, ManagerScope, NotificationItem, NotificationSnoozeRecord, OnboardingOffer
 from Backend.Apps.MainApp.serializers import (
@@ -18,6 +20,8 @@ from Backend.EnterpriseCore.models import Tenant, Workspace
 from Backend.EnterpriseCore.services import ServiceResult, TenantContext
 from Backend.EnterpriseCore.viewsets import TenantScopedModelViewSet
 from django.contrib.auth import get_user_model
+from django.utils import timezone
+from django.conf import settings
 from django.utils.dateparse import parse_date, parse_datetime
 from rest_framework import permissions
 from rest_framework.decorators import action
@@ -437,3 +441,74 @@ class MainAppOfferDownloadLegacyAPIView(APIView):
             return Response(result.errors, status=result.status_code)
         offer = result.data
         return Response({"offer_id": offer.id, "filename": f"offer-{offer.id}.pdf", "candidate_name": offer.candidate_name, "candidate_email": offer.candidate_email, "payload": offer.offer_payload}, status=200)
+
+
+class OnboardingFlowHTMLView(APIView):
+    permission_classes = []
+
+    def get(self, request, token):
+        result = MainAppLegacyService.get_offer_by_token(token)
+        if not result.ok:
+            return HttpResponse("Offer Link Is Invalid Or Expired. Please Contact HR.", status=404)
+        offer = result.data
+        if offer.status == "Accepted":
+            return HttpResponse("Offer Already Accepted.", status=410)
+        if offer.status != "Issued":
+            return HttpResponse("Offer Is Not Available.", status=410)
+        if offer.expires_at and offer.expires_at < timezone.now():
+            return HttpResponse("Offer Link Has Expired.", status=410)
+
+        op = offer.offer_payload or {}
+        ctx = {
+            "candidate_name": offer.candidate_name or "",
+            "position_title": offer.position_title or "",
+            "company_name": offer.company_name or "Across The Globe",
+            "candidate_email": offer.candidate_email or "",
+            "username": op.get("username") or "",
+            "department_name": op.get("department_name") or "",
+            "sub_department_name": op.get("sub_department_name") or "",
+            "employment_type": op.get("employment_type") or "Intern",
+            "pay_type": op.get("pay_type") or "Performance Based",
+            "joining_date": op.get("joining_date") or "",
+            "issued_date": op.get("issued_date") or "",
+            "offer_heading": op.get("offer_heading") or "Offer Of Employment",
+            "offer_disclaimer": op.get("offer_disclaimer") or "",
+            "offer_url": request.build_absolute_uri(),
+            "intranet_url": str(getattr(settings, "PUBLIC_BASE_URL", "http://localhost:5173") or "http://localhost:5173").rstrip("/"),
+            "hr_email": "projectdurgaisolutions@gmail.com",
+            "phone": "",
+            "city": "",
+            "emergency_contact": "",
+            "college": "",
+            "github_username": "",
+            "id_type": "Aadhaar",
+            "id_number": "",
+        }
+        html = render_to_string("Onboarding-Flow.html", ctx, request=request)
+        return HttpResponse(html)
+
+    def post(self, request, token):
+        from Backend.Apps.MainApp.serializers import CandidateOfferAcceptSerializer
+        serializer = CandidateOfferAcceptSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=400)
+
+        result = MainAppLegacyService.get_offer_by_token(token)
+        if not result.ok:
+            return Response(result.errors, status=result.status_code)
+        offer = result.data
+        payload = serializer.validated_data
+        payload["profile_data"] = {
+            "phone": request.data.get("phone", ""),
+            "city": request.data.get("city", ""),
+            "emergency_contact": request.data.get("emergency_contact", ""),
+            "college_name": request.data.get("college_name", ""),
+            "github_username": request.data.get("github_username", ""),
+            "id_type": request.data.get("id_type", ""),
+            "id_number": request.data.get("id_number", ""),
+        }
+        context = TenantContext(tenant=offer.tenant, workspace=offer.workspace, actor=request.user if request.user.is_authenticated else None, source="MainAppOfferToken")
+        accepted = OfferLifecycleService.accept_offer(context, token, payload=payload)
+        if not accepted.ok:
+            return Response(accepted.errors, status=accepted.status_code)
+        return Response(OnboardingOfferSerializer(accepted.data).data, status=accepted.status_code)

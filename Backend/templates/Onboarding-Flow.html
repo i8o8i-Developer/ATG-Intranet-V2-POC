@@ -108,6 +108,7 @@
   .nav-dots{display:flex;gap:8px;justify-content:center;margin-top:8px}
   .nav-dot{width:8px;height:8px;border:2px solid #ccc;background:#fff;cursor:pointer;transition:all .2s}
   .nav-dot.active{background:#111;border-color:#111;width:24px}
+  .error-msg{color:#c00;font-size:13px;margin-bottom:14px;padding:10px 14px;border:2px solid #c00;background:#fef2f2;font-family:Arial,sans-serif}
 </style>
 </head>
 <body>
@@ -123,6 +124,7 @@
     </div>
     <div class="progress" id="progressBar"></div>
   </div>
+  {% csrf_token %}
 
   <div class="step" id="step1">
     <div class="card fade-in">
@@ -210,20 +212,21 @@
   <div class="step hidden" id="step3">
     <div class="card fade-in">
       <div class="card-row-center"><div class="card-icon-sm">3</div><div><h2 class="sm">Complete Your Profile</h2><p class="subtitle" style="font-size:13px">Help us set up your account before your joining date.</p></div></div>
+      <div id="acceptError" class="error-msg hidden"></div>
       <div class="form-grid">
-        <label class="form-label">Full Legal Name<input class="form-inp" type="text" value="{{ candidate_name }}"></label>
-        <label class="form-label">Signature Name<input class="form-inp" type="text" value="{{ candidate_name }}"></label>
-        <label class="form-label">Mobile / WhatsApp<input class="form-inp" type="tel" value="{{ phone }}"></label>
-        <label class="form-label">Current City<input class="form-inp" type="text" value="{{ city }}"></label>
-        <label class="form-label">Emergency Contact<input class="form-inp" type="text" value="{{ emergency_contact }}"></label>
-        <label class="form-label">College Name<input class="form-inp" type="text" value="{{ college }}"></label>
-        <label class="form-label">GitHub Username<input class="form-inp" type="text" value="{{ github_username }}"></label>
-        <label class="form-label">ID Type<select class="form-sel" value="{{ id_type }}"><option selected>{{ id_type }}</option><option>Aadhaar</option><option>PAN</option><option>Passport</option><option>Driving License</option><option>Voter ID</option></select></label>
-        <label class="form-label">ID Number<input class="form-inp" type="text" value="{{ id_number }}"></label>
-        <label class="form-label full">Upload ID Proof (Photo/Scan)<input class="form-inp" type="file"></label>
+        <label class="form-label">Full Legal Name<input class="form-inp" id="inpFullName" type="text" value="{{ candidate_name }}"></label>
+        <label class="form-label">Signature Name<input class="form-inp" id="inpSignatureName" type="text" value="{{ candidate_name }}"></label>
+        <label class="form-label">Mobile / WhatsApp<input class="form-inp" id="inpPhone" type="tel" value="{{ phone }}"></label>
+        <label class="form-label">Current City<input class="form-inp" id="inpCity" type="text" value="{{ city }}"></label>
+        <label class="form-label">Emergency Contact<input class="form-inp" id="inpEmergency" type="text" value="{{ emergency_contact }}"></label>
+        <label class="form-label">College Name<input class="form-inp" id="inpCollege" type="text" value="{{ college }}"></label>
+        <label class="form-label">GitHub Username<input class="form-inp" id="inpGithub" type="text" value="{{ github_username }}"></label>
+        <label class="form-label">ID Type<select class="form-sel" id="inpIdType"><option selected>{{ id_type }}</option><option>Aadhaar</option><option>PAN</option><option>Passport</option><option>Driving License</option><option>Voter ID</option></select></label>
+        <label class="form-label">ID Number<input class="form-inp" id="inpIdNumber" type="text" value="{{ id_number }}"></label>
+        <label class="form-label full">Upload ID Proof (Photo/Scan)<input class="form-inp" id="inpIdProof" type="file"></label>
       </div>
       <div class="info-box blue" style="border-color:#111;background:#fafafa">By Clicking <strong>"Accept Offer & Sign NDA"</strong> Below, You Confirm That You Have Read And Agreed To All Offer Terms And The NDA. Your Onboarding Credentials Will Be Emailed To <strong>{{ candidate_email }}</strong>.</div>
-      <div class="action-row"><button class="btn btn-secondary" onclick="goTo(2)">&larr; Back</button><button class="btn btn-primary" onclick="goTo(4)" style="min-width:200px">Accept Offer & Sign NDA &#10003;</button></div>
+      <div class="action-row"><button class="btn btn-secondary" onclick="goTo(2)">&larr; Back</button><button class="btn btn-primary" id="btnAccept" onclick="submitAccept()" style="min-width:200px">Accept Offer & Sign NDA &#10003;</button></div>
     </div>
   </div>
 
@@ -231,16 +234,20 @@
     <div class="card fade-in text-center">
       <div class="success-icon bounce">&#10003;</div>
       <h2 style="font-size:24px;margin-bottom:6px">Offer Accepted!</h2>
-      <p class="subtitle">Congratulations, <strong>{{ candidate_name }}</strong>! You Have Successfully Accepted Your Offer And Signed The NDA.</p>
+      <p class="subtitle" id="successGreeting">Congratulations, <strong>{{ candidate_name }}</strong>! You Have Successfully Accepted Your Offer And Signed The NDA.</p>
       <div class="summary-box">
         <div class="summary-label">Offer Summary</div>
-        <div class="summary-row"><span>Role</span><strong>{{ position_title }}</strong></div>
-        <div class="summary-row"><span>Company</span><strong>{{ company_name }}</strong></div>
-        <div class="summary-row"><span>Joining Date</span><strong>{{ joining_date }}</strong></div>
-        <div class="summary-row"><span>Email</span><strong>{{ candidate_email }}</strong></div>
+        <div class="summary-row"><span>Role</span><strong id="summaryRole">{{ position_title }}</strong></div>
+        <div class="summary-row"><span>Company</span><strong id="summaryCompany">{{ company_name }}</strong></div>
+        <div class="summary-row"><span>Joining Date</span><strong id="summaryDate">{{ joining_date }}</strong></div>
+        <div class="summary-row"><span>Email</span><strong id="summaryEmail">{{ candidate_email }}</strong></div>
       </div>
       <div class="next-steps">
-        <div class="provisioned-box"><div class="label">Your Intranet Account Is Ready!</div><div class="detail">Username: <strong class="username">{{ username }}</strong></div><div class="detail" style="font-size:13px;margin-top:4px">Your Temporary Password Has Been Emailed To <strong>{{ candidate_email }}</strong></div></div>
+        <div class="provisioned-box" id="provisionedBox">
+          <div class="label">Your Intranet Account Is Ready!</div>
+          <div class="detail">Username: <strong class="username" id="provisionedUsername">{{ username }}</strong></div>
+          <div class="detail" style="font-size:13px;margin-top:4px">Your Temporary Password Has Been Emailed To <strong id="provisionedEmail">{{ candidate_email }}</strong></div>
+        </div>
         <h3>What Happens Next?</h3>
         <ul>
           <li>Your <strong>Intranet Credentials</strong> (Username + Temporary Password) Have Been Sent To Your Email.</li>
@@ -297,6 +304,98 @@ function toggleOfferLetter() {
   var arrow = document.getElementById("offerArrow");
   wrap.classList.toggle("open");
   arrow.classList.toggle("open");
+}
+
+function getCsrfToken() {
+  var el = document.querySelector("[name=csrfmiddlewaretoken]");
+  return el ? el.value : "";
+}
+
+function submitAccept() {
+  var signatureName = document.getElementById("inpSignatureName").value.trim();
+  var errorEl = document.getElementById("acceptError");
+  errorEl.classList.add("hidden");
+
+  if (!signatureName) {
+    errorEl.textContent = "Please provide your signature name before accepting.";
+    errorEl.classList.remove("hidden");
+    return;
+  }
+  if (!document.getElementById("ndaCheck").checked) {
+    errorEl.textContent = "You must agree to the NDA before accepting.";
+    errorEl.classList.remove("hidden");
+    return;
+  }
+
+  var btn = document.getElementById("btnAccept");
+  btn.disabled = true;
+  btn.textContent = "Processing...";
+
+  var formData = new FormData();
+  formData.append("accepted_nda", "true");
+  formData.append("accepted_terms", "true");
+  formData.append("signature_name", signatureName);
+  formData.append("phone", document.getElementById("inpPhone").value);
+  formData.append("city", document.getElementById("inpCity").value);
+  formData.append("emergency_contact", document.getElementById("inpEmergency").value);
+  formData.append("college_name", document.getElementById("inpCollege").value);
+  formData.append("github_username", document.getElementById("inpGithub").value);
+  formData.append("id_type", document.getElementById("inpIdType").value);
+  formData.append("id_number", document.getElementById("inpIdNumber").value);
+  var idFile = document.getElementById("inpIdProof").files[0];
+  if (idFile) formData.append("id_proof", idFile);
+
+  var xhr = new XMLHttpRequest();
+  xhr.open("POST", window.location.href, true);
+  xhr.setRequestHeader("X-CSRFToken", getCsrfToken());
+  xhr.onload = function() {
+    btn.disabled = false;
+    btn.textContent = "Accept Offer & Sign NDA \u2713";
+    if (xhr.status >= 200 && xhr.status < 300) {
+      var data = JSON.parse(xhr.responseText);
+      populateStep4(data);
+      goTo(4);
+    } else {
+      try {
+        var err = JSON.parse(xhr.responseText);
+        errorEl.textContent = err.detail || err.offer || "Failed to accept offer. Please try again or contact HR.";
+      } catch(e) {
+        errorEl.textContent = "Failed to accept offer. Please try again or contact HR.";
+      }
+      errorEl.classList.remove("hidden");
+    }
+  };
+  xhr.onerror = function() {
+    btn.disabled = false;
+    btn.textContent = "Accept Offer & Sign NDA \u2713";
+    errorEl.textContent = "Network error. Please check your connection and try again.";
+    errorEl.classList.remove("hidden");
+  };
+  xhr.send(formData);
+}
+
+function populateStep4(data) {
+  var onboarding = (data.offer_payload || {}).onboarding || {};
+  var candidateName = data.candidate_name || "{{ candidate_name }}";
+  var positionTitle = data.position_title || "{{ position_title }}";
+  var companyName = data.company_name || "{{ company_name }}";
+  var joiningDate = (data.offer_payload || {}).joining_date || "{{ joining_date }}";
+  var candidateEmail = data.candidate_email || "{{ candidate_email }}";
+  var username = onboarding.username || "{{ username }}";
+
+  document.getElementById("successGreeting").innerHTML = "Congratulations, <strong>" + candidateName + "</strong>! You Have Successfully Accepted Your Offer And Signed The NDA.";
+  document.getElementById("summaryRole").textContent = positionTitle;
+  document.getElementById("summaryCompany").textContent = companyName;
+  document.getElementById("summaryDate").textContent = joiningDate;
+  document.getElementById("summaryEmail").textContent = candidateEmail;
+
+  if (onboarding.provisioned) {
+    document.getElementById("provisionedBox").style.display = "block";
+    document.getElementById("provisionedUsername").textContent = username;
+    document.getElementById("provisionedEmail").textContent = candidateEmail;
+  } else {
+    document.getElementById("provisionedBox").style.display = "none";
+  }
 }
 
 render();
