@@ -1588,7 +1588,6 @@ function ProjectFinance({ data, reload }) {
         </div>
       </div>
     );
-  );
 }
 
 function LeaveWalletManager({ data, reload }) {
