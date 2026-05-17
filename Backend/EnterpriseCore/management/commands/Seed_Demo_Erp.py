@@ -369,8 +369,6 @@ class Command(BaseCommand):
             self.upsert(DeliveryAlert, {"tenant": self.tenant, "project": project, "title": "UI Parity Review"}, {"severity": "Warning", "description": "All Legacy Pages Must Be Accessible In React", "status": "Open"})
         for p, p_roles in [(project_a, [{"role": "Project Manager", "budget": 50000}, {"role": "Developer", "budget": 35000}]), (project_b, [{"role": "Campaign Strategist", "budget": 40000}, {"role": "Creative Designer", "budget": 30000}])]:
             self.upsert(ProjectBudget, {"tenant": self.tenant, "project": p}, {"total_cost": Decimal("500000"), "total_budget": Decimal("750000"), "role_and_budget": p_roles})
-        for ta in TeamAssignment.objects.filter(tenant=self.tenant):
-            self.upsert(TeamAssignmentHistory, {"tenant": self.tenant, "team_assignment": ta, "action": "added", "created_at": self.now - timezone.timedelta(days=30)}, {"comment": "Initial Team Assignment", "changed_by": employees.get("EMP001")})
         for rl in RepositoryLink.objects.filter(tenant=self.tenant):
             for emp_code in ["EMP001", "EMP002"]:
                 if emp_code in employees:
