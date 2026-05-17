@@ -199,7 +199,7 @@ class KnowledgeDocumentService:
         if not perm:
             return ServiceResult.failure({"permission": "Not Found"}, status_code=404)
 
-        # Sync with Drive if possible
+        # 
         drive_file_id = document.metadata.get("drive_file", {}).get("id")
         if drive_file_id:
             from django.contrib.auth.models import User

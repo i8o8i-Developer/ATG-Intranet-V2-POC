@@ -163,7 +163,7 @@ class GoogleDriveProvider:
             return {"file_id": file_id, "email": email, "dry_run": True}
         import requests as req
         try:
-            # 1. List permissions to find the ID for this email
+            # 1. 
             resp = req.get(f"{self.DRIVE_API}/files/{file_id}/permissions", headers=hdrs, params={"fields": "permissions(id,emailAddress)"}, timeout=30)
             resp.raise_for_status()
             perms = resp.json().get("permissions", [])

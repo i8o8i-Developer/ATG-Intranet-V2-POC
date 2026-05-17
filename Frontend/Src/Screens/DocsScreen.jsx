@@ -199,7 +199,7 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
       const list = await apiGet("/AtgDocs/KnowledgePermissions/");
       setPermissions(unpackList(list).filter((p) => String(p.document) === String(docId) && p.subject_type === "user"));
     } catch (err) {
-      console.error("Failed to load permissions", err);
+      console.error("Failed To Load Permissions", err);
     }
   }, [docId]);
 
