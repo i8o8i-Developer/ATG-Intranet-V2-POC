@@ -1075,16 +1075,22 @@ class MainAppLegacyService:
             created_by=context.actor,
             updated_by=context.actor,
         )
-        NotificationService.notify(
-            context=context,
-            recipient=user,
-            title="Account Deactivated",
-            message=f"Your account has been deactivated. Reason: {reason}" if reason else "Your account has been deactivated.",
-            category="Account",
-            resource_type="EmployeeProfile",
-            resource_id=employee.id,
-        )
-        OutboxService.publish(context, "EmployeeProfile", employee.id, "EmployeeDeactivated", {"employeeId": employee.id, "reason": reason})
+        try:
+            NotificationService.notify(
+                context=context,
+                recipient=user,
+                title="Account Deactivated",
+                message=f"Your account has been deactivated. Reason: {reason}" if reason else "Your account has been deactivated.",
+                category="Account",
+                resource_type="EmployeeProfile",
+                resource_id=employee.id,
+            )
+        except Exception:
+            pass
+        try:
+            OutboxService.publish(context, "EmployeeProfile", employee.id, "EmployeeDeactivated", {"employeeId": employee.id, "reason": reason})
+        except Exception:
+            pass
         if user and user.email:
             try:
                 from django.conf import settings
