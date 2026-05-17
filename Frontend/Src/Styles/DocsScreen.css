@@ -1,0 +1,29 @@
+.Docs-Screen { padding: 24px; }
+.Docs-Tabs { display: flex; align-items: center; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 0; }
+.Docs-Tab { padding: 8px 16px; font-size: 13px; font-weight: 500; border: none; background: transparent; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; font-family: inherit; transition: color 0.12s, border-color 0.12s; }
+.Docs-Tab:hover { color: #1d44b0; }
+.Docs-Tab.Active { color: #1d44b0; border-bottom-color: #1d44b0; }
+.Docs-Search { margin-left: auto; display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: #f1f5f9; border-radius: 8px; }
+.Docs-Search input { border: none; background: transparent; font-size: 13px; outline: none; width: 200px; font-family: inherit; color: #0f172a; }
+.Docs-Content { min-height: 300px; }
+.Docs-Loading { text-align: center; padding: 40px; color: #64748b; font-size: 14px; }
+.Docs-Empty { text-align: center; padding: 60px 20px; color: #94a3b8; font-size: 14px; }
+.Docs-Group { margin-bottom: 24px; }
+.Docs-Group-Title { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; color: #0f172a; margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9; }
+.Docs-Card-Grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.Docs-Card { display: flex; gap: 12px; padding: 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; cursor: pointer; transition: box-shadow 0.15s, border-color 0.15s; }
+.Docs-Card:hover { border-color: #a5b4fc; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.Docs-Card-Icon { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: #eef2ff; border-radius: 8px; color: #6366f1; flex-shrink: 0; }
+.Docs-Card-Body { flex: 1; min-width: 0; }
+.Docs-Card-Body strong { display: block; font-size: 14px; color: #0f172a; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.Docs-Card-Meta { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 12px; color: #64748b; }
+.Docs-Card-Body small { font-size: 11px; color: #94a3b8; }
+
+.Docs-Detail { padding: 24px; }
+.Docs-Detail .Page-Heading h1 input { font-size: 20px; font-weight: 700; border: none; background: transparent; width: 100%; padding: 0; font-family: inherit; color: #0f172a; outline: none; }
+.Docs-Detail-Tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 0; }
+.Docs-Editor-Wrapper { display: flex; flex-direction: column; gap: 0; }
+.Docs-Toolbar { display: flex; align-items: center; gap: 4px; padding: 8px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-bottom: none; border-radius: 8px 8px 0 0; flex-wrap: wrap; }
+.Docs-Toolbar-Btn { width: 32px; height: 32px; border: none; background: transparent; border-radius: 6px; cursor: pointer; font-size: 13px; color: #475569; display: flex; align-items: center; justify-content: center; font-family: inherit; transition: background 0.1s; }
+.Docs-Toolbar-Btn:hover { background: #e2e8f0; }
+.Docs-Toolbar-Sep { width: 1px; height: 20px; background: #e2e8f0; margin: 0 4px; }
