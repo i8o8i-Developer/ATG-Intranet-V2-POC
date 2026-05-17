@@ -128,7 +128,7 @@
 
   <div class="step" id="step1">
     <div class="card fade-in">
-      <div class="card-row"><div class="card-icon">1</div><div><h2>Review & Accept Offer</h2><p class="subtitle">Please review your offer letter for the position of <strong>{{ position_title }}</strong> at <strong>{{ company_name }}</strong>.</p></div></div>
+      <div class="card-row"><div class="card-icon">1</div><div><h2>Review & Accept Offer</h2><p class="subtitle">Please Review Your Offer Letter For The Position Of <strong>{{ position_title }}</strong> At <strong>{{ company_name }}</strong>.</p></div></div>
 
       <div class="offer-toggle" onclick="toggleOfferLetter()">
         <div class="arrow" id="offerArrow">&#9654;</div>
@@ -183,7 +183,7 @@
     <div class="card fade-in">
       <div class="card-row-center"><div class="card-icon-sm">2</div><div><h2 class="sm">Non-Disclosure Agreement</h2><p class="subtitle" style="font-size:13px">Read carefully before signing.</p></div></div>
       <div class="nda-box">
-        <p><strong>Hi {{ candidate_name }},</strong><br>Please read this agreement and agree to its terms before accepting your offer.</p>
+        <p><strong>Hi {{ candidate_name }},</strong><br>Please Read This Agreement And Agree To Its Terms Before Accepting Your Offer.</p>
         <h3>Confidentiality Agreement</h3>
         <p>It Is Understood And Agreed To That The Discloser (Across The Globe / ATG) And The Recipient (You, The Candidate) Would Like To Exchange Certain Information That May Be Considered Confidential. To Ensure The Protection Of Such Information And In Consideration Of The Agreement To Exchange Said Information, The Parties Agree As Follows:</p>
         <h3>1. Confidential Information</h3>
@@ -211,7 +211,7 @@
 
   <div class="step hidden" id="step3">
     <div class="card fade-in">
-      <div class="card-row-center"><div class="card-icon-sm">3</div><div><h2 class="sm">Complete Your Profile</h2><p class="subtitle" style="font-size:13px">Help us set up your account before your joining date.</p></div></div>
+      <div class="card-row-center"><div class="card-icon-sm">3</div><div><h2 class="sm">Complete Your Profile</h2><p class="subtitle" style="font-size:13px">Help Us Set Up Your Account Before Your Joining Date.</p></div></div>
       <div id="acceptError" class="error-msg hidden"></div>
       <div class="form-grid">
         <label class="form-label">Full Legal Name<input class="form-inp" id="inpFullName" type="text" value="{{ candidate_name }}"></label>
@@ -366,7 +366,7 @@ function submitAccept() {
         }
         errorEl.textContent = msgs.length ? msgs.join(" | ") : "Failed To Accept Offer. Please Try Again Or Contact HR.";
       } catch(e) {
-        errorEl.textContent = "Server error (status " + xhr.status + "). Please Try Again Or Contact HR.";
+        errorEl.textContent = "Server Error (status " + xhr.status + "). Please Try Again Or Contact HR.";
       }
       errorEl.classList.remove("hidden");
     }
@@ -374,7 +374,7 @@ function submitAccept() {
   xhr.onerror = function() {
     btn.disabled = false;
     btn.textContent = "Accept Offer & Sign NDA \u2713";
-    errorEl.textContent = "Network error. Please check your connection and try again.";
+    errorEl.textContent = "Network Error. Please Check Your Connection And Try Again.";
     errorEl.classList.remove("hidden");
   };
   xhr.send(formData);
