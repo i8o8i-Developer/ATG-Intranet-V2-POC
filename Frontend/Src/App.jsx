@@ -3,7 +3,7 @@ import { AlertTriangle, Bell, ChevronLeft, LogOut } from "lucide-react";
 import { apiGet, apiPost, clearApiAuth, getApiSettings, unpackList } from "./Api/Client.js";
 import { LoginScreen, ProfileScreen } from "./Screens/AuthScreens.jsx";
 import { RouteRenderer } from "./Screens/AppScreens.jsx";
-import OfferAcceptanceScreen from "./Screens/OfferAcceptanceScreen.jsx";
+
 import { resolveActiveEmployee } from "./Screens/Shared/ScreenUtils.jsx"; // Forced Reload
 import {
   ATGLogo,
@@ -384,10 +384,8 @@ function App() {
   const path = route.split("?")[0];
 
   const isLoginRoute = path.startsWith("/login");
-  // Public Offer Acceptance Route — No Auth Needed
-  const isPublicOfferRoute = path.startsWith("/offer/accept/");
   const hasAuth = Boolean(settings.basicAuth?.username && settings.basicAuth?.password);
-  const { data, loading, errors, apiOnline, reload } = useIntranetData(reloadKey, hasAuth && !isLoginRoute && !isPublicOfferRoute);
+  const { data, loading, errors, apiOnline, reload } = useIntranetData(reloadKey, hasAuth && !isLoginRoute);
 
   useEffect(() => {
     const onPop = () => setRoute(window.location.pathname + window.location.search);
@@ -401,7 +399,6 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (isPublicOfferRoute) return;
     const currentEmployee = resolveActiveEmployee(data);
     const nextEmployeeId = currentEmployee?.id ? String(currentEmployee.id) : "";
     if (nextEmployeeId && nextEmployeeId !== String(selectedEmployeeId || "")) {
@@ -410,7 +407,7 @@ function App() {
     if (!nextEmployeeId && selectedEmployeeId) {
       setSelectedEmployeeId("");
     }
-  }, [data.employees, data.me, selectedEmployeeId, isPublicOfferRoute]);
+  }, [data.employees, data.me, selectedEmployeeId]);
 
   // 
   useEffect(() => {
@@ -431,9 +428,6 @@ function App() {
     setReloadKey((v) => v + 1);
     navigate("/login/");
   };
-
-  // Public Offer Acceptance — Bypass Auth, App Shell, And Resolve Active Employee Entirely
-  if (isPublicOfferRoute) return <OfferAcceptanceScreen />;
 
   if (!hasAuth || path.startsWith("/login")) return <LoginScreen settings={settings} onLogin={login} />;
 
