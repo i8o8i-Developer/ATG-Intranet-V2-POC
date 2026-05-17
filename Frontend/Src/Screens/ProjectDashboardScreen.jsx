@@ -78,14 +78,13 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
       .catch(() => setDashboard(null));
   }, [selectedProjectId, data.projects]);
 
-  const project = dashboard?.project || findById(data.projects, selectedProjectId) || {};
-  const rawTasks = dashboard?.tasks?.length ? dashboard.tasks : (data.tasks || []).filter((task) => String(task.project) === String(selectedProjectId));
-  const tasks = rawTasks.map((task) => ({ ...(findById(data.tasks, task.id) || {}), ...task, project: task.project || task.project_id || selectedProjectId }));
-  const milestones = dashboard?.milestones?.length ? dashboard.milestones : (data.milestones || []).filter((item) => String(item.project) === String(selectedProjectId));
-  const team = dashboard?.team?.length ? dashboard.team : (data.teamAssignments || []).filter((item) => String(item.project) === String(selectedProjectId));
-  const docs = dashboard?.documents?.length ? dashboard.documents : (data.projectDocuments || []).filter((item) => String(item.project) === String(selectedProjectId));
-  const repos = (data.repositories || []).filter((repo) => String(repo.project) === String(selectedProjectId));
-  const alerts = (dashboard?.alerts || data.alerts || []).filter((item) => !selectedProjectId || String(item.project) === String(selectedProjectId) || !item.project).slice(0, 10);
+  const project = dashboard?.project || {};
+  const tasks = (dashboard?.tasks || []).map((task) => ({ ...(findById(data.tasks, task.id) || {}), ...task, project: task.project || task.project_id || selectedProjectId }));
+  const milestones = dashboard?.milestones || [];
+  const team = dashboard?.team || [];
+  const docs = dashboard?.documents || [];
+  const repos = (dashboard?.repositories || []).filter((repo) => String(repo.project) === String(selectedProjectId));
+  const alerts = (dashboard?.alerts || []).slice(0, 10);
   const completedMilestones = milestones.filter((item) => String(item.status).toLowerCase() === "completed").length;
   const milestoneProgress = milestones.length ? Math.round((completedMilestones / milestones.length) * 100) : 0;
 

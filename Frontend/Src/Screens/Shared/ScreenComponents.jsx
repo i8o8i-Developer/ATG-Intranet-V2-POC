@@ -60,8 +60,8 @@ export function SimpleTable({ columns = [], rows = [] }) {
 }
 
 export function MilestoneRail({ milestones = [] }) {
-  const visible = milestones.length ? milestones : [{ id: "Empty-1", status: "Open" }, { id: "Empty-2", status: "Completed" }, { id: "Empty-3", status: "Delayed" }];
-  return <div className="Milestone-Rail">{visible.slice(0, 12).map((milestone) => <span key={milestone.id} className={isCompleted(milestone.status) ? "done" : milestone.status === "Delayed" ? "late" : "open"} />)}</div>;
+  if (!milestones.length) return null;
+  return <div className="Milestone-Rail">{milestones.slice(0, 12).map((milestone) => <span key={milestone.id} className={isCompleted(milestone.status) ? "done" : milestone.status === "Delayed" ? "late" : "open"} />)}</div>;
 }
 
 export function Progress({ value }) {

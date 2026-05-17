@@ -21,10 +21,8 @@ class ProjectDeliveryService:
         group_filter = group or project.project_type
         checkpoints = DefaultCheckpoint.objects.filter(tenant=context.tenant).filter(project_type__in=[group_filter, ""]).order_by("sequence")
         if not checkpoints.exists():
-            seed_titles = ["Discovery", "Planning", "Implementation", "Review", "Handover"]
-            for index, title in enumerate(seed_titles, start=1):
-                DefaultCheckpoint.objects.create(tenant=context.tenant, workspace=context.workspace, title=title, sequence=index, project_type=group_filter, created_by=context.actor)
-            checkpoints = DefaultCheckpoint.objects.filter(tenant=context.tenant).filter(project_type__in=[group_filter, ""]).order_by("sequence")
+            return ServiceResult.failure({"checkpoints": f"No default checkpoints found for type: {group_filter}"}, status_code=404)
+        
         created = []
         for checkpoint in checkpoints:
             milestone, _created = DeliveryMilestone.objects.get_or_create(
