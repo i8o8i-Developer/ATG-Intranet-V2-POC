@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  body{margin:0;padding:0;background:#f5f5f5;font-family:Georgia,'Times New Roman',serif}
+  .wrapper{background:#f5f5f5;padding:40px 20px;width:100%}
+  .main{max-width:600px;margin:0 auto;background:#fff;border:2px solid #111}
+  .head{padding:32px 40px;text-align:center;border-bottom:2px solid #111}
+  .brand{font-size:26px;font-weight:900;color:#111;letter-spacing:3px}
+  .brand-sub{font-size:10px;color:#555;letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+  .body{padding:40px;text-align:left}
+  .body p{font-size:16px;color:#111;margin:0 0 8px;line-height:1.7}
+  .greeting{font-size:16px;color:#333;line-height:1.7;margin:0 0 24px}
+  .cta-wrap{text-align:center;margin:0 0 24px}
+  .cta{display:inline-block;background:#111;color:#fff;text-decoration:none;padding:12px 32px;font-size:14px;font-weight:700;letter-spacing:1px;font-family:Arial,sans-serif;text-transform:uppercase}
+  .cta:hover{background:#333}
+  .closing{font-size:14px;color:#555;line-height:1.6;margin:0 0 20px}
+  .ps{font-family:Arial,sans-serif;font-size:12px;color:#999;margin:20px 0 0;padding-top:16px;border-top:1px solid #ddd}
+  .foot{background:#f5f5f5;padding:16px 40px;text-align:center;border-top:1px solid #ddd;font-size:11px;color:#888;font-family:Arial,sans-serif}
+</style>
+</head>
+<body>
+<table class="wrapper" cellpadding="0" cellspacing="0">
+<tr><td align="center">
+<table class="main" cellpadding="0" cellspacing="0">
+<tr><td class="head">
+<div class="brand">ATG</div>
+<div class="brand-sub">Across The Globe</div>
+</td></tr>
+<tr><td class="body">
+<p>Dear <strong>{{ candidate_name }}</strong>,</p>
+<p class="greeting">Across The Globe (ATG) Is Pleased To Extend You An Offer For <strong>{{ position_title }}</strong>. Kindly Click On The Button Below To View, Download And Accept Your Offer.</p>
+<div class="cta-wrap">
+<a href="{{ offer_url }}" class="cta" target="_blank">Click Here To Accept</a>
+</div>
+<p class="closing">Should You Have Any Doubts Related To The Offer Or Onboarding, Kindly Consult Your Hiring Manager.</p>
+<p style="font-size:15px;color:#111;margin:0 0 4px">Congratulations!</p>
+<p style="font-size:15px;color:#333;margin:0 0 20px">Team ATG.</p>
+<p class="ps">PS: In Case The Button Does Not Work, Copy And Paste The Following Link In Your Browser Address Bar:<br>
+<span style="color:#111;word-break:break-all">{{ offer_url }}</span></p>
+</td></tr>
+<tr><td class="foot">
+&copy; Across The Globe (ATG). All Rights Reserved.
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>

@@ -314,50 +314,15 @@ class OfferLifecycleService:
                 or "admin@atg.world"
             )
             candidate_name = offer.candidate_name or username
-            position = offer.position_title or "Intern"
-            creds_html = f"""<!doctype html>
-<html>
-<head><meta charset="utf-8" /></head>
-<body style="margin:0;padding:0;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:40px 0;">
-  <tr><td align="center">
-    <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-      <tr><td style="background:linear-gradient(135deg,#1e3a5f,#2563eb);padding:32px 40px;text-align:center;">
-        <div style="font-size:28px;font-weight:900;color:#fff;letter-spacing:2px;">ATG</div>
-        <div style="color:#93c5fd;font-size:14px;margin-top:4px;">Across The Globe — Onboarding</div>
-      </td></tr>
-      <tr><td style="padding:40px;">
-        <h2 style="color:#1e3a5f;margin:0 0 8px;">Welcome aboard, {escape(candidate_name)}! 🎉</h2>
-        <p style="color:#475569;margin:0 0 28px;">Your offer has been accepted and your ATG Intranet account is ready. Here are your login credentials:</p>
-        <div style="background:#f1f5f9;border-radius:12px;padding:24px;margin-bottom:28px;">
-          <div style="margin-bottom:16px;">
-            <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#64748b;margin-bottom:4px;">Intranet Username</div>
-            <div style="font-size:20px;font-weight:700;color:#1e293b;font-family:monospace;">{escape(username)}</div>
-          </div>
-          <div>
-            <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#64748b;margin-bottom:4px;">Temporary Password</div>
-            <div style="font-size:20px;font-weight:700;color:#1e293b;font-family:monospace;">{escape(password)}</div>
-          </div>
-        </div>
-        <div style="margin-bottom:28px;">
-          <div style="font-size:13px;color:#64748b;margin-bottom:8px;">Your role: <strong style="color:#1e293b;">{escape(position)}</strong></div>
-          <div style="font-size:13px;color:#64748b;">Please change your password after first login.</div>
-        </div>
-        <a href="{escape(intranet_url)}" style="display:inline-block;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;">
-          Access ATG Intranet →
-        </a>
-        <p style="margin:28px 0 0;color:#94a3b8;font-size:13px;">
-          Questions? Contact HR at <a href="mailto:{escape(from_email)}" style="color:#2563eb;">{escape(from_email)}</a>
-        </p>
-      </td></tr>
-      <tr><td style="background:#f8fafc;padding:20px 40px;text-align:center;border-top:1px solid #e2e8f0;">
-        <p style="margin:0;color:#94a3b8;font-size:12px;">© Across The Globe (ATG). All Rights Reserved.</p>
-      </td></tr>
-    </table>
-  </td></tr>
-</table>
-</body>
-</html>"""
+            creds_context = {
+                "candidate_name": candidate_name,
+                "username": username,
+                "password": password,
+                "position_title": offer.position_title or "Intern",
+                "intranet_url": intranet_url,
+                "from_email": from_email,
+            }
+            creds_html = render_to_string("Credentials-Email.html", creds_context)
             msg = EmailMultiAlternatives(
                 subject=f"Welcome to ATG! Your Intranet Credentials — {candidate_name}",
                 body=f"Welcome {candidate_name}!\nYour ATG Intranet Username: {username}\nTemporary Password: {password}\nLogin at: {intranet_url}",
@@ -379,7 +344,9 @@ class OfferLifecycleService:
                 "provision_error": provision_error,
             },
         }
-        offer.save(update_fields=["offer_payload", "updated_at"])
+        offer.token = None
+        offer.expires_at = None
+        offer.save(update_fields=["offer_payload", "token", "expires_at", "updated_at"])
 
         return ServiceResult.success(offer)
 
@@ -770,84 +737,21 @@ class MainAppLegacyService:
         return context_data
 
     @staticmethod
+    def _render_offer_template(template_name, context_data, extra_context=None):
+        ctx = {**context_data}
+        if extra_context:
+            ctx.update(extra_context)
+        return render_to_string(template_name, ctx)
+
+    @staticmethod
     def build_legacy_offer_html(offer, overrides=None):
         details = MainAppLegacyService.offer_template_context(offer, overrides)
-        heading = "OFFER LETTER" if details["actual_offer"] else "PROVISIONAL OFFER LETTER"
-        disclaimer = "" if details["actual_offer"] else "<p style='text-align:center;margin:8px 0 22px;font-size:13px;font-weight:700;'>This is a provisional offer letter. This is NOT an actual offer letter which will be sent after successful first month completion.</p>"
-        return f"""<!doctype html>
-<html>
-    <head>
-        <meta charset='utf-8' />
-        <style>
-            body {{ margin: 0; padding: 28px; background: #ffffff; color: #111827; font-family: Georgia, 'Times New Roman', serif; }}
-            .offer-shell {{ max-width: 860px; margin: 0 auto; border: 2px solid #111827; padding: 36px 42px 48px; }}
-            .offer-logo {{ text-align: center; margin-bottom: 18px; }}
-            .offer-logo img {{ width: 100%; max-width: 520px; height: auto; }}
-            .offer-title {{ text-align: center; font-size: 27px; font-weight: 700; letter-spacing: 1.4px; margin: 6px 0 0; }}
-            .offer-date {{ text-align: right; margin: 18px 0 22px; font-size: 15px; }}
-            .offer-copy {{ font-size: 15px; line-height: 1.7; margin: 0 0 14px; text-align: justify; }}
-            .offer-table {{ width: 100%; border-collapse: collapse; margin: 20px 0 24px; }}
-            .offer-table td, .offer-table th {{ border: 1px solid #111827; padding: 10px 12px; vertical-align: top; }}
-            .offer-table th {{ background: #efefef; text-align: left; }}
-            .offer-signoff {{ margin-top: 28px; font-size: 15px; line-height: 1.8; }}
-        </style>
-    </head>
-    <body>
-        <div class='offer-shell'>
-            <div class='offer-logo'>
-                <img src='https://i.postimg.cc/kgHvKMLz/employed-India-Logo.png' alt='ATG Offer Letter' />
-            </div>
-            <div class='offer-title'>{escape(heading)}</div>
-            {disclaimer}
-            <div class='offer-date'><strong>{escape(details['joining_date'])}</strong></div>
-            <p class='offer-copy'>Dear Mr./Ms. {escape(details['candidate_name'])},</p>
-            <p class='offer-copy'>We are pleased to offer you the position of <strong>{escape(details['position_title'])}</strong> with <strong>{escape(details['company_name'])}</strong>. This letter follows the legacy intranet offer format and records the core terms of your engagement.</p>
-            <table class='offer-table'>
-                <tbody>
-                    <tr><th style='width:34%'>Designation</th><td>{escape(details['position_title'])}</td></tr>
-                    <tr><th>Date of Joining / Issue</th><td>{escape(details['joining_date'])}</td></tr>
-                    <tr><th>Department</th><td>{escape(details['department_name'])}</td></tr>
-                    <tr><th>Sub Department</th><td>{escape(str(details['sub_department_name']))}</td></tr>
-                    <tr><th>Employment Type</th><td>{escape(details['employment_type'])}</td></tr>
-                    <tr><th>Compensation</th><td>{escape(details['pay_type'])}</td></tr>
-                    <tr><th>System Username</th><td>{escape(details['username'])}</td></tr>
-                    <tr><th>Candidate Email</th><td>{escape(details['candidate_email'])}</td></tr>
-                </tbody>
-            </table>
-            <p class='offer-copy'>This offer is subject to the company policies, code of conduct, and any onboarding formalities communicated by the HR or hiring team. Please retain this document for your records.</p>
-            <div class='offer-signoff'>
-                Regards,<br />
-                <strong>Team Across The Globe (ATG)</strong>
-            </div>
-        </div>
-    </body>
-</html>"""
+        return MainAppLegacyService._render_offer_template("Offer-Letter.html", details, {"offer_url": ""})
 
     @staticmethod
     def build_offer_email_html(offer, offer_url, overrides=None):
         details = MainAppLegacyService.offer_template_context(offer, overrides)
-        safe_name = escape(details["candidate_name"])
-        safe_position = escape(details["position_title"])
-        safe_link = escape(offer_url)
-        return f"""<!doctype html>
-<html>
-    <body>
-        <div style='background:#F5F5F5;font-size:18px;font-family:Helvetica,Arial,sans-serif;text-align:center;border:0.5px solid black;border-radius:20px;padding:50px 20px'>
-            <div><img src='https://i.postimg.cc/kgHvKMLz/employed-India-Logo.png' alt='ATG' style='max-width:320px;width:100%;height:auto' /></div>
-            <h4>Hi {safe_name},</h4>
-            <div>Across The Globe (ATG) is pleased to extend you an offer for {safe_position}. Kindly click on this link to view, download and accept your offer.</div>
-            <br />
-            <a href='{safe_link}' target='_blank' style='background-color:#4CAF50;border:none;color:white;padding:15px 32px;text-align:center;text-decoration:none;display:inline-block;font-size:16px;border-radius:8px;'>CLICK HERE</a>
-            <br /><br />
-            <span>Should you have any doubts related to the offer or onboarding, kindly consult your Hiring Manager.</span>
-            <br />
-            <span>Congratulations!</span>
-            <br />
-            <span>Team ATG.</span>
-            <p style='color:#ff0000d6; text-align:left;'>PS: In case 'Click Here' doesn't work copy &amp; paste the following link in your address bar <span style='color:blue; word-break:break-word;'>{safe_link}</span></p>
-        </div>
-    </body>
-</html>"""
+        return MainAppLegacyService._render_offer_template("Offer-Email.html", details, {"offer_url": offer_url})
 
     @staticmethod
     def check_name(context, email="", username=""):
@@ -952,65 +856,7 @@ class MainAppLegacyService:
                 return ServiceResult.failure({"email": "Candidate email not available"}, status_code=400)
 
             
-            d = template_context
-            heading = "OFFER LETTER" if d.get("actual_offer") else "PROVISIONAL OFFER LETTER"
-            disclaimer = (
-                ""
-                if d.get("actual_offer")
-                else "<p style='text-align:center;font-weight:700;font-size:11px;margin:0 0 16px;color:#b91c1c;'>"
-                     "This is a provisional offer letter and NOT a final offer letter.</p>"
-            )
-            def row(label, value):
-                return (
-                    f"<tr>"
-                    f"<td style='border:1px solid #111827;padding:8px 11px;background:#f3f4f6;font-weight:700;width:36%;font-size:13px;'>{escape(label)}</td>"
-                    f"<td style='border:1px solid #111827;padding:8px 11px;font-size:13px;'>{escape(str(value or ''))}</td>"
-                    f"</tr>"
-                )
-            rows_html = "".join([
-                row("Candidate Name",   d.get("candidate_name", "")),
-                row("Designation",      d.get("position_title", "")),
-                row("Date of Joining",  d.get("joining_date", "")),
-                row("Employment Type",  d.get("employment_type", "")),
-                row("Department",       d.get("department_name", "")),
-                row("Sub Department",   d.get("sub_department_name", "")),
-                row("Compensation",     d.get("pay_type", "")),
-                row("System Username",  d.get("username", "")),
-                row("Candidate Email",  d.get("candidate_email", "")),
-            ])
-            pdf_html = f"""<!doctype html>
-<html>
-<head>
-<meta charset="utf-8" />
-<style>
-body {{ margin:0; padding:28px; background:#fff; color:#111827; font-family:Arial,Helvetica,sans-serif; font-size:14px; line-height:1.6; }}
-.shell {{ max-width:800px; margin:0 auto; border:2px solid #111827; padding:32px 38px; }}
-.title {{ text-align:center; font-size:20px; font-weight:700; letter-spacing:1px; margin:0 0 3px; }}
-.company {{ text-align:center; font-size:12px; color:#475467; margin:0 0 18px; }}
-.date-right {{ text-align:right; font-size:13px; margin:0 0 18px; }}
-.body-p {{ margin:0 0 14px; text-align:justify; font-size:14px; }}
-.signoff {{ margin-top:24px; font-size:14px; line-height:1.8; }}
-</style>
-</head>
-<body>
-<div class="shell">
-  <div class="title">{escape(heading)}</div>
-  <div class="company">Across The Globe (ATG)</div>
-  {disclaimer}
-  <div class="date-right">Date: {escape(str(d.get('joining_date', '')))}</div>
-  <p class="body-p">Dear {escape(str(d.get('candidate_name', '')))},</p>
-  <p class="body-p">We are pleased to offer you the position of <b>{escape(str(d.get('position_title', '')))}</b>
-  with <b>{escape(str(d.get('company_name', 'ATG')))}</b>. This letter confirms the core terms of your engagement.</p>
-  <table style="width:100%;border-collapse:collapse;margin:16px 0;">
-    {rows_html}
-  </table>
-  <p class="body-p">This offer is subject to company policies and onboarding formalities communicated by the HR team.
-  Please retain this document for your records.</p>
-  <p class="body-p">To accept your offer and sign the NDA, visit: {escape(str(offer_url))}</p>
-  <div class="signoff">Regards,<br /><b>Team Across The Globe (ATG)</b></div>
-</div>
-</body>
-</html>"""
+            pdf_html = MainAppLegacyService._render_offer_template("Offer-Letter.html", template_context)
 
             pdf_buf = BytesIO()
             pdf_status = pisa.pisaDocument(

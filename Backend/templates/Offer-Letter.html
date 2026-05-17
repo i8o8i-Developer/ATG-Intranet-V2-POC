@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  body{margin:0;padding:28px;background:#fff;color:#111;font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.7}
+  .shell{max-width:860px;margin:0 auto;border:3px double #111;padding:40px 48px 48px;background:#fff}
+  .header{text-align:center;border-bottom:2px solid #111;padding-bottom:18px;margin-bottom:22px}
+  .brand{font-size:24px;font-weight:900;letter-spacing:3px;color:#111;text-transform:uppercase}
+  .brand-sub{font-size:10px;color:#555;letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+  .title{text-align:center;font-size:22px;font-weight:700;letter-spacing:2px;margin:0 0 24px;text-transform:uppercase;color:#111}
+  .date{text-align:right;font-size:14px;color:#444;margin-bottom:18px;font-style:italic}
+  table{width:100%;border-collapse:collapse;margin:18px 0 22px}
+  td,th{border:2px solid #111;padding:8px 12px;font-size:14px;vertical-align:top}
+  th{background:#e9ecef;text-align:left;font-weight:700;width:36%}
+  td{color:#222}
+  .body-text{font-size:15px;line-height:1.8;text-align:justify;margin:0 0 14px;color:#222}
+  .body-text strong{color:#111}
+  .sign-row{display:flex;justify-content:space-between;margin-top:36px;padding-top:24px;border-top:2px solid #ccc}
+  .sign-box{text-align:center;width:220px}
+  .sign-line{width:100%;border-top:2px solid #111;padding-top:6px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:0.5px}
+  .sign-date{font-size:11px;color:#888;margin-top:4px}
+  .valid{text-align:center;font-size:13px;color:#555;margin-top:16px;font-style:italic}
+  .footer{text-align:center;margin-top:24px;font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.5px;border-top:1px solid #ddd;padding-top:16px}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="header">
+    <div class="brand">ATG</div>
+    <div class="brand-sub">Across The Globe</div>
+  </div>
+  <div class="title">{{ offer_heading }}</div>
+  {% if offer_disclaimer %}{{ offer_disclaimer|safe }}{% endif %}
+  <div class="date">Date: {{ issued_date }}</div>
+  <p class="body-text">Dear <strong>{{ candidate_name }}</strong>,</p>
+  <p class="body-text">We Are Pleased To Offer You The Position Of <strong>{{ position_title }}</strong> With <strong>{{ company_name }}</strong>. We Were Impressed With Your Background And Believe Your Skills Will Be A Valuable Addition To Our Team.</p>
+  <table>
+    <tr><th>Detail</th><th>Value</th></tr>
+    <tr><td>Candidate Name</td><td>{{ candidate_name }}</td></tr>
+    <tr><td>Position Title</td><td>{{ position_title }}</td></tr>
+    <tr><td>Department</td><td>{{ department_name }}</td></tr>
+    <tr><td>Sub Department</td><td>{{ sub_department_name }}</td></tr>
+    <tr><td>Employment Type</td><td>{{ employment_type }}</td></tr>
+    <tr><td>Pay Type</td><td>{{ pay_type }}</td></tr>
+    <tr><td>Date Of Joining</td><td>{{ joining_date }}</td></tr>
+    <tr><td>System Username</td><td>{{ username }}</td></tr>
+    <tr><td>Candidate Email</td><td>{{ candidate_email }}</td></tr>
+  </table>
+  <p class="body-text">Your Appointment Will Be Governed By The Terms And Conditions Outlined In This Offer Letter And The Company's Standard Employment Policies. This Offer Is Subject To Verification Of Your Credentials And Background Check.</p>
+  <p class="body-text">Please Indicate Your Acceptance By Signing Below And Returning This Letter. Once Signed, You Will Receive Further Instructions Regarding Onboarding Documentation And Your First Day Details. To Accept Your Offer Online, Visit: <strong>{{ offer_url }}</strong></p>
+  <div class="sign-row">
+    <div class="sign-box">
+      <div class="sign-line">Authorized Signatory</div>
+      <div class="sign-date">Date: _________</div>
+    </div>
+    <div class="sign-box">
+      <div class="sign-line">Candidate Signature</div>
+      <div class="sign-date">Date: _________</div>
+    </div>
+  </div>
+  <div class="footer">This Is A System-Generated Offer Letter From ATG Intranet. For Queries, Contact HR.</div>
+</div>
+</body>
+</html>

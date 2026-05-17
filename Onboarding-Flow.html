@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ONBOARDING FLOW — ATG INTRANET</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Georgia,'Times New Roman',serif;background:#f4f6f8;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 20px;font-size:15px;line-height:1.7;color:#222}
+  .wrap{width:100%;max-width:760px;margin:0 auto}
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-family:Arial,sans-serif;padding-bottom:10px;border-bottom:2px solid #111}
+  .toolbar h1{margin:0;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#111}
+  .toolbar-step{color:#555;font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+  .header{display:flex;align-items:center;justify-content:space-between;padding:12px 0;margin-bottom:4px}
+  .header-left{display:flex;align-items:center;gap:10px}
+  .header-logo{display:flex;align-items:center;justify-content:center;width:36px;height:36px;background:#111;color:#fff;font-size:14px;font-weight:900;letter-spacing:1px}
+  .header-title{font-size:14px;font-weight:700;color:#111}
+  .header-sub{font-size:10px;color:#777;text-transform:uppercase;letter-spacing:.5px}
+  .progress{display:flex;align-items:center;gap:0}
+  .prog-step{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .prog-circle{width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid #ddd;color:#aaa;background:#fff;transition:all .2s}
+  .prog-circle.active{border-color:#111;color:#111;background:#fff}
+  .prog-circle.done{border-color:#111;color:#fff;background:#111}
+  .prog-label{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:#aaa;white-space:nowrap}
+  .prog-label.active{color:#111;font-weight:700}
+  .prog-label.done{color:#555;font-weight:600}
+  .prog-line{width:28px;height:2px;margin:0 3px;margin-bottom:14px;background:#ddd;transition:all .2s}
+  .prog-line.done{background:#111}
+  .card{background:#fff;border:3px double #111;padding:36px 40px;margin-bottom:20px}
+  .fade-in{animation:fadeIn .3s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .hidden{display:none!important}
+  .card-row{display:flex;align-items:flex-start;gap:14px;margin-bottom:24px}
+  .card-row-center{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+  .card-icon{width:42px;height:42px;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;flex-shrink:0}
+  .card-icon-sm{width:38px;height:38px;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0}
+  h2{margin:0 0 2px;font-size:22px;font-weight:700;color:#111;letter-spacing:-.3px}
+  h2.sm{font-size:18px}
+  .subtitle{margin:0;font-size:14px;color:#555;line-height:1.5}
+  .offer-toggle{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 16px;border:2px solid #111;background:#fafafa;cursor:pointer;user-select:none}
+  .offer-toggle span{font-size:13px;font-weight:700;font-family:Arial,sans-serif;text-transform:uppercase;letter-spacing:.3px;color:#111}
+  .offer-toggle .arrow{font-size:11px;transition:transform .2s}
+  .offer-toggle .arrow.open{transform:rotate(90deg)}
+  .offer-letter-wrap{overflow:hidden;max-height:0;transition:max-height .4s ease}
+  .offer-letter-wrap.open{max-height:1400px}
+  .offer-shell{max-width:100%;border:3px double #111;padding:32px 36px 36px;background:#fff;margin-bottom:20px}
+  .offer-header{text-align:center;border-bottom:2px solid #111;padding-bottom:16px;margin-bottom:20px}
+  .offer-brand{font-size:22px;font-weight:900;letter-spacing:3px;color:#111;text-transform:uppercase}
+  .offer-brand-sub{font-size:10px;color:#555;letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+  .offer-title{text-align:center;font-size:20px;font-weight:700;letter-spacing:2px;margin:0 0 20px;text-transform:uppercase;color:#111}
+  .offer-date{text-align:right;font-size:13px;color:#444;margin-bottom:16px;font-style:italic}
+  .offer-table{width:100%;border-collapse:collapse;margin:16px 0 20px}
+  .offer-table td,.offer-table th{border:2px solid #111;padding:7px 10px;font-size:13px;vertical-align:top}
+  .offer-table th{background:#e9ecef;text-align:left;font-weight:700;width:36%}
+  .offer-table td{color:#222}
+  .offer-body{font-size:14px;line-height:1.8;text-align:justify;margin:0 0 12px;color:#222}
+  .offer-body strong{color:#111}
+  .offer-sign-row{display:flex;justify-content:space-between;margin-top:30px;padding-top:20px;border-top:2px solid #ccc}
+  .offer-sign-box{text-align:center;width:200px}
+  .offer-sign-line{width:100%;border-top:2px solid #111;padding-top:5px;font-size:10px;color:#555;text-transform:uppercase;letter-spacing:.5px}
+  .offer-sign-date{font-size:10px;color:#888;margin-top:3px}
+  .offer-footer{text-align:center;margin-top:20px;font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;border-top:1px solid #ddd;padding-top:14px}
+  .info-box{padding:14px 18px;border:2px solid;margin-bottom:24px;font-size:13px;line-height:1.6;font-family:Arial,sans-serif}
+  .info-box.blue{border-color:#111;background:#f5f5f5;color:#222}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 24px;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;border:2px solid #111;font-family:Arial,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-decoration:none}
+  .btn-primary{color:#fff;background:#111}
+  .btn-primary:hover{color:#111;background:#fff}
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed}
+  .btn-secondary{color:#111;background:#fff}
+  .btn-secondary:hover{color:#fff;background:#111}
+  .action-row{display:flex;justify-content:space-between;gap:12px;margin-top:8px}
+  .w100{width:100%}
+  .nda-box{border:2px solid #ccc;padding:20px 24px;height:240px;overflow-y:auto;margin-bottom:20px;font-size:13px;line-height:1.7;color:#333;background:#fafafa}
+  .nda-box h3{font-size:14px;color:#111;margin-top:18px;margin-bottom:6px;text-transform:uppercase;letter-spacing:.3px}
+  .nda-box h3:first-child{margin-top:0}
+  .nda-box p{margin:0 0 10px}
+  .checkbox-label{display:flex;align-items:flex-start;gap:12px;cursor:pointer;margin-bottom:24px;user-select:none;font-family:Arial,sans-serif;padding:12px 16px;border:2px solid #ccc;background:#fafafa}
+  .checkbox-label input{display:none}
+  .checkbox-box{width:20px;height:20px;border:2px solid #888;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;color:transparent;transition:all .15s}
+  .checkbox-label input:checked+.checkbox-box{background:#111;border-color:#111;color:#fff}
+  .checkbox-label span{font-size:13px;color:#444;line-height:1.4}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+  .form-grid .full{grid-column:1/-1}
+  .form-label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:#444;font-weight:600;font-family:Arial,sans-serif;text-transform:uppercase;letter-spacing:.3px}
+  .form-inp{padding:8px 12px;border:2px solid #ccc;font-size:13px;font-family:Georgia,serif;background:#fff;color:#222}
+  .form-inp:focus{outline:none;border-color:#111}
+  .form-sel{padding:8px 12px;border:2px solid #ccc;font-size:13px;font-family:Georgia,serif;background:#fff}
+  .text-center{text-align:center}
+  .success-icon{margin:0 auto 20px;width:72px;height:72px;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;font-size:32px}
+  .bounce{animation:bounce .6s ease}
+  @keyframes bounce{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+  .summary-box{border:2px solid #111;padding:20px 24px;margin-bottom:20px;text-align:left;background:#fafafa}
+  .summary-label{font-family:Arial,sans-serif;font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px;font-weight:700}
+  .summary-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #e5e5e5;font-size:14px}
+  .summary-row:last-child{border-bottom:none}
+  .summary-row span{color:#666}
+  .summary-row strong{color:#111}
+  .provisioned-box{border:2px solid #111;padding:16px 20px;margin-bottom:16px;background:#f5f5f5}
+  .provisioned-box .label{font-weight:700;margin-bottom:6px;font-size:14px;color:#111}
+  .provisioned-box .detail{font-size:14px;color:#333}
+  .provisioned-box .username{font-family:monospace;font-size:16px;font-weight:700}
+  .next-steps{text-align:left}
+  .next-steps h3{font-size:15px;color:#111;margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px}
+  .next-steps ul{list-style:none;padding:0;display:flex;flex-direction:column;gap:10px}
+  .next-steps li{font-size:13px;color:#444;line-height:1.5;font-family:Arial,sans-serif}
+  .contact-link{color:#111;text-decoration:underline}
+  .contact-link:hover{color:#555}
+  .nav-dots{display:flex;gap:8px;justify-content:center;margin-top:8px}
+  .nav-dot{width:8px;height:8px;border:2px solid #ccc;background:#fff;cursor:pointer;transition:all .2s}
+  .nav-dot.active{background:#111;border-color:#111;width:24px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="toolbar">
+    <h1>ONBOARDING FLOW</h1>
+    <div class="toolbar-step" id="stepIndicator">STEP 1 OF 4</div>
+  </div>
+  <div class="header">
+    <div class="header-left">
+      <div class="header-logo">A</div>
+      <div><div class="header-title">Across The Globe</div><div class="header-sub">Onboarding Portal</div></div>
+    </div>
+    <div class="progress" id="progressBar"></div>
+  </div>
+
+  <div class="step" id="step1">
+    <div class="card fade-in">
+      <div class="card-row"><div class="card-icon">1</div><div><h2>Review & Accept Offer</h2><p class="subtitle">Please Review Your Offer Letter For The Position Of <strong>{{ position_title }}</strong> At <strong>{{ company_name }}</strong>.</p></div></div>
+
+      <div class="offer-toggle" onclick="toggleOfferLetter()">
+        <div class="arrow" id="offerArrow">&#9654;</div>
+        <span>View Offer Letter</span>
+      </div>
+
+      <div class="offer-letter-wrap" id="offerLetterWrap">
+        <div class="offer-shell">
+          <div class="offer-header">
+            <div class="offer-brand">ATG</div>
+            <div class="offer-brand-sub">Across The Globe</div>
+          </div>
+          <div class="offer-title">{{ offer_heading }}</div>
+          {% if offer_disclaimer %}{{ offer_disclaimer|safe }}{% endif %}
+          <div class="offer-date">Date: {{ issued_date }}</div>
+          <p class="offer-body">Dear <strong>{{ candidate_name }}</strong>,</p>
+          <p class="offer-body">We Are Pleased To Offer You The Position Of <strong>{{ position_title }}</strong> With <strong>{{ company_name }}</strong>. We Were Impressed With Your Background And Believe Your Skills Will Be A Valuable Addition To Our Team.</p>
+          <table class="offer-table">
+            <tr><th>Detail</th><th>Value</th></tr>
+            <tr><td>Candidate Name</td><td>{{ candidate_name }}</td></tr>
+            <tr><td>Position Title</td><td>{{ position_title }}</td></tr>
+            <tr><td>Department</td><td>{{ department_name }}</td></tr>
+            <tr><td>Sub Department</td><td>{{ sub_department_name }}</td></tr>
+            <tr><td>Employment Type</td><td>{{ employment_type }}</td></tr>
+            <tr><td>Pay Type</td><td>{{ pay_type }}</td></tr>
+            <tr><td>Date Of Joining</td><td>{{ joining_date }}</td></tr>
+            <tr><td>System Username</td><td>{{ username }}</td></tr>
+            <tr><td>Candidate Email</td><td>{{ candidate_email }}</td></tr>
+          </table>
+          <p class="offer-body">Your Appointment Will Be Governed By The Terms And Conditions Outlined In This Offer Letter And The Company's Standard Employment Policies. This Offer Is Subject To Verification Of Your Credentials And Background Check.</p>
+          <p class="offer-body">Please Indicate Your Acceptance By Signing Below And Returning This Letter. Once Signed, You Will Receive Further Instructions Regarding Onboarding Documentation And Your First Day Details. To Accept Your Offer Online, Visit: <strong>{{ offer_url }}</strong></p>
+          <div class="offer-sign-row">
+            <div class="offer-sign-box">
+              <div class="offer-sign-line">Authorized Signatory</div>
+              <div class="offer-sign-date">Date: _________</div>
+            </div>
+            <div class="offer-sign-box">
+              <div class="offer-sign-line">Candidate Signature</div>
+              <div class="offer-sign-date">Date: _________</div>
+            </div>
+          </div>
+          <div class="offer-footer">This Is A System-Generated Offer Letter From ATG Intranet. For Queries, Contact HR.</div>
+        </div>
+      </div>
+
+      <div class="info-box blue"><strong>This Offer Is Valid For 15 Days.</strong> Proceeding To The Next Step Means You Agree To Review The Non-Disclosure Agreement (NDA) Before Final Acceptance.</div>
+      <button class="btn btn-primary w100" onclick="goTo(2)">Continue To NDA & Acceptance</button>
+    </div>
+  </div>
+
+  <div class="step hidden" id="step2">
+    <div class="card fade-in">
+      <div class="card-row-center"><div class="card-icon-sm">2</div><div><h2 class="sm">Non-Disclosure Agreement</h2><p class="subtitle" style="font-size:13px">Read carefully before signing.</p></div></div>
+      <div class="nda-box">
+        <p><strong>Hi {{ candidate_name }},</strong><br>Please Read This Agreement And Agree To Its Terms Before Accepting Your Offer.</p>
+        <h3>Confidentiality Agreement</h3>
+        <p>It Is Understood And Agreed To That The Discloser (Across The Globe / ATG) And The Recipient (You, The Candidate) Would Like To Exchange Certain Information That May Be Considered Confidential. To Ensure The Protection Of Such Information And In Consideration Of The Agreement To Exchange Said Information, The Parties Agree As Follows:</p>
+        <h3>1. Confidential Information</h3>
+        <p>The Confidential Information To Be Disclosed By Discloser Under This Agreement ("Confidential Information") Can Be Described As And Includes: Technical And Business Information Relating To Discloser'S Proprietary Ideas, Patentable Ideas, Copyrights And/Or Trade Secrets, Existing And/Or Contemplated Products And Services, Software, Research And Development, Production, Costs, Profit And Margin Information, Finances, Customers, Clients, Marketing, And Current Or Future Business Plans And Models.</p>
+        <h3>2. Non-Disclosure Obligation</h3>
+        <p>Recipient Shall Use The Confidential Information Only For The Purpose Of Evaluating Potential Business And Investment Relationships With Discloser. Recipient Shall Limit Disclosure Of Confidential Information Within Its Own Organization To Its Directors, Officers, Partners, Members And/Or Employees Having A Need To Know And Shall Not Disclose Confidential Information To Any Third Party Without The Prior Written Consent Of Discloser.</p>
+        <h3>3. Term Of Agreement</h3>
+        <p>This Agreement Shall Remain In Full Force And Effect For The Period Of Employment And For A Period Of 5 (Five) Years After Termination Of Employment, Whatever The Reason For Such Termination.</p>
+        <h3>4. Non-Solicitation</h3>
+        <p>Unless Authorized In Writing By The Company, You Shall Not Divulge, Communicate Or Pass On Any "Confidential" Information In Any Form, Related To Any Aspect Of The Company To Anyone Outside The Company. You Acknowledge That The Company Owns Trade Secrets And Confidential And Proprietary Information That Are Very Important To The Success Of The Company'S Business.</p>
+        <h3>5. Reporting / Joining</h3>
+        <p>Your Appointment Shall Be Effective From Your Date Of Joining. You Will Be On Probation For A Period Of 1 (One) Month From The Date Of Your Joining. Your Probation Period Can Be Extended Further At The Sole Discretion Of The Company If Your Performance / Conduct Are Found To Be Unsatisfactory.</p>
+        <h3>6. Resignation / Termination</h3>
+        <p>You Shall Give A One Month Prior Notice To The Company Before You Can Be Officially Relieved From Your Work. For Interns Whose Location Is Work From Home, The Period Is One Week. Internship Can Be Extended To Beyond 6 Months At The Discretion Of Your Manager.</p>
+        <h3>7. Professional Ethics</h3>
+        <p>You Shall Not Conduct Yourself In Any Manner Amounting To Breach Of Confidence Reposed In You Or Inconsistent With The Position Of Responsibility Occupied By You. Please Deal With The Company'S Money, Material And Documents With Utmost Honesty, Moral And Professional Ethics.</p>
+        <h3>8. Data Privacy</h3>
+        <p>The Company Requires That You Shall Observe Data Privacy As Per Company'S Regulations/Policy, Regarding The Processing And Protection Of Any Personal Information And/Or Data To Which You May Have Access To In The Course Of Your Duties, And Shall Report Any Infringement Relating To The Manner In Which Personal Information Or Other Data Is Processed To The Company Immediately.</p>
+        <p style="margin-top:14px"><strong>Congratulations!<br>Team ATG — Across The Globe</strong></p>
+      </div>
+      <label class="checkbox-label"><input type="checkbox" id="ndaCheck" onchange="updateNdaBtn()"><div class="checkbox-box">&#10003;</div><span>I, <strong>{{ candidate_name }}</strong>, Have Read And Agreed To The Non-Disclosure Agreement And All Terms & Conditions Of This Offer.</span></label>
+      <div class="action-row"><button class="btn btn-secondary" onclick="goTo(1)">&larr; Back</button><button class="btn btn-primary" id="ndaContinue" disabled onclick="goTo(3)">Continue To Profile &rarr;</button></div>
+    </div>
+  </div>
+
+  <div class="step hidden" id="step3">
+    <div class="card fade-in">
+      <div class="card-row-center"><div class="card-icon-sm">3</div><div><h2 class="sm">Complete Your Profile</h2><p class="subtitle" style="font-size:13px">Help Us Set Up Your Account Before Your Joining Date.</p></div></div>
+      <div class="form-grid">
+        <label class="form-label">Full Legal Name<input class="form-inp" type="text" value="{{ candidate_name }}"></label>
+        <label class="form-label">Signature Name<input class="form-inp" type="text" value="{{ candidate_name }}"></label>
+        <label class="form-label">Mobile / WhatsApp<input class="form-inp" type="tel" value="{{ phone }}"></label>
+        <label class="form-label">Current City<input class="form-inp" type="text" value="{{ city }}"></label>
+        <label class="form-label">Emergency Contact<input class="form-inp" type="text" value="{{ emergency_contact }}"></label>
+        <label class="form-label">College Name<input class="form-inp" type="text" value="{{ college }}"></label>
+        <label class="form-label">GitHub Username<input class="form-inp" type="text" value="{{ github_username }}"></label>
+        <label class="form-label">ID Type<select class="form-sel" value="{{ id_type }}"><option selected>{{ id_type }}</option><option>Aadhaar</option><option>PAN</option><option>Passport</option><option>Driving License</option><option>Voter ID</option></select></label>
+        <label class="form-label">ID Number<input class="form-inp" type="text" value="{{ id_number }}"></label>
+        <label class="form-label full">Upload ID Proof (Photo/Scan)<input class="form-inp" type="file"></label>
+      </div>
+      <div class="info-box blue" style="border-color:#111;background:#fafafa">By Clicking <strong>"Accept Offer & Sign NDA"</strong> Below, You Confirm That You Have Read And Agreed To All Offer Terms And The NDA. Your Onboarding Credentials Will Be Emailed To <strong>{{ candidate_email }}</strong>.</div>
+      <div class="action-row"><button class="btn btn-secondary" onclick="goTo(2)">&larr; Back</button><button class="btn btn-primary" onclick="goTo(4)" style="min-width:200px">Accept Offer & Sign NDA &#10003;</button></div>
+    </div>
+  </div>
+
+  <div class="step hidden" id="step4">
+    <div class="card fade-in text-center">
+      <div class="success-icon bounce">&#10003;</div>
+      <h2 style="font-size:24px;margin-bottom:6px">Offer Accepted!</h2>
+      <p class="subtitle">Congratulations, <strong>{{ candidate_name }}</strong>! You Have Successfully Accepted Your Offer And Signed The NDA.</p>
+      <div class="summary-box">
+        <div class="summary-label">Offer Summary</div>
+        <div class="summary-row"><span>Role</span><strong>{{ position_title }}</strong></div>
+        <div class="summary-row"><span>Company</span><strong>{{ company_name }}</strong></div>
+        <div class="summary-row"><span>Joining Date</span><strong>{{ joining_date }}</strong></div>
+        <div class="summary-row"><span>Email</span><strong>{{ candidate_email }}</strong></div>
+      </div>
+      <div class="next-steps">
+        <div class="provisioned-box"><div class="label">Your Intranet Account Is Ready!</div><div class="detail">Username: <strong class="username">{{ username }}</strong></div><div class="detail" style="font-size:13px;margin-top:4px">Your Temporary Password Has Been Emailed To <strong>{{ candidate_email }}</strong></div></div>
+        <h3>What Happens Next?</h3>
+        <ul>
+          <li>Your <strong>Intranet Credentials</strong> (Username + Temporary Password) Have Been Sent To Your Email.</li>
+          <li>Login At <a href="{{ intranet_url }}" class="contact-link">{{ intranet_url }}</a> And Change Your Password After First Login.</li>
+          <li>Your Manager Will Reach Out Via WhatsApp Or Email With First Day Instructions.</li>
+          <li>IT Setup Will Be Ready Before Your Joining Date: <strong>{{ joining_date }}</strong>.</li>
+        </ul>
+      </div>
+      <p style="margin-top:18px;font-size:12px;color:#888">Questions? Email HR At <a href="mailto:{{ hr_email }}" class="contact-link">{{ hr_email }}</a></p>
+      <button class="btn btn-secondary" onclick="goTo(1)" style="margin-top:20px;min-width:160px">&larr; Start Over</button>
+    </div>
+  </div>
+
+  <div class="nav-dots" id="navDots"></div>
+</div>
+
+<script>
+var steps = [
+  {n: 1, label: "Review Offer"},
+  {n: 2, label: "Sign NDA"},
+  {n: 3, label: "Your Profile"},
+  {n: 4, label: "Confirmed"}
+];
+var current = 1;
+
+function render() {
+  var b = document.getElementById("progressBar");
+  b.innerHTML = steps.map(function(s, i) {
+    var cls = "", ic = s.n;
+    if (current > s.n) { cls = "done"; ic = "&#10003;"; }
+    else if (current === s.n) cls = "active";
+    return '<div class="prog-step"><div class="prog-circle ' + cls + '">' + ic + '</div><span class="prog-label ' + cls + '">' + s.label + '</span></div>' + (i < steps.length - 1 ? '<div class="prog-line ' + (current > s.n ? "done" : "") + '"></div>' : "");
+  }).join("");
+  document.getElementById("navDots").innerHTML = steps.map(function(s) {
+    return '<div class="nav-dot ' + (current === s.n ? "active" : "") + '" onclick="goTo(' + s.n + ')"></div>';
+  }).join("");
+  document.getElementById("stepIndicator").textContent = "STEP " + current + " OF 4 - " + steps[current - 1].label;
+}
+
+function goTo(n) {
+  current = n;
+  document.querySelectorAll(".step").forEach(function(e) { e.classList.add("hidden"); });
+  document.getElementById("step" + n).classList.remove("hidden");
+  render();
+  window.scrollTo({top: 0, behavior: "smooth"});
+}
+
+function updateNdaBtn() {
+  document.getElementById("ndaContinue").disabled = !document.getElementById("ndaCheck").checked;
+}
+
+function toggleOfferLetter() {
+  var wrap = document.getElementById("offerLetterWrap");
+  var arrow = document.getElementById("offerArrow");
+  wrap.classList.toggle("open");
+  arrow.classList.toggle("open");
+}
+
+render();
+</script>
+
+</body>
+</html>
