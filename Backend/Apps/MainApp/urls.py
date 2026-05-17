@@ -29,6 +29,7 @@ urlpatterns = [
 	path("Onboard/createmantis", views.MainAppLegacyActionAPIView.as_view(action_name="createmantis", response_serializer=ExternalIssueReferenceSerializer), name="createmantis"),
 	path("Track/", views.MainAppLegacyActionAPIView.as_view(action_name="track"), name="Track"),
 	path("offer/<str:token>", views.MainAppOfferTokenLegacyAPIView.as_view(), name="dummy"),
+	path("offer/html/<str:token>", views.OnboardingFlowHTMLView.as_view(), name="onboarding-flow-html"),
 	path("download-offer/<str:token>", views.MainAppOfferDownloadLegacyAPIView.as_view(), name="download_offer"),
 	path("nda", views.MainAppLegacyActionAPIView.as_view(action_name="nda"), name="nda"),
 	path("Onboard/Track_my_reportee", views.MainAppLegacyActionAPIView.as_view(action_name="track_reportee"), name="Track_my_reportee"),

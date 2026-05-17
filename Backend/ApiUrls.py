@@ -1,10 +1,7 @@
 from django.contrib import admin
 from django.urls import include, path
 
-from Backend.Apps.MainApp.views import OnboardingFlowHTMLView
-
 urlpatterns = [
-    path("offer/accept/<str:token>", OnboardingFlowHTMLView.as_view(), name="onboarding-flow"),
     path("admin/", admin.site.urls),
     path("EnterpriseCore/", include("Backend.EnterpriseCore.urls")),
     path("Users/", include("Backend.Apps.Users.urls")),

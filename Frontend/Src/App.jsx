@@ -384,6 +384,12 @@ function App() {
   const path = route.split("?")[0];
 
   const isLoginRoute = path.startsWith("/login");
+
+  if (path.startsWith("/offer/accept/")) {
+    window.location.href = "/api/MainApp/offer/html/" + path.replace("/offer/accept/", "");
+    return null;
+  }
+
   const hasAuth = Boolean(settings.basicAuth?.username && settings.basicAuth?.password);
   const { data, loading, errors, apiOnline, reload } = useIntranetData(reloadKey, hasAuth && !isLoginRoute);
 
