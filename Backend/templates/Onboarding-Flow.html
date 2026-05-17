@@ -306,11 +306,6 @@ function toggleOfferLetter() {
   arrow.classList.toggle("open");
 }
 
-function getCsrfToken() {
-  var el = document.querySelector("[name=csrfmiddlewaretoken]");
-  return el ? el.value : "";
-}
-
 function submitAccept() {
   var signatureName = document.getElementById("inpSignatureName").value.trim();
   var errorEl = document.getElementById("acceptError");
@@ -405,6 +400,13 @@ function populateStep4(data) {
 }
 
 render();
+var alreadyAccepted = "{{ already_accepted }}";
+if (alreadyAccepted === "true") {
+  document.querySelectorAll(".step").forEach(function(e) { e.classList.add("hidden"); });
+  document.getElementById("step4").classList.remove("hidden");
+  current = 4;
+  render();
+}
 </script>
 
 </body>

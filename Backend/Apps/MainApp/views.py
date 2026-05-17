@@ -453,15 +453,14 @@ class OnboardingFlowHTMLView(View):
         if not result.ok:
             return HttpResponse("Offer Link Is Invalid Or Expired. Please Contact HR.", status=404)
         offer = result.data
-        if offer.status == "Accepted":
-            return HttpResponse("Offer Already Accepted.", status=410)
-        if offer.status != "Issued":
+        if offer.status not in ("Issued", "Accepted"):
             return HttpResponse("Offer Is Not Available.", status=410)
-        if offer.expires_at and offer.expires_at < timezone.now():
+        if offer.status == "Issued" and offer.expires_at and offer.expires_at < timezone.now():
             return HttpResponse("Offer Link Has Expired.", status=410)
 
         ctx = MainAppLegacyService.offer_template_context(offer)
         base_url = str(getattr(settings, "PUBLIC_BASE_URL", "http://localhost:5173") or "http://localhost:5173").rstrip("/")
+        onboarding = (offer.offer_payload or {}).get("onboarding") or {}
         ctx.update({
             "offer_url": request.build_absolute_uri(),
             "intranet_url": base_url,
@@ -473,6 +472,8 @@ class OnboardingFlowHTMLView(View):
             "github_username": "",
             "id_type": "Aadhaar",
             "id_number": "",
+            "already_accepted": "true" if offer.status == "Accepted" else "",
+            "accepted_username": onboarding.get("username") or ctx.get("username") or "",
         })
         html = render_to_string("Onboarding-Flow.html", ctx, request=request)
         return HttpResponse(html)
@@ -493,6 +494,9 @@ class OnboardingFlowHTMLView(View):
         offer = OnboardingOffer.objects.filter(token=token).first()
         if not offer:
             return HttpResponse(json.dumps({"offer": "Offer Token Not Found."}), content_type="application/json", status=404)
+
+        if offer.status == "Accepted":
+            return HttpResponse(json.dumps(OnboardingOfferSerializer(offer).data), content_type="application/json", status=200)
 
         payload = serializer.validated_data
         payload["profile_data"] = {
