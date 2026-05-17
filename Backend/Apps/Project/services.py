@@ -4,8 +4,9 @@ from django.db.models import Count, Q
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 
-from Backend.Apps.Project.models import ComplianceAssignment, ComplianceCampaign, DefaultCheckpoint, DeliveryAlert, DeliveryDocument, DeliveryMilestone, MilestoneComponent, ProjectWorkspace, RepositoryLink, TeamAssignment
+from Backend.Apps.Project.models import ComplianceAssignment, ComplianceCampaign, DefaultCheckpoint, DeliveryAlert, DeliveryDocument, DeliveryMilestone, MilestoneComponent, ProjectWorkspace, RepositoryLink, TeamAssignment, TeamAssignmentHistory
 from Backend.Apps.Project.provider import ProjectIntegrationProvider
+from Backend.Apps.Users.models import EmployeeProfile
 from Backend.Apps.TasksDashboard.models import ClickUpProjectMapping, WorkItem
 from Backend.Apps.TasksDashboard.services import WorkManagementService
 from Backend.EnterpriseCore.services import OutboxService, ServiceResult
@@ -122,6 +123,12 @@ class ProjectDeliveryService:
             employee_id=employee_id,
             defaults={"workspace": context.workspace or project.workspace, "role": role, "allocation_percent": allocation_percent, "status": "Active", "updated_by": context.actor},
         )
+        changed_by = EmployeeProfile.objects.filter(tenant=context.tenant, user=context.actor).first()
+        TeamAssignmentHistory.objects.create(
+            tenant=context.tenant, workspace=context.workspace or project.workspace,
+            team_assignment=assignment, action="added", changed_by=changed_by,
+            created_by=context.actor, updated_by=context.actor,
+        )
         OutboxService.publish(context, "TeamAssignment", assignment.id, "ProjectMemberAdded", {"projectId": project.id, "employeeId": employee_id})
         return ServiceResult.success(assignment, status_code=201)
 
@@ -135,6 +142,12 @@ class ProjectDeliveryService:
         assignment.metadata = {**assignment.metadata, "remove_reason": reason}
         assignment.updated_by = context.actor
         assignment.save(update_fields=["status", "ends_on", "metadata", "updated_by", "updated_at"])
+        changed_by = EmployeeProfile.objects.filter(tenant=context.tenant, user=context.actor).first()
+        TeamAssignmentHistory.objects.create(
+            tenant=context.tenant, workspace=context.workspace or assignment.workspace,
+            team_assignment=assignment, action="removed", comment=reason, changed_by=changed_by,
+            created_by=context.actor, updated_by=context.actor,
+        )
         return ServiceResult.success(assignment)
 
     @staticmethod
@@ -508,6 +521,12 @@ class ProjectDeliveryService:
         assignment.role = hat_type or "Member"
         assignment.updated_by = context.actor
         assignment.save(update_fields=["role", "updated_by", "updated_at"])
+        changed_by = EmployeeProfile.objects.filter(tenant=context.tenant, user=context.actor).first()
+        TeamAssignmentHistory.objects.create(
+            tenant=context.tenant, workspace=context.workspace or assignment.workspace,
+            team_assignment=assignment, action="status_changed", comment=f"Role changed to {hat_type}", changed_by=changed_by,
+            created_by=context.actor, updated_by=context.actor,
+        )
         return ServiceResult.success(assignment)
 
     @staticmethod
@@ -618,6 +637,12 @@ class ProjectDeliveryService:
             employee_id=employee_id,
             defaults={"workspace": context.workspace, "status": "Active", "ends_on": None, "updated_by": context.actor},
         )
+        changed_by = EmployeeProfile.objects.filter(tenant=context.tenant, user=context.actor).first()
+        TeamAssignmentHistory.objects.create(
+            tenant=context.tenant, workspace=context.workspace,
+            team_assignment=assignment, action="added_back", changed_by=changed_by,
+            created_by=context.actor, updated_by=context.actor,
+        )
         return ServiceResult.success(assignment)
 
     @staticmethod
@@ -625,6 +650,12 @@ class ProjectDeliveryService:
         old_assignment = TeamAssignment.objects.filter(tenant=context.tenant, project_id=project_id, employee_id=old_employee_id).first()
         if old_assignment:
             ProjectDeliveryService.remove_team_member(context, old_assignment.id, reason="Replaced")
+            changed_by = EmployeeProfile.objects.filter(tenant=context.tenant, user=context.actor).first()
+            TeamAssignmentHistory.objects.create(
+                tenant=context.tenant, workspace=context.workspace,
+                team_assignment=old_assignment, action="replaced", comment=f"Replaced by employee {new_employee_id}", changed_by=changed_by,
+                created_by=context.actor, updated_by=context.actor,
+            )
         return ProjectDeliveryService.add_team_member(context, project_id, new_employee_id, role=role)
 
     @staticmethod
@@ -636,6 +667,13 @@ class ProjectDeliveryService:
         assignment.absent_reason = absent_reason
         assignment.updated_by = context.actor
         assignment.save(update_fields=["is_absent", "absent_reason", "updated_by", "updated_at"])
+        changed_by = EmployeeProfile.objects.filter(tenant=context.tenant, user=context.actor).first()
+        TeamAssignmentHistory.objects.create(
+            tenant=context.tenant, workspace=context.workspace or assignment.workspace,
+            team_assignment=assignment, action="status_changed",
+            comment=f"Absent: {absent_reason}" if absent_reason else "Marked absent", changed_by=changed_by,
+            created_by=context.actor, updated_by=context.actor,
+        )
         return ServiceResult.success(assignment)
 
     @staticmethod

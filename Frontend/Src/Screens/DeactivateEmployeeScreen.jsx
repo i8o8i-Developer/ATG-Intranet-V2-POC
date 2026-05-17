@@ -102,7 +102,7 @@ export function DeactivateEmployeeScreen({ data, reload }) {
             <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "12px 16px", marginBottom: 16 }}>
               <strong style={{ color: "#dc2626", display: "block", marginBottom: 4 }}>Login Access Will Be Revoked</strong>
               <span style={{ fontSize: 13, color: "#991b1b" }}>
-                This user will no longer be able to log in to the intranet. All their data (projects, tasks, assignments, documents, feedback) will remain intact. This action can be reversed by an admin.
+                This User Will No Longer Be Able To Log In To The Intranet. All Their Data (Projects, Tasks, Assignments, Documents, Feedback) Will Remain Intact. This Action Can Be Reversed By An Admin.
               </span>
             </div>
             <label>Reason For Deactivation<textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Optional: Provide a reason..." style={{ width: "100%", marginTop: 4 }} /></label>
@@ -120,10 +120,10 @@ export function DeactivateEmployeeScreen({ data, reload }) {
             <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "12px 16px", marginBottom: 16 }}>
               <strong style={{ color: "#dc2626", display: "block", marginBottom: 4 }}>Login Access Will Be Revoked For {selected.size} Users</strong>
               <span style={{ fontSize: 13, color: "#991b1b" }}>
-                These users will no longer be able to log in to the intranet. All their data will remain intact. This action can be reversed by an admin.
+                These Users Will No Longer Be Able To Log In To The Intranet. All Their Data Will Remain Intact. This Action Can Be Reversed By An Admin.
               </span>
             </div>
-            <label>Reason (Applies To All)<textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Optional: Provide a reason..." style={{ width: "100%", marginTop: 4 }} /></label>
+            <label>Reason (Applies To All)<textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Optional: Provide A Reason..." style={{ width: "100%", marginTop: 4 }} /></label>
           </div>
           <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
             <button className="Danger-Button" onClick={deactivateSelected} disabled={busy}>Confirm Deactivation</button>

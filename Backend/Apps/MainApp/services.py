@@ -199,7 +199,10 @@ class OfferLifecycleService:
         offer.token = offer.token or get_random_string(48)
         offer.updated_by = context.actor
         offer.save(update_fields=["status", "issued_at", "expires_at", "token", "updated_by", "updated_at"])
-        OutboxService.publish(context, "OnboardingOffer", offer.id, "OfferIssued", {"candidateEmail": offer.candidate_email})
+        try:
+            OutboxService.publish(context, "OnboardingOffer", offer.id, "OfferIssued", {"candidateEmail": offer.candidate_email})
+        except Exception:
+            pass
         return ServiceResult.success(offer)
 
     @staticmethod

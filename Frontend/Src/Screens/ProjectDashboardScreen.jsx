@@ -1148,7 +1148,7 @@ function BudgetModal({ project, budgetForm, setBudgetForm, editBudgetId, onClose
         <label>Total Cost<input type="number" min="0" step="0.01" value={budgetForm.total_cost} onChange={(e) => setBudgetForm({ ...budgetForm, total_cost: e.target.value })} /></label>
         <label>Total Budget<input type="number" min="0" step="0.01" value={budgetForm.total_budget} onChange={(e) => setBudgetForm({ ...budgetForm, total_budget: e.target.value })} /></label>
       </div>
-      <strong style={{ fontSize: 13, display: "block", marginBottom: 8 }}>Role-wise Budget</strong>
+      <strong style={{ fontSize: 13, display: "block", marginBottom: 8 }}>Role-Wise Budget</strong>
       {(budgetForm.role_and_budget || []).map((r, i) => (
         <div key={i} style={{ display: "flex", gap: 8, marginBottom: 6, alignItems: "center" }}>
           <input placeholder="Role" value={r.role} onChange={(e) => updateRole(i, "role", e.target.value)} style={{ flex: 1 }} />

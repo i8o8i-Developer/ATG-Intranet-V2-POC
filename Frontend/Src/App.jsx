@@ -490,7 +490,12 @@ const load = useCallback(async (keysFilter) => {
      }
      const isSmallReload = Array.isArray(keysFilter) && keysFilter.length < 20;
      const isPartial = isSmallReload && subset.length !== endpointMap.length;
-      setState((cur) => ({ data: isPartial ? cur.data : {}, loading: !isPartial ? true : cur.loading, errors: isPartial ? cur.errors : [], apiOnline: cur.apiOnline }));
+      setState((cur) => ({
+        data: !hasInitiallyLoaded.current ? {} : cur.data,
+        loading: !isPartial ? true : cur.loading,
+        errors: isPartial ? cur.errors : [],
+        apiOnline: cur.apiOnline,
+      }));
 
      const tag = ([key, p, mode]) =>
        apiGet(p).then(
