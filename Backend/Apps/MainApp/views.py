@@ -311,6 +311,18 @@ class MainAppLegacyActionAPIView(MainAppLegacyMixin, APIView):
             result = MainAppLegacyService.create_offer(context, request.data, issue=False)
         elif action == "send_actual_offer":
             result = MainAppLegacyService.create_offer(context, request.data, issue=True)
+            if result.ok and result.data:
+                offer_id = result.data.id if hasattr(result.data, "id") else None
+                if offer_id:
+                    email_result = MainAppLegacyService.send_pdf_offer(
+                        context, offer_id,
+                        html_template=request.data.get("html_template"),
+                        email_subject=request.data.get("email_subject"),
+                        email_template=request.data.get("email_template"),
+                        macro_values=request.data.get("offer_payload") or {},
+                    )
+                    if not email_result.ok:
+                        result = email_result
         elif action == "checkname":
             result = MainAppLegacyService.check_name(context, email=request.data.get("email") or request.query_params.get("email", ""), username=request.data.get("username") or request.query_params.get("username", ""))
         elif action == "dep_valid":
