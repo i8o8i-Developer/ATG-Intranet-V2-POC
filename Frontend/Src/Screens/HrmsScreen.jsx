@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 
 import { EmptyState, MilestoneRail, Modal, Panel, Progress, SimpleTable, Tabs } from "./Shared/ScreenComponents.jsx";
-import { apiPatch, apiPost } from "../Api/Client.js";
+import { apiDelete, apiGet, apiPatch, apiPost } from "../Api/Client.js";
 import "../Styles/HrmsModal.css";
 import {
   calendarDays, employeeName, filterForEmployee, findDailyStatus, formatDate,
@@ -89,7 +89,7 @@ export function HrmsScreen({ data, reload }) {
         <Tabs
           value={tab}
           onChange={setTab}
-          items={[["team", "Team"], ["goals", "Goals"], ["org", "Org Chart"], ["sanity", "Project Sanity"], ["finance", "Project Finance"]]}
+          items={[["team", "Team"], ["goals", "Goals"], ["org", "Org Chart"], ["sanity", "Project Sanity"], ["finance", "Project Finance"], ["wallet", "Leave Wallet"]]}
         />
       </div>
 
@@ -161,6 +161,7 @@ export function HrmsScreen({ data, reload }) {
       {tab === "org"     && <OrgChartView data={data} employeeName={employeeName} />}
       {tab === "sanity"  && <ProjectSanity  data={data} />}
       {tab === "finance" && <ProjectFinance data={data} reload={reload} />}
+      {tab === "wallet" && <LeaveWalletManager data={data} reload={reload} />}
 
       {eodEmployee && (
         <EodSummaryModal
@@ -1584,7 +1585,100 @@ function ProjectFinance({ data, reload }) {
             {!filteredRows.length && <tr><td colSpan="9" style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>No Employees Found For Selected Department.</td></tr>}
           </tbody>
         </table>
+        </div>
       </div>
+    );
+  );
+}
+
+function LeaveWalletManager({ data, reload }) {
+  const [balances, setBalances] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
+  const [form, setForm] = useState({ employee: "", policy: "", available: 0 });
+
+  const loadBalances = async () => {
+    setLoading(true);
+    try {
+      const resp = await apiGet("/Users/LeaveBalances/");
+      setBalances(Array.isArray(resp) ? resp : resp?.results || []);
+    } catch { setBalances([]); } finally { setLoading(false); }
+  };
+
+  useEffect(() => { loadBalances(); }, []);
+
+  const openCreate = () => {
+    setEditTarget(null);
+    setForm({ employee: "", policy: "", available: 0 });
+    setFormOpen(true);
+  };
+
+  const openEdit = (item) => {
+    setEditTarget(item);
+    setForm({ employee: item.employee, policy: item.policy, available: item.available });
+    setFormOpen(true);
+  };
+
+  const deleteBalance = async (id) => {
+    if (!window.confirm("Delete This Leave Balance Record?")) return;
+    try {
+      await apiDelete(`/Users/LeaveBalances/${id}/`);
+      loadBalances();
+      reload(["leaveBalances"]);
+    } catch { alert("Failed To Delete"); }
+  };
+
+  const save = async () => {
+    try {
+      const payload = { employee: Number(form.employee), policy: Number(form.policy), available: Number(form.available) };
+      if (editTarget) {
+        await apiPatch(`/Users/LeaveBalances/${editTarget.id}/`, payload);
+      } else {
+        await apiPost("/Users/LeaveBalances/", payload);
+      }
+      setFormOpen(false);
+      setEditTarget(null);
+      loadBalances();
+      reload(["leaveBalances"]);
+    } catch (err) { alert(err?.payload?.detail || "Failed To Save"); }
+  };
+
+  const rows = (balances || []).map((item) => [
+    employeeName(data, item.employee) || `Employee #${item.employee}`,
+    item.available ?? "-",
+    item.accrued ?? "-",
+    item.used ?? "-",
+    <span key="actions" style={{ display: "flex", gap: 6 }}>
+      <button className="Soft-Button Small" onClick={() => openEdit(item)}>Edit</button>
+      <button className="Soft-Button Small Danger" onClick={() => deleteBalance(item.id)}>Delete</button>
+    </span>,
+  ]);
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <h3 style={{ margin: 0 }}>Leave Wallet Balances</h3>
+        <button className="Primary-Button Small" onClick={openCreate}>+ Add Balance</button>
+      </div>
+      <SimpleTable columns={["Employee", "Available", "Accrued", "Used", "Actions"]} rows={rows} />
+      {!loading && rows.length === 0 && <p style={{ textAlign: "center", color: "#94a3b8", padding: 40 }}>No Leave Balances Found.</p>}
+
+      {formOpen && (
+        <Modal title={editTarget ? "Edit Leave Balance" : "Add Leave Balance"} onClose={() => { setFormOpen(false); setEditTarget(null); }}>
+          <div className="Form-Grid Two" style={{ marginBottom: 12 }}>
+            <label>Employee<select value={form.employee} onChange={(e) => setForm({ ...form, employee: e.target.value })} required>
+              <option value="">Select Employee</option>
+              {(data.employees || []).map((emp) => <option key={emp.id} value={emp.id}>{emp.display_name}</option>)}
+            </select></label>
+            <label>Available Days<input type="number" min="0" step="0.5" value={form.available} onChange={(e) => setForm({ ...form, available: e.target.value })} /></label>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button className="Primary-Button" onClick={save}>Save</button>
+            <button className="Outline-Button" onClick={() => { setFormOpen(false); setEditTarget(null); }}>Cancel</button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

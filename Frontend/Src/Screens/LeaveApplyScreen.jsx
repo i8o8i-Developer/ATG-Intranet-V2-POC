@@ -94,7 +94,7 @@ export function LeaveApplyScreen({ data, selectedEmployeeId, reload }) {
 
   return (
     <section className="Leave-Screen Screen-Stack">
-      <section className="Page-Heading"><div><span>Main App / Leave</span><h1>{canReviewAnyLeave ? "Leave Console" : "Apply Leave"}</h1></div><StatusPill tone="gold">{leaveRows.filter((item) => !isCompleted(item.status) && String(item.status).toLowerCase() !== "approved").length} Pending</StatusPill></section>
+      <section className="Page-Heading"><div><span>Leave</span><h1>{canReviewAnyLeave ? "Leave Console" : "Apply Leave"}</h1></div><StatusPill tone="gold">{leaveRows.filter((item) => !isCompleted(item.status) && String(item.status).toLowerCase() !== "approved").length} Pending</StatusPill></section>
       <section className={isSuperAdmin ? "Split-Grid Two-One" : ""}>
         <Panel title="Leave Request" subtitle="Submits To Main App Leave Workflow.">
           <div className="Form-Grid Two">
@@ -104,10 +104,16 @@ export function LeaveApplyScreen({ data, selectedEmployeeId, reload }) {
             <label>Ends On<input type="date" value={form.ends_on} onChange={(event) => setForm({ ...form, ends_on: event.target.value })} /></label>
           </div>
           <label>Reason<textarea value={form.reason} onChange={(event) => setForm({ ...form, reason: event.target.value })} /></label>
+          {employee && form.leave_type !== "Unpaid" && form.leave_type !== "Comp Off" && (
+            <div style={{ fontSize: 12, color: employee.leaves_wallet > 0 ? "#64748b" : "#dc2626", marginBottom: 8 }}>
+              Leave Balance: <strong>{Number(employee.leaves_wallet || 0).toFixed(1)}</strong> days
+              {Number(employee.leaves_wallet || 0) <= 0 && " \u2014 Insufficient Balance"}
+            </div>
+          )}
           <button className="Primary-Button" onClick={submit} disabled={!form.employee_id || !form.starts_on || !form.ends_on}>Submit Leave</button>
           {result && <div className="error-banner">{result?.detail || result?.message || (result?.status === "Success" ? "Leave Submitted Successfully." : "Leave Submission Completed.")}</div>}
         </Panel>
-        {isSuperAdmin && <Panel title="Leave Wallets"><SimpleTable columns={["Employee", "Balance", "Accrued", "Used"]} rows={visibleBalances.slice(0, 50).map((item) => [employeeName(data, item.employee), item.balance || item.available_balance || item.amount, item.accrued || "-", item.used || "-"])} /></Panel>}
+        {isSuperAdmin && <Panel title="Leave Wallets"><SimpleTable columns={["Employee", "Balance", "Accrued", "Used"]} rows={visibleBalances.slice(0, 50).map((item) => [employeeName(data, item.employee), item.available ?? "-", item.accrued ?? "-", item.used ?? "-"])} /></Panel>}
       </section>
       <Panel title="Leave Calendar" subtitle={`${calMonth + 1}/${calYear}`}
         right={
@@ -122,7 +128,7 @@ export function LeaveApplyScreen({ data, selectedEmployeeId, reload }) {
           {calendarDays.map((day, i) => !day ? <span key={i} /> : (
             <div key={i} style={{ padding: "6px 0", borderRadius: 6, fontSize: 12, fontWeight: day.isToday ? 700 : 400, background: day.isToday ? "#eef2ff" : (day.leaves || []).length > 0 ? "#fef2f2" : "transparent", color: (day.leaves || []).length > 0 ? "#dc2626" : day.isPast ? "#94a3b8" : "#0f172a" }}>
               <div>{day.day}</div>
-              {(day.leaves || []).length > 0 && <div style={{ fontSize: 9, color: "#dc2626" }}>{(day.leaves || []).length} leave{day.leaves?.length > 1 ? "s" : ""}</div>}
+              {(day.leaves || []).length > 0 && <div style={{ fontSize: 9, color: "#dc2626" }}>{(day.leaves || []).length} Leave{day.leaves?.length > 1 ? "s" : ""}</div>}
             </div>
           ))}
         </div>

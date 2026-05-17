@@ -10,6 +10,8 @@ from django.template.loader import render_to_string
 
 from django.utils.crypto import get_random_string
 
+from decimal import Decimal
+
 from io import BytesIO
 import base64
 from html import escape
@@ -170,6 +172,26 @@ class LeaveApprovalService:
         leave_request.approval_payload = {**leave_request.approval_payload, "approvedAt": timezone.now().isoformat()}
         leave_request.updated_by = context.actor
         leave_request.save(update_fields=["status", "approved_by", "approved_at", "approval_payload", "updated_by", "updated_at"])
+        if leave_request.leave_type not in ("Unpaid", "Comp Off"):
+            employee = leave_request.employee
+            days = Decimal(str(leave_request.requested_days))
+            employee.leaves_wallet = max(Decimal("0"), employee.leaves_wallet - days)
+            employee.save(update_fields=["leaves_wallet", "updated_at"])
+            try:
+                from Backend.Apps.Users.models import LeaveBalance, LeaveTransaction
+                balance = LeaveBalance.objects.filter(tenant=context.tenant, employee=employee).first()
+                if balance:
+                    balance.available = max(Decimal("0"), balance.available - days)
+                    balance.used = (balance.used or Decimal("0")) + days
+                    balance.save(update_fields=["available", "used", "updated_at"])
+                    LeaveTransaction.objects.create(
+                        balance=balance, transaction_type="Used", amount=days,
+                        reason=f"Leave Approved: {leave_request.leave_type} ({leave_request.starts_on} - {leave_request.ends_on})",
+                        tenant=context.tenant, workspace=context.workspace or leave_request.workspace,
+                        created_by=context.actor, updated_by=context.actor,
+                    )
+            except Exception:
+                pass
         LeaveApprovalService._notify_leave_actor(context, leave_request, "Leave Approved", f"Your Leave ({leave_request.starts_on} - {leave_request.ends_on}) Has Been Approved.")
         OutboxService.publish(context, "LeaveRequest", leave_request.id, "LeaveRequestApproved", {"leaveRequestId": leave_request.id})
         return ServiceResult.success(leave_request)
@@ -459,6 +481,8 @@ class MainAppLegacyService:
         if not starts_on or not ends_on:
             return ServiceResult.failure({"dates": "Start Date And End Date Are Required."}, status_code=400)
         requested_days = (ends_on - starts_on).days + 1
+        if leave_type not in ("Unpaid", "Comp Off") and employee.leaves_wallet < requested_days:
+            return ServiceResult.failure({"wallet": f"Insufficient Leave Balance. Available: {employee.leaves_wallet}, Required: {requested_days}."}, status_code=400)
         leave = LeaveRequest.objects.create(
             tenant=context.tenant,
             workspace=context.workspace or employee.workspace,
