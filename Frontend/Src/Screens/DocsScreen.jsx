@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { File, FileText, FolderOpen, Plus, Search } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { ExternalLink, File, FileText, FolderOpen, Plus, Search, Upload } from "lucide-react";
 
 import { apiGet, apiPost } from "../Api/Client.js";
 import { Modal, Panel, SimpleTable, StatusPill } from "./Shared/ScreenComponents.jsx";
@@ -13,7 +13,7 @@ export function DocsScreen({ data, reload, navigate }) {
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [createForm, setCreateForm] = useState({ title: "", body: "", department: "", visibility: "private" });
+  const [createForm, setCreateForm] = useState({ title: "", body: "", department: "", visibility: "private", uploadToDrive: false });
   const [search, setSearch] = useState("");
 
   const loadDocs = async () => {
@@ -63,10 +63,11 @@ export function DocsScreen({ data, reload, navigate }) {
       visibility: createForm.visibility,
     };
     if (createForm.department) payload.department = Number(createForm.department);
+    payload.upload_to_drive = createForm.uploadToDrive;
     try {
       await apiPost("/AtgDocs/KnowledgeDocuments/create-document/", payload);
       setCreateOpen(false);
-      setCreateForm({ title: "", body: "", department: "", visibility: "private" });
+      setCreateForm({ title: "", body: "", department: "", visibility: "private", uploadToDrive: false });
       loadDocs();
       reload(["docs", "docPermissions", "docVersions"]);
     } catch (err) {
@@ -151,6 +152,7 @@ export function DocsScreen({ data, reload, navigate }) {
               <option value="">General</option>{(data.departments || []).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select></label>
             <label>Body<textarea value={createForm.body} onChange={(e) => setCreateForm({ ...createForm, body: e.target.value })} rows={8} style={{ fontFamily: "monospace", fontSize: 13 }} /></label>
+            <label style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 }}><input type="checkbox" checked={createForm.uploadToDrive} onChange={(e) => setCreateForm({ ...createForm, uploadToDrive: e.target.checked })} /> Create in Google Drive</label>
             <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
               <button className="Primary-Button" type="submit">Create</button>
               <button className="Outline-Button" type="button" onClick={() => setCreateOpen(false)}>Cancel</button>
@@ -162,12 +164,19 @@ export function DocsScreen({ data, reload, navigate }) {
   );
 }
 
+function isRealGoogleUrl(url) {
+  if (!url || typeof url !== "string") return false;
+  if (url.startsWith("https://drive.local")) return false;
+  return url.startsWith("https://docs.google.com/") || url.startsWith("https://drive.google.com/");
+}
+
 export function DocsDetailScreen({ data, route, reload, navigate }) {
   const docId = (route || "").split("?")[0].split("/").filter(Boolean).pop();
   const [doc, setDoc] = useState(null);
   const [body, setBody] = useState("");
   const [title, setTitle] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [permissions, setPermissions] = useState([]);
   const [history, setHistory] = useState([]);
   const [permOpen, setPermOpen] = useState(false);
@@ -187,6 +196,13 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
     apiGet(`/AtgDocs/KnowledgeDocuments/${docId}/history/`).then(setHistory).catch(() => {});
   }, [docId]);
 
+  const refreshDoc = useCallback(async () => {
+    const d = await apiGet(`/AtgDocs/KnowledgeDocuments/${docId}/open/`);
+    setDoc(d);
+    setTitle(d.title || "");
+    setBody(d.body || "");
+  }, [docId]);
+
   const save = async () => {
     setSaving(true);
     try {
@@ -202,9 +218,21 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
 
   const publish = async () => {
     await apiPost(`/AtgDocs/KnowledgeDocuments/${docId}/publish/`, {});
-    const d = await apiGet(`/AtgDocs/KnowledgeDocuments/${docId}/open/`);
-    setDoc(d);
+    await refreshDoc();
     reload(["docs"]);
+  };
+
+  const uploadToDrive = async () => {
+    setUploading(true);
+    try {
+      const result = await apiPost(`/AtgDocs/KnowledgeDocuments/${docId}/upload-to-drive/`, { folder_name: "Documents" });
+      if (result) await refreshDoc();
+      reload(["docs", "driveFiles"]);
+    } catch (err) {
+      /* silent */
+    } finally {
+      setUploading(false);
+    }
   };
 
   const grantPermission = async (e) => {
@@ -227,6 +255,8 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
     document.execCommand(cmd, false, val);
   };
 
+  const hasGoogleDoc = isRealGoogleUrl(doc?.openUrl);
+
   if (!doc) return <section className="Screen-Stack" style={{ padding: 32 }}><p>Loading Document...</p></section>;
 
   return (
@@ -239,18 +269,26 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <StatusPill tone={doc.status === "Published" ? "green" : "gold"}>{doc.status}</StatusPill>
           <button className="Soft-Button Small" onClick={() => setPermOpen(true)}>Permissions</button>
-          <button className="Primary-Button Small" onClick={save} disabled={saving}>{saving ? "Saving..." : "Save"}</button>
-          {doc.status !== "Published" && <button className="Primary-Button Small" onClick={publish}>Publish</button>}
+          {!hasGoogleDoc && <button className="Soft-Button Small" onClick={uploadToDrive} disabled={uploading}><Upload size={14} /> {uploading ? "Uploading..." : "Upload to Drive"}</button>}
+          {!hasGoogleDoc && <button className="Primary-Button Small" onClick={save} disabled={saving}>{saving ? "Saving..." : "Save"}</button>}
+          {!hasGoogleDoc && doc.status !== "Published" && <button className="Primary-Button Small" onClick={publish}>Publish</button>}
+          {hasGoogleDoc && <a className="Primary-Button Small" href={doc.openUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}><ExternalLink size={14} /> Open in Google Docs</a>}
         </div>
       </section>
 
       <div className="Docs-Detail-Tabs">
-        <button className={tab === "editor" ? "Docs-Tab Active" : "Docs-Tab"} onClick={() => setTab("editor")}>Editor</button>
+        <button className={tab === "editor" ? "Docs-Tab Active" : "Docs-Tab"} onClick={() => setTab("editor")}>{hasGoogleDoc ? "Google Docs" : "Editor"}</button>
         <button className={tab === "versions" ? "Docs-Tab Active" : "Docs-Tab"} onClick={() => setTab("versions")}>Version History ({history.length})</button>
         <button className={tab === "permissions" ? "Docs-Tab Active" : "Docs-Tab"} onClick={() => setTab("permissions")}>Permissions ({permissions.length})</button>
       </div>
 
-      {tab === "editor" && (
+      {tab === "editor" && hasGoogleDoc && (
+        <div style={{ width: "100%", height: "80vh", border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden" }}>
+          <iframe src={doc.openUrl} title={doc.title} style={{ width: "100%", height: "100%", border: "none" }} sandbox="allow-scripts allow-forms allow-same-origin allow-popups" />
+        </div>
+      )}
+
+      {tab === "editor" && !hasGoogleDoc && (
         <div className="Docs-Editor-Wrapper">
           <div className="Docs-Toolbar">
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("bold"); }} title="Bold"><b>B</b></button>
