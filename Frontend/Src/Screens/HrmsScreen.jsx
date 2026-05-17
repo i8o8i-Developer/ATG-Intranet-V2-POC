@@ -1319,7 +1319,7 @@ function OrgChartView({ data, employeeName }) {
           <div key={dept.name} style={{ marginBottom: 16, border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden", background: "#fff" }}>
             <div style={{ padding: "14px 18px", background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ width: 32, height: 32, borderRadius: 8, background: "#3b82f615", display: "flex", alignItems: "center", justifyContent: "center", color: "#3b82f6", fontWeight: 700, fontSize: 14 }}>{dept.members.length}</div>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: "#3b82f615", display: "flex", alignItems: "center", justifyContent: "center", color: "#3b82f6", fontWeight: 700, fontSize: 14 }}>{(dept.members || []).length}</div>
                 <strong style={{ fontSize: 15, color: "#0f172a" }}>{dept.name}</strong>
               </div>
               {leads.length > 0 && (
@@ -1330,7 +1330,7 @@ function OrgChartView({ data, employeeName }) {
               )}
             </div>
             <div style={{ padding: "14px 18px", display: "flex", flexWrap: "wrap", gap: 10 }}>
-              {dept.members.map((emp) => {
+              {(dept.members || []).map((emp) => {
                 const isLead = leads.some((l) => String(l.id) === String(emp.id));
                 const managerName = emp.manager ? employeeName(data, emp.manager) : null;
                 const ic = (emp.display_name || "?").split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase();

@@ -6,7 +6,7 @@ import { Modal, Panel, SimpleTable, StatusPill } from "./Shared/ScreenComponents
 import "../Styles/DocsScreen.css";
 import { employeeName, formatDate, formatDateTime } from "./Shared/ScreenUtils.jsx";
 
-const TABS = ["Library", "My Documents", "History"];
+const TABS = ["Library", "My Documents"];
 
 export function DocsScreen({ data, reload, navigate }) {
   const [tab, setTab] = useState("Library");
@@ -23,10 +23,8 @@ export function DocsScreen({ data, reload, navigate }) {
       if (tab === "Library") {
         const resp = await apiGet("/AtgDocs/KnowledgeDocuments/library/");
         list = resp?.groups || [];
-      } else if (tab === "My Documents") {
-        list = await apiGet("/AtgDocs/KnowledgeDocuments/my-documents/");
       } else {
-        list = await apiGet("/AtgDocs/KnowledgeDocuments/visit-history/");
+        list = await apiGet("/AtgDocs/KnowledgeDocuments/my-documents/");
       }
       setDocs(list);
     } catch {
@@ -106,9 +104,9 @@ export function DocsScreen({ data, reload, navigate }) {
         {loading && <div className="Docs-Loading">Loading...</div>}
         {!loading && tab === "Library" && Array.isArray(filtered) && filtered.map((group) => (
           <div key={group.departmentId} className="Docs-Group">
-            <h3 className="Docs-Group-Title"><FolderOpen size={16} /> {group.departmentName} ({group.documents.length})</h3>
+            <h3 className="Docs-Group-Title"><FolderOpen size={16} /> {group.departmentName} ({(group.documents || []).length})</h3>
             <div className="Docs-Card-Grid">
-              {group.documents.map((doc) => (
+              {(group.documents || []).map((doc) => (
                 <div key={doc.id} className="Docs-Card" onClick={() => openDoc(doc.id)}>
                   <div className="Docs-Card-Icon"><FileText size={24} /></div>
                   <div className="Docs-Card-Body">
@@ -267,15 +265,15 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
   const grantPermission = async (e) => {
     e.preventDefault();
     const emp = (data.employees || []).find((e) => String(e.id) === String(permForm.employee_id));
-    if (!emp) return alert("Please select an employee");
-    if (!emp.user_id) return alert("This employee has no associated user account");
+    if (!emp) return alert("Please Select An Employee");
+    if (!emp.user) return alert("This Employee has No Associated User Account");
     
     setPermLoading(true);
     try {
       await apiPost(`/AtgDocs/KnowledgeDocuments/${docId}/grant-permission/`, {
-        user_id: Number(emp.user_id),
+        user_id: Number(emp.user),
         permission: permForm.permission,
-        email: emp.user_email || emp.email || "",
+        email: emp.email || "",
       });
       setPermOpen(false);
       setPermForm({ employee_id: "", permission: "Read" });
@@ -302,6 +300,28 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
 
   const execCmd = (cmd, val = null) => {
     document.execCommand(cmd, false, val);
+  };
+
+  const execHeading = (tag) => {
+    document.execCommand("formatBlock", false, `<${tag}>`);
+  };
+
+  const execLink = () => {
+    const url = prompt("Enter URL:");
+    if (url) document.execCommand("createLink", false, url);
+  };
+
+  const execColor = (color) => {
+    document.execCommand("foreColor", false, color);
+  };
+
+  const execHighlight = (color) => {
+    document.execCommand("hiliteColor", false, color);
+  };
+
+  const execFontSize = (e) => {
+    if (!e.target.value) return;
+    document.execCommand("fontSize", false, e.target.value);
   };
 
   const hasGoogleDoc = isRealGoogleUrl(doc?.openUrl);
@@ -341,12 +361,35 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
       {tab === "editor" && !hasGoogleDoc && (
         <div className="Docs-Editor-Wrapper">
           <div className="Docs-Toolbar">
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("undo"); }} title="Undo">&#x21A9;</button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("redo"); }} title="Redo">&#x21AA;</button>
+            <span className="Docs-Toolbar-Sep" />
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("bold"); }} title="Bold"><b>B</b></button>
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("italic"); }} title="Italic"><i>I</i></button>
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("underline"); }} title="Underline"><u>U</u></button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("strikeThrough"); }} title="Strikethrough"><s>S</s></button>
             <span className="Docs-Toolbar-Sep" />
-            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("insertUnorderedList"); }} title="Bullet List">&bull; List</button>
-            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("insertOrderedList"); }} title="Numbered List">1. List</button>
+            <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execHeading("h1"); }} title="Heading 1">H1</button>
+            <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execHeading("h2"); }} title="Heading 2">H2</button>
+            <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execHeading("h3"); }} title="Heading 3">H3</button>
+            <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execHeading("p"); }} title="Paragraph">P</button>
+            <span className="Docs-Toolbar-Sep" />
+            <select className="Docs-Toolbar-Select" onChange={execFontSize} title="Font Size"><option value="">Size</option><option value="1">XS</option><option value="2">S</option><option value="3">M</option><option value="4">L</option><option value="5">XL</option><option value="6">XXL</option></select>
+            <input type="color" className="Docs-Toolbar-Color" title="Text Color" onChange={(e) => execColor(e.target.value)} />
+            <input type="color" className="Docs-Toolbar-Color" title="Highlight Color" onChange={(e) => execHighlight(e.target.value)} value="#ffff00" />
+            <span className="Docs-Toolbar-Sep" />
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyLeft"); }} title="Align Left">&#x2190;</button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyCenter"); }} title="Center">&#x2194;</button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyRight"); }} title="Align Right">&#x2192;</button>
+            <span className="Docs-Toolbar-Sep" />
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("insertUnorderedList"); }} title="Bullet List">&#x2022;</button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("insertOrderedList"); }} title="Numbered List">#</button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("indent"); }} title="Indent">&#x21B7;</button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("outdent"); }} title="Outdent">&#x21B6;</button>
+            <span className="Docs-Toolbar-Sep" />
+            <button type="button" className="Docs-Toolbar-Btn Docs-Toolbar-Btn-Wide" onMouseDown={(e) => { e.preventDefault(); execLink(); }} title="Insert Link">Link</button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("insertHorizontalRule"); }} title="Horizontal Line">&mdash;</button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("removeFormat"); }} title="Remove Formatting">&#x2716;</button>
           </div>
           <div
             className="Docs-Editor"

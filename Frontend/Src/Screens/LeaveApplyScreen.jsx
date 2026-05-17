@@ -120,9 +120,9 @@ export function LeaveApplyScreen({ data, selectedEmployeeId, reload }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, textAlign: "center" }}>
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => <strong key={d} style={{ fontSize: 11, color: "#64748b", padding: "4px 0" }}>{d}</strong>)}
           {calendarDays.map((day, i) => !day ? <span key={i} /> : (
-            <div key={i} style={{ padding: "6px 0", borderRadius: 6, fontSize: 12, fontWeight: day.isToday ? 700 : 400, background: day.isToday ? "#eef2ff" : day.leaves.length > 0 ? "#fef2f2" : "transparent", color: day.leaves.length > 0 ? "#dc2626" : day.isPast ? "#94a3b8" : "#0f172a" }}>
+            <div key={i} style={{ padding: "6px 0", borderRadius: 6, fontSize: 12, fontWeight: day.isToday ? 700 : 400, background: day.isToday ? "#eef2ff" : (day.leaves || []).length > 0 ? "#fef2f2" : "transparent", color: (day.leaves || []).length > 0 ? "#dc2626" : day.isPast ? "#94a3b8" : "#0f172a" }}>
               <div>{day.day}</div>
-              {day.leaves.length > 0 && <div style={{ fontSize: 9, color: "#dc2626" }}>{day.leaves.length} leave{day.leaves.length > 1 ? "s" : ""}</div>}
+              {(day.leaves || []).length > 0 && <div style={{ fontSize: 9, color: "#dc2626" }}>{(day.leaves || []).length} leave{day.leaves?.length > 1 ? "s" : ""}</div>}
             </div>
           ))}
         </div>
