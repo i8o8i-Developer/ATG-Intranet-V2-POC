@@ -420,6 +420,11 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
   const [fullscreen, setFullscreen] = useState(false);
   const toggleFullscreen = () => setFullscreen((v) => !v);
 
+  useEffect(() => {
+    document.body.style.overflow = fullscreen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [fullscreen]);
+
   const copyDoc = () => {
     execCmd("copy");
   };
@@ -500,8 +505,8 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyCenter"); }} title="Center">&#x2194;</button>
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyRight"); }} title="Align Right">&#x2192;</button>
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyFull"); }} title="Justify">&#x21C4;</button>
-            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyLeft"); execCmd("direction", "ltr"); }} title="Left to Right">LTR</button>
-            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyRight"); execCmd("direction", "rtl"); }} title="Right to Left">RTL</button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execHeading("div"); const sel = window.getSelection(); if (sel.rangeCount) { sel.getRangeAt(0).startContainer.parentElement.closest?.("div")?.setAttribute?.("dir","ltr"); } }} title="Left to Right">LTR</button>
+            <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execHeading("div"); const sel = window.getSelection(); if (sel.rangeCount) { sel.getRangeAt(0).startContainer.parentElement.closest?.("div")?.setAttribute?.("dir","rtl"); } }} title="Right to Left">RTL</button>
             <span className="Docs-Toolbar-Sep" />
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("insertUnorderedList"); }} title="Bullet List">&#x2022;</button>
             <button type="button" className="Docs-Toolbar-Btn" onMouseDown={(e) => { e.preventDefault(); execCmd("insertOrderedList"); }} title="Numbered List">#</button>
