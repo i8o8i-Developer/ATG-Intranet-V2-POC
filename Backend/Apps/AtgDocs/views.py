@@ -89,6 +89,14 @@ class KnowledgeDocumentViewSet(SimpleDocsViewSet):
         )
         return self.service_response(result, KnowledgePermissionSerializer)
 
+    @action(detail=True, methods=["post"], url_path="revoke-permission")
+    def revoke_permission(self, request, pk=None):
+        user_id = request.data.get("user_id")
+        if not user_id:
+            return Response({"user_id": "Required"}, status=400)
+        result = KnowledgeDocumentService.revoke_permission(self.get_tenant_context(), pk, user_id)
+        return self.service_response(result)
+
     @action(detail=True, methods=["get"], url_path="history")
     def history(self, request, pk=None):
         queryset = DocumentVersion.objects.filter(document_id=pk).order_by("-version")

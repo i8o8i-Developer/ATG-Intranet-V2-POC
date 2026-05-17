@@ -162,7 +162,7 @@ export function DocsScreen({ data, reload, navigate }) {
               <option value="">General</option>{(data.departments || []).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select></label>
             <label>Body<textarea value={createForm.body} onChange={(e) => setCreateForm({ ...createForm, body: e.target.value })} rows={8} style={{ fontFamily: "monospace", fontSize: 13 }} /></label>
-            <label style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 }}><input type="checkbox" checked={createForm.uploadToDrive} onChange={(e) => setCreateForm({ ...createForm, uploadToDrive: e.target.checked })} /> Create in Google Drive</label>
+            <label style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 }}><input type="checkbox" checked={createForm.uploadToDrive} onChange={(e) => setCreateForm({ ...createForm, uploadToDrive: e.target.checked })} /> Create In Google Drive</label>
             <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
               <button className="Primary-Button" type="submit">Create</button>
               <button className="Outline-Button" type="button" onClick={() => setCreateOpen(false)}>Cancel</button>
@@ -191,7 +191,17 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
   const [history, setHistory] = useState([]);
   const [permOpen, setPermOpen] = useState(false);
   const [permForm, setPermForm] = useState({ employee_id: "", permission: "Read" });
+  const [permLoading, setPermLoading] = useState(false);
   const [tab, setTab] = useState("editor");
+
+  const loadPermissions = useCallback(async () => {
+    try {
+      const list = await apiGet("/AtgDocs/KnowledgePermissions/");
+      setPermissions(unpackList(list).filter((p) => String(p.document) === String(docId) && p.subject_type === "user"));
+    } catch (err) {
+      console.error("Failed to load permissions", err);
+    }
+  }, [docId]);
 
   useEffect(() => {
     if (!docId) return;
@@ -200,11 +210,9 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
       setTitle(d.title || "");
       setBody(d.body || "");
     }).catch(() => {});
-    apiGet("/AtgDocs/KnowledgePermissions/").then((list) => {
-      setPermissions(unpackList(list).filter((p) => String(p.document) === String(docId) && p.subject_type === "user"));
-    }).catch(() => {});
+    loadPermissions();
     apiGet(`/AtgDocs/KnowledgeDocuments/${docId}/history/`).then(setHistory).catch(() => {});
-  }, [docId]);
+  }, [docId, loadPermissions]);
 
   const refreshDoc = useCallback(async () => {
     const d = await apiGet(`/AtgDocs/KnowledgeDocuments/${docId}/open/`);
@@ -259,16 +267,37 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
   const grantPermission = async (e) => {
     e.preventDefault();
     const emp = (data.employees || []).find((e) => String(e.id) === String(permForm.employee_id));
-    if (!emp || !emp.user_id) return;
-    await apiPost(`/AtgDocs/KnowledgeDocuments/${docId}/grant-permission/`, {
-      user_id: Number(emp.user_id),
-      permission: permForm.permission,
-      email: emp.user_email || "",
-    });
-    setPermOpen(false);
-    setPermForm({ employee_id: "", permission: "Read" });
-    const list = await apiGet("/AtgDocs/KnowledgePermissions/");
-    setPermissions(unpackList(list).filter((p) => String(p.document) === String(docId)));
+    if (!emp) return alert("Please select an employee");
+    if (!emp.user_id) return alert("This employee has no associated user account");
+    
+    setPermLoading(true);
+    try {
+      await apiPost(`/AtgDocs/KnowledgeDocuments/${docId}/grant-permission/`, {
+        user_id: Number(emp.user_id),
+        permission: permForm.permission,
+        email: emp.user_email || emp.email || "",
+      });
+      setPermOpen(false);
+      setPermForm({ employee_id: "", permission: "Read" });
+      await loadPermissions();
+    } catch (err) {
+      alert(err.message || "Failed to grant permission");
+    } finally {
+      setPermLoading(false);
+    }
+  };
+
+  const revokePermission = async (userId) => {
+    if (!window.confirm("Are you sure you want to revoke this permission?")) return;
+    setPermLoading(true);
+    try {
+      await apiPost(`/AtgDocs/KnowledgeDocuments/${docId}/revoke-permission/`, { user_id: userId });
+      await loadPermissions();
+    } catch (err) {
+      alert(err.message || "Failed to revoke permission");
+    } finally {
+      setPermLoading(false);
+    }
   };
 
   const execCmd = (cmd, val = null) => {
@@ -339,8 +368,16 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
 
       {tab === "permissions" && (
         <Panel title="Permissions">
-          <SimpleTable columns={["User", "Permission"]} rows={permissions.map((p) => [employeeName(data, p.subject_id) || `User #${p.subject_id}`, <StatusPill key={p.id} tone={p.permission === "Write" || p.permission === "Owner" ? "green" : "slate"}>{p.permission}</StatusPill>])} />
-          <button className="Soft-Button Small" onClick={() => setPermOpen(true)} style={{ marginTop: 12 }}><Plus size={14} /> Add Permission</button>
+          {permLoading && <p>Updating Permissions...</p>}
+          <SimpleTable
+            columns={["User", "Permission", "Actions"]}
+            rows={permissions.map((p) => [
+              employeeName(data, p.subject_id) || `User #${p.subject_id}`,
+              <StatusPill key={p.id} tone={p.permission === "Write" || p.permission === "Owner" ? "green" : "slate"}>{p.permission}</StatusPill>,
+              <button key={`rev-${p.id}`} className="Icon-Button" onClick={() => revokePermission(p.subject_id)} style={{ color: "var(--Danger)" }} title="Revoke Permission"><Trash size={14} /></button>
+            ])}
+          />
+          <button className="Soft-Button Small" onClick={() => setPermOpen(true)} style={{ marginTop: 12 }} disabled={permLoading}><Plus size={14} /> Add Permission</button>
         </Panel>
       )}
 
@@ -352,8 +389,8 @@ export function DocsDetailScreen({ data, route, reload, navigate }) {
               <label>Permission<select value={permForm.permission} onChange={(e) => setPermForm({ ...permForm, permission: e.target.value })}><option value="Read">Read</option><option value="Write">Write</option></select></label>
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-              <button className="Primary-Button" type="submit">Grant</button>
-              <button className="Outline-Button" type="button" onClick={() => setPermOpen(false)}>Cancel</button>
+              <button className="Primary-Button" type="submit" disabled={permLoading}>{permLoading ? "Granting..." : "Grant"}</button>
+              <button className="Outline-Button" type="button" onClick={() => setPermOpen(false)} disabled={permLoading}>Cancel</button>
             </div>
           </form>
         </Modal>

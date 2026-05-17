@@ -184,6 +184,41 @@ class KnowledgeDocumentService:
         return ServiceResult.success(perm)
 
     @staticmethod
+    def revoke_permission(context, document_id, user_id):
+        actor = KnowledgeDocumentService._actor(context)
+        try:
+            document = KnowledgeDocument.objects.get(id=document_id)
+        except KnowledgeDocument.DoesNotExist:
+            return ServiceResult.failure({"document": "Not Found"}, status_code=404)
+        
+        tenant = KnowledgeDocumentService._tenant(context)
+        perm = KnowledgePermission.objects.filter(
+            document=document, subject_type="user", subject_id=str(user_id), tenant=tenant
+        ).first()
+        
+        if not perm:
+            return ServiceResult.failure({"permission": "Not Found"}, status_code=404)
+
+        # Sync with Drive if possible
+        drive_file_id = document.metadata.get("drive_file", {}).get("id")
+        if drive_file_id:
+            from django.contrib.auth.models import User
+            user = User.objects.filter(id=user_id).first()
+            employee = EmployeeProfile.objects.filter(user=user).first()
+            email = employee.user_email if employee else (user.email if user else "")
+            if email:
+                GoogleDriveProvider().revoke_permission(drive_file_id, email)
+
+        perm.delete()
+        
+        KnowledgeActivity.objects.create(
+            document=document, activity_type="PermissionRevoked",
+            payload={"user_id": user_id},
+            tenant=tenant, created_by=actor,
+        )
+        return ServiceResult.success({"revoked": True})
+
+    @staticmethod
     def update_document(context, document_id, **changes):
         actor = KnowledgeDocumentService._actor(context)
         try:
@@ -296,17 +331,6 @@ class KnowledgeDocumentService:
             GoogleDriveProvider().delete_file(drive_file_id)
         document.delete()
         return ServiceResult.success({"deleted": True})
-
-    @staticmethod
-    def _open_url(document):
-        return document.metadata.get("drive_file", {}).get("webViewLink") or document.external_url or ""
-
-    @staticmethod
-    def _actor_employee(context):
-        actor = KnowledgeDocumentService._actor(context)
-        if not actor or not actor.is_authenticated:
-            return None
-        return EmployeeProfile.objects.filter(user=actor, is_active=True).first()
 
     @staticmethod
     def _assign_drive_permission(document, email, permission):

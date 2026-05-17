@@ -141,7 +141,11 @@ class GoogleDriveProvider:
         if not hdrs:
             return {"file_id": file_id, "email": email, "role": role, "dry_run": True}
         import requests as req
-        body = {"type": permission_type, "role": role, "emailAddress": email}
+        # 
+        body = {"type": permission_type, "role": role}
+        if permission_type == "user":
+            body["emailAddress"] = email
+        
         try:
             resp = req.post(
                 f"{self.DRIVE_API}/files/{file_id}/permissions",
@@ -152,6 +156,29 @@ class GoogleDriveProvider:
         except Exception as e:
             logger.error("Failed To Assign Permission: %s", e)
             return {"file_id": file_id, "email": email, "role": role, "dry_run": True, "error": str(e)}
+
+    def revoke_permission(self, file_id, email):
+        hdrs = self._headers()
+        if not hdrs:
+            return {"file_id": file_id, "email": email, "dry_run": True}
+        import requests as req
+        try:
+            # 1. List permissions to find the ID for this email
+            resp = req.get(f"{self.DRIVE_API}/files/{file_id}/permissions", headers=hdrs, params={"fields": "permissions(id,emailAddress)"}, timeout=30)
+            resp.raise_for_status()
+            perms = resp.json().get("permissions", [])
+            perm_id = next((p["id"] for p in perms if p.get("emailAddress") == email), None)
+            
+            if not perm_id:
+                return {"file_id": file_id, "email": email, "revoked": False, "reason": "Not Found"}
+
+            # 2. Delete the permission
+            resp = req.delete(f"{self.DRIVE_API}/files/{file_id}/permissions/{perm_id}", headers=hdrs, timeout=30)
+            resp.raise_for_status()
+            return {"file_id": file_id, "email": email, "revoked": True}
+        except Exception as e:
+            logger.error("Failed To Revoke Permission: %s", e)
+            return {"file_id": file_id, "email": email, "revoked": False, "error": str(e)}
 
     def set_file_public(self, file_id, role="reader"):
         return self.assign_permission(file_id, "anyone", role=role, permission_type="anyone")
