@@ -123,7 +123,8 @@ class KnowledgeDocumentViewSet(SimpleDocsViewSet):
         if not result.ok:
             return Response(result.errors, status=result.status_code)
         data = KnowledgeDocumentSerializer(result.data["document"], context=self.get_serializer_context()).data
-        data["openUrl"] = result.data["openUrl"]
+        data["openUrl"] = result.data.get("openUrl", "")
+        data["canEdit"] = result.data.get("canEdit", False)
         return Response(data, status=result.status_code)
 
     @action(detail=True, methods=["post", "put", "patch"], url_path="update-content")
