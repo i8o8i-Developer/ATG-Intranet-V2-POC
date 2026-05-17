@@ -48,8 +48,7 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
   const [summary, setSummary] = useState("");
   const [goalNotes, setGoalNotes] = useState({});
   const [goalNotesOpen, setGoalNotesOpen] = useState({});
-  const [showDelayForm, setShowDelayForm] = useState(false);
-  const [delayForm, setDelayForm] = useState({ project: "", delay_days: 1, reason: "" });
+  const [delayTask, setDelayTask] = useState(null);
   const projectMap = useMemo(() => indexById(data.projects), [data.projects]);
   const days = useMemo(() => lastDays(15), []);
   const filteredTasks = taskFilter === "completed" ? completedTasks : pendingTasks;
@@ -91,7 +90,6 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
 
   const quickLinks = [
     { label: "Getting Started", onClick: () => navigate("/docs/") },
-    { label: "Report Delay", onClick: () => setShowDelayForm(true) },
   ];
 
   const statusTone = (status = "") => {
@@ -302,6 +300,7 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
               <th>Status</th>
               <th>Due Date</th>
               <th>Assignee</th>
+              <th>Delay</th>
             </tr>
           </thead>
           <tbody>
@@ -310,7 +309,7 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
               return (
                 <React.Fragment key={name}>
                   <tr className="HomeR-ProjectRow">
-                    <td colSpan="5">
+                    <td colSpan="6">
                       <button type="button" className="HomeR-ProjectToggle" onClick={() => toggleProject(name)}>
                         {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
                         <strong>{name}</strong>
@@ -333,10 +332,11 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
                           <td><span className={`status-pill ${statusTone(task.status)}`}>{task.status || "Not Started"}</span></td>
                           <td><span className="HomeR-DateCell"><CalendarDays size={15} /> {task.due_at ? formatDate(task.due_at) : "Not Set"}</span></td>
                           <td>{avatar(employeeName(data, task.owner || task.owner_id) || employee?.display_name)}</td>
+                          <td><button className="Soft-Button Small" onClick={() => setDelayTask(task)} title="Report Delay"><Clock3 size={14} /></button></td>
                         </tr>
                         {selected && !completed && (
                           <tr className="HomeR-InlineEditor">
-                            <td colSpan="5">
+                            <td colSpan="6">
                               <div className="HomeR-EditorShell">
                                 <strong>Update EOD Report For This Task</strong>
                                 <textarea value={summary} onChange={(event) => setSummary(event.target.value)} placeholder="What Did You Do Today On This Task?" />
@@ -358,32 +358,35 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
         </table>
         {!filteredTasks.length && <div className="HomeR-Empty">No Tasks Found For This Filter.</div>}
       </div>
-      {showDelayForm && (
-        <Modal title="Report Delay" onClose={() => setShowDelayForm(false)}>
+      {delayTask && (
+        <Modal title="Report Delay" onClose={() => setDelayTask(null)}>
           <form onSubmit={async (e) => {
             e.preventDefault();
             const me = data.me?.user || data.me?.account || data.me || {};
             const myProfile = (data.employees || []).find((emp) => String(emp.user) === String(me.id));
-            if (!delayForm.project || !myProfile) return;
+            if (!myProfile) return;
+            const days = Number(e.target.delay_days.value);
+            const reason = e.target.reason.value;
             await apiPost("/Project/ProjectDelays/", {
-              delay_type: "General",
-              project: Number(delayForm.project),
-              delay_days: Number(delayForm.delay_days),
-              reason: delayForm.reason,
+              delay_type: "Task",
+              item_id: delayTask.id,
+              project: delayTask.project,
+              task: delayTask.id,
+              delay_days: days,
+              reason,
               reported_by: myProfile.id,
             });
-            setShowDelayForm(false);
-            setDelayForm({ project: "", delay_days: 1, reason: "" });
+            setDelayTask(null);
             reload(["projectDelays"]);
           }}>
+            <p style={{ fontSize: 14, marginBottom: 12, color: "#374151" }}>Task: <strong>{delayTask.title}</strong></p>
             <div className="Form-Grid Two" style={{ marginBottom: 12 }}>
-              <label>Project<select value={delayForm.project} onChange={(e) => setDelayForm({ ...delayForm, project: e.target.value })} required><option value="">Select Project</option>{(data.projects || []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
-              <label>Delay Days<input type="number" min="1" value={delayForm.delay_days} onChange={(e) => setDelayForm({ ...delayForm, delay_days: e.target.value })} required /></label>
+              <label>Delay Days<input type="number" name="delay_days" min="1" defaultValue={1} required /></label>
             </div>
-            <label>Reason<textarea value={delayForm.reason} onChange={(e) => setDelayForm({ ...delayForm, reason: e.target.value })} rows={3} required /></label>
+            <label>Reason<textarea name="reason" rows={3} required /></label>
             <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
               <button className="Primary-Button" type="submit">Submit Delay</button>
-              <button className="Outline-Button" type="button" onClick={() => setShowDelayForm(false)}>Cancel</button>
+              <button className="Outline-Button" type="button" onClick={() => setDelayTask(null)}>Cancel</button>
             </div>
           </form>
         </Modal>
