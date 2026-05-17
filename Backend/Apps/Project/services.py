@@ -524,7 +524,7 @@ class ProjectDeliveryService:
         changed_by = EmployeeProfile.objects.filter(tenant=context.tenant, user=context.actor).first()
         TeamAssignmentHistory.objects.create(
             tenant=context.tenant, workspace=context.workspace or assignment.workspace,
-            team_assignment=assignment, action="status_changed", comment=f"Role changed to {hat_type}", changed_by=changed_by,
+            team_assignment=assignment, action="status_changed", comment=f"Role Changed To {hat_type}", changed_by=changed_by,
             created_by=context.actor, updated_by=context.actor,
         )
         return ServiceResult.success(assignment)
@@ -653,7 +653,7 @@ class ProjectDeliveryService:
             changed_by = EmployeeProfile.objects.filter(tenant=context.tenant, user=context.actor).first()
             TeamAssignmentHistory.objects.create(
                 tenant=context.tenant, workspace=context.workspace,
-                team_assignment=old_assignment, action="replaced", comment=f"Replaced by employee {new_employee_id}", changed_by=changed_by,
+                team_assignment=old_assignment, action="replaced", comment=f"Replaced By Employee {new_employee_id}", changed_by=changed_by,
                 created_by=context.actor, updated_by=context.actor,
             )
         return ProjectDeliveryService.add_team_member(context, project_id, new_employee_id, role=role)
@@ -671,7 +671,7 @@ class ProjectDeliveryService:
         TeamAssignmentHistory.objects.create(
             tenant=context.tenant, workspace=context.workspace or assignment.workspace,
             team_assignment=assignment, action="status_changed",
-            comment=f"Absent: {absent_reason}" if absent_reason else "Marked absent", changed_by=changed_by,
+            comment=f"Absent: {absent_reason}" if absent_reason else "Marked Absent", changed_by=changed_by,
             created_by=context.actor, updated_by=context.actor,
         )
         return ServiceResult.success(assignment)
