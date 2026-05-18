@@ -51,6 +51,15 @@ function stageTone(value = "") {
   return "slate";
 }
 
+function normalizeSource(label = "") {
+  const text = String(label || "").toLowerCase();
+  if (/banao|website|^w$/.test(text)) return "BanaoWebsite";
+  if (/instagram|insta/.test(text)) return "Instagram";
+  if (/client/.test(text)) return "ClientWebsite";
+  if (/linkedin|linked/.test(text)) return "LinkedIn";
+  return label;
+}
+
 function sourceLogoNode(label = "") {
   const tone = sourceTone(label);
   if (tone === "client") return <Globe size={16} />;
@@ -230,12 +239,13 @@ export function LmsScreen({ data, reload, navigate, route }) {
         id: row.id,
         leadName: account.metadata?.full_name || account.metadata?.contact_name || primaryContact.name || account.company_name || row.company_name || "-",
         companyName: account.company_name || row.company_name || "-",
-        sourceLabel,
+        sourceLabel: normalizeSource(sourceLabel),
         stageLabel: leadStage(account),
         notesCount: row.notes_count ?? notes.length,
         ownerId: ownerId ? String(ownerId) : "",
         ownerName: row.owner_name || leadOwnerName(data, { owner_id: ownerId, owner_name: row.owner_name }) || "-",
         priority: row.priority || account.priority || "Normal",
+        estimatedValue: Number(account.estimated_value || row.estimated_value || 0),
         email: leadContactSummary(data, account, "email") || primaryContact.email || account.metadata?.email || account.metadata?.contact_email || "-",
         phone: leadContactSummary(data, account, "phone") || primaryContact.phone || account.metadata?.phone || account.metadata?.contact_phone || "-",
         createdAt: account.created_at || row.created_at || null,
@@ -294,6 +304,10 @@ export function LmsScreen({ data, reload, navigate, route }) {
       setError("Company Name Is Required"); setTimeout(() => setError(""), 3000);
       return;
     }
+    if (!formData.contact_email?.trim() && !formData.contact_phone?.trim()) {
+      setError("At Least Email Or Phone Number Is Required."); setTimeout(() => setError(""), 3000);
+      return;
+    }
     setBusy(true);
     try {
       await apiPost("/Banao/LeadAccounts/capture/", formData);
@@ -341,6 +355,7 @@ export function LmsScreen({ data, reload, navigate, route }) {
     setSelected(new Set());
     setSortField("createdAt");
     setSortDirection("desc");
+    refresh();
   };
 
   const toggleAllVisible = () => {
@@ -432,7 +447,7 @@ export function LmsScreen({ data, reload, navigate, route }) {
         <div className="Lead-Tools">
           <button className="Icon-Action" title="Add Lead" onClick={() => setAddLeadOpen(true)}><Plus size={16} /></button>
           <button className="Icon-Action" title="Bulk Move Stage" onClick={() => setMoreOpen(true)} disabled={!selected.size}><MoreHorizontal size={16} /></button>
-          <button className="Icon-Action" title="Clear Selection" onClick={() => setSelected(new Set())} disabled={!selected.size}><Trash2 size={16} /></button>
+          <button className="Icon-Action" title="Delete Selected" onClick={async () => { if (!selected.size) return; if (!window.confirm(`Delete ${selected.size} selected lead(s)?`)) return; setBusy(true); try { await Promise.all(Array.from(selected).map((id) => apiPatch(`/Banao/LeadAccounts/${id}/`, { is_active: false }))); setSelected(new Set()); refresh(); } catch (err) { setError(err?.data?.detail || err?.message || "Delete Failed."); setTimeout(() => setError(""), 3000); } finally { setBusy(false); } }} disabled={!selected.size}><Trash2 size={16} /></button>
           <button className="Icon-Action" title="Assign Selected" onClick={() => setAssignOpen(true)} disabled={!selected.size}><Users size={16} /></button>
         </div>
 
@@ -482,10 +497,12 @@ export function LmsScreen({ data, reload, navigate, route }) {
                 <th>
                   <button className="Lms-Sort-Head" onClick={() => toggleSort("companyName")}>Company Name {renderSortIcon("companyName")}</button>
                 </th>
+                <th>Tags</th>
                 <th>Email</th>
                 <th>Phone Nos</th>
                 <th>Assigned To</th>
                 <th>Switch BA</th>
+                <th>Next Follow Up</th>
                 <th>
                   <button className="Lms-Sort-Head" onClick={() => toggleSort("createdAt")}>Created At {renderSortIcon("createdAt")}</button>
                 </th>
@@ -514,6 +531,7 @@ export function LmsScreen({ data, reload, navigate, route }) {
                   <td><span className={`lms-stage-chip ${stageTone(lead.stageLabel)}`}>{lead.stageLabel}</span></td>
                   <td>{lead.notesCount ? lead.notesCount : "N/A"}</td>
                   <td>{lead.companyName || "-"}</td>
+                  <td>{(lead.tagNames || []).length ? lead.tagNames.slice(0, 3).join(", ") : "-"}</td>
                   <td>{lead.email || "-"}</td>
                   <td>{lead.phone || "-"}</td>
                   <td>{lead.ownerName || "-"}</td>
@@ -523,15 +541,16 @@ export function LmsScreen({ data, reload, navigate, route }) {
                       {(data.employees || []).map((emp) => <option key={emp.id} value={emp.id}>{emp.display_name}</option>)}
                     </select>
                   </td>
-                  <td>{(() => { const stageOrder = ["New Lead", "Contacted", "Discovery", "Demo", "Proposal", "Negotiation", "Closed Won", "Closed Lost"]; const idx = stageOrder.indexOf(lead.stageLabel); const pct = Math.min(100, Math.max(0, (idx + 1) * 12)); const val = Number(lead.estimatedValue || 0); return <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 80 }}><div style={{ height: 4, background: "#e2e8f0", borderRadius: 2, overflow: "hidden" }}><div style={{ width: `${pct}%`, height: "100%", background: pct >= 75 ? "#10b981" : pct >= 40 ? "#f59e0b" : "#ef4444", borderRadius: 2 }} /></div><span style={{ fontSize: 10, color: "#64748b" }}>{pct}% · ₹{val.toLocaleString()}</span></div>; })()}</td>
+                  <td style={{ fontSize: 12, color: lead.nextFollowUpAt && new Date(lead.nextFollowUpAt) < new Date() ? "#dc2626" : "#64748b" }}>{lead.nextFollowUpAt ? formatDate(lead.nextFollowUpAt) : "-"}</td>
                   <td>{formatDate(lead.createdAt)}</td>
+                  <td>{(() => { const stageOrder = ["New Lead", "Contact Attempted", "Discovery / Demo Scheduled", "Discovery / Demo Completed", "Proposal Sent", "Closed - Won", "Closed - Lost", "Nurture / Recycle"]; const idx = stageOrder.indexOf(lead.stageLabel); const pct = idx >= 0 ? Math.round(((idx + 1) / stageOrder.length) * 100) : 10; const val = Number(lead.estimatedValue || 0); return <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 80 }}><div style={{ height: 4, background: "#e2e8f0", borderRadius: 2, overflow: "hidden" }}><div style={{ width: `${pct}%`, height: "100%", background: pct >= 75 ? "#10b981" : pct >= 40 ? "#f59e0b" : "#ef4444", borderRadius: 2 }} /></div><span style={{ fontSize: 10, color: "#64748b" }}>{pct}% · ₹{val.toLocaleString()}</span></div>; })()}</td>
                   <td className="Lms-Last-Note">{lead.lastUpdateNote || "-"}</td>
                   <td>{formatDate(lead.updatedAt)}</td>
                 </tr>
               ))}
               {!filtered.length && (
                 <tr>
-                  <td colSpan={13}>
+                  <td colSpan={16}>
                     <div className="Lms-Empty-Wrap"><EmptyState label="No Leads Match The Current Filters." /></div>
                   </td>
                 </tr>
@@ -587,6 +606,21 @@ export function LmsScreen({ data, reload, navigate, route }) {
                     </div>
                   ))}
                 </div>
+                {/* Notes */}
+                <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 12 }}>
+                  <h4 style={{ margin: "0 0 8px", fontSize: 14 }}>Notes ({slideLead.notes.length})</h4>
+                  <div style={{ maxHeight: 200, overflow: "auto", marginBottom: 8 }}>
+                    {slideLead.notes.slice(0, 10).map((note) => (
+                      <div key={note.id} style={{ fontSize: 13, padding: "6px 0", borderBottom: "1px solid #f1f5f9" }}>
+                        <strong style={{ fontSize: 12 }}>{note.title || "General Update"}</strong>
+                        <p style={{ margin: "2px 0 0", color: "#475569", whiteSpace: "pre-wrap" }}>{note.body}</p>
+                        <span style={{ fontSize: 11, color: "#94a3b8" }}>{formatDateTime(note.created_at || note.updated_at)}</span>
+                      </div>
+                    ))}
+                    {!slideLead.notes.length && <span style={{ color: "#94a3b8", fontSize: 13 }}>No Notes.</span>}
+                  </div>
+                </div>
+
                 {/* Action Checklist */}
                 <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 12 }}>
                   <h4 style={{ margin: "0 0 8px", fontSize: 14 }}>Action Checklist</h4>
@@ -729,7 +763,7 @@ function LeadDetailWorkspace({ data, lead, navigate, refresh, stageOptions }) {
               <option value="">Switch BA</option>
               {(data.employees || []).map((emp) => <option key={emp.id} value={emp.id}>{emp.display_name}</option>)}
             </select>
-            <button className="Lms-Detail-Action" style={{ color: "#ef4444" }} onClick={async () => { if (window.confirm("Delete this lead permanently?")) { await apiPost(`/Banao/LeadAccounts/${lead.id}/`, { is_active: false }); refresh(); navigate?.("/lms/"); } }}>
+            <button className="Lms-Detail-Action" style={{ color: "#ef4444" }} onClick={async () => { if (window.confirm("Delete this lead permanently?")) { await apiPatch(`/Banao/LeadAccounts/${lead.id}/`, { is_active: false }); refresh(); navigate?.("/lms/"); } }}>
               <Trash2 size={17} /> <span>Delete</span>
             </button>
             <a className="Lms-Detail-Action"
@@ -964,30 +998,59 @@ function AddLeadModal({ data, sources, busy, onClose, onSubmit }) {
 
 function AssignLeadModal({ data, count, busy, onClose, onSubmit }) {
   const [employeeId, setEmployeeId] = useState("");
+  const [confirm, setConfirm] = useState(false);
+  const owner = (data.employees || []).find((e) => String(e.id) === String(employeeId));
   return (
     <Modal title={`Assign ${count} Leads To Owner`} onClose={onClose}>
-      <label>Owner
-        <select value={employeeId} onChange={(event) => setEmployeeId(event.target.value)}>
-          <option value="">Select Owner</option>
-          {(data.employees || []).map((emp) => <option key={emp.id} value={emp.id}>{emp.display_name}</option>)}
-        </select>
-      </label>
-      <button className="Primary-Button" disabled={busy || !employeeId} onClick={() => onSubmit(employeeId)}>Assign</button>
+      {!confirm ? (
+        <>
+          <p style={{ fontSize: 13, color: "#64748b", marginBottom: 12 }}>This will reassign all {count} selected leads. Their current owners will be overwritten.</p>
+          <label>Owner
+            <select value={employeeId} onChange={(event) => setEmployeeId(event.target.value)}>
+              <option value="">Select Owner</option>
+              {(data.employees || []).map((emp) => <option key={emp.id} value={emp.id}>{emp.display_name}</option>)}
+            </select>
+          </label>
+          <button className="Primary-Button" disabled={busy || !employeeId} onClick={() => setConfirm(true)}>Next</button>
+        </>
+      ) : (
+        <>
+          <p style={{ fontSize: 13, color: "#dc2626", marginBottom: 12 }}>Are you sure you want to reassign all {count} selected leads to <strong>{owner?.display_name}</strong>? Their current ownership will be overwritten.</p>
+          <div className="Modal-Actions">
+            <button className="Outline-Button" onClick={() => setConfirm(false)}>Back</button>
+            <button className="Primary-Button" disabled={busy} onClick={() => onSubmit(employeeId)}>Confirm Assign</button>
+          </div>
+        </>
+      )}
     </Modal>
   );
 }
 
 function BulkStageModal({ count, busy, onClose, onSubmit, options }) {
   const [stage, setStage] = useState("Contacted");
+  const [confirm, setConfirm] = useState(false);
   const stages = options?.length ? options : ["New Lead", "Contact Attempted", "Discovery / Demo Scheduled", "Proposal Sent", "Closed - Won", "Closed - Lost"];
   return (
     <Modal title={`Move ${count} Leads To Stage`} onClose={onClose}>
-      <label>Stage
-        <select value={stage} onChange={(event) => setStage(event.target.value)}>
-          {stages.map((value) => <option key={value} value={value}>{value}</option>)}
-        </select>
-      </label>
-      <button className="Primary-Button" disabled={busy} onClick={() => onSubmit(stage)}>Apply Stage</button>
+      {!confirm ? (
+        <>
+          <p style={{ fontSize: 13, color: "#64748b", marginBottom: 12 }}>This will update the workflow status of all {count} selected leads. Their current individual stages will be overwritten.</p>
+          <label>Stage
+            <select value={stage} onChange={(event) => setStage(event.target.value)}>
+              {stages.map((value) => <option key={value} value={value}>{value}</option>)}
+            </select>
+          </label>
+          <button className="Primary-Button" disabled={busy} onClick={() => setConfirm(true)}>Next</button>
+        </>
+      ) : (
+        <>
+          <p style={{ fontSize: 13, color: "#dc2626", marginBottom: 12 }}>Are you sure you want to move all {count} selected leads to <strong>{stage}</strong>? Their current workflow statuses will be overwritten. This cannot be undone.</p>
+          <div className="Modal-Actions">
+            <button className="Outline-Button" onClick={() => setConfirm(false)}>Back</button>
+            <button className="Primary-Button" disabled={busy} onClick={() => onSubmit(stage)}>Confirm Move</button>
+          </div>
+        </>
+      )}
     </Modal>
   );
 }
