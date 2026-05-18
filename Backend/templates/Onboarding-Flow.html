@@ -257,7 +257,7 @@
         </ul>
       </div>
       <p style="margin-top:18px;font-size:12px;color:#888">Questions? Email HR At <a href="mailto:{{ hr_email }}" class="contact-link">{{ hr_email }}</a></p>
-      <button class="btn btn-secondary" onclick="goTo(1)" style="margin-top:20px;min-width:160px">&larr; Start Over</button>
+      <button class="btn btn-secondary" id="startOverBtn" onclick="goTo(1)" style="margin-top:20px;min-width:160px">&larr; Start Over</button>
     </div>
   </div>
 
@@ -287,7 +287,9 @@ function render() {
   document.getElementById("stepIndicator").textContent = "STEP " + current + " OF 4 - " + steps[current - 1].label;
 }
 
+var _locked = false;
 function goTo(n) {
+  if (_locked && n < 4) return;
   current = n;
   document.querySelectorAll(".step").forEach(function(e) { e.classList.add("hidden"); });
   document.getElementById("step" + n).classList.remove("hidden");
@@ -402,6 +404,8 @@ function populateStep4(data) {
 render();
 var alreadyAccepted = "{{ already_accepted }}";
 if (alreadyAccepted === "true") {
+  _locked = true;
+  document.getElementById("startOverBtn").style.display = "none";
   document.querySelectorAll(".step").forEach(function(e) { e.classList.add("hidden"); });
   document.getElementById("step4").classList.remove("hidden");
   current = 4;
