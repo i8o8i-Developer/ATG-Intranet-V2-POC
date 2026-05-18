@@ -23,13 +23,17 @@
 .Docs-Detail .Page-Heading h1 input { font-size: 20px; font-weight: 700; border: none; background: transparent; width: 100%; padding: 0; font-family: inherit; color: #0f172a; outline: none; }
 .Docs-Detail-Tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 0; }
 .Docs-Editor-Wrapper { display: flex; flex-direction: column; gap: 0; }
-.Docs-Toolbar { display: flex; align-items: center; gap: 4px; padding: 8px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-bottom: none; border-radius: 8px 8px 0 0; flex-wrap: wrap; }
-.Docs-Toolbar-Btn { width: 32px; height: 32px; border: none; background: transparent; border-radius: 6px; cursor: pointer; font-size: 13px; color: #475569; display: flex; align-items: center; justify-content: center; font-family: inherit; transition: background 0.1s; }
-.Docs-Toolbar-Btn:hover { background: #e2e8f0; }
-.Docs-Toolbar-Btn-Wide { width: auto; padding: 0 8px; font-weight: 600; font-size: 12px; }
-.Docs-Toolbar-Select { height: 28px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; font-size: 12px; color: #475569; padding: 0 4px; cursor: pointer; font-family: inherit; outline: none; }
-.Docs-Toolbar-Select-Wide { min-width: 120px; }
-.Docs-Toolbar-Color { width: 28px; height: 28px; padding: 0; border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer; background: none; }
+.Docs-Toolbar { display: flex; align-items: center; gap: 2px; padding: 6px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-bottom: none; border-radius: 8px 8px 0 0; flex-wrap: wrap; }
+.Docs-Toolbar-Group { display: flex; align-items: center; gap: 1px; margin: 1px 0; padding: 0 4px; border-right: 1px solid #e2e8f0; }
+.Docs-Toolbar-Group:last-child { border-right: none; }
+.Docs-Toolbar-Btn { width: 30px; height: 30px; border: none; background: transparent; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600; color: #475569; display: flex; align-items: center; justify-content: center; font-family: inherit; transition: all 0.1s; }
+.Docs-Toolbar-Btn:hover { background: #e2e8f0; color: #0f172a; }
+.Docs-Toolbar-Btn:active { background: #cbd5e1; }
+.Docs-Toolbar-Btn-Wide { width: auto; padding: 0 7px; font-weight: 600; font-size: 11px; letter-spacing: 0.02em; }
+.Docs-Toolbar-Select { height: 26px; border: 1px solid #e2e8f0; border-radius: 5px; background: #fff; font-size: 11px; color: #475569; padding: 0 4px; cursor: pointer; font-family: inherit; outline: none; }
+.Docs-Toolbar-Select:hover { border-color: #cbd5e1; }
+.Docs-Toolbar-Select-Wide { min-width: 110px; }
+.Docs-Toolbar-Color { width: 26px; height: 26px; padding: 0; border: 1px solid #e2e8f0; border-radius: 5px; cursor: pointer; background: none; }
 .Docs-Toolbar-Color::-webkit-color-swatch-wrapper { padding: 2px; }
 .Docs-Toolbar-Color::-webkit-color-swatch { border: none; border-radius: 3px; }
 .Docs-Toolbar-Sep { width: 1px; height: 20px; background: #e2e8f0; margin: 0 4px; }

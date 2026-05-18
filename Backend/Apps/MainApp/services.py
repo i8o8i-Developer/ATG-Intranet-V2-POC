@@ -250,7 +250,10 @@ class OfferLifecycleService:
         offer.offer_payload = {**offer.offer_payload, "acceptance": payload or {}}
         offer.updated_by = context.actor
         offer.save(update_fields=["status", "accepted_at", "offer_payload", "updated_by", "updated_at"])
-        OutboxService.publish(context, "OnboardingOffer", offer.id, "OfferAccepted", {"candidateEmail": offer.candidate_email})
+        try:
+            OutboxService.publish(context, "OnboardingOffer", offer.id, "OfferAccepted", {"candidateEmail": offer.candidate_email})
+        except Exception:
+            pass
 
         # ── AUTO ONBOARDING ──────────────────────────────────────────────────
         op = offer.offer_payload or {}
@@ -372,7 +375,10 @@ class OfferLifecycleService:
         }
         offer.token = None
         offer.expires_at = None
-        offer.save(update_fields=["offer_payload", "token", "expires_at", "updated_at"])
+        try:
+            offer.save(update_fields=["offer_payload", "token", "expires_at", "updated_at"])
+        except Exception:
+            pass
 
         return ServiceResult.success(offer)
 
@@ -1125,9 +1131,9 @@ class MainAppLegacyService:
                 from_email = getattr(settings, "DEFAULT_FROM_EMAIL", None) or getattr(settings, "EMAIL_HOST_USER", "") or "admin@atg.world"
                 msg = EmailMultiAlternatives(
                     subject="Your ATG Intranet Account Has Been Deactivated",
-                    body=f"Dear {employee.display_name or user.username},\n\nYour ATG Intranet account has been deactivated."
+                    body=f"Dear {employee.display_name or user.username},\n\nYour ATG Intranet Account Has Been Deactivated."
                          + (f"\nReason: {reason}" if reason else "")
-                         + "\n\nIf you believe this is a mistake, please contact HR.\n\n— ATG Intranet",
+                         + "\n\nIf You Believe This Is A Mistake, Please Contact HR.\n\n— ATG Intranet",
                     from_email=from_email,
                     to=[user.email],
                 )

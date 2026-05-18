@@ -547,7 +547,7 @@ function AppShell({ children, route, navigate, data, apiOnline, loading, logout,
   const employee = resolveActiveEmployee(data) || {};
   const displayName = employee.display_name || employee.displayName || user.fullName || user.full_name || user.username || "Profile";
   const initials = String(displayName).split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase() || "U";
-  const visibleErrors = errors.filter((item) => item.status && item.status !== 401).slice(0, 1);
+  const visibleErrors = errors.filter((item) => item.status && item.status !== 401 && item.status !== 403).slice(0, 1);
 
   const userCaps = data.me?.capabilities || [];
   const isSuper = data.me?.user?.isSuperuser || false;
