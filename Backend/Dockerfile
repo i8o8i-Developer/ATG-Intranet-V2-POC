@@ -33,6 +33,8 @@ RUN pip install --upgrade pip \
 
 COPY Backend /app/Backend
 
+RUN python Backend/manage.py collectstatic --noinput
+
 EXPOSE 8000
 
 CMD ["python", "Backend/manage.py", "runserver", "0.0.0.0:8000"]
