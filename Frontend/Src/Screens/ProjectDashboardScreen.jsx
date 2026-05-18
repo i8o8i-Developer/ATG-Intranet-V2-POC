@@ -63,6 +63,7 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [manageGroupsOpen, setManageGroupsOpen] = useState(false);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
+  const [editGroupName, setEditGroupName] = useState(null);
   const [delayTask, setDelayTask] = useState(null);
   const [delayDays, setDelayDays] = useState("");
   const [delayReason, setDelayReason] = useState("");
@@ -431,8 +432,9 @@ export function ProjectDashboardScreen({ data, route, reload, navigate, kind = "
       {addTaskFor && <AddTaskModal project={project} team={team} milestones={milestones} data={data} initial={addTaskFor} onClose={() => setAddTaskFor(null)} reload={refresh} />}
       {addMemberOpen && <AddMemberModal project={project} data={data} onClose={() => setAddMemberOpen(false)} reload={refresh} />}
       {eodEmployee && <TeamEodModal assignment={eodEmployee} data={data} onClose={() => setEodEmployee(null)} />}
-      {manageGroupsOpen && <MilestoneGroupPicker project={project} data={data} onClose={() => setManageGroupsOpen(false)} onSelect={createDefaultMilestones} onCreateGroup={() => { setManageGroupsOpen(false); setCreateGroupOpen(true); }} />}
+      {manageGroupsOpen && <MilestoneGroupPicker project={project} data={data} onClose={() => setManageGroupsOpen(false)} onSelect={createDefaultMilestones} onCreateGroup={() => { setManageGroupsOpen(false); setCreateGroupOpen(true); }} onEditGroup={(g) => { setManageGroupsOpen(false); setEditGroupName(g); }} />}
       {createGroupOpen && <CreateCheckpointGroupModal project={project} data={data} onClose={() => setCreateGroupOpen(false)} reload={refresh} />}
+      {editGroupName && <EditCheckpointGroupModal data={data} groupName={editGroupName} onClose={() => setEditGroupName(null)} reload={refresh} />}
       {delayTask && (
         <Modal title="Report Delay" onClose={() => setDelayTask(null)}>
           <form onSubmit={async (e) => {
@@ -498,7 +500,7 @@ function MemberRepoIcon({ assignment, repos, data }) {
 }
 
 function CreateProjectModal({ data, onClose, reload, defaultProjectType = "Development" }) {
-  const [form, setForm] = useState({ name: "", code: "", project_type: defaultProjectType, priority: "P3", status: "Active", health: "On Track", starts_on: isoDate(new Date()), ends_on: "", associate_project_manager: "", project_manager: "" });
+  const [form, setForm] = useState({ name: "", code: "", project_type: defaultProjectType, priority: "P3", starts_on: isoDate(new Date()), ends_on: "", associate_project_manager: "", project_manager: "" });
   const [busy, setBusy] = useState(false);
 
   const save = async () => {
@@ -529,8 +531,6 @@ function CreateProjectModal({ data, onClose, reload, defaultProjectType = "Devel
         <label>APM (Associate Project Manager){renderEmployeeSelect(form.associate_project_manager, (v) => setForm({ ...form, associate_project_manager: v }))}</label>
         <label>PM (Project Manager){renderEmployeeSelect(form.project_manager, (v) => setForm({ ...form, project_manager: v }))}</label>
         <label>Priority<select value={form.priority} onChange={(event) => setForm({ ...form, priority: event.target.value })}><option>P1</option><option>P2</option><option>P3</option><option>P4</option></select></label>
-        <label>Status<select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}><option>Active</option><option>On Hold</option><option>Completed</option></select></label>
-        <label>Health<select value={form.health} onChange={(event) => setForm({ ...form, health: event.target.value })}><option>On Track</option><option>At Risk</option><option>Blocked</option></select></label>
         <label>Starts On<input type="date" value={form.starts_on} onChange={(event) => setForm({ ...form, starts_on: event.target.value })} /></label>
         <label>Ends On<input type="date" value={form.ends_on} onChange={(event) => setForm({ ...form, ends_on: event.target.value })} /></label>
       </div>
@@ -575,8 +575,8 @@ function EditProjectModal({ project, data, onClose, reload }) {
         <label>APM (Associate Project Manager){renderEmployeeSelect(form.associate_project_manager, (v) => setForm({ ...form, associate_project_manager: v }))}</label>
         <label>PM (Project Manager){renderEmployeeSelect(form.project_manager, (v) => setForm({ ...form, project_manager: v }))}</label>
         <label>Priority<input value={form.priority} onChange={(event) => setForm({ ...form, priority: event.target.value })} /></label>
-        <label>Status<input value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })} /></label>
-        <label>Health<input value={form.health} onChange={(event) => setForm({ ...form, health: event.target.value })} /></label>
+        <label>Status<select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}><option>Active</option><option>On Hold</option><option>Completed</option></select></label>
+        <label>Health<select value={form.health} onChange={(event) => setForm({ ...form, health: event.target.value })}><option>On Track</option><option>At Risk</option><option>Blocked</option></select></label>
         <label>Starts On<input type="date" value={form.starts_on || ""} onChange={(event) => setForm({ ...form, starts_on: event.target.value })} /></label>
         <label>Ends On<input type="date" value={form.ends_on || ""} onChange={(event) => setForm({ ...form, ends_on: event.target.value })} /></label>
       </div>
@@ -648,7 +648,7 @@ function AddTaskModal({ project, team, milestones, data, initial, onClose, reloa
   );
 }
 
-function MilestoneGroupPicker({ project, data, onClose, onSelect, onCreateGroup }) {
+function MilestoneGroupPicker({ project, data, onClose, onSelect, onCreateGroup, onEditGroup }) {
   const [selected, setSelected] = useState("");
   const groups = [...new Set((data.defaultCheckpoints || []).map((cp) => cp.project_type).filter(Boolean))];
   return (
@@ -656,10 +656,17 @@ function MilestoneGroupPicker({ project, data, onClose, onSelect, onCreateGroup 
       {groups.length ? (
         <>
           <label>Select Group<select value={selected} onChange={(e) => setSelected(e.target.value)}><option value="">Choose A Group...</option>{groups.map((g) => <option key={g} value={g}>{g}</option>)}</select></label>
-          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+          <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
             <button className="Primary-Button" onClick={() => { if (selected) onSelect(selected); }} disabled={!selected}>Create Milestones</button>
-            <button className="Soft-Button" onClick={onCreateGroup}>Manage Groups</button>
+            <button className="Soft-Button Small" onClick={() => { if (selected) onEditGroup(selected); }} disabled={!selected}>Edit Group</button>
+            <button className="Soft-Button" onClick={onCreateGroup}>Create Group</button>
           </div>
+          {groups.map((g) => (
+            <div key={g} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", marginTop: 4, borderRadius: 6, background: selected === g ? "#eef2ff" : "transparent", cursor: "pointer" }} onClick={() => setSelected(g)}>
+              <span style={{ fontSize: 13, fontWeight: selected === g ? 600 : 400 }}>{g}</span>
+              <button className="Soft-Button Small" onClick={(e) => { e.stopPropagation(); onEditGroup(g); }} style={{ fontSize: 11 }}>Edit</button>
+            </div>
+          ))}
         </>
       ) : (
         <div style={{ padding: 20, textAlign: "center" }}>
@@ -720,6 +727,56 @@ function CreateCheckpointGroupModal({ project, data, onClose, reload }) {
       ))}
       {error && <div className="error-banner">{error}</div>}
       <button className="Primary-Button" onClick={save} disabled={busy || !groupName.trim()}>Save Group ({milestones.filter(m => m.title.trim()).length} milestones)</button>
+    </Modal>
+  );
+}
+
+function EditCheckpointGroupModal({ data, groupName, onClose, reload }) {
+  const [checkpoints, setCheckpoints] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const items = (data.defaultCheckpoints || []).filter((cp) => cp.project_type === groupName);
+    setCheckpoints(items.map((cp) => ({ ...cp, _title: cp.title, _sequence: cp.sequence, _bounty: cp.bounty })));
+  }, [groupName, data.defaultCheckpoints]);
+
+  const setField = (i, field, val) => {
+    const items = [...checkpoints];
+    items[i] = { ...items[i], [field]: val };
+    setCheckpoints(items);
+  };
+
+  const save = async () => {
+    setBusy(true); setError("");
+    try {
+      for (const cp of checkpoints) {
+        await apiPatch(`/Project/DefaultCheckpoints/${cp.id}/`, {
+          title: cp._title, sequence: Number(cp._sequence) || 0, bounty: Math.max(0, Number(cp._bounty) || 0),
+        });
+      }
+      reload();
+      onClose();
+    } catch (err) {
+      setError(err?.payload?.title?.[0] || err?.payload?.detail || err?.message || "Failed to update group.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal title={`Edit Group: ${groupName}`} onClose={onClose} wide>
+      <h4>Checkpoints</h4>
+      {checkpoints.map((cp, i) => (
+        <div key={cp.id} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}>
+          <span style={{ fontWeight: 600, minWidth: 24 }}>{i + 1}.</span>
+          <input value={cp._title} onChange={(e) => setField(i, "_title", e.target.value)} placeholder="Title" style={{ flex: 1 }} />
+          <input type="number" min="0" value={cp._sequence} onChange={(e) => setField(i, "_sequence", e.target.value)} style={{ width: 60 }} placeholder="Seq" title="Sequence" />
+          <input type="number" min="0" value={cp._bounty} onChange={(e) => setField(i, "_bounty", e.target.value)} style={{ width: 80 }} placeholder="Bounty" />
+        </div>
+      ))}
+      {error && <div className="error-banner">{error}</div>}
+      <button className="Primary-Button" onClick={save} disabled={busy}>Save Changes</button>
     </Modal>
   );
 }
@@ -904,7 +961,7 @@ function MilestoneEditModal({ milestone, onClose, reload }) {
 }
 
 function AddMilestoneModal({ project, onClose, reload }) {
-  const [form, setForm] = useState({ title: "", status: "Open", due_on: "", project: project.id });
+  const [form, setForm] = useState({ title: "", due_on: "", project: project.id });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -927,7 +984,6 @@ function AddMilestoneModal({ project, onClose, reload }) {
   return (
     <Modal title="New Milestone" onClose={onClose}>
       <label>Title<input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="M1, 1st Vertical, Etc." /></label>
-      <label>Status<select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}><option>Open</option><option>In Progress</option><option>Completed</option><option>Delayed</option></select></label>
       <label>Due On<input type="date" value={form.due_on} onChange={(event) => setForm({ ...form, due_on: event.target.value })} /></label>
       {error && <div className="error-banner">{error}</div>}
       <button className="Primary-Button" onClick={save} disabled={busy || !form.title}>Create Milestone</button>

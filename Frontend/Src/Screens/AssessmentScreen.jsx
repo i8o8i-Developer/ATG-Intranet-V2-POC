@@ -144,18 +144,10 @@ export function AssessmentScreen({ data, selectedEmployeeId, reload }) {
                     <td>{row.assessment_sequence_number || row.assessment_number || row.attempts_count || 1}</td>
                     <td><StatusPill tone={isCompleted(row.status || row.note) ? "green" : "gold"}>{row.note || row.status || "Incomplete"}</StatusPill></td>
                     <td className="Table-Actions">
-                      {!isCompleted(row.status || row.note) && !status.includes("progress") && assignmentId && (
-                        <button className="Soft-Button Small" onClick={() => startAssignment(assignmentId)}>Start</button>
-                      )}
-                      {!isCompleted(row.status || row.note) && !status.includes("submitted") && assignmentId && (
-                        <button className="Soft-Button Small" onClick={() => openTakeAssessment(row)}>Take Assessment</button>
-                      )}
                       {isCompleted(row.status || row.note) ? (
                         <span className="Muted-Text" style={{ color: "#10b981", fontWeight: 600 }}>Completed</span>
-                      ) : assignmentId ? (
-                        <button className="Soft-Button Small" onClick={() => syncAssignment(assignmentId)}>Sync</button>
                       ) : (
-                        <span className="Muted-Text">No Assignment ID</span>
+                        <span className="Muted-Text" style={{ color: "#64748b", fontSize: 12 }}>Pending</span>
                       )}
                     </td>
                   </tr>

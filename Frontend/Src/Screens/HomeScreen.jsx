@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell,
   CalendarDays,
@@ -51,6 +51,65 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
   const [delayTask, setDelayTask] = useState(null);
   const projectMap = useMemo(() => indexById(data.projects), [data.projects]);
   const days = useMemo(() => lastDays(15), []);
+
+  const [takeAssessment, setTakeAssessment] = useState(null);
+  const [assessmentAnswers, setAssessmentAnswers] = useState({});
+  const [assessmentSubmitting, setAssessmentSubmitting] = useState(false);
+  const [assessmentError, setAssessmentError] = useState("");
+  const [assessmentResult, setAssessmentResult] = useState(null);
+  const [assessmentTimeLeft, setAssessmentTimeLeft] = useState(null);
+  const assessmentTimerRef = useRef(null);
+
+  const startAssessment = async (a) => {
+    try {
+      await apiPost(`/Assesment/AssessmentAssignments/${a.id}/start/`, {});
+      const templates = data.assessmentTemplates || [];
+      const template = templates.find((t) => String(t.id) === String(a.assessment || a.assessment_id));
+      if (!template) { setAssessmentError("No questions available."); return; }
+      setAssessmentAnswers({});
+      setAssessmentError("");
+      const duration = Number(template.duration_minutes || 0);
+      setAssessmentTimeLeft(duration > 0 ? duration * 60 : null);
+      setTakeAssessment({ assignmentId: a.id, questions: template.question_payload || [], title: template.title || a.assessment_title || "Assessment" });
+    } catch (e) { setAssessmentError("Failed to start."); }
+  };
+
+  const takeAssess = async (a) => {
+    const templates = data.assessmentTemplates || [];
+    const template = templates.find((t) => String(t.id) === String(a.assessment || a.assessment_id));
+    if (!template) { setAssessmentError("No questions available."); return; }
+    setAssessmentAnswers({});
+    setAssessmentError("");
+    const duration = Number(template.duration_minutes || 0);
+    setAssessmentTimeLeft(duration > 0 ? duration * 60 : null);
+    setTakeAssessment({ assignmentId: a.id, questions: template.question_payload || [], title: template.title || a.assessment_title || "Assessment" });
+  };
+
+  useEffect(() => {
+    if (!takeAssessment || assessmentTimeLeft === null || assessmentTimeLeft <= 0) return;
+    assessmentTimerRef.current = setInterval(() => setAssessmentTimeLeft((prev) => { if (prev <= 1) { clearInterval(assessmentTimerRef.current); return 0; } return prev - 1; }), 1000);
+    return () => clearInterval(assessmentTimerRef.current);
+  }, [takeAssessment, assessmentTimeLeft]);
+
+  const submitAssessment = async () => {
+    if (!takeAssessment) return;
+    setAssessmentSubmitting(true);
+    const questions = takeAssessment.questions;
+    let correct = 0;
+    questions.forEach((q, i) => { if (Number(assessmentAnswers[i]) === Number(q.correct)) correct++; });
+    const score = questions.length > 0 ? Math.round((correct / questions.length) * 100) : 0;
+    try {
+      await apiPost(`/Assesment/AssessmentAssignments/${takeAssessment.assignmentId}/submit/`, { score, percentage: score, status: "Submitted", answer_payload: assessmentAnswers });
+      setAssessmentResult({ score, correct, total: questions.length });
+      setAssessmentError("");
+      reload(["assessmentAssignments", "assessmentLegacy"]);
+    } catch (err) {
+      setAssessmentError(err?.payload?.detail || "Submit failed.");
+    } finally {
+      setAssessmentSubmitting(false);
+    }
+  };
+
   const filteredTasks = taskFilter === "completed" ? completedTasks : pendingTasks;
   const expandedTask = filteredTasks.find((task) => String(task.id) === String(expandedTaskId));
   const visibleGroups = useMemo(() => groupBy(filteredTasks, (task) => projectMap.get(String(task.project))?.name || "Intranet"), [filteredTasks, projectMap]);
@@ -255,23 +314,33 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
       {/* Pending Assessments */}
       {(() => {
         const empId = linkedEmployee?.id || selectedEmployeeId;
-        const myAssessments = (data.assessmentAssignments || []).filter((a) => String(a.employee) === String(empId) && !isCompleted(a.status)).slice(0, 5);
-        if (!myAssessments.length) return null;
+        const myAssessments = (data.assessmentAssignments || []).filter((a) => String(a.employee) === String(empId) && !isCompleted(a.status));
+        const hasStarted = myAssessments.some((a) => String(a.status).toLowerCase().includes("progress"));
+        if (!myAssessments.length && !hasStarted) return null;
         return (
           <div className="HomeR-Card" style={{ marginBottom: 16 }}>
-            <div className="HomeR-Card-header"><span className="HomeR-Card-title">Pending Assessments</span></div>
+            <div className="HomeR-Card-header"><span className="HomeR-Card-title">Assessments</span></div>
             <div style={{ display: "grid", gap: 6, padding: "8px 14px 14px" }}>
-              {myAssessments.map((a) => (
-                <div key={a.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
-                  <div style={{ flex: 1 }}>
-                    <strong style={{ fontSize: 13 }}>{a.assessment_title || "Assessment"}</strong>
-                    <span style={{ fontSize: 11, color: "#64748b", marginLeft: 8 }}>{a.status} · Due {formatDate(a.due_at)}</span>
+              {assessmentError && <div style={{ fontSize: 12, padding: "6px 10px", borderRadius: 6, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }}>{assessmentError}</div>}
+              {myAssessments.map((a) => {
+                const inProgress = String(a.status).toLowerCase().includes("progress");
+                return (
+                  <div key={a.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                    <div style={{ flex: 1 }}>
+                      <strong style={{ fontSize: 13 }}>{a.assessment_title || "Assessment"}</strong>
+                      <span style={{ fontSize: 11, color: "#64748b", marginLeft: 8 }}>{a.status} · Due {formatDate(a.due_at)}</span>
+                    </div>
+                    <span className="Table-Actions">
+                      {inProgress ? (
+                        <button className="Soft-Button Small" onClick={() => takeAssess(a)}>Take Assessment</button>
+                      ) : (
+                        <button className="Primary-Button Small" onClick={() => startAssessment(a)}>Start Assessment</button>
+                      )}
+                    </span>
                   </div>
-                  <span className="Table-Actions">
-                    <button className="Soft-Button Small" onClick={() => navigate("/assessment/")}>View</button>
-                  </span>
-                </div>
-              ))}
+                );
+              })}
+              {!myAssessments.length && hasStarted && <p style={{ fontSize: 13, color: "#94a3b8", padding: 8 }}>No pending assessments.</p>}
             </div>
           </div>
         );
@@ -390,6 +459,49 @@ export function HomeScreen({ data, selectedEmployeeId, reload, navigate }) {
             </div>
           </form>
         </Modal>
+      )}
+
+      {takeAssessment && !assessmentResult && (
+        <div className="Modal-Backdrop" onClick={() => { if (!assessmentSubmitting) { setTakeAssessment(null); setAssessmentAnswers({}); } }}>
+          <section className="Modal Wide" onClick={(e) => e.stopPropagation()} style={{ width: "min(700px, calc(100vw - 56px))" }}>
+            <div className="Modal-Body" style={{ maxHeight: "80vh", overflow: "auto" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h2>{takeAssessment.title}</h2>
+                {assessmentTimeLeft !== null && <span style={{ fontSize: 14, fontWeight: 700, color: assessmentTimeLeft < 60 ? "#ef4444" : "#0f172a" }}>{Math.floor(assessmentTimeLeft / 60)}:{String(assessmentTimeLeft % 60).padStart(2, "0")} Min</span>}
+              </div>
+              <p style={{ color: "#64748b", marginBottom: 16, fontSize: 13 }}>Answer all questions and submit.</p>
+              {takeAssessment.questions.map((q, qi) => (
+                <div key={qi} style={{ marginBottom: 16, padding: 14, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fafafa" }}>
+                  <p style={{ fontWeight: 600, marginBottom: 8, fontSize: 14 }}>Q{qi + 1}. {q.question || q.q || ""}</p>
+                  {(q.options || []).map((opt, oi) => (
+                    <label key={oi} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", marginBottom: 4, borderRadius: 6, cursor: "pointer", background: Number(assessmentAnswers[qi]) === oi ? "#eef2ff" : "#fff", border: "1px solid", borderColor: Number(assessmentAnswers[qi]) === oi ? "#3b82f6" : "#e2e8f0" }}>
+                      <input type="radio" name={`hq-${qi}`} checked={Number(assessmentAnswers[qi]) === oi} onChange={() => setAssessmentAnswers({ ...assessmentAnswers, [qi]: oi })} />
+                      <span style={{ fontSize: 13 }}>{opt}</span>
+                    </label>
+                  ))}
+                </div>
+              ))}
+              {!takeAssessment.questions.length && <p style={{ color: "#94a3b8" }}>No questions configured.</p>}
+              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                <button className="Primary-Button" onClick={submitAssessment} disabled={assessmentSubmitting || !takeAssessment.questions.length}>{assessmentSubmitting ? "Submitting..." : "Submit Answers"}</button>
+                <button className="Soft-Button" onClick={() => { setTakeAssessment(null); setAssessmentAnswers({}); }}>Cancel</button>
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {assessmentResult && (
+        <div className="Modal-Backdrop" onClick={() => { setAssessmentResult(null); setTakeAssessment(null); setAssessmentAnswers({}); }}>
+          <section className="Modal" onClick={(e) => e.stopPropagation()} style={{ width: "min(500px, calc(100vw - 56px))" }}>
+            <div className="Modal-Body" style={{ textAlign: "center", padding: "32px 24px" }}>
+              <h2>Assessment Complete</h2>
+              <div style={{ fontSize: 48, fontWeight: 700, margin: "16px 0", color: assessmentResult.score >= 70 ? "#10b981" : "#ef4444" }}>{assessmentResult.score}%</div>
+              <p style={{ color: "#64748b", fontSize: 14 }}>{assessmentResult.correct} of {assessmentResult.total} Correct</p>
+              <button className="Primary-Button" onClick={() => { setAssessmentResult(null); setTakeAssessment(null); setAssessmentAnswers({}); }} style={{ marginTop: 16 }}>Done</button>
+            </div>
+          </section>
+        </div>
       )}
     </section>
   );

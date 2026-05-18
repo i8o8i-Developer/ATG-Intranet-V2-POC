@@ -418,8 +418,8 @@ function App() {
   // 
   useEffect(() => {
     if (!hasAuth || isLoginRoute) return;
-    const me401 = errors.some((e) => e.key === "me" && e.status === 401);
-    if (me401) {
+    const any401 = errors.some((e) => e.status === 401);
+    if (any401) {
       clearApiAuth();
       setSettings(getApiSettings());
       navigate("/login/");
@@ -475,7 +475,7 @@ function useIntranetData(reloadKey, enabled) {
 
 const REALTIME_KEYS = ["dailyStatus", "me", "notifications", "employees", "departments", "positions", "skills", "tasks", "projects", "leaveRequests", "leaveBalances", "leaveOverview", "teamAssignments", "milestones", "alerts", "userSkills", "goals", "goalFeedback", "workEntries", "bankAccounts", "assessmentTemplates", "assessmentAssignments", "payProfiles", "financeDashboard", "payrollRuns", "payrollLineItems", "payslipDocuments", "payPeriods", "paymentSnapshots", "delays", "projectBudgets", "teamAssignmentHistory", "userRepositoryStatus", "defaultCheckpoints", "docs", "lmsLeads", "leadAccounts", "leadTags", "leadContacts", "leadActivities", "leadNotes", "leadTests", "leadProposals", "leadAudits", "leadStatusHistory", "learningPaths", "learningModules", "learningAssignments", "leadQueueSnapshots", "revenueSnapshots", "knowledgeActivities", "driveFolders", "assessmentLegacy", "offers", "issues", "managerScopes", "projectContacts", "milestoneComponents", "complianceCampaigns", "complianceAssignments", "slackThreads", "slackMessages", "externalWorkMappings", "clickupMappings", "managerAbbreviations", "subDepartments", "userStatusSnapshots", "benchPeriods", "employeeCertificates", "leaveTransactions", "resignationRequests", "userEffortReports", "interviewProgress", "credentialVaultItems", "notificationSnoozeRecords", "docPermissions", "driveFiles", "docVersions", "paymentOrders", "compensationPlans", "approvalDecisions", "payoutExecutions", "gitRepoSnapshots", "gitActivitySnapshots", "repoUtilityRequests", "githubRepositories", "branchReviewers", "branchTesters", "repoBranchStatuses", "collegePipelines", "collegeContacts", "collegeAssignments", "candidateProfiles", "talentAssignments", "talentPerformanceSnapshots", "integrationProviders", "integrationConnections", "webhookInboxEvents", "agentPrincipals", "mcpToolDefinitions", "mcpResourceDefinitions", "mcpAccessGrants", "enterpriseRoles", "enterpriseRoleAssignments", "accessAuditLogs", "leadTransitions", "domains", "taskActivities", "employeeFeedback", "projectDocuments", "repositories", "mcpInvocationAudits", "draftAgentActions"];
 
-const POLL_KEYS = ["dailyStatus", "notifications", "alerts", "tasks"];
+const POLL_KEYS = ["me", "dailyStatus", "notifications", "alerts", "tasks"];
 
 const load = useCallback(async (keysFilter) => {
      if (!enabledRef.current) { hasInitiallyLoaded.current = false; return; }
@@ -532,6 +532,13 @@ const load = useCallback(async (keysFilter) => {
      if (!enabled) { if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; } return; }
      pollingRef.current = setInterval(() => { load(POLL_KEYS); }, 30000);
      return () => { if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; } };
+   }, [enabled, load]);
+
+   useEffect(() => {
+     if (!enabled) return;
+     const onVisible = () => { if (document.visibilityState === "visible") load(["me"]); };
+     document.addEventListener("visibilitychange", onVisible);
+     return () => document.removeEventListener("visibilitychange", onVisible);
    }, [enabled, load]);
 
    return { ...state, reload: load };
@@ -754,7 +761,7 @@ function AppShell({ children, route, navigate, data, apiOnline, loading, logout,
             </div>
             <div className="Atg-Topbar-Actions">
               {loading && <span className="Sync-Badge">Syncing</span>}
-              {!loading && errors.length >= 10 && <span className="Sync-Badge-Danger">Connection Issues</span>}
+              {!loading && errors.filter((e) => e.status !== 401).length >= 10 && <span className="Sync-Badge-Danger">Connection Issues</span>}
               <NotificationBell notifications={data.notifications || []} navigate={navigate} reloadData={reloadData} />
               <button className={activePath.startsWith("/profile") ? "Atg-User-Chip Active" : "Atg-User-Chip"} onClick={() => navigate("/profile/")}>
                 <span className="Chip-Avatar">{initials}</span>

@@ -736,10 +736,19 @@ class ProjectDeliveryService:
         if not task:
             return ServiceResult.failure({"task": "Work Item Not Found."}, status_code=404)
         update_fields = ["updated_by", "updated_at"]
+        done_statuses = {"completed", "complete", "done", "closed", "c"}
         for field in ["title", "description", "priority", "status", "owner_id", "parent_id"]:
             if field in data:
                 setattr(task, field, data.get(field))
                 update_fields.append(field)
+        if "status" in data:
+            new_status = (data.get("status") or "").strip().lower()
+            if new_status in done_statuses and not task.completed_at:
+                task.completed_at = timezone.now()
+                update_fields.append("completed_at")
+            elif new_status not in done_statuses and task.completed_at:
+                task.completed_at = None
+                update_fields.append("completed_at")
         if "bounty" in data:
             task.bounty = max(0, float(data.get("bounty") or 0))
             update_fields.append("bounty")
