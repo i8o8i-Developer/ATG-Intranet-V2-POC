@@ -41,8 +41,8 @@ ${v.internDuration ? `<tr><td>Intern Duration</td><td>${v.internDuration} Months
 <tr><td>Location</td><td>${pascal(v.location)}</td></tr>
 <tr><td>Joining Date</td><td>${fmt(v.joiningDate)}</td></tr>
 </table>
-<p style="font-size:15px;line-height:1.7;text-align:justify">Your appointment will be governed by the terms and conditions outlined in this offer letter and the company's standard employment policies. This offer is subject to verification of your credentials and background check.</p>
-<p style="font-size:15px;line-height:1.7;text-align:justify">Please indicate your acceptance by signing below and returning this letter. Once signed, you will receive further instructions regarding onboarding documentation and your first day details.</p>
+<p style="font-size:15px;line-height:1.7;text-align:justify">Your Appointment Will Be Governed By The Terms And Conditions Outlined In This Offer Letter. This Offer Is Subject To Verification Of Your Credentials And Background Check.</p>
+<p style="font-size:15px;line-height:1.7;text-align:justify">Please Indicate Your Acceptance By Signing Below And Returning This Letter. Once signed, you will receive further instructions regarding onboarding documentation and your first day details.</p>
 <div class="sign-row">
 <div class="sign-line">Authorized Signatory</div>
 <div class="sign-line">Candidate Signature</div>

@@ -111,7 +111,7 @@ export function DeactivateEmployeeScreen({ data, reload }) {
                 This User Will No Longer Be Able To Log In To The Intranet. All Their Data (Projects, Tasks, Assignments, Documents, Feedback) Will Remain Intact. This Action Can Be Reversed By An Admin.
               </span>
             </div>
-            <label>Reason For Deactivation<textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Optional: Provide a reason..." style={{ width: "100%", marginTop: 4 }} /></label>
+            <label>Reason For Deactivation<textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Optional: Provide A Reason..." style={{ width: "100%", marginTop: 4 }} /></label>
           </div>
           <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
             <button className="Danger-Button" onClick={deactivateOne} disabled={busy}>Confirm Deactivation</button>
